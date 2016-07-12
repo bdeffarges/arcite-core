@@ -1,0 +1,40 @@
+### Scala template
+*.class
+*.log
+
+# sbt specific
+.cache
+.history
+.lib/
+dist/*
+target/
+lib_managed/
+src_managed/
+project/boot/
+project/plugins/project/
+
+# Scala-IDE specific
+
+.scala_dependencies
+.worksheet
+
+# IntelliJ project files
+.idea
+.idea/
+*.iml
+out
+gen
+
+# Package Files #
+
+*.jar
+*.war
+*.ear
+
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
+
+## File-based project format:
+*.ipr
+*.iws
+
