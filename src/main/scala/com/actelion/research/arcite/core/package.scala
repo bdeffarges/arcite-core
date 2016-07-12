@@ -82,17 +82,6 @@ package object core {
 }
 
 
-sealed abstract class TransformType
-
-case object Normalization extends TransformType
-
-case object LIMMA extends TransformType
-
-case object DataManagement extends TransformType
-
-case object SomeKindOfStatisticalAnalysis extends TransformType
-
-
 sealed abstract class TransformTool
 
 case object JVM_module extends TransformTool
@@ -102,13 +91,6 @@ case object R_Code extends TransformTool
 case object ActorCode extends TransformTool
 
 case object SparkJob extends TransformTool
-
-
-// for api - json services
-
-
-// todo why not put utils here
-
 
 case class Position(row: Int, col: Int)
 

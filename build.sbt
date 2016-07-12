@@ -14,8 +14,8 @@ resolvers ++= Seq(
   "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/")
 
 libraryDependencies ++= {
-  val akkaVersion = "2.4.4"
-  val sparkVersion = "1.6.1"
+  val akkaVersion = "2.4.8"
+  val sparkVersion = "1.6.2"
   val luceneVersion = "5.0.0"
 
   Seq(
@@ -49,8 +49,6 @@ libraryDependencies ++= {
     "org.apache.lucene" % "lucene-queries" % luceneVersion,
     "org.apache.lucene" % "lucene-queryparser" % luceneVersion,
     "org.scalacheck" %% "scalacheck" % "1.13.0" % "test",
-    "com.cra.figaro" %% "figaro" % "4.0.0.0"
-
   )
 }
 

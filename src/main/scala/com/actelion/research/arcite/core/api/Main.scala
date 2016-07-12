@@ -35,6 +35,7 @@ object Main extends App with RequestTimeout {
   val port = config.getInt(s"${Env.getEnv()}.http.port")
 
   implicit val system = ActorSystem()
+
   implicit val ec = system.dispatcher //bindAndHandle requires an implicit ExecutionContext
 
   val api = new RestApi(system, requestTimeout(config)).routes // the RestApi provides a Route
@@ -59,7 +60,7 @@ object Main extends App with RequestTimeout {
   println("Press <enter> to exit.")
   Console.in.read.toChar
   // gracefully shut down the server
-//  import system.dispatcher._
+  //  import system.dispatcher._
   bindingFuture.flatMap(_.unbind()).onComplete(_ ⇒ system.terminate())
 }
 
