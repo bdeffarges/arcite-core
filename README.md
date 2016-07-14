@@ -21,4 +21,5 @@ An experiment definition cannot be changed, it would have to be recreated. The r
 would have been produced with the data (e.g. even a simple matrix given values for X samples with Y features), changing
 the experiment definition would corrupt the results. Thus, immutability is key to Arcite. 
 
+### Building Arcite
 

@@ -57,10 +57,10 @@ object Main extends App with RequestTimeout {
   }
 
   // wait for the user to stop the server
-  println("Press <enter> to exit.")
-  Console.in.read.toChar
+//  println("Press <enter> to exit.")
+//  Console.in.read.toChar
   // gracefully shut down the server
   //  import system.dispatcher._
-  bindingFuture.flatMap(_.unbind()).onComplete(_ ⇒ system.terminate())
+//  bindingFuture.flatMap(_.unbind()).onComplete(_ ⇒ system.terminate())
 }
 

@@ -1,4 +1,5 @@
 import com.typesafe.sbt.SbtNativePackager.autoImport.NativePackagerHelper._
+import com.typesafe.sbt.packager.docker.ExecCmd
 
 name := "arcite-core"
 
@@ -27,7 +28,7 @@ libraryDependencies ++= {
     "org.json4s" %% "json4s-jackson" % "3.3.0" % "test",
     "com.typesafe.akka" %% "akka-kernel" % akkaVersion,
     "com.typesafe.akka" %% "akka-actor" % akkaVersion,
-    "com.typesafe.akka" %% "akka-remote" % akkaVersion,
+//    "com.typesafe.akka" %% "akka-remote" % akkaVersion,
     "com.typesafe.akka" %% "akka-kernel" % akkaVersion,
     "com.typesafe.akka" %% "akka-stream" % akkaVersion,
     "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
@@ -48,13 +49,23 @@ libraryDependencies ++= {
     "org.apache.lucene" % "lucene-analyzers-common" % luceneVersion,
     "org.apache.lucene" % "lucene-queries" % luceneVersion,
     "org.apache.lucene" % "lucene-queryparser" % luceneVersion,
-    "org.scalacheck" %% "scalacheck" % "1.13.0" % "test",
+    "org.scalacheck" %% "scalacheck" % "1.13.0" % "test"
   )
 }
 
 enablePlugins(JavaServerAppPackaging)
+//enablePlugins(JavaAppPackaging)
+//enablePlugins(DockerPlugin)
 
-mainClass in Compile := Some("sample.hello.Main")
+//enablePlugins(DockerSpotifyClientPlugin)
+
+mainClass in Compile := Some("com.actelion.research.arcite.core.api.Main")
+
+//dockerCommands ++= Seq(
+//  ExecCmd("RUN", "su"),
+//  ExecCmd("RUN", "apt-get", "update"),
+//  ExecCmd("RUN", "apt-get", "install", "netstat")
+//)
 
 mappings in Universal ++= {
   // optional example illustrating how to copy additional directory
@@ -68,3 +79,5 @@ mappings in Universal ++= {
 // when starting the application
 scriptClasspath := Seq("../config/") ++ scriptClasspath.value
 
+
+dockerExposedPorts := Seq(3585)
