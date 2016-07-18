@@ -10,7 +10,7 @@ import com.github.agourlay.cornichon.CornichonFeature
   */
 class TestApi extends CornichonFeature {
 
-  override lazy val baseUrl = s"http://CHALUW-DEV01:8084"
+  override lazy val baseUrl = s"http://CHALUW-DEV01:3585"
 
   lazy val feature = Feature("Experiments API") {
 

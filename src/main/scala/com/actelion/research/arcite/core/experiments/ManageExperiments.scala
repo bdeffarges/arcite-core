@@ -1,5 +1,6 @@
 package com.actelion.research.arcite.core.experiments
 
+import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file._
 
@@ -127,8 +128,10 @@ object ManageExperiments extends ExperimentJsonProtocol {
 
   implicit val stateJSon = jsonFormat1(State)
 
-  val st = Files.readAllLines(path).toList.mkString.parseJson.convertTo[State]
-  experiments ++= st.experiments.map(e ⇒ (e.digest, e)).toMap
+  if (path.toFile.exists()) {
+    val st = Files.readAllLines(path).toList.mkString.parseJson.convertTo[State]
+    experiments ++= st.experiments.map(e ⇒ (e.digest, e)).toMap
+  }
 
   def getExperimentFromDigest(digest: String): Option[Experiment] = {
     experiments.get(digest)

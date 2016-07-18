@@ -14,10 +14,7 @@
         </encoder>
     </appender>
 
-    <logger name="com.actelion.research.compbio.arcite.digest" level="debug"/>
-    <logger name="com.actelion.research.compbio.arcite.proofofwork" level="debug"/>
-    <logger name="com.actelion.research.compbio.arcite._explore" level="debug"/>
-    <logger name="com.actelion.research.compbio.arcite" level="debug"/>
+    <logger name="com.actelion.research" level="debug"/>
 
     <root level="debug">
         <appender-ref ref="STDOUT" />
