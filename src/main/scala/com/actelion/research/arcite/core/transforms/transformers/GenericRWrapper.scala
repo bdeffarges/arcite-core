@@ -3,8 +3,6 @@ package com.actelion.research.arcite.core.transforms.transformers
 import java.io.File
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import akka.cluster.Cluster
-import akka.cluster.ClusterEvent.{MemberEvent, UnreachableMember}
 import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformDefinitionLight, TransformDescription}
 import com.actelion.research.arcite.core.utils.{Env, FullName}
 
@@ -15,16 +13,6 @@ import scala.sys.process.ProcessLogger
   */
 class GenericRWrapper extends Actor with ActorLogging {
 
-
-  val cluster = Cluster(context.system)
-
-  override def preStart() {
-    cluster.subscribe(self, classOf[MemberEvent], classOf[UnreachableMember])
-  }
-
-  override  def postStop() {
-    cluster.unsubscribe(self)
-  }
 
   val rScriptPath = Env.getConf("rscript")
 
@@ -47,7 +35,7 @@ class GenericRWrapper extends Actor with ActorLogging {
 
       val status = process.!(ProcessLogger(output append _, error append _))
 
-      val result =  Rreturn(rrc.transform, status, output.toString, error.toString, rc.requester)
+      val result = Rreturn(rrc.transform, status, output.toString, error.toString, rc.requester)
 
       sender() ! result
 
@@ -60,7 +48,7 @@ object GenericRWrapper {
   val fullName = FullName("com.actelion.research.arcite.core", "Rwrapper")
   val defLight = TransformDefinitionLight(fullName,
     TransformDescription("A simple wrapper to run a r process wrapped in an akka actor",
-    "takes several arguments to start a R script",
+      "takes several arguments to start a R script",
       "returns a status code, output and error Strings, R output (PDF, dataframe) have to be returned somewhere else"))
 
   def definition() = TransformDefinition(defLight, props)
