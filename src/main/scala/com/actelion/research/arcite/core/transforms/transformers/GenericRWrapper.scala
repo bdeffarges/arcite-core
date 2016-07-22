@@ -3,6 +3,8 @@ package com.actelion.research.arcite.core.transforms.transformers
 import java.io.File
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.cluster.Cluster
+import akka.cluster.ClusterEvent.{MemberEvent, UnreachableMember}
 import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformDefinitionLight, TransformDescription}
 import com.actelion.research.arcite.core.utils.{Env, FullName}
 
@@ -12,6 +14,17 @@ import scala.sys.process.ProcessLogger
   * Created by deffabe1 on 5/20/16.
   */
 class GenericRWrapper extends Actor with ActorLogging {
+
+
+  val cluster = Cluster(context.system)
+
+  override def preStart() {
+    cluster.subscribe(self, classOf[MemberEvent], classOf[UnreachableMember])
+  }
+
+  override  def postStop() {
+    cluster.unsubscribe(self)
+  }
 
   val rScriptPath = Env.getConf("rscript")
 

@@ -3,17 +3,14 @@ package com.actelion.research.arcite.core.transforms.transformers
 import java.io.File
 import java.nio.file.Paths
 
-import akka.actor.Actor
-import akka.event.Logging
+import akka.actor.{Actor, ActorLogging}
 import org.apache.spark.{SparkConf, SparkContext}
 import org.slf4j.LoggerFactory
 
 /**
   * Created by deffabe1 on 5/10/16.
   */
-class ConvertMatrixFilesToParquet extends Actor {
-
-  val logger = Logging(context.system, this)
+class ConvertMatrixFilesToParquet extends Actor with ActorLogging {
 
   import ConvertMatrixFilesToParquet._
 

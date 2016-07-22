@@ -1,18 +1,34 @@
 import com.typesafe.sbt.SbtNativePackager.autoImport.NativePackagerHelper._
 import com.typesafe.sbt.packager.docker.ExecCmd
 
+organization := "com.actelion.research.arcite"
+
 name := "arcite-core"
 
-version := "1.0"
+version := "1.0.0-SNAPSHOT"
 
 scalaVersion := "2.11.8"
 
+credentials += Credentials("Sonatype Nexus Repository Manager", "bioinfo.it.actelion.com", "deployment", "biodeploy")
+
+publishMavenStyle := true
+
+publishTo := {
+  val nexus = "http://bioinfo.it.actelion.com/nexus/content/repositories"
+  if (version.value.toString.trim.endsWith("SNAPSHOT"))
+    Some("snapshots" at nexus + "/snapshots")
+  else
+    Some("releases" at nexus + "/releases")
+}
 
 resolvers ++= Seq(
-  "local maven" at Path.userHome.asFile.toURI.toURL + "/.m2/repository/",
+  "local maven" at Path.userHome.absolutePath + "/.m2/repository/",
+  Resolver.file("ivy local", file(Path.userHome.absolutePath + "/.ivy2/local"))(Resolver.ivyStylePatterns),
   "Typesafe Repository" at "http://dl.bintray.com/typesafe/maven-releases/",
   "Sonatype snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/",
-  "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/")
+  "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/",
+  "Sonatype Actelion snapshots" at "http://bioinfo.it.actelion.com/nexus/content/repositories/snapshots/",
+  "Sonatype Actelion releases" at "http://bioinfo.it.actelion.com/nexus/content/repositories/releases/")
 
 libraryDependencies ++= {
   val akkaVersion = "2.4.8"
@@ -28,7 +44,10 @@ libraryDependencies ++= {
     "org.json4s" %% "json4s-jackson" % "3.3.0" % "test",
     "com.typesafe.akka" %% "akka-kernel" % akkaVersion,
     "com.typesafe.akka" %% "akka-actor" % akkaVersion,
-//    "com.typesafe.akka" %% "akka-remote" % akkaVersion,
+    "com.typesafe.akka" %% "akka-remote" % akkaVersion,
+    "com.typesafe.akka" %% "akka-cluster" % akkaVersion,
+    "com.typesafe.akka" %% "akka-cluster-metrics" % akkaVersion,
+    "com.typesafe.akka" %% "akka-contrib" % akkaVersion,
     "com.typesafe.akka" %% "akka-kernel" % akkaVersion,
     "com.typesafe.akka" %% "akka-stream" % akkaVersion,
     "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
@@ -59,7 +78,7 @@ enablePlugins(JavaServerAppPackaging)
 
 //enablePlugins(DockerSpotifyClientPlugin)
 
-mainClass in Compile := Some("com.actelion.research.arcite.core.api.Main")
+//mainClass in Compile := Some("com.actelion.research.arcite.core.api.Main")
 
 //dockerCommands ++= Seq(
 //  ExecCmd("RUN", "su"),

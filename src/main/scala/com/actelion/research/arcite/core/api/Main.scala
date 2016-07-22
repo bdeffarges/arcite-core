@@ -34,7 +34,7 @@ object Main extends App with RequestTimeout {
   val host = config.getString(s"${Env.getEnv()}.http.host")
   val port = config.getInt(s"${Env.getEnv()}.http.port")
 
-  implicit val system = ActorSystem()
+  implicit val system = ActorSystem("rest-api", config.getConfig("arcite-core"))
 
   implicit val ec = system.dispatcher //bindAndHandle requires an implicit ExecutionContext
 
