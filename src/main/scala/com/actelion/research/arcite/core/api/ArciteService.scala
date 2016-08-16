@@ -2,15 +2,13 @@ package com.actelion.research.arcite.core.api
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.util.Timeout
-
 import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddExperiment, AddExperimentWithRequester}
-import com.actelion.research.arcite.core.experiments.{Experiment, ManageExperiments}
+import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSummary, ManageExperiments}
 import com.actelion.research.arcite.core.rawdata._
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{SearchForXResults, SearchForXResultsWithRequester}
 import com.actelion.research.arcite.core.transforms.GoTransformIt._
 import com.actelion.research.arcite.core.transforms.{GoTransformIt, TransformRouterActor}
 import com.actelion.research.arcite.core.transforms.Transformers._
-
 import com.typesafe.scalalogging.LazyLogging
 
 /**
@@ -48,7 +46,7 @@ object ArciteService {
 
   case class SomeExperiments(totalResults: Int, experiments: Map[String, Experiment]) extends ExperimentsResponse
 
-  case class AllExperiments(experiments: Set[Experiment]) extends ExperimentsResponse
+  case class AllExperiments(experiments: Set[ExperimentSummary]) extends ExperimentsResponse
 
 
   sealed trait AddExperimentResponse

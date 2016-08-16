@@ -21,6 +21,15 @@ case class Experiment(name: String, description: String, owner: Owner, state: Ex
   def digest = GetDigest.getDigest(s"${owner.organization}$name")
 }
 
+/**
+  * An experiment summary information (no details like design)
+  * @param name
+  * @param description
+  * @param owner
+  * @param uid the actual digest (from digest function)
+  */
+case class ExperimentSummary(name: String, description: String, owner: Owner, uid: String)
+
 case class ExperimentFolderVisitor(exp: Experiment) {
 
   val defaultMetaFileName = "meta.json" // the default file that describes the content of a folder
@@ -76,6 +85,7 @@ trait ExperimentJsonProtocol extends OwnerJsonProtocol with ExpDesignJsonProtoco
   }
 
   implicit val experimentJson = jsonFormat6(Experiment)
+  implicit val experimentSummaryJson = jsonFormat4(ExperimentSummary)
 }
 
 /**

@@ -127,7 +127,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
     get {
       complete(
         """arcite ver-0.1.0
-          |GET  /experiments:                                                                                                     all experiments (first 100 at least)
+          |GET  /experiments:                                                                                                     return all experiments summary info or a few hundrets if there are too many
           |POST /experiments: all experiments found with {"search" : "search string"}                                             return all experiments for the given search string
           |GET  /experiment/{digest}:  return a full experiment                                                                   return one experiment given its digest
           |POST /experiment {"experiment" : "...."}                                                                               add a new experiment

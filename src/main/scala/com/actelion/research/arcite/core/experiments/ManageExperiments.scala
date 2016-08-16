@@ -75,7 +75,7 @@ class ManageExperiments(owner: ActorRef) extends Actor with ExperimentJsonProtoc
 
     case GetAllExperiments ⇒
       log.debug("asking ManageExperiments for all experiments, returning first 100...")
-      sender() ! AllExperiments(experiments.values.take(100).toSet)
+      sender() ! AllExperiments(experiments.values.map(exp ⇒ ExperimentSummary(exp.name, exp.description, exp.owner, exp.digest)).take(500).toSet)
 
 
     case s: SearchForXResultsWithRequester ⇒
