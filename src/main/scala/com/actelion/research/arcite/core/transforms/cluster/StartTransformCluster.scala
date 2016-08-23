@@ -22,9 +22,9 @@ object StartTransformCluster {
 
   def workTimeout = 10.seconds
 
-  private val clusterActorSystemAndContacts = startArciteWorkerClusterSystem()
-  private val clusterActorSystem = clusterActorSystemAndContacts._1
-  private val initialContacts = clusterActorSystemAndContacts._2
+  private val workerActorSystem = startArciteWorkerClusterSystem()
+  private val system = workerActorSystem._1
+  private val initialContacts = workerActorSystem._2
 
   def defaultTransformClusterStart(): Set[ActorRef] = {
     startBackend(2551, "backend")
@@ -69,7 +69,7 @@ object StartTransformCluster {
   def startArciteWorkerClusterSystem(): (ActorSystem, Set[ActorPath]) = {
     val conf = ConfigFactory.load("transform-worker")
 
-    val system = ActorSystem(transfClustSyst, conf)
+    val system = ActorSystem("ArciteTransWorkerSys", conf)
 
     val initialContacts = immutableSeq(conf.getStringList("contact-points")).map {
       case AddressFromURIString(addr) ⇒ RootActorPath(addr) / "system" / "receptionist"
@@ -79,13 +79,9 @@ object StartTransformCluster {
   }
 
   def addWorker(props: Props, port: Int, name: String): Unit = {
-    val conf = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port).
-      withFallback(ConfigFactory.load("transform-worker"))
-
-    val system = ActorSystem("ArciteTransWorkerSys", conf)
 
     val clusterClient = system.actorOf(
-      ClusterClient.props(ClusterClientSettings(clusterActorSystem).withInitialContacts(initialContacts)), "WorkerClusterClient")
+      ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts)), "WorkerClusterClient")
 
     system.actorOf(Worker.props(clusterClient, props), name)
   }
@@ -118,15 +114,15 @@ object TryingOutRWorker extends App {
 
   val frontEnds = StartTransformCluster.defaultTransformClusterStart()
   Thread.sleep(5000)
-  StartTransformCluster.addWorker(RWrapperWorker.props(), 2651, "r_worker1")
+  StartTransformCluster.addWorker(RWrapperWorker.props(), 0, "r_worker1")
   Thread.sleep(5000)
   val pwd = System.getProperty("user.dir")
   frontEnds.head ! Work("helloWorld1", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
   Thread.sleep(5000)
-  frontEnds.last ! Work("helloWorld2", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
-  Thread.sleep(5000)
-  frontEnds.head ! Work("helloWorld3", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
-  Thread.sleep(5000)
-  frontEnds.last ! Work("helloWorld4", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
-  Thread.sleep(5000)
+//  frontEnds.last ! Work("helloWorld2", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+//  Thread.sleep(5000)
+//  frontEnds.head ! Work("helloWorld3", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+//  Thread.sleep(5000)
+//  frontEnds.last ! Work("helloWorld4", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+//  Thread.sleep(5000)
 }
