@@ -32,14 +32,12 @@ object StartTransformCluster {
     Thread.sleep(5000)
     startBackend(2552, "backend")
     Thread.sleep(5000)
-//    startBackend(2553, "backend")
+    startBackend(2553, "backend")
     Thread.sleep(5000)
     val frontEnd1 = startFrontend(0)
-//    Thread.sleep(5000)
-//    val frontEnd2 = startFrontend(0)
-
-//    Set(frontEnd1, frontEnd2)
-    Set(frontEnd1)
+    Thread.sleep(5000)
+    val frontEnd2 = startFrontend(0)
+    Set(frontEnd1, frontEnd2)
   }
 
   def startBackend(port: Int, role: String) = {
