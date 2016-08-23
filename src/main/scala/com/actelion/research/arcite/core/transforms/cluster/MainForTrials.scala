@@ -1,27 +1,19 @@
 package com.actelion.research.arcite.core.transforms.cluster
 
-import scala.concurrent.duration._
-import com.typesafe.config.ConfigFactory
-import akka.actor.ActorSystem
-import akka.actor.PoisonPill
-import akka.actor.Props
-import akka.actor.RootActorPath
-import akka.cluster.client.{ClusterClient, ClusterClientReceptionist, ClusterClientSettings}
+import akka.actor.{ActorIdentity, ActorPath, ActorSystem, AddressFromURIString, Identify, PoisonPill, Props, RootActorPath}
+import akka.cluster.client.{ClusterClient, ClusterClientSettings}
 import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings}
 import akka.japi.Util.immutableSeq
-import akka.actor.AddressFromURIString
-import akka.actor.ActorPath
-import akka.persistence.journal.leveldb.SharedLeveldbStore
-import akka.persistence.journal.leveldb.SharedLeveldbJournal
-import akka.util.Timeout
 import akka.pattern.ask
-import akka.actor.Identify
-import akka.actor.ActorIdentity
+import akka.persistence.journal.leveldb.{SharedLeveldbJournal, SharedLeveldbStore}
+import akka.util.Timeout
 import com.actelion.research.arcite.core.transforms.cluster.workers.RWrapperWorker.RunRCode
 import com.actelion.research.arcite.core.transforms.cluster.workers.{RWrapperWorker, WorkExecProd, WorkExecUpperCase}
+import com.typesafe.config.ConfigFactory
+
+import scala.concurrent.duration._
 
 object MainForTrials extends App {
-
 
   if (args.isEmpty) {
     startBackend(2551, "backend")
@@ -47,7 +39,7 @@ object MainForTrials extends App {
     val conf = ConfigFactory.parseString(s"akka.cluster.roles=[$role]").
       withFallback(ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port)).
       withFallback(ConfigFactory.load("transform-cluster"))
-    val system = ActorSystem("ArciteTransClustSys", conf)
+    val system = ActorSystem(StartTransformCluster.transfClustSyst, conf)
 
     startupSharedJournal(system, startStore = (port == 2551), path =
       ActorPath.fromString("akka.tcp://ArciteTransClustSys@127.0.0.1:2551/user/store"))
@@ -63,7 +55,7 @@ object MainForTrials extends App {
     val conf = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port).
       withFallback(ConfigFactory.load("transform-cluster"))
 
-    val system = ActorSystem("ArciteTransClustSys", conf)
+    val system = ActorSystem(StartTransformCluster.transfClustSyst, conf)
 
     val frontend = system.actorOf(Props[Frontend], "frontend")
 
@@ -76,7 +68,7 @@ object MainForTrials extends App {
     val conf = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port).
       withFallback(ConfigFactory.load("transform-worker"))
 
-    val system = ActorSystem("ArciteTransWorkSys", conf)
+    val system = ActorSystem("ArciteTransWorkerSys", conf)
 
     val initialContacts = immutableSeq(conf.getStringList("contact-points")).map {
       case AddressFromURIString(addr) ⇒ RootActorPath(addr) / "system" / "receptionist"
@@ -116,12 +108,4 @@ object MainForTrials extends App {
   }
 }
 
-object TryingOutRWorker extends App {
 
-  val frontEnds = StartTransformCluster.defaultTransformClusterStart()
-  Thread.sleep(5000)
-  StartTransformCluster.addWorker(RWrapperWorker.props())
-  Thread.sleep(5000)
-  val pwd = System.getProperty("user.dir")
-  frontEnds.head ! Work("helloWorld", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
-}

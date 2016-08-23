@@ -62,6 +62,7 @@ class Worker(clusterClient: ActorRef, workExecutorProps: Props, registerInterval
 
   def idle: Receive = {
     case WorkIsReady =>
+      log.debug("sending work is ready")
       sendToMaster(WorkerRequestsWork(workerId))
 
     case Work(workId, job) =>

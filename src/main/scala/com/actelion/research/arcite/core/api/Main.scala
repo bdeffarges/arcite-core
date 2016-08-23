@@ -57,7 +57,7 @@ object Main extends App with RequestTimeout {
   }
 
   // wait for the user to stop the server
-//  println("Press <enter> to exit.")
+//  log.debug("Press <enter> to exit.")
 //  Console.in.read.toChar
   // gracefully shut down the server
   //  import system.dispatcher._

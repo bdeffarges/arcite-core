@@ -8,7 +8,9 @@ import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerS
 import akka.japi.Util._
 import akka.persistence.journal.leveldb.{SharedLeveldbJournal, SharedLeveldbStore}
 import akka.util.Timeout
-import com.actelion.research.arcite.core.transforms.cluster.workers.{WorkExecProd, WorkExecUpperCase}
+import com.actelion.research.arcite.core.transforms.cluster.workers.RWrapperWorker.RunRCode
+import com.actelion.research.arcite.core.transforms.cluster.workers.{RWrapperWorker, WorkExecProd, WorkExecUpperCase}
+import com.actelion.research.arcite.core.utils.Env
 import com.typesafe.config.ConfigFactory
 
 /**
@@ -16,24 +18,27 @@ import com.typesafe.config.ConfigFactory
   */
 object StartTransformCluster {
 
+  val transfClustSyst = ConfigFactory.load.getString("arcite.transform.cluster.system.name")
+
   def workTimeout = 10.seconds
 
-  private val workerActorSystem = startWorkerActorSystem()
-  private val system = workerActorSystem._1
-  private val initialContacts = workerActorSystem._2
+  private val clusterActorSystemAndContacts = startArciteWorkerClusterSystem()
+  private val clusterActorSystem = clusterActorSystemAndContacts._1
+  private val initialContacts = clusterActorSystemAndContacts._2
 
   def defaultTransformClusterStart(): Set[ActorRef] = {
     startBackend(2551, "backend")
     Thread.sleep(5000)
     startBackend(2552, "backend")
     Thread.sleep(5000)
-    startBackend(2553, "backend")
+//    startBackend(2553, "backend")
     Thread.sleep(5000)
     val frontEnd1 = startFrontend(0)
-    Thread.sleep(5000)
-    val frontEnd2 = startFrontend(0)
+//    Thread.sleep(5000)
+//    val frontEnd2 = startFrontend(0)
 
-    Set(frontEnd1, frontEnd2)
+//    Set(frontEnd1, frontEnd2)
+    Set(frontEnd1)
   }
 
   def startBackend(port: Int, role: String) = {
@@ -41,10 +46,10 @@ object StartTransformCluster {
       withFallback(ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port)).
       withFallback(ConfigFactory.load("transform-cluster"))
 
-    val system = ActorSystem("ArciteTransClustSys", conf)
+    val system = ActorSystem(transfClustSyst, conf)
 
     startupSharedJournal(system, startStore = (port == 2551),
-      path = ActorPath.fromString("akka.tcp://ArciteTransClustSys@127.0.0.1:2551/user/store"))
+      path = ActorPath.fromString(s"akka.tcp://$transfClustSyst@127.0.0.1:2551/user/store"))
 
     system.actorOf(ClusterSingletonManager.props(
       Master.props(workTimeout),
@@ -56,15 +61,15 @@ object StartTransformCluster {
     val conf = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port).
       withFallback(ConfigFactory.load("transform-cluster"))
 
-    val system = ActorSystem("ArciteTransClustSys", conf)
+    val system = ActorSystem(transfClustSyst, conf)
 
     system.actorOf(Props[Frontend], "frontend")
   }
 
-  def startWorkerActorSystem(): (ActorSystem, Set[ActorPath]) = {
+  def startArciteWorkerClusterSystem(): (ActorSystem, Set[ActorPath]) = {
     val conf = ConfigFactory.load("transform-worker")
 
-    val system = ActorSystem("ArciteTransWorkSys", conf)
+    val system = ActorSystem(transfClustSyst, conf)
 
     val initialContacts = immutableSeq(conf.getStringList("contact-points")).map {
       case AddressFromURIString(addr) ⇒ RootActorPath(addr) / "system" / "receptionist"
@@ -73,12 +78,16 @@ object StartTransformCluster {
     (system, initialContacts)
   }
 
-  def addWorker(props: Props): Unit = {
+  def addWorker(props: Props, port: Int, name: String): Unit = {
+    val conf = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port).
+      withFallback(ConfigFactory.load("transform-worker"))
+
+    val system = ActorSystem("ArciteTransWorkerSys", conf)
 
     val clusterClient = system.actorOf(
-      ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts)), "WorkerClusterClient")
+      ClusterClient.props(ClusterClientSettings(clusterActorSystem).withInitialContacts(initialContacts)), "WorkerClusterClient")
 
-    system.actorOf(Worker.props(clusterClient, props), "worker")
+    system.actorOf(Worker.props(clusterClient, props), name)
   }
 
   def startupSharedJournal(system: ActorSystem, startStore: Boolean, path: ActorPath): Unit = {
@@ -102,4 +111,22 @@ object StartTransformCluster {
         system.terminate()
     }
   }
+}
+
+
+object TryingOutRWorker extends App {
+
+  val frontEnds = StartTransformCluster.defaultTransformClusterStart()
+  Thread.sleep(5000)
+  StartTransformCluster.addWorker(RWrapperWorker.props(), 2651, "r_worker1")
+  Thread.sleep(5000)
+  val pwd = System.getProperty("user.dir")
+  frontEnds.head ! Work("helloWorld1", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+  Thread.sleep(5000)
+  frontEnds.last ! Work("helloWorld2", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+  Thread.sleep(5000)
+  frontEnds.head ! Work("helloWorld3", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+  Thread.sleep(5000)
+  frontEnds.last ! Work("helloWorld4", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+  Thread.sleep(5000)
 }

@@ -1,10 +1,10 @@
 package com.actelion.research.arcite.core.transforms.cluster
 
 import scala.concurrent.duration._
-import akka.actor.Actor
+import akka.actor.{Actor, ActorLogging}
 import akka.pattern._
 import akka.util.Timeout
-import akka.cluster.singleton.{ClusterSingletonProxySettings, ClusterSingletonProxy}
+import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
 
 object Frontend {
 
@@ -14,7 +14,7 @@ object Frontend {
 
 }
 
-class Frontend extends Actor {
+class Frontend extends Actor with ActorLogging {
 
   import Frontend._
   import context.dispatcher
@@ -26,11 +26,10 @@ class Frontend extends Actor {
 
   def receive = {
     case work =>
+      log.debug(s"got message $work")
       implicit val timeout = Timeout(5.seconds)
       (masterProxy ? work) map {
         case Master.Ack(_) => Ok
       } recover { case _ => NotOk } pipeTo sender()
-
   }
-
 }

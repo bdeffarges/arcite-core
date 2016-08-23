@@ -28,7 +28,7 @@ case class TransformDefinitionLight(fullName: FullName, description: TransformDe
 
 /**
   * Transforms are started from an actor, so here we add to the definition of the transform a props to be able
-  * to get a new actor that weill do the actual transforé job.
+  * to get a new actor that will do the actual transform job.
   *
   * @param definitionLight
   * @param actorProps
@@ -53,7 +53,7 @@ case class TransformSourceRegex(experiment: Experiment, folder: String, regex: S
 
 
 /**
-  * the actual Transform that contain all information for the instance of a transform.
+  * the actual transform that contains all information for the instance of a transform.
   *
   * @param definition
   * @param source

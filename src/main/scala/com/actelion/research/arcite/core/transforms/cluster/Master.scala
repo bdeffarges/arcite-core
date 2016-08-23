@@ -61,6 +61,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
   override def receiveCommand: Receive = {
     case MasterWorkerProtocol.RegisterWorker(workerId) =>
+      log.debug(s"received RegisterWorker for $workerId")
       if (workers.contains(workerId)) {
         workers += (workerId -> workers(workerId).copy(ref = sender()))
         sender() ! GetWorkerType
@@ -73,6 +74,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       }
 
     case MasterWorkerProtocol.WorkerRequestsWork(workerId) =>
+      log.debug("worker requesting work...")
       if (workState.hasWork(workers(workerId).workType)) {
         workers.get(workerId) match {
           case Some(s @ WorkerState(_, Idle, _)) =>
@@ -116,8 +118,10 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       }
 
     case work: Work =>
+      log.debug("master received work...")
       // idempotent
       if (workState.isAccepted(work.workId)) {
+        log.debug("work is accepted...")
         sender() ! Master.Ack(work.workId)
       } else {
         log.info("Accepted work: {}", work.workId)
@@ -148,6 +152,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
   }
 
   def notifyWorkers(): Unit =
+      log.debug("notifying workers")
     if (workState.hasWorkLeft) {
       // could pick a few random instead of all
       workers.foreach {
