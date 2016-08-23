@@ -39,7 +39,7 @@ object MainForTrials extends App {
     val conf = ConfigFactory.parseString(s"akka.cluster.roles=[$role]").
       withFallback(ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port)).
       withFallback(ConfigFactory.load("transform-cluster"))
-    val system = ActorSystem(StartTransformCluster.transfClustSyst, conf)
+    val system = ActorSystem(StartTransformCluster.arcTransfActClustSys, conf)
 
     startupSharedJournal(system, startStore = (port == 2551), path =
       ActorPath.fromString("akka.tcp://ArciteTransClustSys@127.0.0.1:2551/user/store"))
@@ -55,7 +55,7 @@ object MainForTrials extends App {
     val conf = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port).
       withFallback(ConfigFactory.load("transform-cluster"))
 
-    val system = ActorSystem(StartTransformCluster.transfClustSyst, conf)
+    val system = ActorSystem(StartTransformCluster.arcTransfActClustSys, conf)
 
     val frontend = system.actorOf(Props[Frontend], "frontend")
 
@@ -68,7 +68,7 @@ object MainForTrials extends App {
     val conf = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port).
       withFallback(ConfigFactory.load("transform-worker"))
 
-    val system = ActorSystem("ArciteTransWorkerSys", conf)
+    val system = ActorSystem(StartTransformCluster.arcWorkerActClustSys, conf)
 
     val initialContacts = immutableSeq(conf.getStringList("contact-points")).map {
       case AddressFromURIString(addr) ⇒ RootActorPath(addr) / "system" / "receptionist"

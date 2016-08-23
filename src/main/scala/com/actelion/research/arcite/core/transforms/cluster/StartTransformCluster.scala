@@ -18,7 +18,8 @@ import com.typesafe.config.ConfigFactory
   */
 object StartTransformCluster {
 
-  val transfClustSyst = ConfigFactory.load.getString("arcite.transform.cluster.system.name")
+  val arcTransfActClustSys = "ArcTransfActClustSys"
+  val arcWorkerActClustSys = "ArcWorkerActSys"
 
   def workTimeout = 10.seconds
 
@@ -46,10 +47,10 @@ object StartTransformCluster {
       withFallback(ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port)).
       withFallback(ConfigFactory.load("transform-cluster"))
 
-    val system = ActorSystem(transfClustSyst, conf)
+    val system = ActorSystem(arcTransfActClustSys, conf)
 
     startupSharedJournal(system, startStore = (port == 2551),
-      path = ActorPath.fromString(s"akka.tcp://$transfClustSyst@127.0.0.1:2551/user/store"))
+      path = ActorPath.fromString(s"akka.tcp://$arcTransfActClustSys@127.0.0.1:2551/user/store"))
 
     system.actorOf(ClusterSingletonManager.props(
       Master.props(workTimeout),
@@ -61,7 +62,7 @@ object StartTransformCluster {
     val conf = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port).
       withFallback(ConfigFactory.load("transform-cluster"))
 
-    val system = ActorSystem(transfClustSyst, conf)
+    val system = ActorSystem(arcTransfActClustSys, conf)
 
     system.actorOf(Props[Frontend], "frontend")
   }
@@ -69,7 +70,7 @@ object StartTransformCluster {
   def startArciteWorkerClusterSystem(): (ActorSystem, Set[ActorPath]) = {
     val conf = ConfigFactory.load("transform-worker")
 
-    val system = ActorSystem("ArciteTransWorkerSys", conf)
+    val system = ActorSystem(arcWorkerActClustSys, conf)
 
     val initialContacts = immutableSeq(conf.getStringList("contact-points")).map {
       case AddressFromURIString(addr) ⇒ RootActorPath(addr) / "system" / "receptionist"
