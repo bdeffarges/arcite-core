@@ -11,10 +11,13 @@ import akka.util.Timeout
 import com.actelion.research.arcite.core.transforms.cluster.workers.RWrapperWorker.RunRCode
 import com.actelion.research.arcite.core.transforms.cluster.workers.{RWrapperWorker, WorkExecProd, WorkExecUpperCase}
 import com.typesafe.config.ConfigFactory
+import org.slf4j.LoggerFactory
 /**
   * Created by deffabe1 on 7/22/16.
   */
 object StartTransformCluster {
+
+  val logger = LoggerFactory.getLogger(StartTransformCluster.getClass)
 
   val arcTransfActClustSys = "ArcTransfActClustSys"
   val arcWorkerActClustSys = "ArcWorkerActSys"
@@ -27,13 +30,13 @@ object StartTransformCluster {
 
   def defaultTransformClusterStart(): Set[ActorRef] = {
     startBackend(2551, "backend")
-    Thread.sleep(5000)
+    Thread.sleep(1000)
     startBackend(2552, "backend")
-    Thread.sleep(5000)
+    Thread.sleep(1000)
     startBackend(2553, "backend")
-    Thread.sleep(5000)
+    Thread.sleep(1000)
     val frontEnd1 = startFrontend(0)
-    Thread.sleep(5000)
+    Thread.sleep(1000)
     val frontEnd2 = startFrontend(0)
     Set(frontEnd1, frontEnd2)
   }
@@ -78,13 +81,13 @@ object StartTransformCluster {
   def addWorker(props: Props, name: String): Unit = {
 
     val clusterClient = system.actorOf(
-      ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts)), s"WorkerClusterClient-$name")
+      ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts)), "WorkerClusterClient")
 
     system.actorOf(Worker.props(clusterClient, props), name)
   }
 
   def startupSharedJournal(system: ActorSystem, startStore: Boolean, path: ActorPath): Unit = {
-    // Start the shared journal one one node (don't crash this SPOF)
+    // Start the shared journal on one node (don't crash this SPOF)
     // This will not be needed with a distributed journal
     if (startStore)
       system.actorOf(Props[SharedLeveldbStore], "store")
@@ -109,6 +112,7 @@ object StartTransformCluster {
 
 object TryingOutRWorker extends App {
 
+  val logger = LoggerFactory.getLogger(TryingOutRWorker.getClass)
 //  val frontEnds = StartTransformCluster.defaultTransformClusterStart()
 //  Thread.sleep(5000)
 //  StartTransformCluster.addWorker(RWrapperWorker.props(), "r_worker1")
@@ -127,9 +131,10 @@ object TryingOutRWorker extends App {
 //  Thread.sleep(5000)
 //
   val frontEnds = StartTransformCluster.defaultTransformClusterStart()
-  Thread.sleep(5000)
-  StartTransformCluster.addWorker(RWrapperWorker.props(), "w1")
-  Thread.sleep(5000)
+  Thread.sleep(1000)
+  StartTransformCluster.addWorker(RWrapperWorker.props(), "worker")
+  Thread.sleep(1000)
   val pwd = System.getProperty("user.dir")
+  logger.debug("sending work request...")
   frontEnds.head ! Work("helloWorld", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
 }
