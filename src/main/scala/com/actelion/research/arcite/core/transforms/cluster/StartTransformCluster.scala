@@ -10,9 +10,7 @@ import akka.persistence.journal.leveldb.{SharedLeveldbJournal, SharedLeveldbStor
 import akka.util.Timeout
 import com.actelion.research.arcite.core.transforms.cluster.workers.RWrapperWorker.RunRCode
 import com.actelion.research.arcite.core.transforms.cluster.workers.{RWrapperWorker, WorkExecProd, WorkExecUpperCase}
-import com.actelion.research.arcite.core.utils.Env
 import com.typesafe.config.ConfigFactory
-
 /**
   * Created by deffabe1 on 7/22/16.
   */
@@ -77,10 +75,10 @@ object StartTransformCluster {
     (system, initialContacts)
   }
 
-  def addWorker(props: Props, port: Int, name: String): Unit = {
+  def addWorker(props: Props, name: String): Unit = {
 
     val clusterClient = system.actorOf(
-      ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts)), "WorkerClusterClient")
+      ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts)), s"WorkerClusterClient-$name")
 
     system.actorOf(Worker.props(clusterClient, props), name)
   }
@@ -111,17 +109,27 @@ object StartTransformCluster {
 
 object TryingOutRWorker extends App {
 
-  val frontEnds = StartTransformCluster.defaultTransformClusterStart()
-  Thread.sleep(5000)
-  StartTransformCluster.addWorker(RWrapperWorker.props(), 0, "r_worker1")
-  Thread.sleep(5000)
-  val pwd = System.getProperty("user.dir")
-  frontEnds.head ! Work("helloWorld1", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
-  Thread.sleep(5000)
+//  val frontEnds = StartTransformCluster.defaultTransformClusterStart()
+//  Thread.sleep(5000)
+//  StartTransformCluster.addWorker(RWrapperWorker.props(), "r_worker1")
+//  StartTransformCluster.addWorker(RWrapperWorker.props(), "r_worker2")
+//  StartTransformCluster.addWorker(RWrapperWorker.props(), "r_worker3")
+//  StartTransformCluster.addWorker(RWrapperWorker.props(), "r_worker4")
+//  Thread.sleep(5000)
+//  val pwd = System.getProperty("user.dir")
+//  frontEnds.head ! Work("helloWorld1", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+//  Thread.sleep(5000)
 //  frontEnds.last ! Work("helloWorld2", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
 //  Thread.sleep(5000)
 //  frontEnds.head ! Work("helloWorld3", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
 //  Thread.sleep(5000)
 //  frontEnds.last ! Work("helloWorld4", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
 //  Thread.sleep(5000)
+//
+  val frontEnds = StartTransformCluster.defaultTransformClusterStart()
+  Thread.sleep(5000)
+  StartTransformCluster.addWorker(RWrapperWorker.props(), "w1")
+  Thread.sleep(5000)
+  val pwd = System.getProperty("user.dir")
+  frontEnds.head ! Work("helloWorld", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
 }
