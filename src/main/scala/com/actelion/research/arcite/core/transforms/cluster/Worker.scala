@@ -42,6 +42,8 @@ class Worker(clusterClient: ActorRef, workExecutorProps: Props, registerInterval
 
   var currentWorkId: Option[String] = None
 
+  log.info(s"worker [$workerId] for executor [$workExecutor] with props [$workExecutorProps] created.")
+
   def workId: String = currentWorkId match {
     case Some(workId) => workId
     case None => throw new IllegalStateException("Not working")
@@ -62,7 +64,7 @@ class Worker(clusterClient: ActorRef, workExecutorProps: Props, registerInterval
 
   def idle: Receive = {
     case WorkIsReady =>
-      log.debug("sending work is ready")
+      log.info("received work is ready")
       sendToMaster(WorkerRequestsWork(workerId))
 
     case Work(workId, job) =>
@@ -72,7 +74,7 @@ class Worker(clusterClient: ActorRef, workExecutorProps: Props, registerInterval
       context.become(working)
 
     case GetWorkerType ⇒
-      log.debug(s"asking executor for its worker type...")
+      log.info(s"asked for my (worker) workerType type...")
       workExecutor ! GetWorkerTypeFor(workerId)
 
     case wt: WorkerType ⇒

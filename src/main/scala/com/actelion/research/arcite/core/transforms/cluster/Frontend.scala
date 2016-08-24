@@ -24,13 +24,12 @@ class Frontend extends Actor with ActorLogging {
       settings = ClusterSingletonProxySettings(context.system).withRole("backend"),
       singletonManagerPath = "/user/master"), name = "masterProxy")
 
-  println(s"master proxy=$masterProxy")
+  log.info(s"master proxy=$masterProxy")
 
   def receive = {
     case work =>
-      println(s"got message $work")
-      log.debug(s"got message $work")
-      implicit val timeout = Timeout(5.seconds)
+      log.info(s"got work message [$work]")
+      implicit val timeout = Timeout(20.seconds)
       (masterProxy ? work) map {
         case Master.Ack(_) => Ok
       } recover { case _ => NotOk } pipeTo sender()

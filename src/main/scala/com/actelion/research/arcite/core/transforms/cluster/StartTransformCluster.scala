@@ -9,9 +9,12 @@ import akka.japi.Util._
 import akka.persistence.journal.leveldb.{SharedLeveldbJournal, SharedLeveldbStore}
 import akka.util.Timeout
 import com.actelion.research.arcite.core.transforms.cluster.workers.RWrapperWorker.RunRCode
+import com.actelion.research.arcite.core.transforms.cluster.workers.WorkExecProd.CalcProd
+import com.actelion.research.arcite.core.transforms.cluster.workers.WorkExecUpperCase.ToUpperCase
 import com.actelion.research.arcite.core.transforms.cluster.workers.{RWrapperWorker, WorkExecProd, WorkExecUpperCase}
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
+
 /**
   * Created by deffabe1 on 7/22/16.
   */
@@ -24,9 +27,13 @@ object StartTransformCluster {
 
   def workTimeout = 10.seconds
 
-  private val workerActorSystem = startArciteWorkerClusterSystem()
-  private val system = workerActorSystem._1
-  private val initialContacts = workerActorSystem._2
+  val workConf = ConfigFactory.load("transform-worker")
+
+  private val workSystem = ActorSystem(arcWorkerActClustSys, workConf)
+
+  private val initialContacts = immutableSeq(workConf.getStringList("contact-points")).map {
+    case AddressFromURIString(addr) ⇒ RootActorPath(addr) / "system" / "receptionist"
+  }.toSet
 
   def defaultTransformClusterStart(): Set[ActorRef] = {
     startBackend(2551, "backend")
@@ -55,6 +62,8 @@ object StartTransformCluster {
       Master.props(workTimeout),
       PoisonPill,
       ClusterSingletonManagerSettings(system).withRole(role)), "master")
+
+
   }
 
   def startFrontend(port: Int): ActorRef = {
@@ -66,24 +75,14 @@ object StartTransformCluster {
     system.actorOf(Props[Frontend], "frontend")
   }
 
-  def startArciteWorkerClusterSystem(): (ActorSystem, Set[ActorPath]) = {
-    val conf = ConfigFactory.load("transform-worker")
-
-    val system = ActorSystem(arcWorkerActClustSys, conf)
-
-    val initialContacts = immutableSeq(conf.getStringList("contact-points")).map {
-      case AddressFromURIString(addr) ⇒ RootActorPath(addr) / "system" / "receptionist"
-    }.toSet
-
-    (system, initialContacts)
-  }
-
   def addWorker(props: Props, name: String): Unit = {
 
-    val clusterClient = system.actorOf(
-      ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts)), "WorkerClusterClient")
+    val clusterClient = workSystem.actorOf(
+      ClusterClient.props(
+        ClusterClientSettings(workSystem).withInitialContacts(initialContacts)
+      ), "WorkerClusterClient")
 
-    system.actorOf(Worker.props(clusterClient, props), name)
+    workSystem.actorOf(Worker.props(clusterClient, props), name)
   }
 
   def startupSharedJournal(system: ActorSystem, startStore: Boolean, path: ActorPath): Unit = {
@@ -107,34 +106,38 @@ object StartTransformCluster {
         system.terminate()
     }
   }
-}
 
-
-object TryingOutRWorker extends App {
-
-  val logger = LoggerFactory.getLogger(TryingOutRWorker.getClass)
-//  val frontEnds = StartTransformCluster.defaultTransformClusterStart()
-//  Thread.sleep(5000)
-//  StartTransformCluster.addWorker(RWrapperWorker.props(), "r_worker1")
-//  StartTransformCluster.addWorker(RWrapperWorker.props(), "r_worker2")
-//  StartTransformCluster.addWorker(RWrapperWorker.props(), "r_worker3")
-//  StartTransformCluster.addWorker(RWrapperWorker.props(), "r_worker4")
-//  Thread.sleep(5000)
-//  val pwd = System.getProperty("user.dir")
-//  frontEnds.head ! Work("helloWorld1", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
-//  Thread.sleep(5000)
-//  frontEnds.last ! Work("helloWorld2", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
-//  Thread.sleep(5000)
-//  frontEnds.head ! Work("helloWorld3", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
-//  Thread.sleep(5000)
-//  frontEnds.last ! Work("helloWorld4", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
-//  Thread.sleep(5000)
-//
-  val frontEnds = StartTransformCluster.defaultTransformClusterStart()
-  Thread.sleep(1000)
-  StartTransformCluster.addWorker(RWrapperWorker.props(), "worker")
-  Thread.sleep(1000)
-  val pwd = System.getProperty("user.dir")
-  logger.debug("sending work request...")
-  frontEnds.head ! Work("helloWorld", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+  def main(args: Array[String]): Unit = {
+    val logger = LoggerFactory.getLogger(StartTransformCluster.getClass)
+    //  val frontEnds = StartTransformCluster.defaultTransformClusterStart()
+    //  Thread.sleep(5000)
+    //  StartTransformCluster.addWorker(RWrapperWorker.props(), "r_worker1")
+    //  StartTransformCluster.addWorker(RWrapperWorker.props(), "r_worker2")
+    //  StartTransformCluster.addWorker(RWrapperWorker.props(), "r_worker3")
+    //  StartTransformCluster.addWorker(RWrapperWorker.props(), "r_worker4")
+    //  Thread.sleep(5000)
+    //  val pwd = System.getProperty("user.dir")
+    //  frontEnds.head ! Work("helloWorld1", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+    //  Thread.sleep(5000)
+    //  frontEnds.last ! Work("helloWorld2", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+    //  Thread.sleep(5000)
+    //  frontEnds.head ! Work("helloWorld3", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+    //  Thread.sleep(5000)
+    //  frontEnds.last ! Work("helloWorld4", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+    //  Thread.sleep(5000)
+    //
+    val frontEnds = StartTransformCluster.defaultTransformClusterStart()
+    Thread.sleep(1000)
+    StartTransformCluster.addWorker(RWrapperWorker.props(), "worker")
+    Thread.sleep(1000)
+    val pwd = System.getProperty("user.dir")
+    logger.debug("sending work request...")
+    frontEnds.head ! Work("helloWorld", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+    Thread.sleep(1000)
+//    frontEnds.last ! Work("uppercase1", Job(ToUpperCase("hello world how are you doing"), "ToUpperCase"))
+//    Thread.sleep(1000)
+//    frontEnds.head ! Work("calcProduct1", Job(CalcProd(10), "product"))
+//    Thread.sleep(1000)
+//    frontEnds.last ! Work("uppercase2", Job(ToUpperCase("earth"), "ToUpperCase"))
+  }
 }

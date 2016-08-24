@@ -18,7 +18,9 @@ object Master {
   case class Ack(workId: String)
 
   private sealed trait WorkerStatus
+
   private case object Idle extends WorkerStatus
+
   private case class Busy(workId: String, deadline: Deadline) extends WorkerStatus
 
   private case class WorkerState(ref: ActorRef, status: WorkerStatus, workType: String = "?")
@@ -28,16 +30,18 @@ object Master {
 }
 
 class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogging {
+
   import Master._
   import WorkState._
 
   val mediator = DistributedPubSub(context.system).mediator
+
   ClusterClientReceptionist(context.system).registerService(self)
 
   // persistenceId must include cluster role to support multiple masters
   override def persistenceId: String = Cluster(context.system).selfRoles.find(_.startsWith("backend-")) match {
     case Some(role) ⇒ role + "-master"
-    case None       ⇒ "master"
+    case None ⇒ "master"
   }
 
   // workers state is not event sourced
@@ -47,6 +51,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
   private var workState = WorkState.empty
 
   import context.dispatcher
+
   val cleanupTask = context.system.scheduler.schedule(workTimeout / 2, workTimeout / 2,
     self, CleanupTick)
 
@@ -61,7 +66,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
   override def receiveCommand: Receive = {
     case MasterWorkerProtocol.RegisterWorker(workerId) =>
-      log.debug(s"received RegisterWorker for $workerId")
+      log.info(s"received RegisterWorker for $workerId")
       if (workers.contains(workerId)) {
         workers += (workerId -> workers(workerId).copy(ref = sender()))
         sender() ! GetWorkerType
@@ -69,15 +74,15 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
         log.info("Worker registered: {}", workerId)
         workers += (workerId -> WorkerState(sender(), status = Idle))
         sender() ! GetWorkerType
-//        if (workState.hasWork())
-//          sender() ! MasterWorkerProtocol.WorkIsReady
+        //        if (workState.hasWorkLeft)
+        //          sender() ! MasterWorkerProtocol.WorkIsReady
       }
 
     case MasterWorkerProtocol.WorkerRequestsWork(workerId) =>
-      log.debug("worker requesting work...")
+      log.info("worker requesting work...")
       if (workState.hasWork(workers(workerId).workType)) {
         workers.get(workerId) match {
-          case Some(s @ WorkerState(_, Idle, _)) =>
+          case Some(s@WorkerState(_, Idle, _)) =>
             val work = workState.nextWork(s.workType)
             persist(WorkStarted(work.workId)) { event =>
               workState = workState.updated(event)
@@ -118,10 +123,10 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       }
 
     case work: Work =>
-      log.debug("master received work...")
+      log.info("master received work...")
       // idempotent
       if (workState.isAccepted(work.workId)) {
-        log.debug("work is accepted...")
+        log.info("work is accepted...")
         sender() ! Master.Ack(work.workId)
       } else {
         log.info("Accepted work: {}", work.workId)
@@ -134,7 +139,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       }
 
     case CleanupTick =>
-      for ((workerId, s @ WorkerState(_, Busy(workId, timeout), _)) ← workers) {
+      for ((workerId, s@WorkerState(_, Busy(workId, timeout), _)) ← workers) {
         if (timeout.isOverdue) {
           log.info("Work timed out: {}", workId)
           workers -= workerId
@@ -151,19 +156,18 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
   }
 
-  def notifyWorkers(): Unit =
-      log.debug("notifying workers")
-    if (workState.hasWorkLeft) {
-      // could pick a few random instead of all
-      workers.foreach {
-        case (_, WorkerState(ref, Idle, _)) => ref ! MasterWorkerProtocol.WorkIsReady
-        case _                           => // busy
-      }
+  def notifyWorkers(): Unit = if (workState.hasWorkLeft) {
+    log.info("has work left")
+    // could pick a few random instead of all
+    workers.foreach {
+      case (_, WorkerState(ref, Idle, _)) => ref ! MasterWorkerProtocol.WorkIsReady
+      case _ => // busy
     }
+  }
 
   def changeWorkerToIdle(workerId: String, workId: String): Unit =
     workers.get(workerId) match {
-      case Some(s @ WorkerState(_, Busy(`workId`, _), _)) ⇒
+      case Some(s@WorkerState(_, Busy(`workId`, _), _)) ⇒
         workers += (workerId -> s.copy(status = Idle))
       case _ ⇒
       // ok, might happen after standby recovery, worker state is not persisted

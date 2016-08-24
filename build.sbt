@@ -31,7 +31,7 @@ resolvers ++= Seq(
   "Sonatype Actelion releases" at "http://bioinfo.it.actelion.com/nexus/content/repositories/releases/")
 
 libraryDependencies ++= {
-  val akkaVersion = "2.4.8"
+  val akkaVersion = "2.4.9"
   val sparkVersion = "1.6.2"
   val luceneVersion = "5.0.0"
 

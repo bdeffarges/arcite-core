@@ -10,6 +10,7 @@ import akka.util.Timeout
 import com.actelion.research.arcite.core.transforms.cluster.workers.RWrapperWorker.RunRCode
 import com.actelion.research.arcite.core.transforms.cluster.workers.{RWrapperWorker, WorkExecProd, WorkExecUpperCase}
 import com.typesafe.config.ConfigFactory
+import org.slf4j.LoggerFactory
 
 import scala.concurrent.duration._
 
@@ -108,4 +109,32 @@ object MainForTrials extends App {
   }
 }
 
-
+//
+//object TryingOutRWorker extends App {
+//
+//  val logger = LoggerFactory.getLogger(TryingOutRWorker.getClass)
+////  val frontEnds = StartTransformCluster.defaultTransformClusterStart()
+////  Thread.sleep(5000)
+////  StartTransformCluster.addWorker(RWrapperWorker.props(), "r_worker1")
+////  StartTransformCluster.addWorker(RWrapperWorker.props(), "r_worker2")
+////  StartTransformCluster.addWorker(RWrapperWorker.props(), "r_worker3")
+////  StartTransformCluster.addWorker(RWrapperWorker.props(), "r_worker4")
+////  Thread.sleep(5000)
+////  val pwd = System.getProperty("user.dir")
+////  frontEnds.head ! Work("helloWorld1", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+////  Thread.sleep(5000)
+////  frontEnds.last ! Work("helloWorld2", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+////  Thread.sleep(5000)
+////  frontEnds.head ! Work("helloWorld3", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+////  Thread.sleep(5000)
+////  frontEnds.last ! Work("helloWorld4", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+////  Thread.sleep(5000)
+////
+//  val frontEnds = StartTransformCluster.defaultTransformClusterStart()
+//  Thread.sleep(1000)
+//  StartTransformCluster.addWorker(RWrapperWorker.props())
+//  Thread.sleep(1000)
+//  val pwd = System.getProperty("user.dir")
+//  logger.debug("sending work request...")
+//  frontEnds.head ! Work("helloWorld", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+//}
