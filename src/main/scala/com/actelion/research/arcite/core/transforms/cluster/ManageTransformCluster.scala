@@ -15,6 +15,8 @@ import com.actelion.research.arcite.core.transforms.cluster.workers.{RWrapperWor
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 
+import scala.concurrent.forkjoin.ThreadLocalRandom
+
 /**
   * Created by deffabe1 on 7/22/16.
   */
@@ -38,10 +40,10 @@ object ManageTransformCluster {
 
   logger.info(s"work initial contacts: $workInitialContacts")
 
-  def defaultTransformClusterStart(backendPorts: Seq[Int], frontEnds: Int): Set[ActorRef] = {
+  def defaultTransformClusterStart(backendPorts: Seq[Int], frontEnds: Int): Seq[ActorRef] = {
     backendPorts.foreach(startBackend(_, "backend"))
 
-    (0 to frontEnds).map(_ ⇒ startFrontend(0)).toSet
+    (0 to frontEnds).map(_ ⇒ startFrontend(0))
   }
 
   def startBackend(port: Int, role: String) = {
@@ -69,6 +71,8 @@ object ManageTransformCluster {
     val system = ActorSystem(arcTransfActClustSys, conf)
 
     system.actorOf(Props[Frontend], "frontend")
+
+//    system.actorOf(Props[WorkResultConsumer], "consumer")
   }
 
   def addWorker(props: Props, name: String): Unit = {
@@ -105,6 +109,11 @@ object ManageTransformCluster {
     }
   }
 
+  /**
+    * to test the cluster
+    *
+    * @param args
+    */
   def main(args: Array[String]): Unit = {
     val logger = LoggerFactory.getLogger(ManageTransformCluster.getClass)
     val frontEnds = ManageTransformCluster.defaultTransformClusterStart(Seq(2551, 2552, 2553, 2554, 2555, 2556, 2557, 2558), 30)
@@ -126,21 +135,24 @@ object ManageTransformCluster {
 
     val pwd = System.getProperty("user.dir")
 
-    (0 to 1000).foreach {i ⇒
+    val rnd = ThreadLocalRandom.current
+    val s = frontEnds.size
+
+    (0 to 1000).foreach { i ⇒
       println(s"counter $i")
-      frontEnds.head ! Work("R_helloWorld1", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+      frontEnds(rnd.nextInt(s)) ! Work("R_helloWorld1", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
       Thread.sleep(100)
-      frontEnds.last ! Work("uppercase1", Job(ToUpperCase("hello world, how are you doing"), "ToUpperCase"))
+      frontEnds(rnd.nextInt(s)) ! Work("uppercase1", Job(ToUpperCase("hello world, how are you doing"), "ToUpperCase"))
       Thread.sleep(100)
-      frontEnds.head ! Work("calcProduct1", Job(CalcProd(10), "product"))
+      frontEnds(rnd.nextInt(s)) ! Work("calcProduct1", Job(CalcProd(10), "product"))
       Thread.sleep(100)
-      frontEnds.last ! Work("uppercase2", Job(ToUpperCase("earth"), "ToUpperCase"))
+      frontEnds(rnd.nextInt(s)) ! Work("uppercase2", Job(ToUpperCase("earth"), "ToUpperCase"))
       Thread.sleep(100)
-      frontEnds.last ! Work("R_helloWorld2", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+      frontEnds(rnd.nextInt(s)) ! Work("R_helloWorld2", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
       Thread.sleep(500)
-      frontEnds.head ! Work("calcProduct1", Job(CalcProd(110), "product"))
-      frontEnds.head ! Work("helloWorld3", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
-      frontEnds.last ! Work("helloWorld4", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+      frontEnds(rnd.nextInt(s)) ! Work("calcProduct1", Job(CalcProd(110), "product"))
+      frontEnds(rnd.nextInt(s)) ! Work("helloWorld3", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+      frontEnds(rnd.nextInt(s)) ! Work("helloWorld4", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
       Thread.sleep(500)
     }
   }

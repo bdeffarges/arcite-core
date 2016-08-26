@@ -63,6 +63,8 @@ case class WorkState private(
     pendingWork.find(_.job.jobType == wType)
   }
 
+  def pendingJobs(): Int = pendingWork.size
+
   def isAccepted(workId: String): Boolean = acceptedWorkIds.contains(workId)
 
   def isInProgress(workId: String): Boolean = workInProgress.contains(workId)

@@ -35,6 +35,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
   import WorkState._
 
   val mediator = DistributedPubSub(context.system).mediator
+  log.info(s"mediator= $mediator")
 
   ClusterClientReceptionist(context.system).registerService(self)
 
@@ -79,7 +80,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       }
 
     case MasterWorkerProtocol.WorkerRequestsWork(workerId) =>
-      log.info("worker requesting work... do we have something for him?")
+      log.info(s"total pending jobs = ${workState.pendingJobs()} worker requesting work... do we have something for him?")
       if (workState.hasWork(workers(workerId).workType)) {
         workers.get(workerId) match {
           case Some(s@WorkerState(_, Idle, _)) =>
