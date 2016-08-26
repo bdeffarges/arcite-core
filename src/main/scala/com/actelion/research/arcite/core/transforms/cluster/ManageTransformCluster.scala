@@ -72,7 +72,7 @@ object ManageTransformCluster {
 
     system.actorOf(Props[Frontend], "frontend")
 
-//    system.actorOf(Props[WorkResultConsumer], "consumer")
+    system.actorOf(Props[WorkResultConsumer], "consumer")
   }
 
   def addWorker(props: Props, name: String): Unit = {
