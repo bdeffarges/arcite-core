@@ -1,9 +1,10 @@
 package com.actelion.research.arcite.core.transforms.cluster.workers
 
-import akka.actor.{Actor, ActorLogging}
+import akka.actor.{Actor, ActorLogging, Props}
 import com.actelion.research.arcite.core.transforms.cluster.{GetWorkerTypeFor, Worker, WorkerType}
 
 class WorkExecUpperCase extends Actor with ActorLogging {
+
   import WorkExecUpperCase._
 
   def receive = {
@@ -20,6 +21,8 @@ class WorkExecUpperCase extends Actor with ActorLogging {
 
 object WorkExecUpperCase {
   val jobType = "ToUpperCase"
+
+  def props(): Props = Props(classOf[WorkExecUpperCase])
 
   case class ToUpperCase(stg: String)
 

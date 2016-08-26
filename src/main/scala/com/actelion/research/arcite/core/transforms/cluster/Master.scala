@@ -79,16 +79,19 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       }
 
     case MasterWorkerProtocol.WorkerRequestsWork(workerId) =>
-      log.info("worker requesting work...")
+      log.info("worker requesting work... do we have something for him?")
       if (workState.hasWork(workers(workerId).workType)) {
         workers.get(workerId) match {
           case Some(s@WorkerState(_, Idle, _)) =>
-            val work = workState.nextWork(s.workType)
-            persist(WorkStarted(work.workId)) { event =>
-              workState = workState.updated(event)
-              log.info("Giving worker {} some work {}", workerId, work.workId)
-              workers += (workerId -> s.copy(status = Busy(work.workId, Deadline.now + workTimeout)))
-              sender() ! work
+            val w = workState.nextWork(s.workType)
+            if (w.nonEmpty) {
+              val work = w.get
+              persist(WorkStarted(work.workId)) { event =>
+                log.info(s"Giving worker [$workerId] something to do [${work.workId}]")
+                workState = workState.updated(event)
+                workers += (workerId -> s.copy(status = Busy(work.workId, Deadline.now + workTimeout)))
+                sender() ! work
+              }
             }
           case _ =>
         }
@@ -161,7 +164,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
     // could pick a few random instead of all
     workers.foreach {
       case (_, WorkerState(ref, Idle, _)) => ref ! MasterWorkerProtocol.WorkIsReady
-      case _ => // busy
+      case _ => // worker is busy
     }
   }
 

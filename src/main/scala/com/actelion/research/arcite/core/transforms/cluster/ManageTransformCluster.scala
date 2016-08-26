@@ -18,34 +18,30 @@ import org.slf4j.LoggerFactory
 /**
   * Created by deffabe1 on 7/22/16.
   */
-object StartTransformCluster {
+object ManageTransformCluster {
 
-  val logger = LoggerFactory.getLogger(StartTransformCluster.getClass)
+  val logger = LoggerFactory.getLogger(ManageTransformCluster.getClass)
 
   val arcTransfActClustSys = "ArcTransfActClustSys"
-  val arcWorkerActClustSys = "ArcWorkerActSys"
+
+  val arcWorkerActSys = "ArcWorkerActSys"
 
   def workTimeout = 10.seconds
 
   val workConf = ConfigFactory.load("transform-worker")
 
-  private val workSystem = ActorSystem(arcWorkerActClustSys, workConf)
+  private val workSystem = ActorSystem(arcWorkerActSys, workConf)
 
-  private val initialContacts = immutableSeq(workConf.getStringList("contact-points")).map {
+  private val workInitialContacts = immutableSeq(workConf.getStringList("contact-points")).map {
     case AddressFromURIString(addr) ⇒ RootActorPath(addr) / "system" / "receptionist"
   }.toSet
 
-  def defaultTransformClusterStart(): Set[ActorRef] = {
-    startBackend(2551, "backend")
-    Thread.sleep(1000)
-    startBackend(2552, "backend")
-    Thread.sleep(1000)
-    startBackend(2553, "backend")
-    Thread.sleep(1000)
-    val frontEnd1 = startFrontend(0)
-    Thread.sleep(1000)
-    val frontEnd2 = startFrontend(0)
-    Set(frontEnd1, frontEnd2)
+  logger.info(s"work initial contacts: $workInitialContacts")
+
+  def defaultTransformClusterStart(backendPorts: Seq[Int], frontEnds: Int): Set[ActorRef] = {
+    backendPorts.foreach(startBackend(_, "backend"))
+
+    (0 to frontEnds).map(_ ⇒ startFrontend(0)).toSet
   }
 
   def startBackend(port: Int, role: String) = {
@@ -79,8 +75,8 @@ object StartTransformCluster {
 
     val clusterClient = workSystem.actorOf(
       ClusterClient.props(
-        ClusterClientSettings(workSystem).withInitialContacts(initialContacts)
-      ), "WorkerClusterClient")
+        ClusterClientSettings(workSystem).withInitialContacts(workInitialContacts)
+      ), s"WorkerClusterClient-$name")
 
     workSystem.actorOf(Worker.props(clusterClient, props), name)
   }
@@ -93,7 +89,9 @@ object StartTransformCluster {
     // register the shared journal
     import system.dispatcher
     implicit val timeout = Timeout(15.seconds)
+
     val f = (system.actorSelection(path) ? Identify(None))
+
     f.onSuccess {
       case ActorIdentity(_, Some(ref)) => SharedLeveldbJournal.setStore(ref, system)
       case _ =>
@@ -108,36 +106,34 @@ object StartTransformCluster {
   }
 
   def main(args: Array[String]): Unit = {
-    val logger = LoggerFactory.getLogger(StartTransformCluster.getClass)
-    //  val frontEnds = StartTransformCluster.defaultTransformClusterStart()
-    //  Thread.sleep(5000)
-    //  StartTransformCluster.addWorker(RWrapperWorker.props(), "r_worker1")
-    //  StartTransformCluster.addWorker(RWrapperWorker.props(), "r_worker2")
-    //  StartTransformCluster.addWorker(RWrapperWorker.props(), "r_worker3")
-    //  StartTransformCluster.addWorker(RWrapperWorker.props(), "r_worker4")
-    //  Thread.sleep(5000)
-    //  val pwd = System.getProperty("user.dir")
-    //  frontEnds.head ! Work("helloWorld1", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
-    //  Thread.sleep(5000)
-    //  frontEnds.last ! Work("helloWorld2", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
-    //  Thread.sleep(5000)
-    //  frontEnds.head ! Work("helloWorld3", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
-    //  Thread.sleep(5000)
-    //  frontEnds.last ! Work("helloWorld4", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
-    //  Thread.sleep(5000)
-    //
-    val frontEnds = StartTransformCluster.defaultTransformClusterStart()
+    val logger = LoggerFactory.getLogger(ManageTransformCluster.getClass)
+    val frontEnds = ManageTransformCluster.defaultTransformClusterStart(Seq(2551, 2552, 2553, 2554), 4)
     Thread.sleep(1000)
-    StartTransformCluster.addWorker(RWrapperWorker.props(), "worker")
+
+    ManageTransformCluster.addWorker(RWrapperWorker.props(), "r_worker1")
+    ManageTransformCluster.addWorker(RWrapperWorker.props(), "r_worker2")
+    ManageTransformCluster.addWorker(RWrapperWorker.props(), "r_worker3")
+    ManageTransformCluster.addWorker(RWrapperWorker.props(), "r_worker4")
+    ManageTransformCluster.addWorker(WorkExecProd.props(), "prod-worker1")
+    ManageTransformCluster.addWorker(WorkExecUpperCase.props(), "upper-worker1")
+
     Thread.sleep(1000)
     val pwd = System.getProperty("user.dir")
-    logger.debug("sending work request...")
-    frontEnds.head ! Work("helloWorld", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+    frontEnds.head ! Work("R_helloWorld1", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
     Thread.sleep(1000)
-//    frontEnds.last ! Work("uppercase1", Job(ToUpperCase("hello world how are you doing"), "ToUpperCase"))
-//    Thread.sleep(1000)
-//    frontEnds.head ! Work("calcProduct1", Job(CalcProd(10), "product"))
-//    Thread.sleep(1000)
-//    frontEnds.last ! Work("uppercase2", Job(ToUpperCase("earth"), "ToUpperCase"))
+    frontEnds.last ! Work("uppercase1", Job(ToUpperCase("hello world, how are you doing"), "ToUpperCase"))
+    Thread.sleep(1000)
+    frontEnds.head ! Work("calcProduct1", Job(CalcProd(10), "product"))
+    Thread.sleep(1000)
+    frontEnds.last ! Work("uppercase2", Job(ToUpperCase("earth"), "ToUpperCase"))
+    Thread.sleep(1000)
+    frontEnds.last ! Work("R_helloWorld2", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+    Thread.sleep(5000)
+    frontEnds.head ! Work("calcProduct1", Job(CalcProd(110), "product"))
+    Thread.sleep(1000)
+    frontEnds.head ! Work("helloWorld3", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+    Thread.sleep(5000)
+    frontEnds.last ! Work("helloWorld4", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+    Thread.sleep(5000)
   }
 }

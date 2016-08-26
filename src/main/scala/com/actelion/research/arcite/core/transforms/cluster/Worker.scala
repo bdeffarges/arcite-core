@@ -64,7 +64,7 @@ class Worker(clusterClient: ActorRef, workExecutorProps: Props, registerInterval
 
   def idle: Receive = {
     case WorkIsReady =>
-      log.info("received work is ready")
+      log.info("received [WorkIsReady]")
       sendToMaster(WorkerRequestsWork(workerId))
 
     case Work(workId, job) =>
@@ -74,7 +74,7 @@ class Worker(clusterClient: ActorRef, workExecutorProps: Props, registerInterval
       context.become(working)
 
     case GetWorkerType ⇒
-      log.info(s"asked for my (worker) workerType type...")
+      log.info(s"asked for my [$self] workerType ")
       workExecutor ! GetWorkerTypeFor(workerId)
 
     case wt: WorkerType ⇒

@@ -59,8 +59,8 @@ case class WorkState private(
     pendingWork.exists(_.job.jobType == wType)
   }
 
-  def nextWork(wType: String): Work = {
-    pendingWork.filter(_.job.jobType == wType).head
+  def nextWork(wType: String): Option[Work] = {
+    pendingWork.find(_.job.jobType == wType)
   }
 
   def isAccepted(workId: String): Boolean = acceptedWorkIds.contains(workId)
@@ -76,11 +76,16 @@ case class WorkState private(
         acceptedWorkIds = acceptedWorkIds + work.workId)
 
     case WorkStarted(workId) ⇒
-      val (work, rest) = pendingWork.dequeue
-      require(workId == work.workId, s"WorkStarted expected workId $workId == ${work.workId}")
-      copy(
-        pendingWork = rest,
-        workInProgress = workInProgress + (workId -> work))
+      val w = pendingWork.find(_.workId == workId)
+
+      if (w.nonEmpty) {
+        val (work, rest) = (w.get, pendingWork.filterNot(w.get == _))
+        copy(
+          pendingWork = rest,
+          workInProgress = workInProgress + (workId -> work))
+      } else {
+        this
+      }
 
     case WorkCompleted(workId, result) ⇒
       copy(

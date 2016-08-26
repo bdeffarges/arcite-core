@@ -1,6 +1,6 @@
 package com.actelion.research.arcite.core.transforms.cluster.workers
 
-import akka.actor.{Actor, ActorLogging}
+import akka.actor.{Actor, ActorLogging, Props}
 import com.actelion.research.arcite.core.transforms.cluster.{GetWorkerTypeFor, Worker, WorkerType}
 
 class WorkExecProd extends Actor with ActorLogging {
@@ -24,6 +24,8 @@ class WorkExecProd extends Actor with ActorLogging {
 
 object WorkExecProd {
   val jobType = "product"
+
+  def props(): Props = Props(classOf[WorkExecProd])
 
   case class CalcProd(n: Int)
 }
