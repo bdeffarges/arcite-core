@@ -155,7 +155,8 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
     case WorkerType(wid, wt) ⇒
       workers += (wid -> workers(wid).copy(workType = wt))
-      log.info(s"workers list with new types: $workers")
+//      log.info(s"workers list with new types: $workers")
+      log.info(s"workers types list: ${workers.map(w ⇒ w._2.workType)}")
 
   }
 
