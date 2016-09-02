@@ -5,9 +5,11 @@ import akka.cluster.Cluster
 import akka.cluster.client.ClusterClientReceptionist
 import akka.cluster.pubsub.{DistributedPubSub, DistributedPubSubMediator}
 import akka.persistence.PersistentActor
+import com.actelion.research.arcite.core.transforms.cluster.Frontend._
+
 import scala.concurrent.duration.{Deadline, FiniteDuration}
 
-
+//todo because of event sourcing, it will also include saved jobs...
 object Master {
 
   val ResultsTopic = "results"
@@ -29,13 +31,15 @@ object Master {
 
 }
 
+//todo timeout should be defined by worker or job type
 class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogging {
 
   import Master._
   import WorkState._
 
+  //todo do we need the mediator for anything else than Pub/sub??
   val mediator = DistributedPubSub(context.system).mediator
-  log.info(s"mediator= $mediator")
+  log.info(s"Pub/Sub mediator= $mediator")
 
   ClusterClientReceptionist(context.system).registerService(self)
 
@@ -111,8 +115,9 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
         persist(WorkCompleted(workId, result)) { event ⇒
           workState = workState.updated(event)
           mediator ! DistributedPubSubMediator.Publish(ResultsTopic, WorkResult(workId, result))
+
           // Ack back to original sender
-          sender ! MasterWorkerProtocol.Ack(workId)
+          sender() ! MasterWorkerProtocol.Ack(workId)
         }
       }
 
@@ -154,15 +159,26 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
         }
       }
 
+    case QueryWorkStatus(workId) ⇒
+      if (workState.isDone(workId)) {
+        sender() ! JobIsCompleted(s"job [$workId] successfully completed ")
+      } else if (workState.isInProgress(workId)) {
+        sender() ! JobIsRunning(0) //todo need to get the percentage completion from somewhere
+      } else if (workState.isAccepted(workId)) {
+        sender() ! JobQueued //todo does not say enough
+      } else {
+        sender() ! JobLost //todo is it really like that?
+      }
+
     case WorkerType(wid, wt) ⇒
       workers += (wid -> workers(wid).copy(workType = wt))
-//      log.info(s"workers list with new types: $workers")
+      //      log.info(s"workers list with new types: $workers")
       log.info(s"workers types list: ${workers.map(w ⇒ w._2.workType)}")
 
   }
 
   def notifyWorkers(): Unit = if (workState.hasWorkLeft) {
-    log.info("has work left")
+    log.info(s"workstate=${workState.workstateSummary()} ,has some work left ?")
     // could pick a few random instead of all
     workers.foreach {
       case (_, WorkerState(ref, Idle, _)) => ref ! MasterWorkerProtocol.WorkIsReady

@@ -13,6 +13,7 @@ import com.actelion.research.arcite.core.rawdata._
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments}
 import com.actelion.research.arcite.core.transforms.GoTransformIt._
 import com.actelion.research.arcite.core.transforms.Transformers._
+import com.actelion.research.arcite.core.transforms.cluster.Frontend._
 import com.actelion.research.arcite.core.transforms.{TransformDefinionJson, TransformDefinition, TransformDefinitionLight}
 import com.actelion.research.arcite.core.utils.FullName
 import com.typesafe.scalalogging.LazyLogging
@@ -82,6 +83,10 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(runTransform).mapTo[TransformFeedback]
   }
 
+  def jobStatus(qws: QueryWorkStatus) = {
+    arciteService.ask(qws).mapTo[JobFeedback]
+  }
+
 }
 
 trait ArciteJSONProtocol extends ExperimentJsonProtocol with DefineRawDataJsonFormat {
@@ -121,6 +126,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
     runTransformFromFilesRoute ~
     runTransformFromTransformRoute ~
     runTransformFromFolderRoute ~
+    feedbackRoute ~
     defaultRoute
 
   def defaultRoute = {
@@ -274,8 +280,22 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       }
     }
   }
-}
 
+  //todo not yet push but only pull...
+  def feedbackRoute = pathPrefix("job_status" / Segment) { workID ⇒
+    pathEnd {
+      get {
+        logger.debug(s"ask for job status? $workID")
+        onSuccess(jobStatus(QueryWorkStatus(workID))) {
+          case JobLost ⇒ complete("job was lost")
+          case JobIsCompleted(feedback) ⇒ complete(s"job is completed $feedback")
+          case JobIsRunning(perDone) ⇒ complete(s"job is running $perDone %")
+          case JobQueued ⇒ complete("job queued...")
+        }
+      }
+    }
+  }
+}
 
 /**
   * Created by deffabe1 on 2/29/16.
@@ -288,4 +308,3 @@ class RestApi(system: ActorSystem, timeout: Timeout) extends RestRoutes {
 
   def createArciteApi = system.actorOf(ArciteService.props, ArciteService.name)
 }
-

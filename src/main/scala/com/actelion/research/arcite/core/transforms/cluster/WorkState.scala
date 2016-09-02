@@ -23,6 +23,7 @@ package com.actelion.research.arcite.core.transforms.cluster
 
 import scala.collection.immutable.Queue
 
+// todo the job id containers should also empty themselves after a while...
 object WorkState {
 
   def empty: WorkState = WorkState(
@@ -104,5 +105,7 @@ case class WorkState private(
         pendingWork = pendingWork enqueue workInProgress(workId),
         workInProgress = workInProgress - workId)
   }
+
+  def workstateSummary(): String = s"acceptedJobs= ${acceptedWorkIds.size} jobsInProgress=${workInProgress.size} jobsDone=${doneWorkIds.size}"
 
 }

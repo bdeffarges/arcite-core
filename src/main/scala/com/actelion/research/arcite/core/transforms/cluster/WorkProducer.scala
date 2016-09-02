@@ -50,7 +50,7 @@ class WorkProducer(frontend: ActorRef) extends Actor with ActorLogging {
   }
 
   def waitAccepted(work: Work): Actor.Receive = {
-    case Frontend.Ok =>
+    case Frontend.Ok(_) =>
       context.unbecome()
       scheduler.scheduleOnce(rnd.nextInt(3, 10).seconds, self, Tick)
     case Frontend.NotOk =>

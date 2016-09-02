@@ -1,5 +1,7 @@
 package com.actelion.research.arcite.core.transforms.cluster
 
+import java.util.UUID
+
 import scala.concurrent.duration._
 import akka.pattern.ask
 import akka.actor.{ActorIdentity, ActorPath, ActorRef, ActorSystem, AddressFromURIString, Identify, PoisonPill, Props, RootActorPath}
@@ -13,6 +15,7 @@ import com.actelion.research.arcite.core.transforms.cluster.workers.WorkExecProd
 import com.actelion.research.arcite.core.transforms.cluster.workers.WorkExecUpperCase.ToUpperCase
 import com.actelion.research.arcite.core.transforms.cluster.workers.{RWrapperWorker, WorkExecProd, WorkExecUpperCase}
 import com.typesafe.config.ConfigFactory
+import kamon.Kamon
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.forkjoin.ThreadLocalRandom
@@ -49,7 +52,8 @@ object ManageTransformCluster {
   }
 
   def getNextFrontEnd(): ActorRef = {
-    //random for now, should pick-up those that are available or that have not been used for a while instea
+    // todo random for now, instead it should pick-up those that are available
+    //
     val i = ThreadLocalRandom.current().nextInt(frontends.size)
     val ar =    frontends(i)
     logger.info(s"pickup id[$i] => $ar}")
@@ -64,6 +68,7 @@ object ManageTransformCluster {
 
     val system = ActorSystem(arcTransfActClustSys, conf)
 
+    //todo journal seed node port?
     startupSharedJournal(system, startStore = (port == 2551),
       path = ActorPath.fromString(s"akka.tcp://$arcTransfActClustSys@127.0.0.1:2551/user/store"))
 
@@ -124,7 +129,9 @@ object ManageTransformCluster {
     * @param args
     */
   def main(args: Array[String]): Unit = {
+
     val logger = LoggerFactory.getLogger(ManageTransformCluster.getClass)
+    Kamon.start()
 
     defaultTransformClusterStart(Seq(2551, 2552, 2553, 2554, 2555, 2556, 2557, 2558), 30)
 
@@ -144,24 +151,24 @@ object ManageTransformCluster {
 
     Thread.sleep(1000)
 
-
     val pwd = System.getProperty("user.dir")
 
-    (0 to 1000).foreach { i ⇒
+    // todo fix lost jobs from worker not returning fast enough, look at "No ack from master, retrying"
+    (0 to 40 ).foreach { i ⇒
       println(s"counter $i")
-      getNextFrontEnd() ! Work("R_helloWorld1", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+      getNextFrontEnd() ! Work("R_helloWorld1"+UUID.randomUUID().toString, Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
       Thread.sleep(100)
-      getNextFrontEnd() ! Work("uppercase1", Job(ToUpperCase("hello world, how are you doing"), "ToUpperCase"))
+      getNextFrontEnd() ! Work("uppercase1"+UUID.randomUUID().toString, Job(ToUpperCase("hello world, how are you doing"), "ToUpperCase"))
       Thread.sleep(100)
-      getNextFrontEnd() ! Work("calcProduct1", Job(CalcProd(10), "product"))
+      getNextFrontEnd() ! Work("calcProduct1"+UUID.randomUUID().toString, Job(CalcProd(10), "product"))
       Thread.sleep(100)
-      getNextFrontEnd() ! Work("uppercase2", Job(ToUpperCase("earth"), "ToUpperCase"))
+      getNextFrontEnd() ! Work("uppercase2"+UUID.randomUUID().toString, Job(ToUpperCase("earth moon mars neptune jupiter "), "ToUpperCase"))
       Thread.sleep(100)
-      getNextFrontEnd() ! Work("R_helloWorld2", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+      getNextFrontEnd() ! Work("R_helloWorld2"+UUID.randomUUID().toString, Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
       Thread.sleep(500)
-      getNextFrontEnd() ! Work("calcProduct1", Job(CalcProd(110), "product"))
-      getNextFrontEnd() ! Work("helloWorld3", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
-      getNextFrontEnd() ! Work("helloWorld4", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+      getNextFrontEnd() ! Work("calcProduct1"+UUID.randomUUID().toString, Job(CalcProd(110), "product"))
+      getNextFrontEnd() ! Work("helloWorld3"+UUID.randomUUID().toString, Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+      getNextFrontEnd() ! Work("helloWorld4"+UUID.randomUUID().toString, Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
       Thread.sleep(500)
     }
   }

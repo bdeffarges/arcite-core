@@ -71,7 +71,10 @@ libraryDependencies ++= {
     "commons-io" % "commons-io" % "2.4" % "test",
     "org.iq80.leveldb" % "leveldb" % "0.7",
     "org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8",
-    "org.scalacheck" %% "scalacheck" % "1.13.0" % "test"
+    "org.scalacheck" %% "scalacheck" % "1.13.0" % "test",
+    "io.kamon" %% "kamon-core" % "0.6.0",
+    "io.kamon" %% "kamon-statsd" % "0.6.0",
+    "io.kamon" %% "kamon-datadog" % "0.6.0"
   )
 }
 
