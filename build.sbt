@@ -1,5 +1,4 @@
 import com.typesafe.sbt.SbtNativePackager.autoImport.NativePackagerHelper._
-import com.typesafe.sbt.packager.docker.ExecCmd
 
 organization := "com.actelion.research.arcite"
 
@@ -22,13 +21,14 @@ publishTo := {
 }
 
 resolvers ++= Seq(
-  "local maven" at Path.userHome.absolutePath + "/.m2/repository/",
+  Resolver.mavenLocal,
   Resolver.file("ivy local", file(Path.userHome.absolutePath + "/.ivy2/local"))(Resolver.ivyStylePatterns),
-  "Typesafe Repository" at "http://dl.bintray.com/typesafe/maven-releases/",
-  "Sonatype snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/",
-  "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/",
-  "Sonatype Actelion snapshots" at "http://bioinfo.it.actelion.com/nexus/content/repositories/snapshots/",
-  "Sonatype Actelion releases" at "http://bioinfo.it.actelion.com/nexus/content/repositories/releases/")
+  Resolver.bintrayRepo("typesafe", "maven-releases"),
+  Resolver.jcenterRepo,
+  Resolver.sonatypeRepo("public"),
+  Resolver.sonatypeRepo("releases"),
+  Resolver.sonatypeRepo("snapshots"))
+
 
 libraryDependencies ++= {
   val akkaVersion = "2.4.9"
