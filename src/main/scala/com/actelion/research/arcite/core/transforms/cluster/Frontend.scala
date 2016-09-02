@@ -29,7 +29,7 @@ class Frontend extends Actor with ActorLogging {
   def receive = {
     case work =>
       log.info(s"got work message [$work]")
-      implicit val timeout = Timeout(20.seconds)
+      implicit val timeout = Timeout(5.seconds)
       (masterProxy ? work) map {
         case Master.Ack(_) => Ok
       } recover { case _ => NotOk } pipeTo sender()

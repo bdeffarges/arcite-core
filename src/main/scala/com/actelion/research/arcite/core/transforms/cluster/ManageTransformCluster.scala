@@ -40,10 +40,21 @@ object ManageTransformCluster {
 
   logger.info(s"work initial contacts: $workInitialContacts")
 
-  def defaultTransformClusterStart(backendPorts: Seq[Int], frontEnds: Int): Seq[ActorRef] = {
+  private var frontends = Seq[ActorRef]()
+
+  def defaultTransformClusterStart(backendPorts: Seq[Int], frontEnds: Int): Unit = {
     backendPorts.foreach(startBackend(_, "backend"))
 
-    (0 to frontEnds).map(_ ⇒ startFrontend(0))
+    frontends = (0 to frontEnds).map(_ ⇒ startFrontend(0))
+  }
+
+  def getNextFrontEnd(): ActorRef = {
+    //random for now, should pick-up those that are available or that have not been used for a while instea
+    val i = ThreadLocalRandom.current().nextInt(frontends.size)
+    val ar =    frontends(i)
+    logger.info(s"pickup id[$i] => $ar}")
+
+    ar
   }
 
   def startBackend(port: Int, role: String) = {
@@ -60,8 +71,6 @@ object ManageTransformCluster {
       Master.props(workTimeout),
       PoisonPill,
       ClusterSingletonManagerSettings(system).withRole(role)), "master")
-
-
   }
 
   def startFrontend(port: Int): ActorRef = {
@@ -70,9 +79,9 @@ object ManageTransformCluster {
 
     val system = ActorSystem(arcTransfActClustSys, conf)
 
-    system.actorOf(Props[Frontend], "frontend")
+//    system.actorOf(Props[WorkResultConsumer], "consumer")
 
-    system.actorOf(Props[WorkResultConsumer], "consumer")
+    system.actorOf(Props[Frontend], "frontend")
   }
 
   def addWorker(props: Props, name: String): Unit = {
@@ -116,7 +125,9 @@ object ManageTransformCluster {
     */
   def main(args: Array[String]): Unit = {
     val logger = LoggerFactory.getLogger(ManageTransformCluster.getClass)
-    val frontEnds = ManageTransformCluster.defaultTransformClusterStart(Seq(2551, 2552, 2553, 2554, 2555, 2556, 2557, 2558), 30)
+
+    defaultTransformClusterStart(Seq(2551, 2552, 2553, 2554, 2555, 2556, 2557, 2558), 30)
+
     Thread.sleep(1000)
 
     ManageTransformCluster.addWorker(RWrapperWorker.props(), "r_worker1")
@@ -133,26 +144,24 @@ object ManageTransformCluster {
 
     Thread.sleep(1000)
 
-    val pwd = System.getProperty("user.dir")
 
-    val rnd = ThreadLocalRandom.current
-    val s = frontEnds.size
+    val pwd = System.getProperty("user.dir")
 
     (0 to 1000).foreach { i ⇒
       println(s"counter $i")
-      frontEnds(rnd.nextInt(s)) ! Work("R_helloWorld1", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+      getNextFrontEnd() ! Work("R_helloWorld1", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
       Thread.sleep(100)
-      frontEnds(rnd.nextInt(s)) ! Work("uppercase1", Job(ToUpperCase("hello world, how are you doing"), "ToUpperCase"))
+      getNextFrontEnd() ! Work("uppercase1", Job(ToUpperCase("hello world, how are you doing"), "ToUpperCase"))
       Thread.sleep(100)
-      frontEnds(rnd.nextInt(s)) ! Work("calcProduct1", Job(CalcProd(10), "product"))
+      getNextFrontEnd() ! Work("calcProduct1", Job(CalcProd(10), "product"))
       Thread.sleep(100)
-      frontEnds(rnd.nextInt(s)) ! Work("uppercase2", Job(ToUpperCase("earth"), "ToUpperCase"))
+      getNextFrontEnd() ! Work("uppercase2", Job(ToUpperCase("earth"), "ToUpperCase"))
       Thread.sleep(100)
-      frontEnds(rnd.nextInt(s)) ! Work("R_helloWorld2", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+      getNextFrontEnd() ! Work("R_helloWorld2", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
       Thread.sleep(500)
-      frontEnds(rnd.nextInt(s)) ! Work("calcProduct1", Job(CalcProd(110), "product"))
-      frontEnds(rnd.nextInt(s)) ! Work("helloWorld3", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
-      frontEnds(rnd.nextInt(s)) ! Work("helloWorld4", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+      getNextFrontEnd() ! Work("calcProduct1", Job(CalcProd(110), "product"))
+      getNextFrontEnd() ! Work("helloWorld3", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+      getNextFrontEnd() ! Work("helloWorld4", Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
       Thread.sleep(500)
     }
   }
