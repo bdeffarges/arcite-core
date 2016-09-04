@@ -24,7 +24,6 @@ import scala.concurrent.forkjoin.ThreadLocalRandom
   * Created by deffabe1 on 7/22/16.
   */
 object ManageTransformCluster {
-
   val logger = LoggerFactory.getLogger(ManageTransformCluster.getClass)
 
   val arcTransfActClustSys = "ArcTransfActClustSys"
@@ -130,31 +129,16 @@ object ManageTransformCluster {
     */
   def main(args: Array[String]): Unit = {
 
-    val logger = LoggerFactory.getLogger(ManageTransformCluster.getClass)
     Kamon.start()
 
-    defaultTransformClusterStart(Seq(2551, 2552, 2553, 2554, 2555, 2556, 2557, 2558), 30)
-
-    Thread.sleep(1000)
-
-    ManageTransformCluster.addWorker(RWrapperWorker.props(), "r_worker1")
-    ManageTransformCluster.addWorker(RWrapperWorker.props(), "r_worker2")
-    ManageTransformCluster.addWorker(RWrapperWorker.props(), "r_worker3")
-    ManageTransformCluster.addWorker(RWrapperWorker.props(), "r_worker4")
-    ManageTransformCluster.addWorker(WorkExecProd.props(), "prod-worker1")
-    ManageTransformCluster.addWorker(WorkExecProd.props(), "prod-worker2")
-    ManageTransformCluster.addWorker(WorkExecProd.props(), "prod-worker3")
-    ManageTransformCluster.addWorker(WorkExecProd.props(), "prod-worker4")
-    ManageTransformCluster.addWorker(WorkExecUpperCase.props(), "upper-worker1")
-    ManageTransformCluster.addWorker(WorkExecUpperCase.props(), "upper-worker2")
-    ManageTransformCluster.addWorker(WorkExecUpperCase.props(), "upper-worker3")
+    startSomeDefaultClusterForTesting()
 
     Thread.sleep(1000)
 
     val pwd = System.getProperty("user.dir")
 
     // todo fix lost jobs from worker not returning fast enough, look at "No ack from master, retrying"
-    (0 to 40 ).foreach { i ⇒
+    (0 to 40).foreach { i ⇒
       println(s"counter $i")
       getNextFrontEnd() ! Work("R_helloWorld1"+UUID.randomUUID().toString, Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
       Thread.sleep(100)
@@ -171,5 +155,24 @@ object ManageTransformCluster {
       getNextFrontEnd() ! Work("helloWorld4"+UUID.randomUUID().toString, Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
       Thread.sleep(500)
     }
+  }
+
+  def startSomeDefaultClusterForTesting(): Unit = {
+
+    defaultTransformClusterStart(Seq(2551, 2552, 2553, 2554, 2555, 2556, 2557, 2558), 30)
+
+    ManageTransformCluster.addWorker(RWrapperWorker.props(), "r_worker1")
+    ManageTransformCluster.addWorker(RWrapperWorker.props(), "r_worker2")
+    ManageTransformCluster.addWorker(RWrapperWorker.props(), "r_worker3")
+    ManageTransformCluster.addWorker(RWrapperWorker.props(), "r_worker4")
+    ManageTransformCluster.addWorker(WorkExecProd.props(), "prod-worker1")
+    ManageTransformCluster.addWorker(WorkExecProd.props(), "prod-worker2")
+    ManageTransformCluster.addWorker(WorkExecProd.props(), "prod-worker3")
+    ManageTransformCluster.addWorker(WorkExecProd.props(), "prod-worker4")
+    ManageTransformCluster.addWorker(WorkExecUpperCase.props(), "upper-worker1")
+    ManageTransformCluster.addWorker(WorkExecUpperCase.props(), "upper-worker2")
+    ManageTransformCluster.addWorker(WorkExecUpperCase.props(), "upper-worker3")
+
+
   }
 }

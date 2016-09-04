@@ -7,6 +7,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
+import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
 import com.actelion.research.arcite.core.utils.Env
 import com.typesafe.config.{Config, ConfigFactory}
 
@@ -56,11 +57,15 @@ object Main extends App with RequestTimeout {
       system.terminate()
   }
 
+  // start worker cluster
+//  ManageTransformCluster.startSomeDefaultClusterForTesting()
+  ManageTransformCluster.main(Array())
+
   // wait for the user to stop the server
-//  log.debug("Press <enter> to exit.")
-//  Console.in.read.toChar
-  // gracefully shut down the server
-  //  import system.dispatcher._
-//  bindingFuture.flatMap(_.unbind()).onComplete(_ ⇒ system.terminate())
+  log.debug("Press <enter> to exit.")
+  Console.in.read.toChar
+//   gracefully shut down the server
+
+  bindingFuture.flatMap(_.unbind()).onComplete(_ ⇒ system.terminate())
 }
 

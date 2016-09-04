@@ -23,6 +23,7 @@ object Frontend {
   case class JobIsCompleted(feedBack: String)  extends JobFeedback
   case object JobLost  extends JobFeedback
   case object JobQueued  extends JobFeedback//todo anything to add as param?
+  case class JobTimedOut(time: Int) extends JobFeedback
 }
 
 class Frontend extends Actor with ActorLogging {
