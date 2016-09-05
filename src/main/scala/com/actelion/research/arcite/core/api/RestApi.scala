@@ -231,7 +231,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
     }
   }
 
-  def rawDataRoute = path("rawdata") {
+  def rawDataRoute = path("rawdata") { //todo replace raw data location with an uri location
     post {
       logger.debug(s"adding raw data...")
       entity(as[RawDataSet]) { drd ⇒
