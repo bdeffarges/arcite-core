@@ -5,6 +5,7 @@ import akka.actor.ActorLogging
 import akka.cluster.pubsub.DistributedPubSub
 import akka.cluster.pubsub.DistributedPubSubMediator
 
+  //todo do we need that class?
 class WorkResultConsumer extends Actor with ActorLogging {
 
   val mediator = DistributedPubSub(context.system).mediator
