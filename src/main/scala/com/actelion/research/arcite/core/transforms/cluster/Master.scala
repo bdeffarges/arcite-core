@@ -5,7 +5,7 @@ import akka.cluster.Cluster
 import akka.cluster.client.ClusterClientReceptionist
 import akka.cluster.pubsub.{DistributedPubSub, DistributedPubSubMediator}
 import akka.persistence.PersistentActor
-import com.actelion.research.arcite.core.transforms.cluster.Frontend._
+import com.actelion.research.arcite.core.transforms.cluster.Frontend.{AllJobsFeedback, _}
 
 import scala.concurrent.duration.{Deadline, FiniteDuration}
 
@@ -159,6 +159,11 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
         }
       }
 
+    case WorkerType(wid, wt) ⇒
+      workers += (wid -> workers(wid).copy(workType = wt))
+      //      log.info(s"workers list with new types: $workers")
+      log.info(s"workers types list: ${workers.map(w ⇒ w._2.workType)}")
+
     case QueryWorkStatus(workId) ⇒
       if (workState.isDone(workId)) {
         sender() ! JobIsCompleted(s"job [$workId] successfully completed ")
@@ -170,11 +175,11 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
         sender() ! JobLost //todo is it really like that?
       }
 
-    case WorkerType(wid, wt) ⇒
-      workers += (wid -> workers(wid).copy(workType = wt))
-      //      log.info(s"workers list with new types: $workers")
-      log.info(s"workers types list: ${workers.map(w ⇒ w._2.workType)}")
+    case AllJobsStatus ⇒
+      sender() ! AllJobsFeedback(workState.queuedJobs(), workState.jobsInProgress(), workState.completedJobs())
 
+    case QueryJobInfo(qji) ⇒
+      sender() ! workState.jobInfo(qji) //todo implement
   }
 
   def notifyWorkers(): Unit = if (workState.hasWorkLeft) {

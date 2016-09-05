@@ -16,6 +16,10 @@ object Frontend {
 
   case class QueryWorkStatus(workId: String)
 
+  case class QueryJobInfo(workId: String)
+
+  case object AllJobsStatus
+
   //todo should extend some trait
   //todo move out of frontend
   sealed trait JobFeedback
@@ -24,6 +28,11 @@ object Frontend {
   case object JobLost  extends JobFeedback
   case object JobQueued  extends JobFeedback//todo anything to add as param?
   case class JobTimedOut(time: Int) extends JobFeedback
+
+  case class AllJobsFeedback(jobsQueued: Set[String], jobsRunning: Set[String],
+                             jobsCompleted: Set[String])
+
+  case class JobInfo(workId: String, jobType:String)
 }
 
 class Frontend extends Actor with ActorLogging {
@@ -44,6 +53,14 @@ class Frontend extends Actor with ActorLogging {
     case qw: QueryWorkStatus ⇒
       implicit  val timeout = Timeout(2.seconds)
       (masterProxy ? qw) pipeTo sender()
+
+    case AllJobsStatus ⇒
+      implicit  val timeout = Timeout(10.seconds)
+      (masterProxy ? AllJobsStatus) pipeTo sender()
+
+    case qji: QueryJobInfo ⇒
+      implicit val timeout = Timeout(1.second)
+      (masterProxy ? qji) pipeTo sender()
 
     case work ⇒
       log.info(s"got work message [$work]")

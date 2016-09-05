@@ -13,7 +13,8 @@ import com.actelion.research.arcite.core.rawdata._
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments}
 import com.actelion.research.arcite.core.transforms.GoTransformIt._
 import com.actelion.research.arcite.core.transforms.Transformers._
-import com.actelion.research.arcite.core.transforms.cluster.Frontend._
+import com.actelion.research.arcite.core.transforms.cluster.Frontend.{AllJobsFeedback, _}
+import com.actelion.research.arcite.core.transforms.cluster.Job
 import com.actelion.research.arcite.core.transforms.{TransformDefinionJson, TransformDefinition, TransformDefinitionLight}
 import com.actelion.research.arcite.core.utils.FullName
 import com.typesafe.scalalogging.LazyLogging
@@ -87,6 +88,14 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(qws).mapTo[JobFeedback]
   }
 
+  def jobsStatus() = {
+    arciteService.ask(AllJobsStatus).mapTo[AllJobsFeedback]
+  }
+
+  def jobInfo(workID: String) = {
+    arciteService.ask(QueryJobInfo(workID)).mapTo[JobInfo]
+  }
+
 }
 
 trait ArciteJSONProtocol extends ExperimentJsonProtocol with DefineRawDataJsonFormat {
@@ -110,6 +119,10 @@ trait ArciteJSONProtocol extends ExperimentJsonProtocol with DefineRawDataJsonFo
   implicit val runTransformFromFilesJson = jsonFormat4(RunTransformFromFiles)
   implicit val runTransformFromTransformJson = jsonFormat5(RunTransformFromTransform)
   implicit val runTransformFromFolderJson = jsonFormat6(RunTransformFromFolderAndRegex)
+
+  implicit val getAllJobsFeedbackJson = jsonFormat3(AllJobsFeedback)
+  implicit val getJobInfoJson = jsonFormat2(JobInfo)
+
 }
 
 trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSONProtocol with LazyLogging {
@@ -126,7 +139,9 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
     runTransformFromFilesRoute ~
     runTransformFromTransformRoute ~
     runTransformFromFolderRoute ~
-    feedbackRoute ~
+    transformFeedbackRoute ~
+    allTransformsfeedbackRoute ~
+    jobInfoRoute ~
     defaultRoute
 
   def defaultRoute = {
@@ -282,7 +297,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
   }
 
   //todo not yet push but only pull...
-  def feedbackRoute = pathPrefix("job_status" / Segment) { workID ⇒
+  def transformFeedbackRoute = pathPrefix("job_status" / Segment) { workID ⇒
     pathEnd {
       get {
         logger.debug(s"ask for job status? $workID")
@@ -294,6 +309,29 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
         }
       }
     }
+  }
+
+  def allTransformsfeedbackRoute = path("all_jobs_status") {
+    get {
+      logger.debug("ask for all job status...")
+      onSuccess(jobsStatus()) {
+        case jfb: AllJobsFeedback ⇒ complete(jfb)
+        case _ ⇒ complete("Failed returning an usefull info.")
+      }
+    }
+  }
+
+  def jobInfoRoute = pathPrefix("job_info" / Segment) {
+    workID ⇒
+      pathEnd {
+        get {
+          logger.debug(s"returning job information for $workID")
+          onSuccess(jobInfo(workID)) {
+            case ji: JobInfo ⇒ complete(s"workID: ${ji.workId} jobType: ${ji.jobType}")
+            case _ ⇒ complete("unable to proceed message ")
+          }
+        }
+      }
   }
 }
 

@@ -21,6 +21,8 @@
  */
 package com.actelion.research.arcite.core.transforms.cluster
 
+import com.actelion.research.arcite.core.transforms.cluster.Frontend.JobInfo
+
 import scala.collection.immutable.Queue
 
 // todo the job id containers should also empty themselves after a while...
@@ -106,6 +108,17 @@ case class WorkState private(
         workInProgress = workInProgress - workId)
   }
 
+  def queuedJobs(): Set[String] = pendingWork.map(_.workId).toSet
+
+  def completedJobs(): Set[String] = doneWorkIds
+
+  def jobsInProgress(): Set[String] = workInProgress.map(_._2.workId).toSet
+
   def workstateSummary(): String = s"acceptedJobs= ${acceptedWorkIds.size} jobsInProgress=${workInProgress.size} jobsDone=${doneWorkIds.size}"
 
+  def jobInfo(workID: String): JobInfo = {
+    // todo later on should pick it up from the collection where it's stored..
+    // temp object returned for testing
+    JobInfo(workID, "...testing...")
+  }
 }

@@ -9,7 +9,7 @@ import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{SearchForX
 import com.actelion.research.arcite.core.transforms.GoTransformIt._
 import com.actelion.research.arcite.core.transforms.{GoTransformIt, TransformRouterActor}
 import com.actelion.research.arcite.core.transforms.Transformers._
-import com.actelion.research.arcite.core.transforms.cluster.Frontend.QueryWorkStatus
+import com.actelion.research.arcite.core.transforms.cluster.Frontend.{AllJobsStatus, JobInfo, QueryJobInfo, QueryWorkStatus}
 import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
 import com.typesafe.scalalogging.LazyLogging
 
@@ -91,7 +91,6 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
       pipe(getExps) to sender()
       log.debug("will be starting piping results to sender... ")
 
-
     case SearchExperiments(search, maxHits) ⇒
 
       expManager ! SearchForXResultsWithRequester(SearchForXResults(search, maxHits), sender())
@@ -141,9 +140,13 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
       // messages to workers cluster
     case qws: QueryWorkStatus ⇒
-
       ManageTransformCluster.getNextFrontEnd() forward qws
 
+    case AllJobsStatus ⇒
+      ManageTransformCluster.getNextFrontEnd() forward AllJobsStatus
+
+    case ji: QueryJobInfo ⇒
+      ManageTransformCluster.getNextFrontEnd() forward ji
 
       //don't know what to do with this message...
     case _ ⇒ log.error("don't know what to do with the passed message... ")

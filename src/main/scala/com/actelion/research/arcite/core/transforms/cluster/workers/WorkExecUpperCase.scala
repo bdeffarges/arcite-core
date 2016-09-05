@@ -10,7 +10,7 @@ class WorkExecUpperCase extends Actor with ActorLogging {
   def receive = {
     case ToUpperCase(stg) =>
       log.info("starting work but will wait for fake...")
-      Thread.sleep(30000)
+      Thread.sleep(10000)
       log.info("waited enough time, doing the work now...")
       sender() ! Worker.WorkComplete(s"in upperString=${stg.toUpperCase()}")
 
