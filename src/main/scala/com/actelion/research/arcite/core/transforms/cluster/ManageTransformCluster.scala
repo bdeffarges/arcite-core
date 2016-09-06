@@ -95,7 +95,7 @@ object ManageTransformCluster {
         ClusterClientSettings(workSystem).withInitialContacts(workInitialContacts)
       ), s"WorkerClusterClient-$name")
 
-    workSystem.actorOf(Worker.props(clusterClient, props), name)
+    workSystem.actorOf(TransformWorker.props(clusterClient, props), name)
   }
 
   def startupSharedJournal(system: ActorSystem, startStore: Boolean, path: ActorPath): Unit = {

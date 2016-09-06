@@ -1,7 +1,7 @@
 package com.actelion.research.arcite.core.transforms.cluster.workers
 
 import akka.actor.{Actor, ActorLogging, Props}
-import com.actelion.research.arcite.core.transforms.cluster.{GetWorkerTypeFor, Worker, WorkerType}
+import com.actelion.research.arcite.core.transforms.cluster.{WorkerTransDefinition, Worker, WorkerType}
 
 class WorkExecProd extends Actor with ActorLogging {
 
@@ -13,7 +13,7 @@ class WorkExecProd extends Actor with ActorLogging {
       val result = s"workexecutor= $n * $n = $n2"
       sender() ! Worker.WorkComplete(result)
 
-    case GetWorkerTypeFor(wi) ⇒
+    case WorkerTransDefinition(wi) ⇒
       log.debug(s"asking worker type for $wi")
       sender() ! WorkerType(wi, WorkExecProd.jobType)
 

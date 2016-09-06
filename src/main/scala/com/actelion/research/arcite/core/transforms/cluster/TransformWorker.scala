@@ -6,7 +6,8 @@ import scala.concurrent.duration._
 import akka.actor.SupervisorStrategy.{Restart, Stop}
 import akka.actor.{Actor, ActorInitializationException, ActorLogging, ActorRef, DeathPactException, OneForOneStrategy, Props, ReceiveTimeout, Terminated}
 import akka.cluster.client.ClusterClient.SendToAll
-import com.actelion.research.arcite.core.transforms.Transform
+import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.WorkComplete
+import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition}
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
@@ -33,27 +34,29 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
   * Created by Bernard Deffarges on 2016/09/05.
   */
 
-class TransformWorker (clusterClient: ActorRef, workExecutorProps: Props, registerInterval: FiniteDuration)
-  extends Actor with ActorLogging {
+class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDefinition,
+                      registerInterval: FiniteDuration) extends Actor with ActorLogging {
 
-  import Worker._
   import MasterWorkerProtocol._
 
   val workerId = UUID.randomUUID().toString
 
-  import context.dispatcher //todo change dispatcher?
+  //todo change dispatcher?
+  import context.dispatcher
 
   val registerTask = context.system.scheduler.schedule(0.seconds, registerInterval, clusterClient,
     SendToAll("/user/master/singleton", RegisterWorker(workerId)))
 
-  val workExecutor = context.watch(context.actorOf(workExecutorProps, "exec"))
+  val workTransformExec = context.actorOf(transformDefinition.actorProps(), s"$workerId-exec")
 
-  var currentTransformId: Option[String] = None
+  val workExecutor = context.watch(workTransformExec)
 
-  log.info(s"worker [$workerId] for executor [$workExecutor] with props [$workExecutorProps] created.")
+  var currentTransform: Option[Transform] = None
 
-  def transformId: String = currentTransformId match {
-    case Some(workId) => workId
+  log.info(s"worker [$workerId] for work executor [$workExecutor] created.")
+
+  def transform: Transform = currentTransform match {
+    case Some(transf) => transf
     case None => throw new IllegalStateException("Not working")
   }
 
@@ -63,7 +66,9 @@ class TransformWorker (clusterClient: ActorRef, workExecutorProps: Props, regist
     case _: DeathPactException => Stop
 
     case _: Exception =>
-      currentTransformId foreach { workId => sendToMaster(WorkFailed(workerId, workId)) }
+      currentTransform foreach {transf ⇒
+        sendToMaster(WorkFailed(workerId, transf))
+      }
       context.become(idle)
       Restart
   }
@@ -79,13 +84,13 @@ class TransformWorker (clusterClient: ActorRef, workExecutorProps: Props, regist
 
     case t: Transform =>
       log.info(s"Got a transform: $t")
-      currentTransformId = Some(t.uid)
-      workExecutor ! job.job
+      currentTransform = Some(t)
+      workExecutor ! t //todo needs to be less than t
       context.become(working)
 
-    case GetWorkerType ⇒
+    case GetTransformDefinition ⇒
       log.info(s"asked for my [$self] workerType ")
-      workExecutor ! GetWorkerTypeFor(workerId)
+      workExecutor ! WorkerTransDefinition(transformDefinition)
 
     case wt: WorkerType ⇒
       sendToMaster(wt)
@@ -94,7 +99,7 @@ class TransformWorker (clusterClient: ActorRef, workExecutorProps: Props, regist
   def working: Receive = {
     case WorkComplete(result) =>
       log.info("Work is complete. Result {}.", result)
-      sendToMaster(WorkIsDone(workerId, transformId, result))
+      sendToMaster(WorkIsDone(workerId, transform, result))
       context.setReceiveTimeout(5.seconds)
       context.become(waitForWorkIsDoneAck(result))
 
@@ -104,14 +109,14 @@ class TransformWorker (clusterClient: ActorRef, workExecutorProps: Props, regist
 
   def waitForWorkIsDoneAck(result: Any): Receive = {
 
-    case Ack(id) if id == transformId =>
+    case Ack(trans) if trans == transform =>
       sendToMaster(WorkerRequestsWork(workerId))
       context.setReceiveTimeout(Duration.Undefined)
       context.become(idle)
 
     case ReceiveTimeout =>
       log.info("No ack from master, retrying")
-      sendToMaster(WorkIsDone(workerId, transformId, result))
+      sendToMaster(WorkIsDone(workerId, transform, result))
   }
 
   override def unhandled(message: Any): Unit = message match {
@@ -127,8 +132,9 @@ class TransformWorker (clusterClient: ActorRef, workExecutorProps: Props, regist
 }
 
 object TransformWorker {
-  def props(clusterClient: ActorRef, workExecutorProps: Props, registerInterval: FiniteDuration = 10.seconds): Props =
-    Props(classOf[Worker], clusterClient, workExecutorProps, registerInterval)
+  def props(clusterClient: ActorRef, workExecutorProps: Props,
+            registerInterval: FiniteDuration = 10.seconds): Props =
+    Props(classOf[TransformWorker], clusterClient, workExecutorProps, registerInterval)
 
   case class WorkComplete(result: Any)
 

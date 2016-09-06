@@ -3,7 +3,7 @@ package com.actelion.research.arcite.core.transforms.cluster.workers
 import java.io.File
 
 import akka.actor.{Actor, ActorLogging, Props}
-import com.actelion.research.arcite.core.transforms.cluster.{GetWorkerTypeFor, Worker, WorkerType}
+import com.actelion.research.arcite.core.transforms.cluster.{WorkerTransDefinition, Worker, WorkerType}
 import com.actelion.research.arcite.core.transforms.cluster.workers.RWrapperWorker.{Rreturn, RunRCode}
 import com.actelion.research.arcite.core.utils.Env
 
@@ -39,7 +39,7 @@ class RWrapperWorker extends Actor with ActorLogging {
       sender() ! Worker.WorkComplete(result)
 
 
-    case GetWorkerTypeFor(wi) ⇒
+    case WorkerTransDefinition(wi) ⇒
       log.debug(s"asking worker type for $wi")
       sender() ! WorkerType(wi, RWrapperWorker.jobType)
 

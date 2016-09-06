@@ -5,6 +5,7 @@ import akka.cluster.Cluster
 import akka.cluster.client.ClusterClientReceptionist
 import akka.cluster.pubsub.{DistributedPubSub, DistributedPubSubMediator}
 import akka.persistence.PersistentActor
+import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformResult}
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.{AllJobsFeedback, _}
 
 import scala.concurrent.duration.{Deadline, FiniteDuration}
@@ -12,20 +13,19 @@ import scala.concurrent.duration.{Deadline, FiniteDuration}
 //todo because of event sourcing, it will also include saved jobs...
 object Master {
 
-  val ResultsTopic = "results"
+  val ResultsTopic = "results" //todo remove? originally, it was intended for subscribe/publish
 
-  def props(workTimeout: FiniteDuration): Props =
-    Props(classOf[Master], workTimeout)
+  def props(workTimeout: FiniteDuration): Props = Props(classOf[Master], workTimeout)
 
-  case class Ack(workId: String)
+  case class Ack(transf: Transform)
 
   private sealed trait WorkerStatus
 
   private case object Idle extends WorkerStatus
 
-  private case class Busy(workId: String, deadline: Deadline) extends WorkerStatus
+  private case class Busy(trans: Transform, deadline: Deadline) extends WorkerStatus
 
-  private case class WorkerState(ref: ActorRef, status: WorkerStatus, workType: String = "?")
+  private case class WorkerState(ref: ActorRef, status: WorkerStatus, transDef: Option[TransformDefinition])
 
   private case object CleanupTick
 
@@ -74,28 +74,29 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       log.info(s"received RegisterWorker for $workerId")
       if (workers.contains(workerId)) {
         workers += (workerId -> workers(workerId).copy(ref = sender()))
-        sender() ! GetWorkerType
+        sender() ! GetTransformDefinition
       } else {
         log.info("Worker registered: {}", workerId)
-        workers += (workerId -> WorkerState(sender(), status = Idle))
-        sender() ! GetWorkerType
-        //        if (workState.hasWorkLeft)
-        //          sender() ! MasterWorkerProtocol.WorkIsReady
+        workers += (workerId -> WorkerState(sender(), status = Idle, None))
+        sender() ! GetTransformDefinition
       }
 
     case MasterWorkerProtocol.WorkerRequestsWork(workerId) =>
       log.info(s"total pending jobs = ${workState.pendingJobs()} worker requesting work... do we have something for him?")
-      if (workState.hasWork(workers(workerId).workType)) {
+      val td = workers(workerId).transDef
+      if (td.isDefined && workState.hasWork(td.get)) {
         workers.get(workerId) match {
           case Some(s@WorkerState(_, Idle, _)) =>
-            val w = workState.nextWork(s.workType)
-            if (w.nonEmpty) {
-              val work = w.get
-              persist(WorkStarted(work.workId)) { event =>
-                log.info(s"Giving worker [$workerId] something to do [${work.workId}]")
-                workState = workState.updated(event)
-                workers += (workerId -> s.copy(status = Busy(work.workId, Deadline.now + workTimeout)))
-                sender() ! work
+            if (s.transDef.isDefined) {
+              val w = workState.nextWork(s.transDef.get)
+              if (w.nonEmpty) { //todo maybe we don't need both checks
+                val transf = w.get
+                persist(WorkStarted(transf)) { event =>
+                  log.info(s"Giving worker [$workerId] something to do [${transf}]")
+                  workState = workState.updated(event)
+                  workers += (workerId -> s.copy(status = Busy(transf, Deadline.now + workTimeout)))
+                  sender() ! transf
+                }
               }
             }
           case _ =>
@@ -114,7 +115,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
         changeWorkerToIdle(workerId, workId)
         persist(WorkCompleted(workId, result)) { event ⇒
           workState = workState.updated(event)
-          mediator ! DistributedPubSubMediator.Publish(ResultsTopic, WorkResult(workId, result))
+          mediator ! DistributedPubSubMediator.Publish(ResultsTopic, TransformResult(workId, result))
 
           // Ack back to original sender
           sender() ! MasterWorkerProtocol.Ack(workId)
@@ -131,17 +132,17 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
         }
       }
 
-    case work: Work =>
+    case work: Transform =>
       log.info("master received work...")
       // idempotent
-      if (workState.isAccepted(work.workId)) {
+      if (workState.isAccepted(work)) {
         log.info("work is accepted...")
-        sender() ! Master.Ack(work.workId)
+        sender() ! Master.Ack(work)
       } else {
-        log.info("Accepted work: {}", work.workId)
+        log.info("Accepted work: {}", work)
         persist(WorkAccepted(work)) { event ⇒
           // Ack back to original sender
-          sender() ! Master.Ack(work.workId)
+          sender() ! Master.Ack(work)
           workState = workState.updated(event)
           notifyWorkers()
         }
@@ -160,9 +161,9 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       }
 
     case WorkerType(wid, wt) ⇒
-      workers += (wid -> workers(wid).copy(workType = wt))
+      workers += (wid -> workers(wid).copy(transDef = wt))
       //      log.info(s"workers list with new types: $workers")
-      log.info(s"workers types list: ${workers.map(w ⇒ w._2.workType)}")
+      log.info(s"workers types list: ${workers.map(w ⇒ w._2.transDef)}")
 
     case QueryWorkStatus(workId) ⇒
       if (workState.isDone(workId)) {
@@ -176,7 +177,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       }
 
     case AllJobsStatus ⇒
-      sender() ! AllJobsFeedback(workState.queuedJobs(), workState.jobsInProgress(), workState.completedJobs())
+      sender() ! AllJobsFeedback(workState.pendingTransforms.toSet, workState.jobsInProgress.values.toSet, workState.jobsDone)
 
     case QueryJobInfo(qji) ⇒
       sender() ! workState.jobInfo(qji) //todo implement
@@ -191,9 +192,9 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
     }
   }
 
-  def changeWorkerToIdle(workerId: String, workId: String): Unit =
+  def changeWorkerToIdle(workerId: String, transf: Transform): Unit =
     workers.get(workerId) match {
-      case Some(s@WorkerState(_, Busy(`workId`, _), _)) ⇒
+      case Some(s@WorkerState(_, Busy(`transf`, _), _)) ⇒
         workers += (workerId -> s.copy(status = Idle))
       case _ ⇒
       // ok, might happen after standby recovery, worker state is not persisted

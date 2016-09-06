@@ -21,6 +21,7 @@
  */
 package com.actelion.research.arcite.core.transforms.cluster
 
+import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition}
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.JobInfo
 
 import scala.collection.immutable.Queue
@@ -29,92 +30,88 @@ import scala.collection.immutable.Queue
 object WorkState {
 
   def empty: WorkState = WorkState(
-    pendingWork = Queue.empty,
-    workInProgress = Map.empty,
-    acceptedWorkIds = Set.empty,
-    doneWorkIds = Set.empty)
+    pendingTransforms = Queue.empty,
+    jobsInProgress = Map.empty,
+    jobsAccepted = Set.empty,
+    jobsDone = Set.empty)
 
   trait WorkDomainEvent
 
-  case class WorkAccepted(work: Work) extends WorkDomainEvent
+  case class WorkAccepted(trans: Transform) extends WorkDomainEvent
 
-  case class WorkStarted(workId: String) extends WorkDomainEvent
+  //todo replace with a FIFO
 
-  case class WorkCompleted(workId: String, result: Any) extends WorkDomainEvent
+  case class WorkStarted(trans: Transform) extends WorkDomainEvent
 
-  case class WorkerFailed(workId: String) extends WorkDomainEvent
+  case class WorkCompleted(trans: Transform, result: Any) extends WorkDomainEvent
 
-  case class WorkerTimedOut(workId: String) extends WorkDomainEvent
+  case class WorkerFailed(trans: Transform) extends WorkDomainEvent
+
+  case class WorkerTimedOut(trans: Transform) extends WorkDomainEvent
 
 }
 
-case class WorkState private(
-                              private val pendingWork: Queue[Work],
-                              private val workInProgress: Map[String, Work],
-                              private val acceptedWorkIds: Set[String],
-                              private val doneWorkIds: Set[String]) {
+//todo should they really all contain transforms or rather a subset?
+case class WorkState(pendingTransforms: Queue[Transform],
+                     jobsInProgress: Map[String, Transform],
+                     jobsAccepted: Set[Transform],
+                     jobsDone: Set[Transform]) {
 
   import WorkState._
 
-  def hasWorkLeft: Boolean = pendingWork.nonEmpty
+  def hasWorkLeft: Boolean = pendingTransforms.nonEmpty
 
-  def hasWork(wType: String): Boolean = {
-    pendingWork.exists(_.job.jobType == wType)
+  def hasWork(transDef: TransformDefinition): Boolean = {
+    pendingTransforms.exists(_.definition == transDef)
   }
 
-  def nextWork(wType: String): Option[Work] = {
-    pendingWork.find(_.job.jobType == wType)
+  def nextWork(transDef: TransformDefinition): Option[Transform] = {
+    pendingTransforms.find(_.definition == transDef)
   }
 
-  def pendingJobs(): Int = pendingWork.size
+  def pendingJobs(): Int = pendingTransforms.size
 
-  def isAccepted(workId: String): Boolean = acceptedWorkIds.contains(workId)
+  def isAccepted(transf: Transform): Boolean = jobsAccepted.contains(transf)
 
-  def isInProgress(workId: String): Boolean = workInProgress.contains(workId)
+  def isInProgress(transf: Transform): Boolean = jobsInProgress.values.toSet.contains(transf)
 
-  def isDone(workId: String): Boolean = doneWorkIds.contains(workId)
+  def isDone(transf: Transform): Boolean = jobsDone.contains(transf)
 
   def updated(event: WorkDomainEvent): WorkState = event match {
-    case WorkAccepted(work) ⇒
+    case WorkAccepted(transf) ⇒
       copy(
-        pendingWork = pendingWork enqueue work,
-        acceptedWorkIds = acceptedWorkIds + work.workId)
+        pendingTransforms = pendingTransforms enqueue transf,
+        jobsAccepted = jobsAccepted + transf)
 
-    case WorkStarted(workId) ⇒
-      val w = pendingWork.find(_.workId == workId)
+    case WorkStarted(transf) ⇒
+      val w = pendingTransforms.find(_.definition == transf)
 
       if (w.nonEmpty) {
-        val (work, rest) = (w.get, pendingWork.filterNot(w.get == _))
+        val (work, rest) = (w.get, pendingTransforms.filterNot(w.get == _))
         copy(
-          pendingWork = rest,
-          workInProgress = workInProgress + (workId -> work))
+          pendingTransforms = rest,
+          jobsInProgress = jobsInProgress + (transf.uid -> work))
       } else {
         this
       }
 
-    case WorkCompleted(workId, result) ⇒
+    case WorkCompleted(transf, result) ⇒
       copy(
-        workInProgress = workInProgress - workId,
-        doneWorkIds = doneWorkIds + workId)
+        jobsInProgress = jobsInProgress - transf.uid,
+        jobsDone = jobsDone + transf)
 
     case WorkerFailed(workId) ⇒
       copy(
-        pendingWork = pendingWork enqueue workInProgress(workId),
-        workInProgress = workInProgress - workId)
+        pendingTransforms = pendingTransforms enqueue jobsInProgress(workId.uid),
+        jobsInProgress = jobsInProgress - workId.uid)
 
     case WorkerTimedOut(workId) ⇒
       copy(
-        pendingWork = pendingWork enqueue workInProgress(workId),
-        workInProgress = workInProgress - workId)
+        pendingTransforms = pendingTransforms enqueue jobsInProgress(workId.uid),
+        jobsInProgress = jobsInProgress - workId.uid)
   }
 
-  def queuedJobs(): Set[String] = pendingWork.map(_.workId).toSet
-
-  def completedJobs(): Set[String] = doneWorkIds
-
-  def jobsInProgress(): Set[String] = workInProgress.map(_._2.workId).toSet
-
-  def workstateSummary(): String = s"acceptedJobs= ${acceptedWorkIds.size} jobsInProgress=${workInProgress.size} jobsDone=${doneWorkIds.size}"
+  def workstateSummary(): String = s"acceptedJobs= ${jobsAccepted.size} jobsInProgress=${jobsInProgress.size} jobsDone=${jobsDone.size}"
 
   def jobInfo(workID: String): JobInfo = {
     // todo later on should pick it up from the collection where it's stored..

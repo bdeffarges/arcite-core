@@ -1,7 +1,7 @@
 package com.actelion.research.arcite.core.transforms.cluster.workers
 
 import akka.actor.{Actor, ActorLogging, Props}
-import com.actelion.research.arcite.core.transforms.cluster.{GetWorkerTypeFor, Worker, WorkerType}
+import com.actelion.research.arcite.core.transforms.cluster.{WorkerTransDefinition, Worker, WorkerType}
 
 class WorkExecUpperCase extends Actor with ActorLogging {
 
@@ -14,7 +14,7 @@ class WorkExecUpperCase extends Actor with ActorLogging {
       log.info("waited enough time, doing the work now...")
       sender() ! Worker.WorkComplete(s"in upperString=${stg.toUpperCase()}")
 
-    case GetWorkerTypeFor(wi) ⇒
+    case WorkerTransDefinition(wi) ⇒
       log.debug(s"asking worker type for $wi")
       sender() ! WorkerType(wi, WorkExecUpperCase.jobType)
 

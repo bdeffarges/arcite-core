@@ -22,18 +22,19 @@ case class TransformDescription(summary: String, consumes: String, produces: Str
   * @param fullName
   * @param description
   */
-case class TransformDefinitionLight(fullName: FullName, description: TransformDescription) {
+case class TransformDefinitionLight(fullName: FullName, shortName: String, description: TransformDescription) {
   lazy val digest = GetDigest.getDigest(s"$fullName $description")
 }
 
 /**
-  * Transforms are started from an actor, so here we add to the definition of the transform a props to be able
-  * to get a new actor that will do the actual transform job.
+  * Transforms are started from an actor, so here we add  a props to be able
+  * to get a new actor that will do the actual transform job. This actor will be a worker actor in the cluster.
   *
   * @param definitionLight
   * @param actorProps
   */
 case class TransformDefinition(definitionLight: TransformDefinitionLight, actorProps: () ⇒ Props)
+
 
 sealed trait TransformSource {
   def experiment: Experiment
@@ -57,7 +58,7 @@ case class TransformSourceRegex(experiment: Experiment, folder: String, regex: S
   *
   * @param definition
   * @param source
-  * @param parameters, we keep it as a JsValue so the real transformer can decide at run time what to do with the parameters
+  * @param parameters , we keep it as a JsValue so the real transformer can decide at run time what to do with the parameters
   * @param uid
   */
 case class Transform(definition: TransformDefinition, source: TransformSource, parameters: JsValue,
@@ -81,6 +82,7 @@ object TransformDefinionJson extends DefaultJsonProtocol {
       JsObject(
         "organization" -> JsString(tdl.fullName.organization),
         "name" -> JsString(tdl.fullName.name),
+        "short_name" -> JsString(tdl.shortName),
         "description_summary" -> JsString(tdl.description.summary),
         "description_consumes" -> JsString(tdl.description.consumes),
         "description_produces" -> JsString(tdl.description.produces),
@@ -89,15 +91,17 @@ object TransformDefinionJson extends DefaultJsonProtocol {
     }
 
     def read(value: JsValue) = {
-      value.asJsObject.getFields("organization", "name", "description_summary",
+      value.asJsObject.getFields("organization", "name", "short_name", "description_summary",
         "description_consumes", "description_produces") match {
-        case Seq(JsString(organization), JsString(name),
+        case Seq(JsString(organization), JsString(name), JsString(shortName),
         JsString(descSummary), JsString(descConsumes), JsString(descProduces)) =>
-          TransformDefinitionLight(FullName(organization, name), TransformDescription(descSummary, descConsumes, descProduces))
+          TransformDefinitionLight(FullName(organization, name), shortName,
+            TransformDescription(descSummary, descConsumes, descProduces))
 
-        case _ => throw new DeserializationException("Color expected")
+        case _ => throw new DeserializationException("could not deserialize.")
       }
     }
   }
-
 }
+
+case class TransformResult(transform: Transform, result: Any)

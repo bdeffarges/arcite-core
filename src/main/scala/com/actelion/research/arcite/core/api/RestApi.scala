@@ -14,8 +14,7 @@ import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExper
 import com.actelion.research.arcite.core.transforms.GoTransformIt._
 import com.actelion.research.arcite.core.transforms.Transformers._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.{AllJobsFeedback, _}
-import com.actelion.research.arcite.core.transforms.cluster.Job
-import com.actelion.research.arcite.core.transforms.{TransformDefinionJson, TransformDefinition, TransformDefinitionLight}
+import com.actelion.research.arcite.core.transforms.{TransformDefinionJson, TransformDefinition}
 import com.actelion.research.arcite.core.utils.FullName
 import com.typesafe.scalalogging.LazyLogging
 
@@ -219,7 +218,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
   }
 
   def transform1Route = pathPrefix("transform" / Segment) { transform ⇒
-    import TransformDefinionJson._
+
     pathEnd {
       get {
         logger.debug(s"get transform: = $transform")

@@ -5,6 +5,7 @@ import akka.actor.{Actor, ActorLogging}
 import akka.pattern._
 import akka.util.Timeout
 import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
+import com.actelion.research.arcite.core.transforms.Transform
 
 object Frontend {
 
@@ -29,8 +30,8 @@ object Frontend {
   case object JobQueued  extends JobFeedback//todo anything to add as param?
   case class JobTimedOut(time: Int) extends JobFeedback
 
-  case class AllJobsFeedback(jobsQueued: Set[String], jobsRunning: Set[String],
-                             jobsCompleted: Set[String])
+  case class AllJobsFeedback(jobsQueued: Set[Transform], jobsRunning: Set[Transform],
+                             jobsCompleted: Set[Transform])
 
   case class JobInfo(workId: String, jobType:String)
 }
