@@ -104,8 +104,8 @@ object GoTransformIt {
 
     val tdone = TransformDone(stateOutPutError._1,
       new SimpleDateFormat("yyyy:MM:dd-HH:mm:ss").format(new Date),
-      t.transform.definition.definitionLight.fullName,
-      t.transform.definition.definitionLight.description.summary,
+      t.transform.definition.transDefIdent.fullName,
+      t.transform.definition.transDefIdent.description.summary,
       ts, transformSourceFiles(t.transform.source),
       core.getFirstAndLastLinesOfAVeryLongString(stateOutPutError._2, 100),
       core.getFirstAndLastLinesOfAVeryLongString(stateOutPutError._3, 100))

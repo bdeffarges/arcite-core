@@ -1,7 +1,10 @@
 package com.actelion.research.arcite.core.transforms.cluster.workers
 
 import akka.actor.{Actor, ActorLogging, Props}
-import com.actelion.research.arcite.core.transforms.cluster.{WorkerTransDefinition, Worker, WorkerType}
+import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.WorkComplete
+import com.actelion.research.arcite.core.transforms.cluster.{GetTransformDefinition, TransformType}
+import com.actelion.research.arcite.core.transforms.{TransformDefinition, TransformDefinitionIdentity, TransformDescription}
+import com.actelion.research.arcite.core.utils.FullName
 
 class WorkExecProd extends Actor with ActorLogging {
 
@@ -11,11 +14,11 @@ class WorkExecProd extends Actor with ActorLogging {
     case CalcProd(n) =>
       val n2 = n * n
       val result = s"workexecutor= $n * $n = $n2"
-      sender() ! Worker.WorkComplete(result)
+      sender() ! WorkComplete(result)
 
-    case WorkerTransDefinition(wi) ⇒
+    case GetTransformDefinition(wi) ⇒
       log.debug(s"asking worker type for $wi")
-      sender() ! WorkerType(wi, WorkExecProd.jobType)
+      sender() ! TransformType(wi, definition)
 
     case msg: Any ⇒ log.error(s"unable to deal with message $msg")
   }
@@ -23,9 +26,13 @@ class WorkExecProd extends Actor with ActorLogging {
 }
 
 object WorkExecProd {
-  val jobType = "product"
-
   def props(): Props = Props(classOf[WorkExecProd])
+
+  val fullName = FullName("com.actelion.research.arcite.core", "product1")
+  val defLight = TransformDefinitionIdentity(fullName, "product1",
+    TransformDescription("product1", "number", "number"))
+
+  val definition = TransformDefinition(defLight, props)
 
   case class CalcProd(n: Int)
 }

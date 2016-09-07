@@ -5,8 +5,8 @@ import akka.cluster.Cluster
 import akka.cluster.client.ClusterClientReceptionist
 import akka.cluster.pubsub.{DistributedPubSub, DistributedPubSubMediator}
 import akka.persistence.PersistentActor
-import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformResult}
-import com.actelion.research.arcite.core.transforms.cluster.Frontend.{AllJobsFeedback, _}
+import com.actelion.research.arcite.core.transforms.cluster.Frontend._
+import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformLight, TransformResult}
 
 import scala.concurrent.duration.{Deadline, FiniteDuration}
 
@@ -23,7 +23,7 @@ object Master {
 
   private case object Idle extends WorkerStatus
 
-  private case class Busy(trans: Transform, deadline: Deadline) extends WorkerStatus
+  private case class Busy(trans: TransformLight, deadline: Deadline) extends WorkerStatus
 
   private case class WorkerState(ref: ActorRef, status: WorkerStatus, transDef: Option[TransformDefinition])
 
@@ -51,6 +51,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
   // workers state is not event sourced
   private var workers = Map[String, WorkerState]()
+  private var transformDefs = Set[TransformDefinition]()
 
   // workState is event sourced
   private var workState = WorkState.empty
@@ -63,7 +64,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
   override def postStop(): Unit = cleanupTask.cancel()
 
   override def receiveRecover: Receive = {
-    case event: WorkDomainEvent =>
+    case event: WorkStatus =>
       // only update current state by applying the event, no side effects
       workState = workState.updated(event)
       log.info("Replayed {}", event.getClass.getSimpleName)
@@ -74,24 +75,24 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       log.info(s"received RegisterWorker for $workerId")
       if (workers.contains(workerId)) {
         workers += (workerId -> workers(workerId).copy(ref = sender()))
-        sender() ! GetTransformDefinition
+        sender() ! GetTransformDefinition(workerId)
       } else {
         log.info("Worker registered: {}", workerId)
         workers += (workerId -> WorkerState(sender(), status = Idle, None))
-        sender() ! GetTransformDefinition
+        sender() ! GetTransformDefinition(workerId)
       }
 
     case MasterWorkerProtocol.WorkerRequestsWork(workerId) =>
-      log.info(s"total pending jobs = ${workState.pendingJobs()} worker requesting work... do we have something for him?")
+      log.info(s"total pending jobs = ${workState.numberOfPendingJobs()} worker requesting work... do we have something for him?")
       val td = workers(workerId).transDef
-      if (td.isDefined && workState.hasWork(td.get)) {
+      if (td.isDefined && workState.hasWork(td.get.transDefIdent.fullName)) {
         workers.get(workerId) match {
           case Some(s@WorkerState(_, Idle, _)) =>
             if (s.transDef.isDefined) {
-              val w = workState.nextWork(s.transDef.get)
+              val w = workState.nextWork(s.transDef.get.transDefIdent.fullName)
               if (w.nonEmpty) { //todo maybe we don't need both checks
                 val transf = w.get
-                persist(WorkStarted(transf)) { event =>
+                persist(WorkInProgress(transf, 0)) { event =>
                   log.info(s"Giving worker [$workerId] something to do [${transf}]")
                   workState = workState.updated(event)
                   workers += (workerId -> s.copy(status = Busy(transf, Deadline.now + workTimeout)))
@@ -103,46 +104,46 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
         }
       }
 
-    case MasterWorkerProtocol.WorkIsDone(workerId, workId, result) =>
+    case MasterWorkerProtocol.WorkIsDone(workerId, transf, result) =>
       // idempotent
-      if (workState.isDone(workId)) {
+      if (workState.isDone(transf.uid)) {
         // previous Ack was lost, confirm again that this is done
-        sender() ! MasterWorkerProtocol.Ack(workId)
-      } else if (!workState.isInProgress(workId)) {
-        log.info("Work {} not in progress, reported as done by worker {}", workId, workerId)
+        sender() ! MasterWorkerProtocol.Ack(transf)
+      } else if (!workState.isInProgress(transf.uid)) {
+        log.info("Work {} not in progress, reported as done by worker {}", transf, workerId)
       } else {
-        log.info("Work {} is done by worker {}", workId, workerId)
-        changeWorkerToIdle(workerId, workId)
-        persist(WorkCompleted(workId, result)) { event ⇒
+        log.info("Work {} is done by worker {}", transf, workerId)
+        changeWorkerToIdle(workerId, transf)
+        persist(WorkCompleted(transf.light, result)) { event ⇒
           workState = workState.updated(event)
-          mediator ! DistributedPubSubMediator.Publish(ResultsTopic, TransformResult(workId, result))
+          mediator ! DistributedPubSubMediator.Publish(ResultsTopic, TransformResult(transf, result))
 
           // Ack back to original sender
-          sender() ! MasterWorkerProtocol.Ack(workId)
+          sender() ! MasterWorkerProtocol.Ack(transf)
         }
       }
 
-    case MasterWorkerProtocol.WorkFailed(workerId, workId) =>
-      if (workState.isInProgress(workId)) {
-        log.info("Work {} failed by worker {}", workId, workerId)
-        changeWorkerToIdle(workerId, workId)
-        persist(WorkerFailed(workId)) { event ⇒
+    case MasterWorkerProtocol.WorkFailed(workerId, transf) =>
+      if (workState.isInProgress(transf.uid)) {
+        log.info("Work {} failed by worker {}", transf, workerId)
+        changeWorkerToIdle(workerId, transf)
+        persist(WorkerFailed(transf.light, "")) { event ⇒
           workState = workState.updated(event)
           notifyWorkers()
         }
       }
 
-    case work: Transform =>
+    case transf: Transform =>
       log.info("master received work...")
       // idempotent
-      if (workState.isAccepted(work)) {
+      if (workState.isAccepted(transf.uid)) {
         log.info("work is accepted...")
-        sender() ! Master.Ack(work)
+        sender() ! Master.Ack(transf)
       } else {
-        log.info("Accepted work: {}", work)
-        persist(WorkAccepted(work)) { event ⇒
+        log.info("Accepted work: {}", transf)
+        persist(WorkAccepted(transf.light)) { event ⇒
           // Ack back to original sender
-          sender() ! Master.Ack(work)
+          sender() ! Master.Ack(transf)
           workState = workState.updated(event)
           notifyWorkers()
         }
@@ -160,31 +161,24 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
         }
       }
 
-    case WorkerType(wid, wt) ⇒
-      workers += (wid -> workers(wid).copy(transDef = wt))
+    case TransformType(wid, wt) ⇒
+      workers += (wid -> workers(wid).copy(transDef = Some(wt)))
       //      log.info(s"workers list with new types: $workers")
-      log.info(s"workers types list: ${workers.map(w ⇒ w._2.transDef)}")
+      transformDefs += wt
+      log.info(s"workers transforms def. types: $transformDefs")
 
-    case QueryWorkStatus(workId) ⇒
-      if (workState.isDone(workId)) {
-        sender() ! JobIsCompleted(s"job [$workId] successfully completed ")
-      } else if (workState.isInProgress(workId)) {
-        sender() ! JobIsRunning(0) //todo need to get the percentage completion from somewhere
-      } else if (workState.isAccepted(workId)) {
-        sender() ! JobQueued //todo does not say enough
-      } else {
-        sender() ! JobLost //todo is it really like that?
-      }
+    case QueryWorkStatus(transfUID) ⇒
+      sender () ! workState.jobsInProgress(transfUID)
 
     case AllJobsStatus ⇒
-      sender() ! AllJobsFeedback(workState.pendingTransforms.toSet, workState.jobsInProgress.values.toSet, workState.jobsDone)
+      sender() ! workState.workStateSummary()
 
     case QueryJobInfo(qji) ⇒
-      sender() ! workState.jobInfo(qji) //todo implement
+      sender() ! "hello world" //todo implement
   }
 
   def notifyWorkers(): Unit = if (workState.hasWorkLeft) {
-    log.info(s"workstate=${workState.workstateSummary()} ,has some work left ?")
+    log.info(s"workstate=${workState.workStateSizeSummary()} ,has some work left ?")
     // could pick a few random instead of all
     workers.foreach {
       case (_, WorkerState(ref, Idle, _)) => ref ! MasterWorkerProtocol.WorkIsReady

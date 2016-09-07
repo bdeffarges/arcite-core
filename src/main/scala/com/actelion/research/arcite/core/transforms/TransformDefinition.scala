@@ -13,6 +13,13 @@ import spray.json.{DefaultJsonProtocol, DeserializationException, JsObject, JsSt
   *
   */
 
+/**
+  * description of a transform, what its purpose is, what it consumes and what it produces
+  *
+  * @param summary
+  * @param consumes
+  * @param produces
+  */
 case class TransformDescription(summary: String, consumes: String, produces: String)
 
 /**
@@ -22,35 +29,40 @@ case class TransformDescription(summary: String, consumes: String, produces: Str
   * @param fullName
   * @param description
   */
-case class TransformDefinitionLight(fullName: FullName, shortName: String, description: TransformDescription) {
-  lazy val digest = GetDigest.getDigest(s"$fullName $description")
+case class TransformDefinitionIdentity(fullName: FullName, shortName: String, description: TransformDescription) {
+  lazy val digestUID = GetDigest.getDigest(s"$fullName $description")
 }
 
 /**
   * Transforms are started from an actor, so here we add  a props to be able
   * to get a new actor that will do the actual transform job. This actor will be a worker actor in the cluster.
   *
-  * @param definitionLight
+  * @param transDefIdent
   * @param actorProps
   */
-case class TransformDefinition(definitionLight: TransformDefinitionLight, actorProps: () ⇒ Props)
+case class TransformDefinition(transDefIdent: TransformDefinitionIdentity, actorProps: () ⇒ Props)
 
 
-sealed trait TransformSource {
-  def experiment: Experiment
-}
 
 /**
   * Where to find the source data for the transform
   *
-  * @param experiment
-  * @param sourceFoldersOrFiles
   */
+sealed trait TransformSource {
+  def experiment: Experiment
+}
+
 case class TransformSourceFiles(experiment: Experiment, sourceFoldersOrFiles: Set[String]) extends TransformSource
 
-case class TransformAsSource4Transform(experiment: Experiment, transformUID: String, sourceFoldersOrFiles: Set[String]) extends TransformSource
 
-case class TransformSourceRegex(experiment: Experiment, folder: String, regex: String, withSubfolder: Boolean) extends TransformSource
+case class TransformAsSource4Transform(experiment: Experiment, transformUID: String,
+                                       sourceFoldersOrFiles: Set[String]) extends TransformSource
+
+
+case class TransformSourceRegex(experiment: Experiment, folder: String, regex: String,
+                                withSubfolder: Boolean) extends TransformSource
+
+case class TransformFromObject(experiment: Experiment, source: Any) extends TransformSource
 
 
 /**
@@ -62,10 +74,20 @@ case class TransformSourceRegex(experiment: Experiment, folder: String, regex: S
   * @param uid
   */
 case class Transform(definition: TransformDefinition, source: TransformSource, parameters: JsValue,
-                     uid: String = UUID.randomUUID().toString)
+                     uid: String = UUID.randomUUID().toString) {
 
+  val light = TransformLight(definition.transDefIdent.fullName, uid)
+}
 
-case class TransformWithRequester(transform: Transform, requester: ActorRef)
+/**
+  * a light object describing a transform without all extra information
+  *
+  * @param transfDefinitionName
+  * @param uid
+  */
+case class TransformLight(transfDefinitionName: FullName, uid: String)
+
+case class TransformWithRequester(transform: Transform, requester: ActorRef) //todo remove
 
 case class TransformHelper(transform: Transform) {
   def getTransformFolder(): Path = {
@@ -76,9 +98,9 @@ case class TransformHelper(transform: Transform) {
 
 object TransformDefinionJson extends DefaultJsonProtocol {
 
-  implicit object TransformDefinitionJsonFormat extends RootJsonFormat[TransformDefinitionLight] {
+  implicit object TransformDefinitionJsonFormat extends RootJsonFormat[TransformDefinitionIdentity] {
 
-    def write(tdl: TransformDefinitionLight) = {
+    def write(tdl: TransformDefinitionIdentity) = {
       JsObject(
         "organization" -> JsString(tdl.fullName.organization),
         "name" -> JsString(tdl.fullName.name),
@@ -86,7 +108,7 @@ object TransformDefinionJson extends DefaultJsonProtocol {
         "description_summary" -> JsString(tdl.description.summary),
         "description_consumes" -> JsString(tdl.description.consumes),
         "description_produces" -> JsString(tdl.description.produces),
-        "digest" -> JsString(tdl.digest)
+        "digest" -> JsString(tdl.digestUID)
       )
     }
 
@@ -95,13 +117,14 @@ object TransformDefinionJson extends DefaultJsonProtocol {
         "description_consumes", "description_produces") match {
         case Seq(JsString(organization), JsString(name), JsString(shortName),
         JsString(descSummary), JsString(descConsumes), JsString(descProduces)) =>
-          TransformDefinitionLight(FullName(organization, name), shortName,
+          TransformDefinitionIdentity(FullName(organization, name), shortName,
             TransformDescription(descSummary, descConsumes, descProduces))
 
         case _ => throw new DeserializationException("could not deserialize.")
       }
     }
   }
+
 }
 
 case class TransformResult(transform: Transform, result: Any)

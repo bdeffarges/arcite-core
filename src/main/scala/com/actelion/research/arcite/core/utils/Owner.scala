@@ -19,6 +19,9 @@ case class Owner(organization: String, person: String) {
   def asFileStructure = organization.replace(".", File.separator)
 }
 
+object DefaultOwner {
+  val systemOwner = Owner("system", "arcite")
+}
 
 trait OwnerJsonProtocol extends DefaultJsonProtocol {
   implicit val ownerJson = jsonFormat2(Owner)

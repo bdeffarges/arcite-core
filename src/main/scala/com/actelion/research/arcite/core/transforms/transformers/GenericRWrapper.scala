@@ -3,7 +3,7 @@ package com.actelion.research.arcite.core.transforms.transformers
 import java.io.File
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformDefinitionLight, TransformDescription}
+import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformDefinitionIdentity, TransformDescription}
 import com.actelion.research.arcite.core.utils.{Env, FullName}
 
 import scala.sys.process.ProcessLogger
@@ -45,8 +45,8 @@ class GenericRWrapper extends Actor with ActorLogging {
 object GenericRWrapper {
   def props(): Props = Props(classOf[GenericRWrapper])
 
-  val fullName = FullName("com.actelion.research.arcite.core", "Rwrapper")
-  val defLight = TransformDefinitionLight(fullName,
+  val fullName = FullName("com.actelion.research.arcite.core", "Simple-R-wrapper")
+  val defLight = TransformDefinitionIdentity(fullName, "r-wrapper",
     TransformDescription("A simple wrapper to run a r process wrapped in an akka actor",
       "takes several arguments to start a R script",
       "returns a status code, output and error Strings, R output (PDF, dataframe) have to be returned somewhere else"))

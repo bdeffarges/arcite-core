@@ -10,6 +10,7 @@ import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerS
 import akka.japi.Util._
 import akka.persistence.journal.leveldb.{SharedLeveldbJournal, SharedLeveldbStore}
 import akka.util.Timeout
+import com.actelion.research.arcite.core.transforms.TransformDefinition
 import com.actelion.research.arcite.core.transforms.cluster.workers.RWrapperWorker.RunRCode
 import com.actelion.research.arcite.core.transforms.cluster.workers.WorkExecProd.CalcProd
 import com.actelion.research.arcite.core.transforms.cluster.workers.WorkExecUpperCase.ToUpperCase
@@ -88,14 +89,16 @@ object ManageTransformCluster {
     system.actorOf(Props[Frontend], "frontend")
   }
 
-  def addWorker(props: Props, name: String): Unit = {
+  def addWorker(td: TransformDefinition): Unit = {
+
+    val name = s"${td.transDefIdent.shortName}-${td.transDefIdent.digestUID}"
 
     val clusterClient = workSystem.actorOf(
       ClusterClient.props(
         ClusterClientSettings(workSystem).withInitialContacts(workInitialContacts)
       ), s"WorkerClusterClient-$name")
 
-    workSystem.actorOf(TransformWorker.props(clusterClient, props), name)
+    workSystem.actorOf(TransformWorker.props(clusterClient, td.actorProps()), name)
   }
 
   def startupSharedJournal(system: ActorSystem, startStore: Boolean, path: ActorPath): Unit = {
@@ -140,19 +143,19 @@ object ManageTransformCluster {
     // todo fix lost jobs from worker not returning fast enough, look at "No ack from master, retrying"
     (0 to 40).foreach { i ⇒
       println(s"counter $i")
-      getNextFrontEnd() ! Work("R_helloWorld1"+UUID.randomUUID().toString, Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
-      Thread.sleep(100)
-      getNextFrontEnd() ! Work("uppercase1"+UUID.randomUUID().toString, Job(ToUpperCase("hello world, how are you doing"), "ToUpperCase"))
-      Thread.sleep(100)
-      getNextFrontEnd() ! Work("calcProduct1"+UUID.randomUUID().toString, Job(CalcProd(10), "product"))
-      Thread.sleep(100)
-      getNextFrontEnd() ! Work("uppercase2"+UUID.randomUUID().toString, Job(ToUpperCase("earth moon mars neptune jupiter "), "ToUpperCase"))
-      Thread.sleep(100)
-      getNextFrontEnd() ! Work("R_helloWorld2"+UUID.randomUUID().toString, Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
-      Thread.sleep(500)
-      getNextFrontEnd() ! Work("calcProduct1"+UUID.randomUUID().toString, Job(CalcProd(110), "product"))
-      getNextFrontEnd() ! Work("helloWorld3"+UUID.randomUUID().toString, Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
-      getNextFrontEnd() ! Work("helloWorld4"+UUID.randomUUID().toString, Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+//      getNextFrontEnd() ! Work("R_helloWorld1"+UUID.randomUUID().toString, Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+//      Thread.sleep(100)
+//      getNextFrontEnd() ! Work("uppercase1"+UUID.randomUUID().toString, Job(ToUpperCase("hello world, how are you doing"), "ToUpperCase"))
+//      Thread.sleep(100)
+//      getNextFrontEnd() ! Work("calcProduct1"+UUID.randomUUID().toString, Job(CalcProd(10), "product"))
+//      Thread.sleep(100)
+//      getNextFrontEnd() ! Work("uppercase2"+UUID.randomUUID().toString, Job(ToUpperCase("earth moon mars neptune jupiter "), "ToUpperCase"))
+//      Thread.sleep(100)
+//      getNextFrontEnd() ! Work("R_helloWorld2"+UUID.randomUUID().toString, Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+//      Thread.sleep(500)
+//      getNextFrontEnd() ! Work("calcProduct1"+UUID.randomUUID().toString, Job(CalcProd(110), "product"))
+//      getNextFrontEnd() ! Work("helloWorld3"+UUID.randomUUID().toString, Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
+//      getNextFrontEnd() ! Work("helloWorld4"+UUID.randomUUID().toString, Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
       Thread.sleep(500)
     }
   }
@@ -161,18 +164,19 @@ object ManageTransformCluster {
 
     defaultTransformClusterStart(Seq(2551, 2552, 2553, 2554, 2555, 2556, 2557, 2558), 30)
 
-    ManageTransformCluster.addWorker(RWrapperWorker.props(), "r_worker1")
-    ManageTransformCluster.addWorker(RWrapperWorker.props(), "r_worker2")
-    ManageTransformCluster.addWorker(RWrapperWorker.props(), "r_worker3")
-    ManageTransformCluster.addWorker(RWrapperWorker.props(), "r_worker4")
-    ManageTransformCluster.addWorker(WorkExecProd.props(), "prod-worker1")
-    ManageTransformCluster.addWorker(WorkExecProd.props(), "prod-worker2")
-    ManageTransformCluster.addWorker(WorkExecProd.props(), "prod-worker3")
-    ManageTransformCluster.addWorker(WorkExecProd.props(), "prod-worker4")
-    ManageTransformCluster.addWorker(WorkExecUpperCase.props(), "upper-worker1")
-    ManageTransformCluster.addWorker(WorkExecUpperCase.props(), "upper-worker2")
-    ManageTransformCluster.addWorker(WorkExecUpperCase.props(), "upper-worker3")
+    ManageTransformCluster.addWorker(RWrapperWorker.definition)
+    ManageTransformCluster.addWorker(RWrapperWorker.definition)
+    ManageTransformCluster.addWorker(RWrapperWorker.definition)
+    ManageTransformCluster.addWorker(RWrapperWorker.definition)
 
+    ManageTransformCluster.addWorker(WorkExecProd.definition)
+    ManageTransformCluster.addWorker(WorkExecProd.definition)
+    ManageTransformCluster.addWorker(WorkExecProd.definition)
+    ManageTransformCluster.addWorker(WorkExecProd.definition)
 
-  }
+    ManageTransformCluster.addWorker(WorkExecUpperCase.definition)
+    ManageTransformCluster.addWorker(WorkExecUpperCase.definition)
+    ManageTransformCluster.addWorker(WorkExecUpperCase.definition)
+
+ }
 }

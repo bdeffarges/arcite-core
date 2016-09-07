@@ -8,7 +8,7 @@ object MasterWorkerProtocol {
   case class RegisterWorker(workerId: String)
   case class WorkerRequestsWork(workerId: String)
   case class WorkIsDone(workerId: String, transf: Transform, result: Any)
-  case class WorkFailed(workerId: String, transf: Transform)
+  case class WorkFailed(problem: String)
 
   // Messages to Workers
   case object WorkIsReady

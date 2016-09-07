@@ -3,9 +3,12 @@ package com.actelion.research.arcite.core.transforms.cluster.workers
 import java.io.File
 
 import akka.actor.{Actor, ActorLogging, Props}
-import com.actelion.research.arcite.core.transforms.cluster.{WorkerTransDefinition, Worker, WorkerType}
+import com.actelion.research.arcite.core.transforms.cluster.MasterWorkerProtocol.WorkFailed
+import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.WorkComplete
 import com.actelion.research.arcite.core.transforms.cluster.workers.RWrapperWorker.{Rreturn, RunRCode}
-import com.actelion.research.arcite.core.utils.Env
+import com.actelion.research.arcite.core.transforms.cluster.{GetTransformDefinition, TransformType}
+import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformDefinitionIdentity, TransformDescription}
+import com.actelion.research.arcite.core.utils.{Env, FullName}
 
 import scala.sys.process.ProcessLogger
 
@@ -14,11 +17,13 @@ import scala.sys.process.ProcessLogger
   */
 class RWrapperWorker extends Actor with ActorLogging {
 
+  //should it also have it's own uid?
 
   val rScriptPath = Env.getConf("rscript")
 
   override def receive: Receive = {
     case rc: RunRCode ⇒
+
       val wdir = new File(rc.workingDir)
       if (!wdir.exists()) wdir.mkdirs()
 
@@ -33,18 +38,20 @@ class RWrapperWorker extends Actor with ActorLogging {
 
       val status = process.!(ProcessLogger(output append _, error append _))
 
-      val result = Rreturn(status, output.toString, error.toString)
+      val result = Rreturn(rc.transform, status, output.toString, error.toString)
       log.debug(s"rscript result is: $result")
 
-      sender() ! Worker.WorkComplete(result)
+      sender() ! WorkComplete(result)
 
 
-    case WorkerTransDefinition(wi) ⇒
+    case GetTransformDefinition(wi) ⇒
       log.debug(s"asking worker type for $wi")
-      sender() ! WorkerType(wi, RWrapperWorker.jobType)
+      sender() ! TransformType(wi, RWrapperWorker.definition)
 
-
-    case msg: Any ⇒ log.error(s"unable to deal with message $msg")
+    case msg: Any ⇒
+      val s = s"unable to deal with this message: $msg"
+      log.error(s)
+      sender() ! WorkFailed(s)
 
   }
 }
@@ -52,13 +59,19 @@ class RWrapperWorker extends Actor with ActorLogging {
 
 object RWrapperWorker {
 
-  val jobType = "r_code"
+  val fullName = FullName("com.actelion.research.arcite.core", "Simple-R-wrapper")
+  val defLight = TransformDefinitionIdentity(fullName, "r-wrapper",
+    TransformDescription("A simple wrapper to run a r process wrapped in an akka actor",
+      "takes several arguments to start a R script",
+      "returns a status code, output and error Strings, R output (PDF, dataframe) have to be returned somewhere else"))
+
+  val definition = TransformDefinition(defLight, props)
 
   def props(): Props = Props(classOf[RWrapperWorker])
 
-  case class RunRCode(workingDir: String, rCodePath: String, arguments: Seq[String])
+  case class RunRCode(transform: Transform, workingDir: String, rCodePath: String, arguments: Seq[String])
 
-  case class Rreturn(status: Int, output: String, error: String)
+  case class Rreturn(origin: Transform, status: Int, output: String, error: String)
 
 }
 

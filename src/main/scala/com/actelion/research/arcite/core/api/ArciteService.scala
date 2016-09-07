@@ -7,11 +7,10 @@ import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSumm
 import com.actelion.research.arcite.core.rawdata._
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{SearchForXResults, SearchForXResultsWithRequester}
 import com.actelion.research.arcite.core.transforms.GoTransformIt._
-import com.actelion.research.arcite.core.transforms.{GoTransformIt, TransformRouterActor}
+import com.actelion.research.arcite.core.transforms.TransformRouterActor
 import com.actelion.research.arcite.core.transforms.Transformers._
-import com.actelion.research.arcite.core.transforms.cluster.Frontend.{AllJobsStatus, JobInfo, QueryJobInfo, QueryWorkStatus}
+import com.actelion.research.arcite.core.transforms.cluster.Frontend.{AllJobsStatus, QueryJobInfo, QueryWorkStatus}
 import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
-import com.typesafe.scalalogging.LazyLogging
 
 /**
   * Created by deffabe1 on 2/29/16.

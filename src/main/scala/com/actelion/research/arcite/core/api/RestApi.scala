@@ -13,8 +13,9 @@ import com.actelion.research.arcite.core.rawdata._
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments}
 import com.actelion.research.arcite.core.transforms.GoTransformIt._
 import com.actelion.research.arcite.core.transforms.Transformers._
-import com.actelion.research.arcite.core.transforms.cluster.Frontend.{AllJobsFeedback, _}
-import com.actelion.research.arcite.core.transforms.{TransformDefinionJson, TransformDefinition}
+import com.actelion.research.arcite.core.transforms.cluster.Frontend._
+import com.actelion.research.arcite.core.transforms.cluster.WorkState._
+import com.actelion.research.arcite.core.transforms.{TransformDefinionJson, TransformDefinition, TransformLight}
 import com.actelion.research.arcite.core.utils.FullName
 import com.typesafe.scalalogging.LazyLogging
 
@@ -84,7 +85,7 @@ trait ArciteServiceApi extends LazyLogging {
   }
 
   def jobStatus(qws: QueryWorkStatus) = {
-    arciteService.ask(qws).mapTo[JobFeedback]
+    arciteService.ask(qws).mapTo[WorkStatus]
   }
 
   def jobsStatus() = {
@@ -92,7 +93,7 @@ trait ArciteServiceApi extends LazyLogging {
   }
 
   def jobInfo(workID: String) = {
-    arciteService.ask(QueryJobInfo(workID)).mapTo[JobInfo]
+    //    arciteService.ask(QueryJobInfo(workID)).mapTo[JobInfo]
   }
 
 }
@@ -119,8 +120,9 @@ trait ArciteJSONProtocol extends ExperimentJsonProtocol with DefineRawDataJsonFo
   implicit val runTransformFromTransformJson = jsonFormat5(RunTransformFromTransform)
   implicit val runTransformFromFolderJson = jsonFormat6(RunTransformFromFolderAndRegex)
 
+  implicit val transformLightJSon = jsonFormat2(TransformLight)
   implicit val getAllJobsFeedbackJson = jsonFormat3(AllJobsFeedback)
-  implicit val getJobInfoJson = jsonFormat2(JobInfo)
+  //  implicit val getJobInfoJson = jsonFormat2(JobInfo)
 
 }
 
@@ -140,7 +142,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
     runTransformFromFolderRoute ~
     transformFeedbackRoute ~
     allTransformsfeedbackRoute ~
-    jobInfoRoute ~
+    //    jobInfoRoute ~
     defaultRoute
 
   def defaultRoute = {
@@ -230,7 +232,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
     }
   }
 
-  def rawDataRoute = path("rawdata") { //todo replace raw data location with an uri location
+  def rawDataRoute = path("rawdata") {
+    //todo replace raw data location with an uri location
     post {
       logger.debug(s"adding raw data...")
       entity(as[RawDataSet]) { drd ⇒
@@ -301,10 +304,10 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       get {
         logger.debug(s"ask for job status? $workID")
         onSuccess(jobStatus(QueryWorkStatus(workID))) {
-          case JobLost ⇒ complete("job was lost")
-          case JobIsCompleted(feedback) ⇒ complete(s"job is completed $feedback")
-          case JobIsRunning(perDone) ⇒ complete(s"job is running $perDone %")
-          case JobQueued ⇒ complete("job queued...")
+          case WorkLost(uid) ⇒ complete(s"job $uid was lost")
+          case WorkCompleted(t, feedback) ⇒ complete(s"job is completed $feedback")
+          case WorkInProgress(t, perDone) ⇒ complete(s"job is running $perDone %")
+          case WorkAccepted(t) ⇒ complete("job queued...")
         }
       }
     }
@@ -320,18 +323,18 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
     }
   }
 
-  def jobInfoRoute = pathPrefix("job_info" / Segment) {
-    workID ⇒
-      pathEnd {
-        get {
-          logger.debug(s"returning job information for $workID")
-          onSuccess(jobInfo(workID)) {
-            case ji: JobInfo ⇒ complete(s"workID: ${ji.workId} jobType: ${ji.jobType}")
-            case _ ⇒ complete("unable to proceed message ")
-          }
-        }
-      }
-  }
+  //  def jobInfoRoute = pathPrefix("job_info" / Segment) {
+  //    workID ⇒
+  //      pathEnd {
+  //        get {
+  //          logger.debug(s"returning job information for $workID")
+  //          onSuccess(jobInfo(workID)) {
+  //            case ji: JobInfo ⇒ complete(s"workID: ${ji.workId} jobType: ${ji.jobType}")
+  //            case _ ⇒ complete("unable to proceed message ")
+  //          }
+  //        }
+  //      }
+  //  }
 }
 
 /**

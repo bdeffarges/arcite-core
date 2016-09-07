@@ -88,11 +88,11 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
       workExecutor ! t //todo needs to be less than t
       context.become(working)
 
-    case GetTransformDefinition ⇒
+    case gtd: GetTransformDefinition ⇒
       log.info(s"asked for my [$self] workerType ")
-      workExecutor ! WorkerTransDefinition(transformDefinition)
+      workExecutor ! gtd
 
-    case wt: WorkerType ⇒
+    case wt: TransformType ⇒
       sendToMaster(wt)
   }
 
@@ -103,7 +103,7 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
       context.setReceiveTimeout(5.seconds)
       context.become(waitForWorkIsDoneAck(result))
 
-    case _: Work =>
+    case _: Transform =>
       log.info("Yikes. Master told me to do work, while I'm working.")
   }
 

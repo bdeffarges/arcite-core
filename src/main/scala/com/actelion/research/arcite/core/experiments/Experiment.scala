@@ -2,7 +2,7 @@ package com.actelion.research.arcite.core.experiments
 
 import java.nio.file.Paths
 
-import com.actelion.research.arcite.core.utils.{Env, GetDigest, Owner, OwnerJsonProtocol}
+import com.actelion.research.arcite.core.utils._
 import spray.json.{DefaultJsonProtocol, JsArray, JsString, JsValue, RootJsonFormat}
 
 
@@ -19,6 +19,11 @@ case class Experiment(name: String, description: String, owner: Owner, state: Ex
                       design: ExperimentalDesign = ExperimentalDesign(), properties: Map[String, String] = Map()) {
 
   def digest = GetDigest.getDigest(s"${owner.organization}$name")
+}
+
+object DefaultExperiment {
+
+  val defaultExperiment = Experiment("default-experiment", "an experiment to experiment with the system", DefaultOwner.systemOwner)
 }
 
 /**

@@ -4,6 +4,8 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 
 /**
   * Created by deffabe1 on 5/19/16.
+  *
+  * todo should come from the cluster
   */
 class Transformers extends Actor with ActorLogging {
 
@@ -12,7 +14,7 @@ class Transformers extends Actor with ActorLogging {
   override def receive = {
 
     case AddTransformerWithReq(transformDefinition, requester) ⇒
-        transformers += ((transformDefinition.definitionLight.digest, transformDefinition))
+        transformers += ((transformDefinition.transDefIdent.digestUID, transformDefinition))
         requester ! TransformerAdded
 
     case GetAllTransformersWithReq(requester) ⇒
@@ -23,7 +25,7 @@ class Transformers extends Actor with ActorLogging {
 
     case GetTransformerWithReq(digest, requester) ⇒
       val td = Option(transformers(digest))
-      if (td.isDefined) requester ! OneTransformer(td.get.definitionLight)
+      if (td.isDefined) requester ! OneTransformer(td.get.transDefIdent)
       else requester ! NoTransformerFound
   }
 }
@@ -48,9 +50,9 @@ object Transformers {
 
   sealed trait MessageFromTransformers
 
-  case class ManyTransformers(transformers: Set[TransformDefinitionLight]) extends MessageFromTransformers
+  case class ManyTransformers(transformers: Set[TransformDefinitionIdentity]) extends MessageFromTransformers
 
-  case class OneTransformer(transformer: TransformDefinitionLight) extends MessageFromTransformers
+  case class OneTransformer(transformer: TransformDefinitionIdentity) extends MessageFromTransformers
 
   case object TransformerAdded extends MessageFromTransformers
 
@@ -62,13 +64,13 @@ object Transformers {
 //    (RunRNormalization.transformDefinition.definitionLight.digest, RunRNormalization.transformDefinition)
   )
 
-  def findTransformers(search: String): Set[TransformDefinitionLight] = {
+  def findTransformers(search: String): Set[TransformDefinitionIdentity] = {
     val transfs = transformers.values
 
-    (transfs.map(t ⇒ t.definitionLight).filter(td ⇒ td.fullName.name.toLowerCase.contains(search)).take(10) ++
-    transfs.map(t ⇒ t.definitionLight).filter(td ⇒ td.fullName.organization.toLowerCase.contains(search)).take(5) ++
-    transfs.map(t ⇒ t.definitionLight).filter(td ⇒ td.description.summary.toLowerCase.contains(search)) ++
-    transfs.map(t ⇒ t.definitionLight).filter(td ⇒ td.description.consumes.toLowerCase.contains(search)) ++
-    transfs.map(t ⇒ t.definitionLight).filter(td ⇒ td.description.produces.toLowerCase.contains(search))).toSet
+    (transfs.map(t ⇒ t.transDefIdent).filter(td ⇒ td.fullName.name.toLowerCase.contains(search)).take(10) ++
+    transfs.map(t ⇒ t.transDefIdent).filter(td ⇒ td.fullName.organization.toLowerCase.contains(search)).take(5) ++
+    transfs.map(t ⇒ t.transDefIdent).filter(td ⇒ td.description.summary.toLowerCase.contains(search)) ++
+    transfs.map(t ⇒ t.transDefIdent).filter(td ⇒ td.description.consumes.toLowerCase.contains(search)) ++
+    transfs.map(t ⇒ t.transDefIdent).filter(td ⇒ td.description.produces.toLowerCase.contains(search))).toSet
   }
 }

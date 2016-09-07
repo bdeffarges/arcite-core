@@ -21,8 +21,8 @@
  */
 package com.actelion.research.arcite.core.transforms.cluster
 
-import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition}
-import com.actelion.research.arcite.core.transforms.cluster.Frontend.JobInfo
+import com.actelion.research.arcite.core.transforms.TransformLight
+import com.actelion.research.arcite.core.utils.FullName
 
 import scala.collection.immutable.Queue
 
@@ -30,69 +30,84 @@ import scala.collection.immutable.Queue
 object WorkState {
 
   def empty: WorkState = WorkState(
-    pendingTransforms = Queue.empty,
+    pendingJobs = Queue.empty,
     jobsInProgress = Map.empty,
     jobsAccepted = Set.empty,
     jobsDone = Set.empty)
 
-  trait WorkDomainEvent
+  sealed trait WorkStatus
 
-  case class WorkAccepted(trans: Transform) extends WorkDomainEvent
+  case class WorkAccepted(transformLight: TransformLight) extends WorkStatus
 
-  //todo replace with a FIFO
+  case class WorkInProgress(transformLight: TransformLight, percentProgress: Int) extends WorkStatus
 
-  case class WorkStarted(trans: Transform) extends WorkDomainEvent
+  case class WorkCompleted(transformLight: TransformLight, result: Any) extends WorkStatus
 
-  case class WorkCompleted(trans: Transform, result: Any) extends WorkDomainEvent
+  case class WorkLost(uid: String) extends WorkStatus
 
-  case class WorkerFailed(trans: Transform) extends WorkDomainEvent
+  case class WorkerFailed(transformLight: TransformLight, comment: String) extends WorkStatus
 
-  case class WorkerTimedOut(trans: Transform) extends WorkDomainEvent
+  case class WorkerTimedOut(transformLight: TransformLight) extends WorkStatus
+
+  //the summary of the workState
+  case class AllJobsFeedback(pendingJobs: Set[TransformLight], jobsInProgress: Set[TransformLight],
+                             jobsDone: Set[TransformLight])
 
 }
 
-//todo should they really all contain transforms or rather a subset?
-case class WorkState(pendingTransforms: Queue[Transform],
-                     jobsInProgress: Map[String, Transform],
-                     jobsAccepted: Set[Transform],
-                     jobsDone: Set[Transform]) {
+//todo accepted contains everything, what about removing it?
+case class WorkState(pendingJobs: Queue[TransformLight],
+                     jobsInProgress: Map[String, TransformLight],
+                     jobsAccepted: Set[TransformLight],
+                     jobsDone: Set[TransformLight]) {
 
   import WorkState._
 
-  def hasWorkLeft: Boolean = pendingTransforms.nonEmpty
+  def hasWorkLeft: Boolean = pendingJobs.nonEmpty
 
-  def hasWork(transDef: TransformDefinition): Boolean = {
-    pendingTransforms.exists(_.definition == transDef)
+  def hasWork(fullName: FullName): Boolean = {
+    pendingJobs.exists(_.transfDefinitionName == fullName)
   }
 
-  def nextWork(transDef: TransformDefinition): Option[Transform] = {
-    pendingTransforms.find(_.definition == transDef)
+  def nextWork(fullName: FullName): Option[TransformLight] = {
+    pendingJobs.find(_.transfDefinitionName == fullName)
   }
 
-  def pendingJobs(): Int = pendingTransforms.size
+  def numberOfPendingJobs(): Int = pendingJobs.size
 
-  def isAccepted(transf: Transform): Boolean = jobsAccepted.contains(transf)
+  def isAccepted(workId: String): Boolean = jobsAccepted.exists(_.uid == workId)
 
-  def isInProgress(transf: Transform): Boolean = jobsInProgress.values.toSet.contains(transf)
+  def isInProgress(workId: String): Boolean = jobsInProgress.values.exists(_.uid == workId)
 
-  def isDone(transf: Transform): Boolean = jobsDone.contains(transf)
+  def isDone(workId: String): Boolean = jobsDone.exists(_.uid == workId)
 
-  def updated(event: WorkDomainEvent): WorkState = event match {
+  def jobState(transfID: String): WorkStatus = {
+    val jd = jobsDone.find(_.uid == transfID)
+    if (jd.isDefined) return WorkCompleted(jd.get, "")
+
+    if (jobsInProgress(transfID) != null) return WorkInProgress(jobsInProgress(transfID), 0)
+
+    val pj = pendingJobs.find(_.uid == transfID)
+    if (pj.isDefined) return WorkAccepted(pj.get)
+
+    WorkLost(transfID)
+  }
+
+  def updated(event: WorkStatus): WorkState = event match {
     case WorkAccepted(transf) ⇒
       copy(
-        pendingTransforms = pendingTransforms enqueue transf,
+        pendingJobs = pendingJobs enqueue transf,
         jobsAccepted = jobsAccepted + transf)
 
-    case WorkStarted(transf) ⇒
-      val w = pendingTransforms.find(_.definition == transf)
-
-      if (w.nonEmpty) {
-        val (work, rest) = (w.get, pendingTransforms.filterNot(w.get == _))
-        copy(
-          pendingTransforms = rest,
-          jobsInProgress = jobsInProgress + (transf.uid -> work))
-      } else {
-        this
+    case WorkInProgress(transf, progres) ⇒
+      pendingJobs.find(_.transfDefinitionName == transf.transfDefinitionName) match {
+        case Some(t) ⇒
+          val (work, rest) = (t, pendingJobs.filterNot(t == _))
+          copy(
+            pendingJobs = rest,
+            jobsInProgress = jobsInProgress + (transf.uid -> work))
+        case _ ⇒
+          this
       }
 
     case WorkCompleted(transf, result) ⇒
@@ -100,22 +115,19 @@ case class WorkState(pendingTransforms: Queue[Transform],
         jobsInProgress = jobsInProgress - transf.uid,
         jobsDone = jobsDone + transf)
 
-    case WorkerFailed(workId) ⇒
+    case WorkerFailed(t, cmt) ⇒
       copy(
-        pendingTransforms = pendingTransforms enqueue jobsInProgress(workId.uid),
-        jobsInProgress = jobsInProgress - workId.uid)
+        pendingJobs = pendingJobs enqueue jobsInProgress(t.uid),
+        jobsInProgress = jobsInProgress - t.uid)
 
     case WorkerTimedOut(workId) ⇒
       copy(
-        pendingTransforms = pendingTransforms enqueue jobsInProgress(workId.uid),
+        pendingJobs = pendingJobs enqueue jobsInProgress(workId.uid),
         jobsInProgress = jobsInProgress - workId.uid)
   }
 
-  def workstateSummary(): String = s"acceptedJobs= ${jobsAccepted.size} jobsInProgress=${jobsInProgress.size} jobsDone=${jobsDone.size}"
+  def workStateSummary(): AllJobsFeedback = AllJobsFeedback(pendingJobs.toSet, jobsInProgress.values.toSet, jobsDone)
 
-  def jobInfo(workID: String): JobInfo = {
-    // todo later on should pick it up from the collection where it's stored..
-    // temp object returned for testing
-    JobInfo(workID, "...testing...")
-  }
+  def workStateSizeSummary(): String = s"acceptedJobs= ${jobsAccepted.size} jobsInProgress=${jobsInProgress.size} jobsDone=${jobsDone.size}"
+
 }
