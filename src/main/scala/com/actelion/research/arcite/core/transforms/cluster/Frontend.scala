@@ -5,14 +5,15 @@ import akka.actor.{Actor, ActorLogging}
 import akka.pattern._
 import akka.util.Timeout
 import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
-import com.actelion.research.arcite.core.transforms.{Transform, TransformLight}
+import com.actelion.research.arcite.core.transforms.RunTransform.ProceedWithTransform
+import com.actelion.research.arcite.core.transforms.Transformers.GetAllTransformers
+import com.actelion.research.arcite.core.transforms.Transform
 
 object Frontend {
 
-  // work has been accepted
-  case class Ok(transf: Transform)
-
-  case object NotOk
+  sealed trait TransformJobAccepted
+  case class Ok(transfUID: String) extends TransformJobAccepted
+  case object NotOk extends TransformJobAccepted
 
   case class QueryWorkStatus(uid: String)
 
@@ -51,16 +52,20 @@ class Frontend extends Actor with ActorLogging {
       implicit val timeout = Timeout(1.second)
       (masterProxy ? qji) pipeTo sender()
 
-    case transf: Transform ⇒
-      log.info(s"got work message [$transf]")
+    case pWithTransf: ProceedWithTransform ⇒
+      log.info(s"got work message [$pWithTransf]")
       implicit val timeout = Timeout(5.seconds)
-      (masterProxy ? transf) map {
-        case Master.Ack(wid) => {
-          log.info(s"work accepted, workid: $wid")
-          Ok(wid)
+      (masterProxy ? pWithTransf) map {
+        case Master.Ack(transf) => {
+          log.info(s"work accepted, workid: $transf")
+          Ok(transf.uid)
         }
       } recover { case _ => NotOk } pipeTo sender()
 
-    case m: Any ⇒ log.info(s"don't know what to do with message $m")
+    case GetAllTransformers ⇒
+      implicit val timeout = Timeout(5.seconds)
+      (masterProxy ? GetAllTransformers) pipeTo sender()
+
+    case m: Any ⇒ log.error(s"don't know what to do with message $m")
   }
 }

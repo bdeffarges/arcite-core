@@ -1,21 +1,21 @@
 package com.actelion.research.arcite.core.experiments
 
-import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file._
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import com.actelion.research.arcite.core.api.ArciteService.{DidNotFindExperiment, _}
 import com.actelion.research.arcite.core.experiments.LocalExperiments._
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex._
 import com.actelion.research.arcite.core.utils.Env
+import com.typesafe.config.ConfigFactory
 
 /**
   * Created by bernitu on 06/03/16.
   */
 
-class ManageExperiments(owner: ActorRef) extends Actor with ExperimentJsonProtocol with ActorLogging {
+class ManageExperiments extends Actor with ExperimentJsonProtocol with ActorLogging {
 
   import ManageExperiments._
 
@@ -33,7 +33,7 @@ class ManageExperiments(owner: ActorRef) extends Actor with ExperimentJsonProtoc
     case AddExperiment(exp) ⇒ // so far for experiments read locally on hard drive
       experiments += ((exp.digest, exp))
 
-      owner ! AddedExperiment
+      sender() ! AddedExperiment
       self ! TakeSnapshot
 
     case AddExperimentWithRequester(exp, requester) ⇒ //todo should be merged with previous case
@@ -47,7 +47,7 @@ class ManageExperiments(owner: ActorRef) extends Actor with ExperimentJsonProtoc
       }
 
     case GetExperiments ⇒
-      owner ! experiments.values.toSet
+      sender() ! experiments.values.toSet
 
 
     case TakeSnapshot ⇒
@@ -62,15 +62,15 @@ class ManageExperiments(owner: ActorRef) extends Actor with ExperimentJsonProtoc
 
       Files.write(path, strg.getBytes(StandardCharsets.UTF_8), CREATE, CREATE_NEW)
 
-      owner ! SnapshotTaken
+      sender() ! SnapshotTaken
 
     case SaveExperiment(exp) ⇒
-      owner ! LocalExperiments.saveExperiment(exp)
+      sender() ! LocalExperiments.saveExperiment(exp)
 
 
     case LoadExperiment(folder: String) ⇒
       val expCon = LocalExperiments.loadExperiment(Paths.get(folder))
-      owner ! expCon
+      sender() ! expCon
 
 
     case GetAllExperiments ⇒
@@ -135,5 +135,13 @@ object ManageExperiments extends ExperimentJsonProtocol {
 
   def getExperimentFromDigest(digest: String): Option[Experiment] = {
     experiments.get(digest)
+  }
+
+  def startActorSystemForExperiments = {
+    val config = ConfigFactory.load()
+
+    val actSystem = ActorSystem("experiments-actor-system", config.getConfig("experiments-actor-system"))
+
+    actSystem.actorOf(Props(classOf[ManageExperiments]), "experiments_manager")
   }
 }

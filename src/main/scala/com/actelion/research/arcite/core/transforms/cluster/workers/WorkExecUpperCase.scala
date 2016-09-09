@@ -3,7 +3,7 @@ package com.actelion.research.arcite.core.transforms.cluster.workers
 import akka.actor.{Actor, ActorLogging, Props}
 import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.WorkComplete
 import com.actelion.research.arcite.core.transforms.cluster.{GetTransformDefinition, TransformType}
-import com.actelion.research.arcite.core.transforms.{TransformDefinition, TransformDefinitionIdentity, TransformDescription}
+import com.actelion.research.arcite.core.transforms._
 import com.actelion.research.arcite.core.utils.FullName
 
 class WorkExecUpperCase extends Actor with ActorLogging {
@@ -11,11 +11,15 @@ class WorkExecUpperCase extends Actor with ActorLogging {
   import WorkExecUpperCase._
 
   def receive = {
-    case ToUpperCase(stg) =>
+    case t: Transform =>
+      require (t.definition == definition)
       log.info("starting work but will wait for fake...")
       Thread.sleep(10000)
-      log.info("waited enough time, doing the work now...")
-      sender() ! WorkComplete(s"in upperString=${stg.toUpperCase()}")
+      t.source match {
+        case tfo: TransformFromObject ⇒
+          log.info("waited enough time, doing the work now...")
+          sender() ! WorkComplete(s"in upperString=${tfo.toString.toUpperCase()}")
+      }
 
     case GetTransformDefinition(wi) ⇒
       log.debug(s"asking worker type for $wi")

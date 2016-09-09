@@ -6,8 +6,7 @@ import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddExper
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSummary, ManageExperiments}
 import com.actelion.research.arcite.core.rawdata._
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{SearchForXResults, SearchForXResultsWithRequester}
-import com.actelion.research.arcite.core.transforms.GoTransformIt._
-import com.actelion.research.arcite.core.transforms.TransformRouterActor
+import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.Transformers._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.{AllJobsStatus, QueryJobInfo, QueryWorkStatus}
 import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
@@ -26,6 +25,7 @@ object ArciteService {
   case class GetAgilentRawMatrix(matrixHashCode: String)
 
   trait MatrixResponse
+
 
   case class MatrixCreated(target: String)
 
@@ -54,12 +54,14 @@ object ArciteService {
 
   case object AddedExperiment extends AddExperimentResponse
 
-  case class FailedAddingExperiment(reason: String)extends AddExperimentResponse
+  case class FailedAddingExperiment(reason: String) extends AddExperimentResponse
 
 
   sealed trait GetExperimentResponse
 
-  case class ExperimentFound(exp: Experiment) extends GetExperimentResponse //todo to be renamed
+  case class ExperimentFound(exp: Experiment) extends GetExperimentResponse
+
+  //todo to be renamed
 
   case class ExperimentsFound(exp: Set[Experiment]) extends GetExperimentResponse
 
@@ -72,11 +74,9 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
   import context._
 
-  val expManager = context.system.actorOf(Props(classOf[ManageExperiments], self))
+  val expManager = context.system.actorOf(Props(classOf[ManageExperiments], self), "experiments_manager")
 
   val defineRawDataAct = context.system.actorOf(Props(classOf[DefineRawData]))
-
-  val transformRouterActor = context.system.actorOf(Props(classOf[TransformRouterActor]))
 
 
   import ArciteService._
@@ -109,45 +109,47 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
       defineRawDataAct ! RawDataSetWithRequester(rds, sender())
 
+
     case rds: RawDataSetRegex ⇒
 
       defineRawDataAct ! RawDataSetRegexWithRequester(rds, sender())
 
+
     case GetAllTransformers ⇒
 
-      transformRouterActor ! GetAllTransformersWithReq(sender())
+      ManageTransformCluster.getNextFrontEnd() forward GetAllTransformers
+
 
     case FindTransformer(search) ⇒
 
-      transformRouterActor ! FindTransformerWithReq(search, sender())
+      ManageTransformCluster.getNextFrontEnd() forward FindTransformerWithReq(search, sender())
+
 
     case GetTransformer(digest) ⇒
 
-      transformRouterActor ! GetTransformerWithReq(digest, sender())
+      ManageTransformCluster.getNextFrontEnd() forward GetTransformerWithReq(digest, sender())
 
-    case rt: RunTransformFromFiles ⇒
 
-      transformRouterActor ! RunTransformFromFilesWithRequester(rt, sender())
+    case rt: ProceedWithTransform ⇒
+      log.info(s"transform requested ${rt}")
+      ManageTransformCluster.getNextFrontEnd() forward rt
 
-    case rt: RunTransformFromTransform ⇒
 
-      transformRouterActor ! RunTransformFromTransformWithRequester(rt, sender())
-
-    case rt: RunTransformFromFolderAndRegex ⇒
-
-      transformRouterActor ! RunTransformFromFolderAndRegexWithRequester(rt, sender())
-
-      // messages to workers cluster
+    // messages to workers cluster
     case qws: QueryWorkStatus ⇒
       ManageTransformCluster.getNextFrontEnd() forward qws
+
 
     case AllJobsStatus ⇒
       ManageTransformCluster.getNextFrontEnd() forward AllJobsStatus
 
+
     case ji: QueryJobInfo ⇒
       ManageTransformCluster.getNextFrontEnd() forward ji
 
-      //don't know what to do with this message...
+
+
+    //don't know what to do with this message...
     case _ ⇒ log.error("don't know what to do with the passed message... ")
   }
 }

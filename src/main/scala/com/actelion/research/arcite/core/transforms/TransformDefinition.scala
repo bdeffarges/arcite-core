@@ -41,7 +41,7 @@ case class TransformDefinitionIdentity(fullName: FullName, shortName: String, de
   * @param actorProps
   */
 case class TransformDefinition(transDefIdent: TransformDefinitionIdentity, actorProps: () ⇒ Props)
-
+//  todo add time out for job
 
 
 /**
@@ -52,17 +52,43 @@ sealed trait TransformSource {
   def experiment: Experiment
 }
 
-case class TransformSourceFiles(experiment: Experiment, sourceFoldersOrFiles: Set[String]) extends TransformSource
+/**
+  * in case the transform takes files as input we can add some inclusion/exclusion criteria for some files
+  * (e.g. if user decides to exclude outliers in an experiment).
+  *
+  */
+sealed trait TransformSourceFromFiles extends TransformSource {
+  def includes: Set[String]
+
+  def includesRegex: Set[String]
+
+  def excludes: Set[String]
+
+  def excludesRegex: Set[String]
+}
+
+case class TransformSourceFiles(experiment: Experiment, sourceFoldersOrFiles: Set[String],
+                                includes: Set[String] = Set(), excludes: Set[String] = Set(),
+                                includesRegex: Set[String] = Set(), excludesRegex: Set[String] = Set()) extends TransformSourceFromFiles
+
+case class TransformAsSource4Transform(experiment: Experiment, transformUID: String, sourceFoldersOrFiles: Set[String],
+                                       includes: Set[String] = Set(), excludes: Set[String] = Set(),
+                                       includesRegex: Set[String] = Set(), excludesRegex: Set[String] = Set()) extends TransformSourceFromFiles
+
+case class TransformSourceRegex(experiment: Experiment, folder: String, regex: String, withSubfolder: Boolean,
+                                includes: Set[String] = Set(), excludes: Set[String] = Set(),
+                                includesRegex: Set[String] = Set(), excludesRegex: Set[String] = Set()) extends TransformSourceFromFiles
+
+case class TransformFromObject(experiment: Experiment, source: JsValue) extends TransformSource
 
 
-case class TransformAsSource4Transform(experiment: Experiment, transformUID: String,
-                                       sourceFoldersOrFiles: Set[String]) extends TransformSource
-
-
-case class TransformSourceRegex(experiment: Experiment, folder: String, regex: String,
-                                withSubfolder: Boolean) extends TransformSource
-
-case class TransformFromObject(experiment: Experiment, source: Any) extends TransformSource
+/**
+  * a light object describing a transform without all extra information
+  *
+  * @param transfDefinitionName
+  * @param uid
+  */
+case class TransformLight(transfDefinitionName: FullName, uid: String)
 
 
 /**
@@ -79,15 +105,6 @@ case class Transform(definition: TransformDefinition, source: TransformSource, p
   val light = TransformLight(definition.transDefIdent.fullName, uid)
 }
 
-/**
-  * a light object describing a transform without all extra information
-  *
-  * @param transfDefinitionName
-  * @param uid
-  */
-case class TransformLight(transfDefinitionName: FullName, uid: String)
-
-case class TransformWithRequester(transform: Transform, requester: ActorRef) //todo remove
 
 case class TransformHelper(transform: Transform) {
   def getTransformFolder(): Path = {
@@ -96,9 +113,9 @@ case class TransformHelper(transform: Transform) {
 }
 
 
-object TransformDefinionJson extends DefaultJsonProtocol {
+object TransformDefinitionIdentityJson extends DefaultJsonProtocol {
 
-  implicit object TransformDefinitionJsonFormat extends RootJsonFormat[TransformDefinitionIdentity] {
+  implicit object TransformDefinitionIdentityJsonFormat extends RootJsonFormat[TransformDefinitionIdentity] {
 
     def write(tdl: TransformDefinitionIdentity) = {
       JsObject(
@@ -126,5 +143,6 @@ object TransformDefinionJson extends DefaultJsonProtocol {
   }
 
 }
+
 
 case class TransformResult(transform: Transform, result: Any)

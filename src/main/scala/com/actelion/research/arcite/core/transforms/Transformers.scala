@@ -17,8 +17,8 @@ class Transformers extends Actor with ActorLogging {
         transformers += ((transformDefinition.transDefIdent.digestUID, transformDefinition))
         requester ! TransformerAdded
 
-    case GetAllTransformersWithReq(requester) ⇒
-      requester ! ManyTransformers(transformers.values.map(d ⇒ d.definitionLight).toSet)
+//    case GetAllTransformersWithReq(requester) ⇒
+//      requester ! ManyTransformers(transformers.values.map(d ⇒ d.definitionLight).toSet)
 
     case FindTransformerWithReq(search, requester) ⇒
       requester ! ManyTransformers(findTransformers(search))

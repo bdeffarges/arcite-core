@@ -32,7 +32,7 @@ class ManageExperimentsTest extends TestKit(ActorSystem("Experiments"))
 
       val endProbe = TestProbe()
 
-      val actorRef = system.actorOf(Props(new ManageExperiments(endProbe.ref)))
+      val actorRef = system.actorOf(Props(new ManageExperiments))
 
       actorRef ! SaveExperiment(experiment1)
 
@@ -45,7 +45,7 @@ class ManageExperimentsTest extends TestKit(ActorSystem("Experiments"))
 
       val endProbe = TestProbe()
 
-      val actorRef = system.actorOf(Props(new ManageExperiments(endProbe.ref)))
+      val actorRef = system.actorOf(Props(new ManageExperiments))
 
       actorRef ! SaveExperiment(experiment2)
 
@@ -62,7 +62,7 @@ class ManageExperimentsTest extends TestKit(ActorSystem("Experiments"))
 
       val endProbe = TestProbe()
 
-      val actorRef = system.actorOf(Props(new ManageExperiments(endProbe.ref)))
+      val actorRef = system.actorOf(Props(new ManageExperiments))
 
       actorRef ! AddExperiment(experiment1)
 

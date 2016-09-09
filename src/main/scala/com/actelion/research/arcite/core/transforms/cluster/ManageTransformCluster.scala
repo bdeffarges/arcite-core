@@ -11,12 +11,8 @@ import akka.japi.Util._
 import akka.persistence.journal.leveldb.{SharedLeveldbJournal, SharedLeveldbStore}
 import akka.util.Timeout
 import com.actelion.research.arcite.core.transforms.TransformDefinition
-import com.actelion.research.arcite.core.transforms.cluster.workers.RWrapperWorker.RunRCode
-import com.actelion.research.arcite.core.transforms.cluster.workers.WorkExecProd.CalcProd
-import com.actelion.research.arcite.core.transforms.cluster.workers.WorkExecUpperCase.ToUpperCase
-import com.actelion.research.arcite.core.transforms.cluster.workers.{RWrapperWorker, WorkExecProd, WorkExecUpperCase}
+import com.actelion.research.arcite.core.transforms.cluster.workers.WorkExecUpperCase
 import com.typesafe.config.ConfigFactory
-import kamon.Kamon
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.forkjoin.ThreadLocalRandom
@@ -91,14 +87,14 @@ object ManageTransformCluster {
 
   def addWorker(td: TransformDefinition): Unit = {
 
-    val name = s"${td.transDefIdent.shortName}-${td.transDefIdent.digestUID}"
+    val name = s"${td.transDefIdent.shortName}-${UUID.randomUUID().toString}"
 
     val clusterClient = workSystem.actorOf(
       ClusterClient.props(
         ClusterClientSettings(workSystem).withInitialContacts(workInitialContacts)
       ), s"WorkerClusterClient-$name")
 
-    workSystem.actorOf(TransformWorker.props(clusterClient, td.actorProps()), name)
+    workSystem.actorOf(TransformWorker.props(clusterClient, td), name)
   }
 
   def startupSharedJournal(system: ActorSystem, startStore: Boolean, path: ActorPath): Unit = {
@@ -132,7 +128,7 @@ object ManageTransformCluster {
     */
   def main(args: Array[String]): Unit = {
 
-    Kamon.start()
+//    Kamon.start()
 
     startSomeDefaultClusterForTesting()
 
@@ -164,16 +160,16 @@ object ManageTransformCluster {
 
     defaultTransformClusterStart(Seq(2551, 2552, 2553, 2554, 2555, 2556, 2557, 2558), 30)
 
-    ManageTransformCluster.addWorker(RWrapperWorker.definition)
-    ManageTransformCluster.addWorker(RWrapperWorker.definition)
-    ManageTransformCluster.addWorker(RWrapperWorker.definition)
-    ManageTransformCluster.addWorker(RWrapperWorker.definition)
-
-    ManageTransformCluster.addWorker(WorkExecProd.definition)
-    ManageTransformCluster.addWorker(WorkExecProd.definition)
-    ManageTransformCluster.addWorker(WorkExecProd.definition)
-    ManageTransformCluster.addWorker(WorkExecProd.definition)
-
+//    ManageTransformCluster.addWorker(RWrapperWorker.definition)
+//    ManageTransformCluster.addWorker(RWrapperWorker.definition)
+//    ManageTransformCluster.addWorker(RWrapperWorker.definition)
+//    ManageTransformCluster.addWorker(RWrapperWorker.definition)
+//
+//    ManageTransformCluster.addWorker(WorkExecProd.definition)
+//    ManageTransformCluster.addWorker(WorkExecProd.definition)
+//    ManageTransformCluster.addWorker(WorkExecProd.definition)
+//    ManageTransformCluster.addWorker(WorkExecProd.definition)
+//
     ManageTransformCluster.addWorker(WorkExecUpperCase.definition)
     ManageTransformCluster.addWorker(WorkExecUpperCase.definition)
     ManageTransformCluster.addWorker(WorkExecUpperCase.definition)

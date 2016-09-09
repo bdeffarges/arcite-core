@@ -67,7 +67,7 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
 
     case _: Exception =>
       currentTransform foreach {transf ⇒
-        sendToMaster(WorkFailed(workerId, transf))
+//        sendToMaster(WorkFailed(workerId, transf))
       }
       context.become(idle)
       Restart
@@ -132,9 +132,9 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
 }
 
 object TransformWorker {
-  def props(clusterClient: ActorRef, workExecutorProps: Props,
+  def props(clusterClient: ActorRef, transfDef: TransformDefinition,
             registerInterval: FiniteDuration = 10.seconds): Props =
-    Props(classOf[TransformWorker], clusterClient, workExecutorProps, registerInterval)
+    Props(classOf[TransformWorker], clusterClient, transfDef, registerInterval)
 
   case class WorkComplete(result: Any)
 

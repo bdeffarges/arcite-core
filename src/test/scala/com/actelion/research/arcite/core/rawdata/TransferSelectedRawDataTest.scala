@@ -5,7 +5,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.{TestKit, TestProbe}
 import com.actelion.research.arcite.core.rawdata.TransferSelectedRawData.TransferFolder
-import com.actelion.research.arcite.core.transforms.GoTransformIt.TransformSuccess
+import com.actelion.research.arcite.core.transforms.cluster.Frontend.Ok
 import com.actelion.research.arcite.core.utils.Env
 import org.scalatest.{BeforeAndAfterAll, MustMatchers, WordSpecLike}
 
@@ -33,7 +33,7 @@ class TransferSelectedRawDataTest extends TestKit(ActorSystem("AgilentArraySyste
 
       actorRef ! TransferFolder(folder, """.*_(\d{10,15}+).*_(\d_\d)\.txt""".r, true)
 
-      endProbe.expectMsg(FiniteDuration(10, TimeUnit.MINUTES), TransformSuccess)
+      endProbe.expectMsg(FiniteDuration(10, TimeUnit.MINUTES), Ok)
     }
   }
 }

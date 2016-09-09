@@ -1,10 +1,12 @@
 package com.actelion.research.arcite.core.transforms.cluster
 
-import akka.actor.{ActorLogging, ActorRef, Props}
+import akka.actor.{ActorLogging, ActorPath, ActorRef, Props}
 import akka.cluster.Cluster
 import akka.cluster.client.ClusterClientReceptionist
 import akka.cluster.pubsub.{DistributedPubSub, DistributedPubSubMediator}
 import akka.persistence.PersistentActor
+import com.actelion.research.arcite.core.transforms.RunTransform.{ProceedWithTransform, RunTransformOnObject}
+import com.actelion.research.arcite.core.transforms.Transformers.{GetAllTransformers, ManyTransformers}
 import com.actelion.research.arcite.core.transforms.cluster.Frontend._
 import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformLight, TransformResult}
 
@@ -42,6 +44,10 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
   log.info(s"Pub/Sub mediator= $mediator")
 
   ClusterClientReceptionist(context.system).registerService(self)
+
+  //get access to the actor that manages experiments, todo replace with config
+//  val expsActorPath = ActorPath.fromString(s"akka.tcp://$arcTransfActClustSys@127.0.0.1:2551/user/store"))
+
 
   // persistenceId must include cluster role to support multiple masters
   override def persistenceId: String = Cluster(context.system).selfRoles.find(_.startsWith("backend-")) match {
@@ -123,15 +129,22 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
         }
       }
 
-    case MasterWorkerProtocol.WorkFailed(workerId, transf) =>
-      if (workState.isInProgress(transf.uid)) {
-        log.info("Work {} failed by worker {}", transf, workerId)
-        changeWorkerToIdle(workerId, transf)
-        persist(WorkerFailed(transf.light, "")) { event ⇒
-          workState = workState.updated(event)
-          notifyWorkers()
-        }
-      }
+//    case MasterWorkerProtocol.WorkFailed(workerId, transf) =>
+//      if (workState.isInProgress(transf.uid)) {
+//        log.info("Work {} failed by worker {}", transf, workerId)
+//        changeWorkerToIdle(workerId, transf)
+//        persist(WorkerFailed(transf.light, "")) { event ⇒
+//          workState = workState.updated(event)
+//          notifyWorkers()
+//        }
+//      }
+
+    case pwt: ProceedWithTransform ⇒
+      log.info("master received a request to proceed with a transform which first needs to be build. ")
+       pwt match {
+         case rto: RunTransformOnObject ⇒
+
+       }
 
     case transf: Transform =>
       log.info("master received work...")
@@ -163,7 +176,6 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
     case TransformType(wid, wt) ⇒
       workers += (wid -> workers(wid).copy(transDef = Some(wt)))
-      //      log.info(s"workers list with new types: $workers")
       transformDefs += wt
       log.info(s"workers transforms def. types: $transformDefs")
 
@@ -175,6 +187,10 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
     case QueryJobInfo(qji) ⇒
       sender() ! "hello world" //todo implement
+
+
+    case GetAllTransformers ⇒
+      sender() ! ManyTransformers(transformDefs.map(_.transDefIdent))
   }
 
   def notifyWorkers(): Unit = if (workState.hasWorkLeft) {
