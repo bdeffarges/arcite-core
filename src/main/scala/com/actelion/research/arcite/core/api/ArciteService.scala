@@ -7,6 +7,7 @@ import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSumm
 import com.actelion.research.arcite.core.rawdata._
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{SearchForXResults, SearchForXResultsWithRequester}
 import com.actelion.research.arcite.core.transforms.RunTransform._
+import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformSourceFromObject}
 import com.actelion.research.arcite.core.transforms.Transformers._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.{AllJobsStatus, QueryJobInfo, QueryWorkStatus}
 import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
@@ -78,10 +79,11 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
   val conf = ConfigFactory.load()
   val actSys = conf.getString("experiments-actor-system.akka.uri")
 
+  //todo move it to another executor
   val expManager = context.actorSelection(ActorPath.fromString(s"${actSys}/user/experiments_manager"))
   log.debug(s"exp Manager actor: $expManager")
 
-  val defineRawDataAct = context.system.actorOf(Props(classOf[DefineRawData]))
+  val defineRawDataAct = context.actorSelection(ActorPath.fromString(s"${actSys}/user/define_raw_data"))
 
   import ArciteService._
 
@@ -132,8 +134,26 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
     case rt: ProceedWithTransform ⇒
       log.info(s"transform requested ${rt}")
       // create a transform
+      // get experiment
+      import akka.pattern.ask
+      val getExp = ask(expManager, GetExperiment(rt.experimentDigest))
+      val td = ask(ManageTransformCluster.getNextFrontEnd(), GetTransformer(rt.transfDefDigest))
 
-      ManageTransformCluster.getNextFrontEnd() forward rt
+      val vv = for {
+        aa <- getExp.mapTo[ExperimentFound]
+        bb <- td.mapTo[TransformDefinition]
+        t <- (aa.exp, bb)
+      } yield t
+
+      vv.foreach { p ⇒
+        rt match {
+          case RunTransformOnObject(_, _, params) ⇒
+            val t = Transform(p._, TransformSourceFromObject(exp.exp), params)
+            ManageTransformCluster.getNextFrontEnd() forward v1
+          case _ ⇒
+            "NOT IMPLEMENTED..."
+        }
+      }
 
 
     // messages to workers cluster
@@ -147,7 +167,6 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
     case ji: QueryJobInfo ⇒
       ManageTransformCluster.getNextFrontEnd() forward ji
-
 
 
     //don't know what to do with this message...

@@ -16,7 +16,7 @@ class WorkExecUpperCase extends Actor with ActorLogging {
       log.info("starting work but will wait for fake...")
       Thread.sleep(10000)
       t.source match {
-        case tfo: TransformFromObject ⇒
+        case tfo: TransformSourceFromObject ⇒
           log.info("waited enough time, doing the work now...")
           sender() ! WorkComplete(s"in upperString=${tfo.toString.toUpperCase()}")
       }

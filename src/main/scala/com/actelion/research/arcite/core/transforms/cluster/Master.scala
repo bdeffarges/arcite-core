@@ -6,7 +6,7 @@ import akka.cluster.client.ClusterClientReceptionist
 import akka.cluster.pubsub.{DistributedPubSub, DistributedPubSubMediator}
 import akka.persistence.PersistentActor
 import com.actelion.research.arcite.core.transforms.RunTransform.{ProceedWithTransform, RunTransformOnObject}
-import com.actelion.research.arcite.core.transforms.Transformers.{GetAllTransformers, ManyTransformers}
+import com.actelion.research.arcite.core.transforms.Transformers.{GetAllTransformers, ManyTransformers, NoTransformerFound, OneTransformer}
 import com.actelion.research.arcite.core.transforms.cluster.Frontend._
 import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformLight, TransformResult}
 
@@ -45,8 +45,6 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
   ClusterClientReceptionist(context.system).registerService(self)
 
-  //get access to the actor that manages experiments, todo replace with config
-//  val expsActorPath = ActorPath.fromString(s"akka.tcp://$arcTransfActClustSys@127.0.0.1:2551/user/store"))
 
   // persistenceId must include cluster role to support multiple masters
   override def persistenceId: String = Cluster(context.system).selfRoles.find(_.startsWith("backend-")) match {
@@ -87,6 +85,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
         sender() ! GetTransformDefinition(workerId)
       }
 
+
     case MasterWorkerProtocol.WorkerRequestsWork(workerId) =>
       log.info(s"total pending jobs = ${workState.numberOfPendingJobs()} worker requesting work... do we have something for him?")
       val td = workers(workerId).transDef
@@ -95,7 +94,8 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
           case Some(s@WorkerState(_, Idle, _)) =>
             if (s.transDef.isDefined) {
               val w = workState.nextWork(s.transDef.get.transDefIdent.fullName)
-              if (w.nonEmpty) { //todo maybe we don't need both checks
+              if (w.nonEmpty) {
+                //todo maybe we don't need both checks
                 val transf = w.get
                 persist(WorkInProgress(transf, 0)) { event =>
                   log.info(s"Giving worker [$workerId] something to do [${transf}]")
@@ -108,6 +108,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
           case _ =>
         }
       }
+
 
     case MasterWorkerProtocol.WorkIsDone(workerId, transf, result) =>
       // idempotent
@@ -128,22 +129,16 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
         }
       }
 
-//    case MasterWorkerProtocol.WorkFailed(workerId, transf) =>
-//      if (workState.isInProgress(transf.uid)) {
-//        log.info("Work {} failed by worker {}", transf, workerId)
-//        changeWorkerToIdle(workerId, transf)
-//        persist(WorkerFailed(transf.light, "")) { event ⇒
-//          workState = workState.updated(event)
-//          notifyWorkers()
-//        }
-//      }
+    //    case MasterWorkerProtocol.WorkFailed(workerId, transf) =>
+    //      if (workState.isInProgress(transf.uid)) {
+    //        log.info("Work {} failed by worker {}", transf, workerId)
+    //        changeWorkerToIdle(workerId, transf)
+    //        persist(WorkerFailed(transf.light, "")) { event ⇒
+    //          workState = workState.updated(event)
+    //          notifyWorkers()
+    //        }
+    //      }
 
-    case pwt: ProceedWithTransform ⇒
-      log.info("master received a request to proceed with a transform which first needs to be build. ")
-       pwt match {
-         case rto: RunTransformOnObject ⇒
-
-       }
 
     case transf: Transform =>
       log.info("master received work...")
@@ -173,16 +168,20 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
         }
       }
 
+
     case TransformType(wid, wt) ⇒
       workers += (wid -> workers(wid).copy(transDef = Some(wt)))
       transformDefs += wt
       log.info(s"workers transforms def. types: $transformDefs")
 
+
     case QueryWorkStatus(transfUID) ⇒
-      sender () ! workState.jobsInProgress(transfUID)
+      sender() ! workState.jobsInProgress(transfUID)
+
 
     case AllJobsStatus ⇒
       sender() ! workState.workStateSummary()
+
 
     case QueryJobInfo(qji) ⇒
       sender() ! "hello world" //todo implement
@@ -190,7 +189,18 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
     case GetAllTransformers ⇒
       sender() ! ManyTransformers(transformDefs.map(_.transDefIdent))
+
+
+    case GetTransformDefinitionFromDigest(d) ⇒
+      transformDefs.find(_.transDefIdent.digestUID == d) match {
+        case Some(x) ⇒ sender() ! x
+        case _ ⇒ sender() ! NoTransformerFound
+      }
+
+
+
   }
+
 
   def notifyWorkers(): Unit = if (workState.hasWorkLeft) {
     log.info(s"workstate=${workState.workStateSizeSummary()} ,has some work left ?")
@@ -200,6 +210,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       case _ => // worker is busy
     }
   }
+
 
   def changeWorkerToIdle(workerId: String, transf: Transform): Unit =
     workers.get(workerId) match {

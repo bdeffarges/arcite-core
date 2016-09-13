@@ -28,22 +28,25 @@ import spray.json.JsValue
   */
 object RunTransform {
 
-  sealed trait ProceedWithTransform
+  sealed trait ProceedWithTransform {
+    def experimentDigest: String
+    def transfDefDigest: String
+  }
 
 
-  case class RunTransformOnFiles(experimentDigest: String, transformDigest: String, filesAndFolders: Set[String],
+  case class RunTransformOnFiles(experimentDigest: String, transfDefDigest: String, filesAndFolders: Set[String],
                                  parameters: JsValue) extends ProceedWithTransform
 
-  case class RunTransformOnRawData(experimentDigest: String, transformDigest: String,
+  case class RunTransformOnRawData(experimentDigest: String, transfDefDigest: String,
                                    parameters: JsValue) extends ProceedWithTransform
 
-  case class RunTransformOnTransform(experimentDigest: String, transformDigest: String, transformOrigin: String,
+  case class RunTransformOnTransform(experimentDigest: String, transfDefDigest: String, transformOrigin: String,
                                      filesAndFolders: Set[String], parameters: JsValue) extends ProceedWithTransform
 
-  case class RunTransformOnFolderAndRegex(experimentDigest: String, transformDigest: String, folder: String, regex: String,
+  case class RunTransformOnFolderAndRegex(experimentDigest: String, transfDefDigest: String, folder: String, regex: String,
                                           withSubfolder: Boolean, parameters: JsValue) extends ProceedWithTransform
 
-  case class RunTransformOnObject(experimentDigest: String, transformDigest: String,
+  case class RunTransformOnObject(experimentDigest: String, transfDefDigest: String,
                                   parameters: JsValue) extends ProceedWithTransform
 
 }

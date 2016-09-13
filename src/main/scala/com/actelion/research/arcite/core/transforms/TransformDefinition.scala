@@ -79,7 +79,7 @@ case class TransformSourceRegex(experiment: Experiment, folder: String, regex: S
                                 includes: Set[String] = Set(), excludes: Set[String] = Set(),
                                 includesRegex: Set[String] = Set(), excludesRegex: Set[String] = Set()) extends TransformSourceFromFiles
 
-case class TransformFromObject(experiment: Experiment, source: JsValue) extends TransformSource
+case class TransformSourceFromObject(experiment: Experiment) extends TransformSource
 
 
 /**
