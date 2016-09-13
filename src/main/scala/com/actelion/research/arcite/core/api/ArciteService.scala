@@ -79,10 +79,7 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
   val actSys = conf.getString("experiments-actor-system.akka.uri")
 
   val expManager = context.actorSelection(ActorPath.fromString(s"${actSys}/user/experiments_manager"))
-//  val expManager = context.actorSelection(ActorPath.fromString("akka.tcp://experiments-actor-system@127.0.0.1:3333/user/experiments_manager"))
-  log.info(s"exp Manager actor: $expManager")
-
-  expManager ! "hello world"
+  log.debug(s"exp Manager actor: $expManager")
 
   val defineRawDataAct = context.system.actorOf(Props(classOf[DefineRawData]))
 
