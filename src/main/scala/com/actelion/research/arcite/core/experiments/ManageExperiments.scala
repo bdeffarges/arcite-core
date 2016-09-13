@@ -4,7 +4,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.file._
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
-import com.actelion.research.arcite.core.api.ArciteService.{DidNotFindExperiment, _}
+import com.actelion.research.arcite.core.api.ArciteService.{DidNotFindExperiment, GetAllExperiments, _}
 import com.actelion.research.arcite.core.experiments.LocalExperiments._
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex._
@@ -46,9 +46,13 @@ class ManageExperiments extends Actor with ExperimentJsonProtocol with ActorLogg
         requester ! FailedAddingExperiment("experiment already exists. ")
       }
 
-    case GetExperiments ⇒
+    case GetExperiments ⇒ //todo remove?
+      log.info(s"returning list of experiments to sender ${sender()}")
       sender() ! experiments.values.toSet
 
+    case GetAllExperimentsWithRequester(requester) ⇒
+      log.info(s"asking ManageExperiments for all experiments, returning first 100... to $requester}")
+      requester ! AllExperiments(experiments.values.map(exp ⇒ ExperimentSummary(exp.name, exp.description, exp.owner, exp.digest)).take(500).toSet)
 
     case TakeSnapshot ⇒
       val savedExps = experiments.values.filter(e ⇒ e.state == Global || e.state == New).toSet
@@ -73,11 +77,6 @@ class ManageExperiments extends Actor with ExperimentJsonProtocol with ActorLogg
       sender() ! expCon
 
 
-    case GetAllExperiments ⇒
-      log.debug("asking ManageExperiments for all experiments, returning first 100...")
-      sender() ! AllExperiments(experiments.values.map(exp ⇒ ExperimentSummary(exp.name, exp.description, exp.owner, exp.digest)).take(500).toSet)
-
-
     case s: SearchForXResultsWithRequester ⇒
       luceneRamSearchAct ! s
 
@@ -95,6 +94,9 @@ class ManageExperiments extends Actor with ExperimentJsonProtocol with ActorLogg
       } else {
         requester ! DidNotFindExperiment
       }
+
+
+    case any: Any ⇒ log.debug(s"don't know what to do with this message $any")
   }
 
 }
@@ -142,6 +144,8 @@ object ManageExperiments extends ExperimentJsonProtocol {
 
     val actSystem = ActorSystem("experiments-actor-system", config.getConfig("experiments-actor-system"))
 
-    actSystem.actorOf(Props(classOf[ManageExperiments]), "experiments_manager")
+    val manExpActor = actSystem.actorOf(Props(classOf[ManageExperiments]), "experiments_manager")
+
+    println(s"man. exp. actor created $manExpActor")
   }
 }

@@ -23,7 +23,8 @@ case class Experiment(name: String, description: String, owner: Owner, state: Ex
 
 object DefaultExperiment {
 
-  val defaultExperiment = Experiment("default-experiment", "an experiment to experiment with the system", DefaultOwner.systemOwner)
+  val defaultExperiment = Experiment("default-experiment", "an experiment to experiment with the system or to do anything that does not require the definition of an experiment", DefaultOwner.systemOwner)
+
 }
 
 /**

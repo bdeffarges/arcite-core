@@ -1,6 +1,6 @@
 package com.actelion.research.arcite.core.transforms.cluster
 
-import akka.actor.{ActorLogging, ActorPath, ActorRef, Props}
+import akka.actor.{ActorLogging, ActorRef, Props}
 import akka.cluster.Cluster
 import akka.cluster.client.ClusterClientReceptionist
 import akka.cluster.pubsub.{DistributedPubSub, DistributedPubSubMediator}
@@ -47,7 +47,6 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
   //get access to the actor that manages experiments, todo replace with config
 //  val expsActorPath = ActorPath.fromString(s"akka.tcp://$arcTransfActClustSys@127.0.0.1:2551/user/store"))
-
 
   // persistenceId must include cluster role to support multiple masters
   override def persistenceId: String = Cluster(context.system).selfRoles.find(_.startsWith("backend-")) match {

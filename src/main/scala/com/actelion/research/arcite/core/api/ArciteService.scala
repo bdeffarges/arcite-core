@@ -1,6 +1,6 @@
 package com.actelion.research.arcite.core.api
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSystem, Props}
 import akka.util.Timeout
 import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddExperiment, AddExperimentWithRequester}
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSummary, ManageExperiments}
@@ -10,6 +10,7 @@ import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.Transformers._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.{AllJobsStatus, QueryJobInfo, QueryWorkStatus}
 import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
+import com.typesafe.config.ConfigFactory
 
 /**
   * Created by deffabe1 on 2/29/16.
@@ -32,6 +33,8 @@ object ArciteService {
 
   // available json services
   case object GetAllExperiments
+
+  case class GetAllExperimentsWithRequester(requester: ActorRef)
 
   case class SearchExperiments(search: String, maxHits: Int)
 
@@ -72,23 +75,22 @@ object ArciteService {
 
 class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
-  import context._
+  val conf = ConfigFactory.load()
+  val actSys = conf.getString("experiments-actor-system.akka.uri")
 
-  val expManager = context.system.actorOf(Props(classOf[ManageExperiments], self), "experiments_manager")
+  val expManager = context.actorSelection(ActorPath.fromString(s"${actSys}/user/experiments_manager"))
+//  val expManager = context.actorSelection(ActorPath.fromString("akka.tcp://experiments-actor-system@127.0.0.1:3333/user/experiments_manager"))
+  log.info(s"exp Manager actor: $expManager")
+
+  expManager ! "hello world"
 
   val defineRawDataAct = context.system.actorOf(Props(classOf[DefineRawData]))
-
 
   import ArciteService._
 
   override def receive = {
     case GetAllExperiments ⇒
-      import akka.pattern.{ask, pipe}
-
-      def getExps = expManager.ask(GetAllExperiments).mapTo[AllExperiments]
-
-      pipe(getExps) to sender()
-      log.debug("will be starting piping results to sender... ")
+      expManager ! GetAllExperimentsWithRequester(sender())
 
     case SearchExperiments(search, maxHits) ⇒
 
@@ -132,6 +134,8 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
     case rt: ProceedWithTransform ⇒
       log.info(s"transform requested ${rt}")
+      // create a transform
+
       ManageTransformCluster.getNextFrontEnd() forward rt
 
 

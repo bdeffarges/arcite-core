@@ -12,7 +12,6 @@ object LocalExperiments extends LazyLogging with ExperimentJsonProtocol {
   val EXPERIMENT_FILE_NAME = "experiment"
   val EXPERIMENT_DIGEST_FILE_NAME = "digest"
 
-
   case class SaveExperiment(exp: Experiment)
 
   case class LoadExperiment(folder: String)
@@ -39,8 +38,10 @@ object LocalExperiments extends LazyLogging with ExperimentJsonProtocol {
   def loadAllLocalExperiments(): Map[String, Experiment] = {
     logger.debug("loading all experiments from local network... ")
     val path = Env.getConf("arcite.home")
-    loadAllExperiments(path)
-  }
+
+    loadAllExperiments(path) +
+      (DefaultExperiment.defaultExperiment.digest -> DefaultExperiment.defaultExperiment)
+   }
 
 
   /**

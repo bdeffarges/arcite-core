@@ -31,7 +31,7 @@ resolvers ++= Seq(
 
 
 libraryDependencies ++= {
-  val akkaVersion = "2.4.9"
+  val akkaVersion = "2.4.10"
   val sparkVersion = "1.6.2"
   val luceneVersion = "5.0.0"
 

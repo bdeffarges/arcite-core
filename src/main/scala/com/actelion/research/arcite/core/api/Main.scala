@@ -7,6 +7,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
+import com.actelion.research.arcite.core.experiments.ManageExperiments
 import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
 import com.actelion.research.arcite.core.utils.Env
 import com.typesafe.config.{Config, ConfigFactory}
@@ -29,6 +30,9 @@ trait RequestTimeout {
   */
 object Main extends App with RequestTimeout {
 
+  // start experiment manager
+  ManageExperiments.startActorSystemForExperiments
+
   val config = ConfigFactory.load()
 
   // Gets the host and a port from the configuration
@@ -37,7 +41,7 @@ object Main extends App with RequestTimeout {
 
   implicit val system = ActorSystem("rest-api", config.getConfig("arcite-core"))
 
-  implicit val ec = system.dispatcher //bindAndHandle requires an implicit ExecutionContext
+    implicit val ec = system.dispatcher //bindAndHandle requires an implicit ExecutionContext
 
   val api = new RestApi(system, requestTimeout(config)).routes // the RestApi provides a Route
 
