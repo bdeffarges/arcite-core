@@ -137,8 +137,8 @@ object ManageTransformCluster {
     val pwd = System.getProperty("user.dir")
 
     // todo fix lost jobs from worker not returning fast enough, look at "No ack from master, retrying"
-    (0 to 40).foreach { i ⇒
-      println(s"counter $i")
+//    (0 to 40).foreach { i ⇒
+//      println(s"counter $i")
 //      getNextFrontEnd() ! Work("R_helloWorld1"+UUID.randomUUID().toString, Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
 //      Thread.sleep(100)
 //      getNextFrontEnd() ! Work("uppercase1"+UUID.randomUUID().toString, Job(ToUpperCase("hello world, how are you doing"), "ToUpperCase"))
@@ -152,8 +152,8 @@ object ManageTransformCluster {
 //      getNextFrontEnd() ! Work("calcProduct1"+UUID.randomUUID().toString, Job(CalcProd(110), "product"))
 //      getNextFrontEnd() ! Work("helloWorld3"+UUID.randomUUID().toString, Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
 //      getNextFrontEnd() ! Work("helloWorld4"+UUID.randomUUID().toString, Job(RunRCode(s"$pwd/for_testing", s"$pwd/for_testing/sqrt1.r", Seq.empty), "r_code"))
-      Thread.sleep(500)
-    }
+//      Thread.sleep(500)
+//    }
   }
 
   def startSomeDefaultClusterForTesting(): Unit = {

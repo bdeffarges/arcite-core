@@ -6,7 +6,7 @@ import akka.pattern._
 import akka.util.Timeout
 import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
 import com.actelion.research.arcite.core.transforms.RunTransform.ProceedWithTransform
-import com.actelion.research.arcite.core.transforms.Transformers.GetAllTransformers
+import com.actelion.research.arcite.core.transforms.Transformers.{GetAllTransformers, GetTransformer}
 import com.actelion.research.arcite.core.transforms.Transform
 
 object Frontend {
@@ -52,12 +52,12 @@ class Frontend extends Actor with ActorLogging {
       implicit val timeout = Timeout(1.second)
       (masterProxy ? qji) pipeTo sender()
 
-    case pWithTransf: ProceedWithTransform ⇒
-      log.info(s"got work message [$pWithTransf]")
+    case transform: Transform ⇒
+      log.info(s"got work message [$transform]")
       implicit val timeout = Timeout(5.seconds)
-      (masterProxy ? pWithTransf) map {
+      (masterProxy ? transform) map {
         case Master.Ack(transf) => {
-          log.info(s"work accepted, workid: $transf")
+          log.info(s"transform accepted: ${transf.uid}/${transf.light.transfDefinitionName.name}")
           Ok(transf.uid)
         }
       } recover { case _ => NotOk } pipeTo sender()
@@ -65,6 +65,11 @@ class Frontend extends Actor with ActorLogging {
     case GetAllTransformers ⇒
       implicit val timeout = Timeout(5.seconds)
       (masterProxy ? GetAllTransformers) pipeTo sender()
+
+    case gt: GetTransformer ⇒
+      implicit val timeout = Timeout(2.seconds)
+      (masterProxy ? GetTransformDefinitionFromDigest(gt.digest)) pipeTo sender()
+
 
     case m: Any ⇒ log.error(s"don't know what to do with message $m")
   }

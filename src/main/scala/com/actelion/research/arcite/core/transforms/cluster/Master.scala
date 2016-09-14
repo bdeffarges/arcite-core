@@ -141,13 +141,13 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
 
     case transf: Transform =>
-      log.info("master received work...")
+      log.info(s"master received transform [${transf.uid}]")
       // idempotent
       if (workState.isAccepted(transf.uid)) {
-        log.info("work is accepted...")
+        log.info("transform [${transf.uid}] is accepted, workstate.isAccepted for uid returned true. ")
         sender() ! Master.Ack(transf)
       } else {
-        log.info("Accepted work: {}", transf)
+        log.info(s"transform [${transf.uid}] accepted.")
         persist(WorkAccepted(transf.light)) { event ⇒
           // Ack back to original sender
           sender() ! Master.Ack(transf)
@@ -207,7 +207,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
     // could pick a few random instead of all
     workers.foreach {
       case (_, WorkerState(ref, Idle, _)) => ref ! MasterWorkerProtocol.WorkIsReady
-      case _ => // worker is busy
+      case _ => log.info("worker is busy. ")
     }
   }
 

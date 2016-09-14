@@ -3,7 +3,7 @@ package com.actelion.research.arcite.core.transforms
 import java.nio.file.{Path, Paths}
 import java.util.UUID
 
-import akka.actor.{ActorRef, Props}
+import akka.actor.Props
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor}
 import com.actelion.research.arcite.core.utils.{FullName, GetDigest}
 import spray.json.{DefaultJsonProtocol, DeserializationException, JsObject, JsString, JsValue, RootJsonFormat}
@@ -41,8 +41,6 @@ case class TransformDefinitionIdentity(fullName: FullName, shortName: String, de
   * @param actorProps
   */
 case class TransformDefinition(transDefIdent: TransformDefinitionIdentity, actorProps: () ⇒ Props)
-//  todo add time out for job
-
 
 /**
   * Where to find the source data for the transform
@@ -80,7 +78,6 @@ case class TransformSourceRegex(experiment: Experiment, folder: String, regex: S
                                 includesRegex: Set[String] = Set(), excludesRegex: Set[String] = Set()) extends TransformSourceFromFiles
 
 case class TransformSourceFromObject(experiment: Experiment) extends TransformSource
-
 
 /**
   * a light object describing a transform without all extra information

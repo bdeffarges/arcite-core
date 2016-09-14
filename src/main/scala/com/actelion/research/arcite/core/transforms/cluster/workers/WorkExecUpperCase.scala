@@ -17,8 +17,11 @@ class WorkExecUpperCase extends Actor with ActorLogging {
       Thread.sleep(10000)
       t.source match {
         case tfo: TransformSourceFromObject ⇒
+          import spray.json.DefaultJsonProtocol._
+          implicit val toUpperCaseJson = jsonFormat1(ToUpperCase)
           log.info("waited enough time, doing the work now...")
-          sender() ! WorkComplete(s"in upperString=${tfo.toString.toUpperCase()}")
+          val toBeTransformed = t.parameters.convertTo[ToUpperCase]
+          sender() ! WorkComplete(s"in upperString=${toBeTransformed.stgToUpperCase.toUpperCase()}")
       }
 
     case GetTransformDefinition(wi) ⇒
@@ -38,6 +41,6 @@ object WorkExecUpperCase {
 
   val definition = TransformDefinition(defLight, props)
 
-  case class ToUpperCase(stg: String)
+  case class ToUpperCase(stgToUpperCase: String)
 
 }
