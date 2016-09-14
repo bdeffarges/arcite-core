@@ -8,7 +8,7 @@ import akka.persistence.PersistentActor
 import com.actelion.research.arcite.core.transforms.RunTransform.{ProceedWithTransform, RunTransformOnObject}
 import com.actelion.research.arcite.core.transforms.Transformers.{GetAllTransformers, ManyTransformers, NoTransformerFound, OneTransformer}
 import com.actelion.research.arcite.core.transforms.cluster.Frontend._
-import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformLight, TransformResult}
+import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformResult}
 
 import scala.concurrent.duration.{Deadline, FiniteDuration}
 
@@ -25,7 +25,7 @@ object Master {
 
   private case object Idle extends WorkerStatus
 
-  private case class Busy(trans: TransformLight, deadline: Deadline) extends WorkerStatus
+  private case class Busy(trans: Transform, deadline: Deadline) extends WorkerStatus
 
   private case class WorkerState(ref: ActorRef, status: WorkerStatus, transDef: Option[TransformDefinition])
 
@@ -120,7 +120,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       } else {
         log.info("Work {} is done by worker {}", transf, workerId)
         changeWorkerToIdle(workerId, transf)
-        persist(WorkCompleted(transf.light, result)) { event ⇒
+        persist(WorkCompleted(transf, result)) { event ⇒
           workState = workState.updated(event)
           mediator ! DistributedPubSubMediator.Publish(ResultsTopic, TransformResult(transf, result))
 
@@ -148,7 +148,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
         sender() ! Master.Ack(transf)
       } else {
         log.info(s"transform [${transf.uid}] accepted.")
-        persist(WorkAccepted(transf.light)) { event ⇒
+        persist(WorkAccepted(transf)) { event ⇒
           // Ack back to original sender
           sender() ! Master.Ack(transf)
           workState = workState.updated(event)

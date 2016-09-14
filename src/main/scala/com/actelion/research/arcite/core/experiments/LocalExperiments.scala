@@ -4,10 +4,11 @@ import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths, StandardOpenOption}
 
+import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.utils.Env
 import com.typesafe.scalalogging.LazyLogging
 
-object LocalExperiments extends LazyLogging with ExperimentJsonProtocol {
+object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
 
   val EXPERIMENT_FILE_NAME = "experiment"
   val EXPERIMENT_DIGEST_FILE_NAME = "digest"

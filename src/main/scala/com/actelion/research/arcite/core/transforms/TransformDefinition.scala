@@ -6,7 +6,7 @@ import java.util.UUID
 import akka.actor.Props
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor}
 import com.actelion.research.arcite.core.utils.{FullName, GetDigest}
-import spray.json.{DefaultJsonProtocol, DeserializationException, JsObject, JsString, JsValue, RootJsonFormat}
+import spray.json.JsValue
 
 /**
   * Created by bernitu on 19/04/16.
@@ -80,65 +80,21 @@ case class TransformSourceRegex(experiment: Experiment, folder: String, regex: S
 case class TransformSourceFromObject(experiment: Experiment) extends TransformSource
 
 /**
-  * a light object describing a transform without all extra information
-  *
-  * @param transfDefinitionName
-  * @param uid
-  */
-case class TransformLight(transfDefinitionName: FullName, uid: String)
-
-
-/**
   * the actual transform that contains all information for the instance of a transform.
   *
-  * @param definition
+  * @param transfDefName
   * @param source
   * @param parameters , we keep it as a JsValue so the real transformer can decide at run time what to do with the parameters
   * @param uid
   */
-case class Transform(definition: TransformDefinition, source: TransformSource, parameters: JsValue,
-                     uid: String = UUID.randomUUID().toString) {
-
-  val light = TransformLight(definition.transDefIdent.fullName, uid)
-}
+case class Transform(transfDefName: FullName, source: TransformSource, parameters: JsValue,
+                     uid: String = UUID.randomUUID().toString)
 
 
 case class TransformHelper(transform: Transform) {
   def getTransformFolder(): Path = {
     Paths.get(ExperimentFolderVisitor(transform.source.experiment).transformFolderPath.toString, transform.uid)
   }
-}
-
-
-object TransformDefinitionIdentityJson extends DefaultJsonProtocol {
-
-  implicit object TransformDefinitionIdentityJsonFormat extends RootJsonFormat[TransformDefinitionIdentity] {
-
-    def write(tdl: TransformDefinitionIdentity) = {
-      JsObject(
-        "organization" -> JsString(tdl.fullName.organization),
-        "name" -> JsString(tdl.fullName.name),
-        "short_name" -> JsString(tdl.shortName),
-        "description_summary" -> JsString(tdl.description.summary),
-        "description_consumes" -> JsString(tdl.description.consumes),
-        "description_produces" -> JsString(tdl.description.produces),
-        "digest" -> JsString(tdl.digestUID)
-      )
-    }
-
-    def read(value: JsValue) = {
-      value.asJsObject.getFields("organization", "name", "short_name", "description_summary",
-        "description_consumes", "description_produces") match {
-        case Seq(JsString(organization), JsString(name), JsString(shortName),
-        JsString(descSummary), JsString(descConsumes), JsString(descProduces)) =>
-          TransformDefinitionIdentity(FullName(organization, name), shortName,
-            TransformDescription(descSummary, descConsumes, descProduces))
-
-        case _ => throw new DeserializationException("could not deserialize.")
-      }
-    }
-  }
-
 }
 
 

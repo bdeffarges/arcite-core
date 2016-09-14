@@ -76,8 +76,7 @@ sealed trait TransformFeedback {
 
     val tdone = TransformDone(stateOutPutError._1,
       new SimpleDateFormat("yyyy:MM:dd-HH:mm:ss").format(new Date),
-      t.transform.definition.transDefIdent.fullName,
-      t.transform.definition.transDefIdent.description.summary,
+      t.transform.transfDefName,
       ts, transformSourceFiles(t.transform.source),
       core.getFirstAndLastLinesOfAVeryLongString(stateOutPutError._2, 100),
       core.getFirstAndLastLinesOfAVeryLongString(stateOutPutError._3, 100))
@@ -89,7 +88,7 @@ sealed trait TransformFeedback {
     implicit val jsonTFullName = jsonFormat2(FullName)
     implicit val jsonTdesc = jsonFormat3(TransformDescription)
     implicit val jsonTsd = jsonFormat3(TransformSourceDone)
-    implicit val jsonTd = jsonFormat8(TransformDone)
+    implicit val jsonTd = jsonFormat7(TransformDone)
 
     val strg = tdone.toJson.prettyPrint
 
@@ -102,7 +101,7 @@ sealed trait TransformFeedback {
 
   case class TransformSourceDone(experimentName: String, experimentOwner: Owner, transformDigest: String)
 
-  case class TransformDone(state: String, date: String, transformDefinitionName: FullName, transformDefinitionSummary: String,
+  case class TransformDone(state: String, date: String, transformDefinitionName: FullName,
                            transformSource: TransformSourceDone, transformSourceFile: String,
                            output: String, error: String)
 

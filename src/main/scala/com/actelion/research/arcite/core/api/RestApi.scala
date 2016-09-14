@@ -7,17 +7,18 @@ import akka.http.scaladsl.server._
 import akka.pattern.ask
 import akka.util.Timeout
 import com.actelion.research.arcite.core.api.ArciteService._
-import com.actelion.research.arcite.core.experiments.ExperimentJsonProtocol
+import com.actelion.research.arcite.core.experiments._
 import com.actelion.research.arcite.core.experiments.ManageExperiments.AddExperiment
 import com.actelion.research.arcite.core.rawdata._
-import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments}
+import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments, ReturnExperiment}
 import com.actelion.research.arcite.core.transforms.RunTransform.{RunTransformOnFiles, RunTransformOnFolderAndRegex, RunTransformOnObject, RunTransformOnTransform}
 import com.actelion.research.arcite.core.transforms.Transformers._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.{NotOk, _}
 import com.actelion.research.arcite.core.transforms.cluster.WorkState._
-import com.actelion.research.arcite.core.transforms.{TransformDefinition, TransformDefinitionIdentityJson, TransformLight}
+import com.actelion.research.arcite.core.transforms._
 import com.actelion.research.arcite.core.utils.FullName
 import com.typesafe.scalalogging.LazyLogging
+import spray.json.{DefaultJsonProtocol, JsString}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -99,37 +100,6 @@ trait ArciteServiceApi extends LazyLogging {
   def jobInfo(workID: String) = {
     //    arciteService.ask(QueryJobInfo(workID)).mapTo[JobInfo]
   }
-
-}
-
-trait ArciteJSONProtocol extends ExperimentJsonProtocol with DefineRawDataJsonFormat {
-
-  // todo what about including ExperimentJsonProtocol
-
-  implicit val searchExperimentsJson = jsonFormat2(ArciteService.SearchExperiments)
-  implicit val allExperimentsJson = jsonFormat1(ArciteService.AllExperiments)
-  implicit val getExperimentJson = jsonFormat1(ArciteService.GetExperiment)
-  implicit val foundExperimentJson = jsonFormat2(FoundExperiment)
-  implicit val foundExperimentsJson = jsonFormat1(FoundExperiments)
-  implicit val someExperimentsJson = jsonFormat2(SomeExperiments)
-  implicit val addExperimentResponseJson = jsonFormat1(AddExperiment)
-
-  implicit val fullNameJson = jsonFormat2(FullName)
-
-  import TransformDefinitionIdentityJson._
-
-  implicit val manyTransformersJson = jsonFormat1(ManyTransformers)
-  implicit val oneTransformersJson = jsonFormat1(OneTransformer)
-  implicit val getTransformerJson = jsonFormat1(GetTransformer)
-
-  implicit val runTransformOnObjectJson = jsonFormat3(RunTransformOnObject)
-  implicit val runTransformFromFilesJson = jsonFormat4(RunTransformOnFiles)
-  implicit val runTransformFromTransformJson = jsonFormat5(RunTransformOnTransform)
-  implicit val runTransformFromFolderJson = jsonFormat6(RunTransformOnFolderAndRegex)
-
-  implicit val transformLightJSon = jsonFormat2(TransformLight)
-  implicit val getAllJobsFeedbackJson = jsonFormat3(AllJobsFeedback)
-
 }
 
 trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSONProtocol with LazyLogging {

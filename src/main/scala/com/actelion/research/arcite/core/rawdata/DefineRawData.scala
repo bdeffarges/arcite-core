@@ -7,6 +7,7 @@ import java.nio.file.{Files, Path, Paths, StandardOpenOption}
 import akka.actor.{Actor, ActorRef, Props}
 import akka.event.Logging
 import com.actelion.research.arcite.core
+import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor, ManageExperiments}
 import com.actelion.research.arcite.core.rawdata.TransferSelectedRawData.TransferFilesToFolder
 import com.typesafe.scalalogging.LazyLogging
@@ -62,13 +63,8 @@ case object RawDataSetAdded extends RawDataSetResponse
 
 case class RawDataSetFailed(msg: String) extends RawDataSetResponse
 
-trait DefineRawDataJsonFormat extends DefaultJsonProtocol {
-  implicit val rdsJson = jsonFormat3(RawDataSet)
-  implicit val rdsrJson = jsonFormat5(RawDataSetRegex)
-}
 
-
-object DefineRawData extends DefineRawDataJsonFormat with LazyLogging {
+object DefineRawData extends ArciteJSONProtocol with LazyLogging {
 
   import StandardOpenOption._
 

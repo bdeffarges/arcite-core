@@ -150,7 +150,7 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
       rt match {
         case RunTransformOnObject(_, _, params) ⇒
-          val t = Transform(td, TransformSourceFromObject(exp.exp), params)
+          val t = Transform(td.transDefIdent.fullName, TransformSourceFromObject(exp.exp), params)
           ManageTransformCluster.getNextFrontEnd() forward t
         case _ ⇒
           sender() ! "NOT IMPLEMENTED..."

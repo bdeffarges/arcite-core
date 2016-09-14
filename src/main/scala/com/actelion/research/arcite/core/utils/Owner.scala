@@ -23,11 +23,5 @@ object DefaultOwner {
   val systemOwner = Owner("system", "arcite")
 }
 
-trait OwnerJsonProtocol extends DefaultJsonProtocol {
-  implicit val ownerJson = jsonFormat2(Owner)
-
-}
-
-
 case class FullName(organization: String, name: String)
 

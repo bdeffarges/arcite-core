@@ -1,6 +1,5 @@
 package com.actelion.research.arcite.core.experiments
 
-import spray.json.DefaultJsonProtocol
 
 /**
   * Created by deffabe1 on 4/25/16.
@@ -28,9 +27,3 @@ case class Condition(name: String, description: String, category: String)
   */
 case class ConditionsForSample(conditions: List[Condition]) //todo list to set?
 
-
-trait ExpDesignJsonProtocol extends DefaultJsonProtocol {
-  implicit val conditionJson = jsonFormat3(Condition)
-  implicit val conditionForSampleJson = jsonFormat1(ConditionsForSample)
-  implicit val expDesignJson = jsonFormat2(ExperimentalDesign)
-}

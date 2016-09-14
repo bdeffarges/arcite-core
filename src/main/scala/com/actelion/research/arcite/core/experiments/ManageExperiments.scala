@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.file._
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
+import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.api.ArciteService.{DidNotFindExperiment, GetAllExperiments, _}
 import com.actelion.research.arcite.core.experiments.LocalExperiments._
 import com.actelion.research.arcite.core.rawdata.DefineRawData
@@ -16,7 +17,7 @@ import com.typesafe.config.ConfigFactory
   * Created by bernitu on 06/03/16.
   */
 
-class ManageExperiments extends Actor with ExperimentJsonProtocol with ActorLogging {
+class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging {
 
   import ManageExperiments._
 
@@ -111,7 +112,7 @@ class ManageExperiments extends Actor with ExperimentJsonProtocol with ActorLogg
 
 }
 
-object ManageExperiments extends ExperimentJsonProtocol {
+object ManageExperiments extends ArciteJSONProtocol {
 
   val filePath = Env.getConf("arcite.snapshot")
 

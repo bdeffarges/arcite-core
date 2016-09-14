@@ -57,7 +57,7 @@ class Frontend extends Actor with ActorLogging {
       implicit val timeout = Timeout(5.seconds)
       (masterProxy ? transform) map {
         case Master.Ack(transf) => {
-          log.info(s"transform accepted: ${transf.uid}/${transf.light.transfDefinitionName.name}")
+          log.info(s"transform accepted: ${transf.uid}/${transf.transfDefName.name}")
           Ok(transf.uid)
         }
       } recover { case _ => NotOk } pipeTo sender()

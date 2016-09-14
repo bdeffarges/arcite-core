@@ -21,7 +21,7 @@
  */
 package com.actelion.research.arcite.core.transforms.cluster
 
-import com.actelion.research.arcite.core.transforms.TransformLight
+import com.actelion.research.arcite.core.transforms.Transform
 import com.actelion.research.arcite.core.utils.FullName
 
 import scala.collection.immutable.Queue
@@ -37,40 +37,40 @@ object WorkState {
 
   sealed trait WorkStatus
 
-  case class WorkAccepted(transformLight: TransformLight) extends WorkStatus
+  case class WorkAccepted(transformLight: Transform) extends WorkStatus
 
-  case class WorkInProgress(transformLight: TransformLight, percentProgress: Int) extends WorkStatus
+  case class WorkInProgress(transformLight: Transform, percentProgress: Int) extends WorkStatus
 
-  case class WorkCompleted(transformLight: TransformLight, result: Any) extends WorkStatus
+  case class WorkCompleted(transformLight: Transform, result: Any) extends WorkStatus
 
   case class WorkLost(uid: String) extends WorkStatus
 
-  case class WorkerFailed(transformLight: TransformLight, comment: String) extends WorkStatus
+  case class WorkerFailed(transformLight: Transform, comment: String) extends WorkStatus
 
-  case class WorkerTimedOut(transformLight: TransformLight) extends WorkStatus
+  case class WorkerTimedOut(transformLight: Transform) extends WorkStatus
 
   //the summary of the workState
-  case class AllJobsFeedback(pendingJobs: Set[TransformLight], jobsInProgress: Set[TransformLight],
-                             jobsDone: Set[TransformLight])
+  case class AllJobsFeedback(pendingJobs: Set[String], jobsInProgress: Set[String],
+                             jobsDone: Set[String])
 
 }
 
 //todo accepted contains everything, what about removing it?
-case class WorkState(pendingJobs: Queue[TransformLight],
-                     jobsInProgress: Map[String, TransformLight],
-                     jobsAccepted: Set[TransformLight],
-                     jobsDone: Set[TransformLight]) {
+case class WorkState(pendingJobs: Queue[Transform],
+                     jobsInProgress: Map[String, Transform],
+                     jobsAccepted: Set[Transform],
+                     jobsDone: Set[Transform]) {
 
   import WorkState._
 
   def hasWorkLeft: Boolean = pendingJobs.nonEmpty
 
   def hasWork(fullName: FullName): Boolean = {
-    pendingJobs.exists(_.transfDefinitionName == fullName)
+    pendingJobs.exists(_.transfDefName == fullName)
   }
 
-  def nextWork(fullName: FullName): Option[TransformLight] = {
-    pendingJobs.find(_.transfDefinitionName == fullName)
+  def nextWork(fullName: FullName): Option[Transform] = {
+    pendingJobs.find(_.transfDefName == fullName)
   }
 
   def numberOfPendingJobs(): Int = pendingJobs.size
@@ -100,7 +100,7 @@ case class WorkState(pendingJobs: Queue[TransformLight],
         jobsAccepted = jobsAccepted + transf)
 
     case WorkInProgress(transf, progres) ⇒
-      pendingJobs.find(_.transfDefinitionName == transf.transfDefinitionName) match {
+      pendingJobs.find(_.transfDefName == transf.transfDefName) match {
         case Some(t) ⇒
           val (work, rest) = (t, pendingJobs.filterNot(t == _))
           copy(
@@ -126,7 +126,8 @@ case class WorkState(pendingJobs: Queue[TransformLight],
         jobsInProgress = jobsInProgress - workId.uid)
   }
 
-  def workStateSummary(): AllJobsFeedback = AllJobsFeedback(pendingJobs.toSet, jobsInProgress.values.toSet, jobsDone)
+  def workStateSummary(): AllJobsFeedback = AllJobsFeedback(pendingJobs.map(_.uid).toSet,
+    jobsInProgress.values.map(_.uid).toSet, jobsDone.map(_.uid))
 
   def workStateSizeSummary(): String = s"acceptedJobs= ${jobsAccepted.size} jobsInProgress=${jobsInProgress.size} jobsDone=${jobsDone.size}"
 

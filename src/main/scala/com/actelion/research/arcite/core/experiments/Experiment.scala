@@ -3,7 +3,6 @@ package com.actelion.research.arcite.core.experiments
 import java.nio.file.Paths
 
 import com.actelion.research.arcite.core.utils._
-import spray.json.{DefaultJsonProtocol, JsArray, JsString, JsValue, RootJsonFormat}
 
 
 /**
@@ -70,28 +69,6 @@ case class ExperimentFolderVisitor(exp: Experiment) {
 
   def experimentFilePath = Paths.get(arciteHome, relMetaFolderPath.toString, LocalExperiments.EXPERIMENT_FILE_NAME)
 
-}
-
-trait ExperimentJsonProtocol extends OwnerJsonProtocol with ExpDesignJsonProtocol {
-
-  import spray.json._
-
-  implicit object ExpStateJsonFormat extends RootJsonFormat[ExperimentState] {
-    def write(c: ExperimentState) = JsString(c.name)
-
-    def read(value: JsValue) = value match {
-      case JsString("new") ⇒ New
-      case JsString("saved") ⇒ Saved
-      case JsString("processed") ⇒ Processed
-      case JsString("published") ⇒ Published
-      case JsString("global") ⇒ Global
-
-      case _ ⇒ deserializationError("Experiment state expected")
-    }
-  }
-
-  implicit val experimentJson = jsonFormat6(Experiment)
-  implicit val experimentSummaryJson = jsonFormat4(ExperimentSummary)
 }
 
 /**

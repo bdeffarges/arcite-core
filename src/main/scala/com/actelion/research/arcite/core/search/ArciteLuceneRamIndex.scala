@@ -149,6 +149,8 @@ object ArciteLuceneRamIndex {
 
   case class FoundExperiment(digest: String, where: String)//todo where means in which field it was found.... useful?
 
+  case class ReturnExperiment(exp: Experiment) //todo for testing so far
+
   case class FoundExperiments(experiments: List[FoundExperiment])
 
   case class FoundExperimentsWithRequester(foundExperiments: FoundExperiments, requester: ActorRef)
