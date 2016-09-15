@@ -7,7 +7,7 @@ import com.actelion.research.arcite.core.rawdata.{RawDataSet, RawDataSetRegex}
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments}
 import com.actelion.research.arcite.core.transforms.RunTransform.{RunTransformOnFiles, RunTransformOnFolderAndRegex, RunTransformOnObject, RunTransformOnTransform}
 import com.actelion.research.arcite.core.transforms._
-import com.actelion.research.arcite.core.transforms.Transformers.{GetTransformer, ManyTransformers, OneTransformer}
+import com.actelion.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, ManyTransfDefs, OneTransfDef}
 import com.actelion.research.arcite.core.transforms.cluster.WorkState.AllJobsFeedback
 import com.actelion.research.arcite.core.utils.{FullName, Owner}
 import spray.json.DefaultJsonProtocol
@@ -114,8 +114,8 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val rdsJson = jsonFormat3(RawDataSet)
   implicit val rdsrJson = jsonFormat5(RawDataSetRegex)
 
-  implicit val manyTransformersJson = jsonFormat1(ManyTransformers)
-  implicit val oneTransformersJson = jsonFormat1(OneTransformer)
+  implicit val manyTransformersJson = jsonFormat1(ManyTransfDefs)
+  implicit val oneTransformersJson = jsonFormat1(OneTransfDef)
 
   implicit val searchExperimentsJson = jsonFormat2(ArciteService.SearchExperiments)
   implicit val allExperimentsJson = jsonFormat1(ArciteService.AllExperiments)
@@ -128,7 +128,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
 
   implicit val fullNameJson = jsonFormat2(FullName)
 
-  implicit val getTransformerJson = jsonFormat1(GetTransformer)
+  implicit val getTransformerJson = jsonFormat1(GetTransfDef)
 
   implicit val runTransformOnObjectJson = jsonFormat3(RunTransformOnObject)
   implicit val runTransformFromFilesJson = jsonFormat4(RunTransformOnFiles)

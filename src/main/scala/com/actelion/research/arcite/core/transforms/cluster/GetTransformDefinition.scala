@@ -12,8 +12,6 @@ import com.actelion.research.arcite.core.transforms.TransformDefinition
   */
 case class GetTransformDefinition(workerId: String)
 
-case class GetTransformDefinitionFromDigest(digest: String)
-
 /**
   * return transform type for worker and transf def.
   * @param workerID

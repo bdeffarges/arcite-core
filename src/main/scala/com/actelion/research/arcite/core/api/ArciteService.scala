@@ -1,14 +1,14 @@
 package com.actelion.research.arcite.core.api
 
-import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSystem, Props}
+import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, Props}
 import akka.util.Timeout
 import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddExperiment, AddExperimentWithRequester}
-import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSummary, ManageExperiments}
+import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSummary}
 import com.actelion.research.arcite.core.rawdata._
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{SearchForXResults, SearchForXResultsWithRequester}
 import com.actelion.research.arcite.core.transforms.RunTransform._
-import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformSourceFromObject}
-import com.actelion.research.arcite.core.transforms.Transformers._
+import com.actelion.research.arcite.core.transforms.{Transform, TransformSourceFromObject}
+import com.actelion.research.arcite.core.transforms.TransfDefMsg._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.{AllJobsStatus, QueryJobInfo, QueryWorkStatus}
 import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
 import com.typesafe.config.ConfigFactory
@@ -116,19 +116,19 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
       defineRawDataAct ! RawDataSetRegexWithRequester(rds, sender())
 
 
-    case GetAllTransformers ⇒
+    case GetAllTransfDefs ⇒
 
-      ManageTransformCluster.getNextFrontEnd() forward GetAllTransformers
-
-
-    case FindTransformer(search) ⇒
-
-      ManageTransformCluster.getNextFrontEnd() forward FindTransformerWithReq(search, sender())
+      ManageTransformCluster.getNextFrontEnd() forward GetAllTransfDefs
 
 
-    case GetTransformer(digest) ⇒
+    case ft: FindTransfDefs ⇒
 
-      ManageTransformCluster.getNextFrontEnd() forward GetTransformerWithReq(digest, sender())
+      ManageTransformCluster.getNextFrontEnd() forward ft
+
+
+    case gtd: GetTransfDef ⇒
+
+      ManageTransformCluster.getNextFrontEnd() forward gtd
 
 
     case rt: ProceedWithTransform ⇒ // todo for comprehension, etc. should be improved.
@@ -142,15 +142,15 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
       import scala.concurrent.Await
 
       val getExp = ask(expManager, GetExperiment(rt.experimentDigest))
-      val tdf = ask(ManageTransformCluster.getNextFrontEnd(), GetTransformer(rt.transfDefDigest))
+      val tdf = ask(ManageTransformCluster.getNextFrontEnd(), GetTransfDef(rt.transfDefDigest))
 
       //todo remove the blocking Await and replace with something like below (commented out)
       val exp = Await.result(getExp, 2 seconds).asInstanceOf[ExperimentFound]
-      val td = Await.result(tdf, 2 seconds).asInstanceOf[TransformDefinition]
+      val td = Await.result(tdf, 2 seconds).asInstanceOf[OneTransfDef]
 
       rt match {
         case RunTransformOnObject(_, _, params) ⇒
-          val t = Transform(td.transDefIdent.fullName, TransformSourceFromObject(exp.exp), params)
+          val t = Transform(td.transfDefId.fullName, TransformSourceFromObject(exp.exp), params)
           ManageTransformCluster.getNextFrontEnd() forward t
         case _ ⇒
           sender() ! "NOT IMPLEMENTED..."

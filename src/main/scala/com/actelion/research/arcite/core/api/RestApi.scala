@@ -12,7 +12,7 @@ import com.actelion.research.arcite.core.experiments.ManageExperiments.AddExperi
 import com.actelion.research.arcite.core.rawdata._
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments, ReturnExperiment}
 import com.actelion.research.arcite.core.transforms.RunTransform.{RunTransformOnFiles, RunTransformOnFolderAndRegex, RunTransformOnObject, RunTransformOnTransform}
-import com.actelion.research.arcite.core.transforms.Transformers._
+import com.actelion.research.arcite.core.transforms.TransfDefMsg._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.{NotOk, _}
 import com.actelion.research.arcite.core.transforms.cluster.WorkState._
 import com.actelion.research.arcite.core.transforms._
@@ -61,17 +61,17 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(rawData).mapTo[RawDataSetResponse]
   }
 
-  def getAllTransformers = {
-    arciteService.ask(GetAllTransformers).mapTo[ManyTransformers]
+  def getAllTransfDefs = {
+    arciteService.ask(GetAllTransfDefs).mapTo[MsgFromTransfDefsManager]
   }
 
-  def getTransform(digest: String) = {
-    arciteService.ask(GetTransformer(digest)).mapTo[MessageFromTransformers]
+  def findTransfDefs(search: String) = {
+    arciteService.ask(FindTransfDefs(search)).mapTo[MsgFromTransfDefsManager]
   }
 
-  def findTransforms(search: String): Set[TransformDefinition] = ???
-
-  def addTransform(definition: TransformDefinition) = ???
+  def getTransfDef(digest: String) = {
+    arciteService.ask(GetTransfDef(digest)).mapTo[MsgFromTransfDefsManager]
+  }
 
   def runTransformFromFiles(runTransform: RunTransformOnFiles) = {
     arciteService.ask(runTransform).mapTo[TransformJobAccepted]
@@ -97,9 +97,6 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(AllJobsStatus).mapTo[AllJobsFeedback]
   }
 
-  def jobInfo(workID: String) = {
-    //    arciteService.ask(QueryJobInfo(workID)).mapTo[JobInfo]
-  }
 }
 
 trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSONProtocol with LazyLogging {
@@ -122,9 +119,11 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
     get {
       complete(
         """arcite ver-0.1.0
-          |GET  /experiments:                                                                                                     return all experiments summary info or a few hundrets if there are too many
+          |GET  /experiments                                                                                                     return all experiments summary info or a few hundrets if there are too many
+
+          |GET  /experiments?search=searchString&maxHits=number                                                                  searching for the given string in the experiments and returning a maximum of maxHits results
           |
-          |POST /experiments: all experiments found with {"search" : "search string"}                                             return all experiments for the given search string
+          |POST /experiments all experiments found with {"search" : "search string"}                                             return all experiments for the given search string
           |
           |GET  /experiment/{digest}:  return a full experiment                                                                   return one experiment given its digest
           |
@@ -140,15 +139,17 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           |
           |POST /rawdata2 {"experimentDigest": "digest", "folder" : "folder", "regex": "regex", "copy": boolean                   define raw data folder with regex to pick up files for a experiment
           |
-          |GET  /transforms                                                                                                       returns all possible transformers
+          |GET  /transform_definitions                                                                                            returns all possible transform definitions
+
+          |GET  /transform_definitions?search=search_string                                                                       returns all transform definitions based on serach criteria
           |
-          |GET  /transform/digest                                                                                                 One specific transform
+          |GET  /transform_definition/digest                                                                                      one specific transform
           |
           |POST /run_transform/{"experiment": "digest", "transform": "digest", "parameters": JSValue}                             run the specified transform on the given experiment with the given json parameters as parameter object
           |
           |POST /run_transform/on_files/{"experiment": "digest", "transform": "digest", "parameters": JSValue}                    run the specified transform on the given experiment using the given files, the given json parameter can be added
           |
-          |POST /run_transform/on_folders/{"experiment": "digest", "transform": "digest", "parameters": JSValue}                   run the specified transform on the given experiment using the given folder(s), the given json parameter can be added
+          |POST /run_transform/on_folders/{"experiment": "digest", "transform": "digest", "parameters": JSValue}                  run the specified transform on the given experiment using the given folder(s), the given json parameter can be added
           |
           |POST /run_transform/on_transform/{"experiment": "digest", "transform": "digest", "parameters": JSValue}                run the specified transform on the given experiment starting from another transform, the given json parameter can be added
           |
@@ -167,12 +168,19 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           complete(fe)
         }
       }
-    } ~ get {
-      logger.debug("GET on /experiments, should return all experiments")
-      onSuccess(getAllExperiments) { exps ⇒
-        complete(OK, exps)
+    } ~
+      parameters('search, 'maxHits ? 10) { (search, maxHits) ⇒
+      val exps: Future[SomeExperiments] = search4Experiments(search, maxHits)
+      onSuccess(exps) { fe ⇒
+        complete(fe)
       }
-    }
+    } ~
+      get {
+        logger.debug("GET on /experiments, should return all experiments")
+        onSuccess(getAllExperiments) { exps ⇒
+          complete(OK, exps)
+        }
+      }
   }
 
 
@@ -203,22 +211,30 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
     }
   }
 
-  def getTransformsRoute = path("transforms") {
-    get {
-      logger.debug("GET on /transforms, should return all transforms")
-      onSuccess(getAllTransformers) { transformers ⇒
-        complete(OK, transformers)
+  def getTransformsRoute = path("transform_definitions") {
+    parameter('search) { search ⇒
+      logger.debug(s"GET on /transform_definitions, should return all transform definitions searching for ${search}")
+      onSuccess(findTransfDefs(search)) {
+        case ManyTransfDefs(tdis) ⇒ complete(OK, tdis)
+        case NoTransfDefFound ⇒ complete(OK, """{"results" : "empty"}""")
       }
-    }
+    } ~
+      get {
+        logger.debug("GET on /transform_definitions, should return all transform definitions")
+        onSuccess(getAllTransfDefs) {
+          case ManyTransfDefs(tdis) ⇒ complete(OK, tdis)
+          case NoTransfDefFound ⇒ complete(OK, """{"results" : "empty"}""")
+        }
+      }
   }
 
-  def getOneTransformRoute = pathPrefix("transform" / Segment) { transform ⇒
+  def getOneTransformRoute = pathPrefix("transform_definition" / Segment) { transform ⇒
     pathEnd {
       get {
         logger.debug(s"get transform definition for uid: = $transform")
-        onSuccess(getTransform(transform)) {
-          case NoTransformerFound ⇒ complete(OK, """{"error" : ""} """)
-          case OneTransformer(tr) ⇒ complete(OK, tr.fullName)
+        onSuccess(getTransfDef(transform)) {
+          case NoTransfDefFound ⇒ complete(OK, """{"error" : ""} """)
+          case OneTransfDef(tr) ⇒ complete(OK, tr)
         }
       }
     }

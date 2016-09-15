@@ -6,9 +6,9 @@ import akka.cluster.client.ClusterClientReceptionist
 import akka.cluster.pubsub.{DistributedPubSub, DistributedPubSubMediator}
 import akka.persistence.PersistentActor
 import com.actelion.research.arcite.core.transforms.RunTransform.{ProceedWithTransform, RunTransformOnObject}
-import com.actelion.research.arcite.core.transforms.Transformers.{GetAllTransformers, ManyTransformers, NoTransformerFound, OneTransformer}
+import com.actelion.research.arcite.core.transforms.TransfDefMsg._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend._
-import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformResult}
+import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformDefinitionIdentity, TransformResult}
 
 import scala.concurrent.duration.{Deadline, FiniteDuration}
 
@@ -187,18 +187,19 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       sender() ! "hello world" //todo implement
 
 
-    case GetAllTransformers ⇒
-      sender() ! ManyTransformers(transformDefs.map(_.transDefIdent))
+    case GetAllTransfDefs ⇒
+      sender() ! ManyTransfDefs(transformDefs.map(_.transDefIdent))
 
 
-    case GetTransformDefinitionFromDigest(d) ⇒
+    case ft: FindTransfDefs ⇒
+      sender() ! ManyTransfDefs(findTransformers(ft.search))
+
+
+    case GetTransfDef(d) ⇒
       transformDefs.find(_.transDefIdent.digestUID == d) match {
-        case Some(x) ⇒ sender() ! x
-        case _ ⇒ sender() ! NoTransformerFound
+        case Some(x) ⇒ sender() ! OneTransfDef(x.transDefIdent)
+        case _ ⇒ sender() ! NoTransfDefFound
       }
-
-
-
   }
 
 
@@ -209,6 +210,16 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       case (_, WorkerState(ref, Idle, _)) => ref ! MasterWorkerProtocol.WorkIsReady
       case _ => log.info("worker is busy. ")
     }
+  }
+
+
+  def findTransformers(search: String): Set[TransformDefinitionIdentity] = {
+
+    transformDefs.map(t ⇒ t.transDefIdent).filter(td ⇒ td.fullName.name.toLowerCase.contains(search)).take(10) ++
+      transformDefs.map(t ⇒ t.transDefIdent).filter(td ⇒ td.fullName.organization.toLowerCase.contains(search)).take(5) ++
+      transformDefs.map(t ⇒ t.transDefIdent).filter(td ⇒ td.description.summary.toLowerCase.contains(search)) ++
+      transformDefs.map(t ⇒ t.transDefIdent).filter(td ⇒ td.description.consumes.toLowerCase.contains(search)) ++
+      transformDefs.map(t ⇒ t.transDefIdent).filter(td ⇒ td.description.produces.toLowerCase.contains(search))
   }
 
 
