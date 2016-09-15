@@ -12,7 +12,8 @@ class WorkExecUpperCase extends Actor with ActorLogging {
 
   def receive = {
     case t: Transform =>
-      require (t.transfDefName == definition)
+      log.info(s"transformDef: ${t.transfDefName} defLight=$defLight")
+      require (t.transfDefName == defLight.fullName)
       log.info("starting work but will wait for fake...")
       Thread.sleep(10000)
       t.source match {
