@@ -12,8 +12,8 @@ class WorkExecUpperCase extends Actor with ActorLogging {
 
   def receive = {
     case t: Transform =>
-      log.info(s"transformDef: ${t.transfDefName} defLight=$defLight")
-      require (t.transfDefName == defLight.fullName)
+      log.info(s"transformDef: ${t.transfDefName} defLight=$transfDefId")
+      require (t.transfDefName == transfDefId.fullName)
       log.info("starting work but will wait for fake...")
       Thread.sleep(10000)
       t.source match {
@@ -27,7 +27,7 @@ class WorkExecUpperCase extends Actor with ActorLogging {
 
     case GetTransfDefId(wi) ⇒
       log.debug(s"asking worker type for $wi")
-      sender() ! TransformType(wi, defLight)
+      sender() ! TransformType(wi, transfDefId)
 
     case msg: Any ⇒ log.error(s"unable to deal with message: $msg")
   }
@@ -36,10 +36,10 @@ class WorkExecUpperCase extends Actor with ActorLogging {
 object WorkExecUpperCase {
   val fullName = FullName("com.actelion.research.arcite.core", "to-uppercase")
 
-  val defLight = TransformDefinitionIdentity(fullName, "to-uppercase",
+  val transfDefId = TransformDefinitionIdentity(fullName, "to-uppercase",
     TransformDescription("to-uppercase", "text", "uppercase-text"))
 
-  val definition = TransformDefinition(defLight, props)
+  val definition = TransformDefinition(transfDefId, props)
 
   def props(): Props = Props(classOf[WorkExecUpperCase])
 
