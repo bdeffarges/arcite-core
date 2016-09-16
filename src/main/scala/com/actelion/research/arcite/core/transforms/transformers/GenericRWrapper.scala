@@ -3,7 +3,8 @@ package com.actelion.research.arcite.core.transforms.transformers
 import java.io.File
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformDefinitionIdentity, TransformDescription}
+import com.actelion.research.arcite.core.transforms.cluster.{GetTransformDefinition, TransformType}
+import com.actelion.research.arcite.core.transforms._
 import com.actelion.research.arcite.core.utils.{Env, FullName}
 
 import scala.sys.process.ProcessLogger
@@ -19,6 +20,15 @@ class GenericRWrapper extends Actor with ActorLogging {
   import GenericRWrapper._
 
   override def receive: Receive = {
+    case t: Transform =>
+      log.info(s"transformDef: ${t.transfDefName} defLight=$defLight")
+      require (t.transfDefName == defLight.fullName)
+      log.info("starting work but will wait for fake...")
+//      t.source match {
+//        case tff: TransformSourceFiles ⇒
+//          val workingDir =
+//      }
+
     case rc: RunRCodeWithRequester ⇒
       val rrc = rc.rrc
       val wdir = new File(rrc.workingDir)
@@ -39,6 +49,11 @@ class GenericRWrapper extends Actor with ActorLogging {
 
       sender() ! result
 
+    case GetTransformDefinition(wi) ⇒
+      log.debug(s"asking worker type for $wi")
+      sender() ! TransformType(wi, definition)
+
+    case msg: Any ⇒ log.error(s"unable to deal with message: $msg")
   }
 }
 

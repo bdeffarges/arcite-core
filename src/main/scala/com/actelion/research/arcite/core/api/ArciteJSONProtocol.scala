@@ -98,8 +98,8 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
       case tsc: TransformSourceFromObject ⇒
         JsObject("exp_" -> experimentJson.write(tsc.experiment))
 
-      case tsc: TransformSourceRegex ⇒
-        JsObject("type" -> JsString(tsc.getClass.getSimpleName))
+//      case tsc: TransformSourceRegex ⇒
+//        JsObject("type" -> JsString(tsc.getClass.getSimpleName))
 
       case tsc: TransformAsSource4Transform ⇒
         JsObject("type" -> JsString(tsc.getClass.getSimpleName))

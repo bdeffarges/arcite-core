@@ -48,14 +48,14 @@ sealed trait TransformFeedback {
         s"""${
           t.sourceFoldersOrFiles.mkString(", ")
         }"""
-      case t: TransformSourceRegex ⇒
-        s"""folder=${
-          t.folder
-        }  regex="${
-          t.regex
-        }" withSubFolder=${
-          t.withSubfolder
-        }"""
+//      case t: TransformSourceRegex ⇒
+//        s"""folder=${
+//          t.folder
+//        }  regex="${
+//          t.regex
+//        }" withSubFolder=${
+//          t.withSubfolder
+//        }"""
       case t: TransformAsSource4Transform ⇒
         s"""transformOriginUID=${
           t.transformUID

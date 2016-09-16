@@ -74,6 +74,7 @@ object ManageTransformCluster {
       ClusterSingletonManagerSettings(system).withRole(role)), "master")
   }
 
+
   def startFrontend(port: Int): ActorRef = {
     val conf = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port).
       withFallback(ConfigFactory.load("transform-cluster"))
@@ -84,6 +85,7 @@ object ManageTransformCluster {
 
     system.actorOf(Props[Frontend], "frontend")
   }
+
 
   def addWorker(td: TransformDefinition): Unit = {
 
@@ -96,6 +98,7 @@ object ManageTransformCluster {
 
     workSystem.actorOf(TransformWorker.props(clusterClient, td), name)
   }
+
 
   def startupSharedJournal(system: ActorSystem, startStore: Boolean, path: ActorPath): Unit = {
     // Start the shared journal on one node (don't crash this SPOF)
@@ -120,6 +123,7 @@ object ManageTransformCluster {
         system.terminate()
     }
   }
+
 
   /**
     * to test the cluster
@@ -156,6 +160,7 @@ object ManageTransformCluster {
 //    }
   }
 
+
   def startSomeDefaultClusterForTesting(): Unit = {
 
     defaultTransformClusterStart(Seq(2551, 2552, 2553, 2554, 2555, 2556, 2557, 2558), 30)
@@ -173,6 +178,5 @@ object ManageTransformCluster {
     ManageTransformCluster.addWorker(WorkExecUpperCase.definition)
     ManageTransformCluster.addWorker(WorkExecUpperCase.definition)
     ManageTransformCluster.addWorker(WorkExecUpperCase.definition)
-
  }
 }

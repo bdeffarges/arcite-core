@@ -44,9 +44,12 @@ class RWrapperWorker extends Actor with ActorLogging {
       sender() ! WorkComplete(result)
 
 
+
     case GetTransformDefinition(wi) ⇒
       log.debug(s"asking worker type for $wi")
       sender() ! TransformType(wi, RWrapperWorker.definition)
+
+
 
     case msg: Any ⇒
       val s = s"unable to deal with this message: $msg"

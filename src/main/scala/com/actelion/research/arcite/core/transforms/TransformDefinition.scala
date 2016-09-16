@@ -71,16 +71,12 @@ case class TransformSourceFiles(experiment: Experiment, sourceFoldersOrFiles: Se
   extends TransformSourceFromFiles
 
 
+
 case class TransformAsSource4Transform(experiment: Experiment, transformUID: String, sourceFoldersOrFiles: Set[String],
                                        includes: Set[String] = Set(), excludes: Set[String] = Set(),
                                        includesRegex: Set[String] = Set(), excludesRegex: Set[String] = Set())
   extends TransformSourceFromFiles
 
-
-case class TransformSourceRegex(experiment: Experiment, folder: String, regex: String, withSubfolder: Boolean,
-                                includes: Set[String] = Set(), excludes: Set[String] = Set(),
-                                includesRegex: Set[String] = Set(), excludesRegex: Set[String] = Set())
-  extends TransformSourceFromFiles
 
 
 case class TransformSourceFromObject(experiment: Experiment) extends TransformSource

@@ -6,6 +6,7 @@ import scala.concurrent.duration._
 import akka.actor.SupervisorStrategy.{Restart, Stop}
 import akka.actor.{Actor, ActorInitializationException, ActorLogging, ActorRef, DeathPactException, OneForOneStrategy, Props, ReceiveTimeout, Terminated}
 import akka.cluster.client.ClusterClient.SendToAll
+
 import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.WorkComplete
 import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition}
 
@@ -65,7 +66,7 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
     case _: DeathPactException => Stop
 
     case _: Exception =>
-      currentTransform foreach { transf ⇒
+      currentTransform foreach { transf ⇒ //todo reimplement
         //        sendToMaster(WorkFailed(workerId, transf))
       }
       context.become(idle)
@@ -84,7 +85,7 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
     case t: Transform =>
       log.info(s"Got a transform: $t")
       currentTransform = Some(t)
-      workExecutor ! t //todo needs to be less than t
+      workExecutor ! t
       context.become(working)
 
     case gtd: GetTransformDefinition ⇒
@@ -139,6 +140,9 @@ object TransformWorker {
 
 }
 
+
+//todo fix the ClassNotFoundException problem because transfExecutor is an actorRef on an existing class which might
+//not be known by core
 class TransformWorkerWithRemoteExec(clusterClient: ActorRef, transfExecutor: ActorRef,
                                     workerName: String, registerInterval: FiniteDuration)
                                     extends Actor with ActorLogging {
@@ -187,7 +191,7 @@ class TransformWorkerWithRemoteExec(clusterClient: ActorRef, transfExecutor: Act
     case t: Transform =>
       log.info(s"Got a transform: $t")
       currentTransform = Some(t)
-      workExecutor ! t //todo needs to be less than t
+      workExecutor ! t
       context.become(working)
 
     case gtd: GetTransformDefinition ⇒
