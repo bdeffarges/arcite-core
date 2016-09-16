@@ -65,8 +65,8 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
     case _: DeathPactException => Stop
 
     case _: Exception =>
-      currentTransform foreach {transf ⇒
-//        sendToMaster(WorkFailed(workerId, transf))
+      currentTransform foreach { transf ⇒
+        //        sendToMaster(WorkFailed(workerId, transf))
       }
       context.become(idle)
       Restart
@@ -138,3 +138,107 @@ object TransformWorker {
   case class WorkComplete(result: Any)
 
 }
+
+class TransformWorkerWithRemoteExec(clusterClient: ActorRef, transfExecutor: ActorRef,
+                                    workerName: String, registerInterval: FiniteDuration)
+                                    extends Actor with ActorLogging {
+
+  import MasterWorkerProtocol._
+
+  //todo change dispatcher?
+  import context.dispatcher
+
+  val registerTask = context.system.scheduler.schedule(0.seconds, registerInterval, clusterClient,
+    SendToAll("/user/master/singleton", RegisterWorker(workerName)))
+
+  val workExecutor = context.watch(transfExecutor)
+
+  var currentTransform: Option[Transform] = None
+
+  log.info(s"worker [$workerName] for work executor [$workExecutor] created.")
+
+  def transform: Transform = currentTransform match {
+    case Some(transf) => transf
+    case None => throw new IllegalStateException("Not working")
+  }
+
+  override def supervisorStrategy = OneForOneStrategy() {
+    case _: ActorInitializationException => Stop
+
+    case _: DeathPactException => Stop
+
+    case _: Exception =>
+      currentTransform foreach { transf ⇒
+        //        sendToMaster(WorkFailed(workerId, transf))
+      }
+      context.become(idle)
+      Restart
+  }
+
+  override def postStop(): Unit = registerTask.cancel()
+
+  def receive = idle
+
+  def idle: Receive = {
+    case WorkIsReady =>
+      log.info("received [WorkIsReady]")
+      sendToMaster(WorkerRequestsWork(workerName))
+
+    case t: Transform =>
+      log.info(s"Got a transform: $t")
+      currentTransform = Some(t)
+      workExecutor ! t //todo needs to be less than t
+      context.become(working)
+
+    case gtd: GetTransformDefinition ⇒
+      log.info(s"asked for my [$self] workerType ")
+      workExecutor ! gtd
+
+    case wt: TransformType ⇒
+      sendToMaster(wt)
+  }
+
+  def working: Receive = {
+    case WorkComplete(result) =>
+      log.info("Work is complete. Result {}.", result)
+      sendToMaster(WorkIsDone(workerName, transform, result))
+      context.setReceiveTimeout(5.seconds)
+      context.become(waitForWorkIsDoneAck(result))
+
+    case _: Transform =>
+      log.info("Yikes. Master told me to do work, while I'm working.")
+  }
+
+  def waitForWorkIsDoneAck(result: Any): Receive = {
+
+    case Ack(trans) if trans == transform =>
+      sendToMaster(WorkerRequestsWork(workerName))
+      context.setReceiveTimeout(Duration.Undefined)
+      context.become(idle)
+
+    case ReceiveTimeout =>
+      log.info("No ack from master, retrying")
+      sendToMaster(WorkIsDone(workerName, transform, result))
+  }
+
+  override def unhandled(message: Any): Unit = message match {
+    case Terminated(`workExecutor`) => context.stop(self)
+    case WorkIsReady =>
+    case _ => super.unhandled(message)
+  }
+
+  def sendToMaster(msg: Any): Unit = {
+    clusterClient ! SendToAll("/user/master/singleton", msg)
+  }
+
+}
+
+object TransformWorkerWithRemoteExec {
+  def props(clusterClient: ActorRef, transfExecutor: ActorRef, workerName: String,
+            registerInterval: FiniteDuration = 10.seconds): Props =
+    Props(classOf[TransformWorkerWithRemoteExec], clusterClient, transfExecutor, workerName, registerInterval)
+
+  case class WorkComplete(result: Any)
+
+}
+

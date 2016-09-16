@@ -34,14 +34,14 @@ class WorkExecUpperCase extends Actor with ActorLogging {
 }
 
 object WorkExecUpperCase {
-  def props(): Props = Props(classOf[WorkExecUpperCase])
-
   val fullName = FullName("com.actelion.research.arcite.core", "to-uppercase")
 
   val defLight = TransformDefinitionIdentity(fullName, "to-uppercase",
     TransformDescription("to-uppercase", "text", "uppercase-text"))
 
   val definition = TransformDefinition(defLight, props)
+
+  def props(): Props = Props(classOf[WorkExecUpperCase])
 
   case class ToUpperCase(stgToUpperCase: String)
 }
