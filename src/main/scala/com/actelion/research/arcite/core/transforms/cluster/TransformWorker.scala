@@ -88,7 +88,7 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
       workExecutor ! t
       context.become(working)
 
-    case gtd: GetTransformDefinition ⇒
+    case gtd: GetTransfDefId ⇒
       log.info(s"asked for my [$self] workerType ")
       workExecutor ! gtd
 
@@ -194,7 +194,7 @@ class TransformWorkerWithRemoteExec(clusterClient: ActorRef, transfExecutor: Act
       workExecutor ! t
       context.become(working)
 
-    case gtd: GetTransformDefinition ⇒
+    case gtd: GetTransfDefId ⇒
       log.info(s"asked for my [$self] workerType ")
       workExecutor ! gtd
 

@@ -23,7 +23,7 @@ object Master {
 
   private case class Busy(trans: Transform, deadline: Deadline) extends WorkerStatus
 
-  private case class WorkerState(ref: ActorRef, status: WorkerStatus, transDef: Option[TransformDefinition])
+  private case class WorkerState(ref: ActorRef, status: WorkerStatus, transDef: Option[TransformDefinitionIdentity])
 
   private case object CleanupTick
 
@@ -46,7 +46,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
   // workers state is not event sourced
   private var workers = Map[String, WorkerState]()
-  private var transformDefs = Set[TransformDefinition]()
+  private var transformDefs = Set[TransformDefinitionIdentity]()
 
   // workState is event sourced
   private var workState = WorkState.empty
@@ -70,22 +70,22 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       log.info(s"received RegisterWorker for $workerId")
       if (workers.contains(workerId)) {
         workers += (workerId -> workers(workerId).copy(ref = sender()))
-        sender() ! GetTransformDefinition(workerId)
+        sender() ! GetTransfDefId(workerId)
       } else {
         log.info("Worker registered: {}", workerId)
         workers += (workerId -> WorkerState(sender(), status = Idle, None))
-        sender() ! GetTransformDefinition(workerId)
+        sender() ! GetTransfDefId(workerId)
       }
 
 
     case MasterWorkerProtocol.WorkerRequestsWork(workerId) =>
       log.info(s"total pending jobs = ${workState.numberOfPendingJobs()} worker requesting work... do we have something for him?")
       val td = workers(workerId).transDef
-      if (td.isDefined && workState.hasWork(td.get.transDefIdent.fullName)) {
+      if (td.isDefined && workState.hasWork(td.get.fullName)) {
         workers.get(workerId) match {
           case Some(s@WorkerState(_, Idle, _)) =>
             if (s.transDef.isDefined) {
-              val w = workState.nextWork(s.transDef.get.transDefIdent.fullName)
+              val w = workState.nextWork(s.transDef.get.fullName)
               if (w.nonEmpty) {
                 //todo maybe we don't need both checks
                 val transf = w.get
@@ -147,6 +147,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
         }
       }
 
+
     case CleanupTick =>
       for ((workerId, s@WorkerState(_, Busy(workId, timeout), _)) ← workers) {
         if (timeout.isOverdue) {
@@ -179,7 +180,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
 
     case GetAllTransfDefs ⇒
-      sender() ! ManyTransfDefs(transformDefs.map(_.transDefIdent))
+      sender() ! ManyTransfDefs(transformDefs)
 
 
     case ft: FindTransfDefs ⇒
@@ -187,8 +188,8 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
 
     case GetTransfDef(d) ⇒
-      transformDefs.find(_.transDefIdent.digestUID == d) match {
-        case Some(x) ⇒ sender() ! OneTransfDef(x.transDefIdent)
+      transformDefs.find(_.digestUID == d) match {
+        case Some(x) ⇒ sender() ! OneTransfDef(x)
         case _ ⇒ sender() ! NoTransfDefFound
       }
   }
@@ -206,11 +207,11 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
   def findTransformers(search: String): Set[TransformDefinitionIdentity] = {
 
-    transformDefs.map(t ⇒ t.transDefIdent).filter(td ⇒ td.fullName.name.toLowerCase.contains(search)).take(10) ++
-      transformDefs.map(t ⇒ t.transDefIdent).filter(td ⇒ td.fullName.organization.toLowerCase.contains(search)).take(5) ++
-      transformDefs.map(t ⇒ t.transDefIdent).filter(td ⇒ td.description.summary.toLowerCase.contains(search)) ++
-      transformDefs.map(t ⇒ t.transDefIdent).filter(td ⇒ td.description.consumes.toLowerCase.contains(search)) ++
-      transformDefs.map(t ⇒ t.transDefIdent).filter(td ⇒ td.description.produces.toLowerCase.contains(search))
+      transformDefs.filter(td ⇒ td.fullName.name.toLowerCase.contains(search)).take(10) ++
+      transformDefs.filter(td ⇒ td.fullName.organization.toLowerCase.contains(search)).take(5) ++
+      transformDefs.filter(td ⇒ td.description.summary.toLowerCase.contains(search)) ++
+      transformDefs.filter(td ⇒ td.description.consumes.toLowerCase.contains(search)) ++
+      transformDefs.filter(td ⇒ td.description.produces.toLowerCase.contains(search))
   }
 
 

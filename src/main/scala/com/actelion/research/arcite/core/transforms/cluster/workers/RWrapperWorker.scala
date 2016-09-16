@@ -6,7 +6,7 @@ import akka.actor.{Actor, ActorLogging, Props}
 import com.actelion.research.arcite.core.transforms.cluster.MasterWorkerProtocol.WorkFailed
 import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.WorkComplete
 import com.actelion.research.arcite.core.transforms.cluster.workers.RWrapperWorker.{Rreturn, RunRCode}
-import com.actelion.research.arcite.core.transforms.cluster.{GetTransformDefinition, TransformType}
+import com.actelion.research.arcite.core.transforms.cluster.{GetTransfDefId, TransformType}
 import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformDefinitionIdentity, TransformDescription}
 import com.actelion.research.arcite.core.utils.{Env, FullName}
 
@@ -45,9 +45,9 @@ class RWrapperWorker extends Actor with ActorLogging {
 
 
 
-    case GetTransformDefinition(wi) ⇒
+    case GetTransfDefId(wi) ⇒
       log.debug(s"asking worker type for $wi")
-      sender() ! TransformType(wi, RWrapperWorker.definition)
+      sender() ! TransformType(wi, RWrapperWorker.defLight)
 
 
 

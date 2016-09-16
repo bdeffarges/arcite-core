@@ -2,7 +2,7 @@ package com.actelion.research.arcite.core.transforms.cluster.workers
 
 import akka.actor.{Actor, ActorLogging, Props}
 import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.WorkComplete
-import com.actelion.research.arcite.core.transforms.cluster.{GetTransformDefinition, TransformType}
+import com.actelion.research.arcite.core.transforms.cluster.{GetTransfDefId, TransformType}
 import com.actelion.research.arcite.core.transforms.{TransformDefinition, TransformDefinitionIdentity, TransformDescription}
 import com.actelion.research.arcite.core.utils.FullName
 
@@ -16,9 +16,9 @@ class WorkExecProd extends Actor with ActorLogging {
       val result = s"workexecutor= $n * $n = $n2"
       sender() ! WorkComplete(result)
 
-    case GetTransformDefinition(wi) ⇒
+    case GetTransfDefId(wi) ⇒
       log.debug(s"asking worker type for $wi")
-      sender() ! TransformType(wi, definition)
+      sender() ! TransformType(wi, defLight)
 
     case msg: Any ⇒ log.error(s"unable to deal with message $msg")
   }

@@ -3,7 +3,7 @@ package com.actelion.research.arcite.core.transforms.transformers
 import java.io.File
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import com.actelion.research.arcite.core.transforms.cluster.{GetTransformDefinition, TransformType}
+import com.actelion.research.arcite.core.transforms.cluster.{GetTransfDefId, TransformType}
 import com.actelion.research.arcite.core.transforms._
 import com.actelion.research.arcite.core.utils.{Env, FullName}
 
@@ -49,9 +49,9 @@ class GenericRWrapper extends Actor with ActorLogging {
 
       sender() ! result
 
-    case GetTransformDefinition(wi) ⇒
+    case GetTransfDefId(wi) ⇒
       log.debug(s"asking worker type for $wi")
-      sender() ! TransformType(wi, definition)
+      sender() ! TransformType(wi, defLight)
 
     case msg: Any ⇒ log.error(s"unable to deal with message: $msg")
   }
