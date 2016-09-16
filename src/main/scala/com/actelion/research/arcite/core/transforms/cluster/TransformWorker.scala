@@ -29,11 +29,10 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
   * GNU General Public License for more details.
   *
   * You should have received a copy of the GNU General Public License
-  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  * along with this program. If not, see <http://www.gnu.org/licenses/>.
   *
   * Created by Bernard Deffarges on 2016/09/05.
   */
-
 class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDefinition,
                       registerInterval: FiniteDuration) extends Actor with ActorLogging {
 

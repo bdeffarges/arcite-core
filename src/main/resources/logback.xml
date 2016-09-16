@@ -14,7 +14,7 @@
         </encoder>
     </appender>
 
-    <logger name="com.actelion.research.arc" level="debug"/>
+    <logger name="com.actelion.research.arcite" level="debug"/>
 
     <root level="debug">
         <appender-ref ref="STDOUT" />

@@ -3,19 +3,15 @@ package com.actelion.research.arcite.core.transforms.cluster
 import akka.actor.{ActorLogging, ActorRef, Props}
 import akka.cluster.Cluster
 import akka.cluster.client.ClusterClientReceptionist
-import akka.cluster.pubsub.{DistributedPubSub, DistributedPubSubMediator}
 import akka.persistence.PersistentActor
-import com.actelion.research.arcite.core.transforms.RunTransform.{ProceedWithTransform, RunTransformOnObject}
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend._
-import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformDefinitionIdentity, TransformResult}
+import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformDefinitionIdentity}
 
 import scala.concurrent.duration.{Deadline, FiniteDuration}
 
 //todo because of event sourcing, it will also include saved jobs...
 object Master {
-
-  val ResultsTopic = "results" //todo remove? originally, it was intended for subscribe/publish
 
   def props(workTimeout: FiniteDuration): Props = Props(classOf[Master], workTimeout)
 
@@ -38,10 +34,6 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
   import Master._
   import WorkState._
-
-  //todo do we need the mediator for anything else than Pub/sub??
-  val mediator = DistributedPubSub(context.system).mediator
-  log.info(s"Pub/Sub mediator= $mediator")
 
   ClusterClientReceptionist(context.system).registerService(self)
 
@@ -122,7 +114,6 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
         changeWorkerToIdle(workerId, transf)
         persist(WorkCompleted(transf, result)) { event ⇒
           workState = workState.updated(event)
-          mediator ! DistributedPubSubMediator.Publish(ResultsTopic, TransformResult(transf, result))
 
           // Ack back to original sender
           sender() ! MasterWorkerProtocol.Ack(transf)
