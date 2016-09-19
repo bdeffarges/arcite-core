@@ -14,10 +14,9 @@ import scala.sys.process.ProcessLogger
 
 /**
   * Created by deffabe1 on 5/20/16.
+  *
   */
 class RWrapperWorker extends Actor with ActorLogging {
-
-  //should it also have it's own uid?
 
   val rScriptPath = Env.getConf("rscript")
 
@@ -55,7 +54,6 @@ class RWrapperWorker extends Actor with ActorLogging {
       val s = s"unable to deal with this message: $msg"
       log.error(s)
       sender() ! WorkFailed(s)
-
   }
 }
 

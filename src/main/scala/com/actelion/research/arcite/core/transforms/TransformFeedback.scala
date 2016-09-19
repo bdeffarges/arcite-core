@@ -43,11 +43,12 @@ sealed trait TransformFeedback {
 
     val t = transformFeedback
 
-    def transformSourceFiles(ts: TransformSource): String = ts match {
-      case t: TransformSourceFiles ⇒
-        s"""${
-          t.sourceFoldersOrFiles.mkString(", ")
-        }"""
+    def transformSourceFiles(ts: TransformSource): String = ???
+//    ts match {
+//      case t: TransformSourceFromFiles ⇒
+//        s"""${
+//          t.sourceFoldersOrFiles.mkString(", ")
+//        }"""
 //      case t: TransformSourceRegex ⇒
 //        s"""folder=${
 //          t.folder
@@ -56,13 +57,13 @@ sealed trait TransformFeedback {
 //        }" withSubFolder=${
 //          t.withSubfolder
 //        }"""
-      case t: TransformAsSource4Transform ⇒
-        s"""transformOriginUID=${
-          t.transformUID
-        } filesAndFolders=[${
-          t.sourceFoldersOrFiles.mkString(", ")
-        }]"""
-    }
+//      case t: TransformAsSource4Transform ⇒
+//        s"""transformOriginUID=${
+//          t.transformUID
+//        } filesAndFolders=[${
+//          t.sourceFoldersOrFiles.mkString(", ")
+//        }]"""
+//    }
 
     val stateOutPutError = transformFeedback match {
       case t: TransformSuccess ⇒

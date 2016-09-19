@@ -42,6 +42,7 @@ case class TransformDefinitionIdentity(fullName: FullName, shortName: String, de
   */
 case class TransformDefinition(transDefIdent: TransformDefinitionIdentity, actorProps: () ⇒ Props)
 
+
 /**
   * Where to find the source data for the transform
   *
@@ -50,36 +51,36 @@ sealed trait TransformSource {
   def experiment: Experiment
 }
 
-/**
-  * in case the transform takes files as input we can add some inclusion/exclusion criteria for some files
-  * (e.g. if user decides to exclude outliers in an experiment).
-  *
-  */
-sealed trait TransformSourceFromFiles extends TransformSource {
-  def includes: Set[String]
+case class TransformSourceFromRaw(experiment: Experiment) extends TransformSource
 
-  def includesRegex: Set[String]
+case class TransformSourceFromRawWithExclusion(experiment: Experiment, excludes: Set[String] = Set(),
+                                               excludesRegex: Set[String] = Set()) extends TransformSource {
 
-  def excludes: Set[String]
-
-  def excludesRegex: Set[String]
+  def inputFiles(): Set[String] = {
+    Set() // todo implement exclusion
+  }
 }
 
-case class TransformSourceFiles(experiment: Experiment, sourceFoldersOrFiles: Set[String],
-                                includes: Set[String] = Set(), excludes: Set[String] = Set(),
-                                includesRegex: Set[String] = Set(), excludesRegex: Set[String] = Set())
-  extends TransformSourceFromFiles
+case class TransformSourceFromTransform(experiment: Experiment, transformUID: String)
+  extends TransformSource {
 
+  def inputFiles(): Set[String] = {
+    Set()
+  }
+}
 
+case class TransformSourceFromTransformWithExclusion(experiment: Experiment, transformUID: String,
+                                                     excludes: Set[String] = Set(), excludesRegex: Set[String] = Set())
+  extends TransformSource {
 
-case class TransformAsSource4Transform(experiment: Experiment, transformUID: String, sourceFoldersOrFiles: Set[String],
-                                       includes: Set[String] = Set(), excludes: Set[String] = Set(),
-                                       includesRegex: Set[String] = Set(), excludesRegex: Set[String] = Set())
-  extends TransformSourceFromFiles
-
+  def inputFiles(): Set[String] = {
+    Set() // todo implement
+  }
+}
 
 
 case class TransformSourceFromObject(experiment: Experiment) extends TransformSource
+
 
 /**
   * the actual transform that contains all information for the instance of a transform.

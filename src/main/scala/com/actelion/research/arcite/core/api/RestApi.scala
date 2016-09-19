@@ -11,7 +11,7 @@ import com.actelion.research.arcite.core.experiments._
 import com.actelion.research.arcite.core.experiments.ManageExperiments.AddExperiment
 import com.actelion.research.arcite.core.rawdata._
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments, ReturnExperiment}
-import com.actelion.research.arcite.core.transforms.RunTransform.{RunTransformOnFiles, RunTransformOnFolderAndRegex, RunTransformOnObject, RunTransformOnTransform}
+import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.{NotOk, _}
 import com.actelion.research.arcite.core.transforms.cluster.WorkState._
@@ -46,6 +46,7 @@ trait ArciteServiceApi extends LazyLogging {
   }
 
   def search4Experiments(search: String, maxHits: Int) = {
+    logger.debug(s"searching for $search, returning $maxHits hits.")
     arciteService.ask(SearchExperiments(search, maxHits)).mapTo[SomeExperiments]
   }
 
@@ -74,6 +75,10 @@ trait ArciteServiceApi extends LazyLogging {
   }
 
   def runTransformFromFiles(runTransform: RunTransformOnFiles) = {
+    arciteService.ask(runTransform).mapTo[TransformJobAccepted]
+  }
+
+  def runTransformFromRaw(runTransform: RunTransformOnRawData) = {
     arciteService.ask(runTransform).mapTo[TransformJobAccepted]
   }
 
@@ -271,8 +276,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
     path("on_raw_data") {
       post {
         logger.debug("running a transform on the raw data from an experiment.")
-        entity(as[RunTransformOnFiles]) { rtf ⇒
-          val saved: Future[TransformJobAccepted] = runTransformFromFiles(rtf)
+        entity(as[RunTransformOnRawData]) { rtf ⇒
+          val saved: Future[TransformJobAccepted] = runTransformFromRaw(rtf)
           onSuccess(saved) {
             case Ok(t) ⇒ complete(OK, t)
             case NotOk ⇒ complete(OK, "failed") // todo needs improvment

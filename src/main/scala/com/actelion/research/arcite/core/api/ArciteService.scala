@@ -7,7 +7,7 @@ import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSumm
 import com.actelion.research.arcite.core.rawdata._
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{SearchForXResults, SearchForXResultsWithRequester}
 import com.actelion.research.arcite.core.transforms.RunTransform._
-import com.actelion.research.arcite.core.transforms.{Transform, TransformSourceFromObject}
+import com.actelion.research.arcite.core.transforms.{Transform, TransformSourceFromObject, TransformSourceFromRaw}
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.{AllJobsStatus, QueryJobInfo, QueryWorkStatus}
 import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
@@ -145,6 +145,8 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
       val tdf = ask(ManageTransformCluster.getNextFrontEnd(), GetTransfDef(rt.transfDefDigest))
 
       //todo remove the blocking Await and replace with something like below (commented out)
+      //todo implement failed type (Class cast exception)
+
       val exp = Await.result(getExp, 2 seconds).asInstanceOf[ExperimentFound]
       val td = Await.result(tdf, 2 seconds).asInstanceOf[OneTransfDef]
 
@@ -152,6 +154,11 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
         case RunTransformOnObject(_, _, params) ⇒
           val t = Transform(td.transfDefId.fullName, TransformSourceFromObject(exp.exp), params)
           ManageTransformCluster.getNextFrontEnd() forward t
+
+        case RunTransformOnRawData(_,_, params) ⇒
+          val t = Transform(td.transfDefId.fullName, TransformSourceFromRaw(exp.exp), params)
+          ManageTransformCluster.getNextFrontEnd() forward t
+
         case _ ⇒
           sender() ! "NOT IMPLEMENTED..."
       }

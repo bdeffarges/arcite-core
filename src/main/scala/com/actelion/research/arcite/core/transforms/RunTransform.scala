@@ -1,7 +1,7 @@
 package com.actelion.research.arcite.core.transforms
 
 import akka.actor.ActorRef
-import spray.json.JsValue
+import spray.json.{JsString, JsValue}
 
 /**
   * arcite-core

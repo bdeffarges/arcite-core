@@ -5,7 +5,7 @@ import com.actelion.research.arcite.core.experiments._
 import com.actelion.research.arcite.core.experiments.ManageExperiments.AddExperiment
 import com.actelion.research.arcite.core.rawdata.{RawDataSet, RawDataSetRegex}
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments}
-import com.actelion.research.arcite.core.transforms.RunTransform.{RunTransformOnFiles, RunTransformOnFolderAndRegex, RunTransformOnObject, RunTransformOnTransform}
+import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, ManyTransfDefs, OneTransfDef}
 import com.actelion.research.arcite.core.transforms.cluster.WorkState.AllJobsFeedback
@@ -90,19 +90,24 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit object TransformSourceJsonFormat extends RootJsonFormat[TransformSource] {
 
     def write(ts: TransformSource) = ts match {
-      case tsc: TransformSourceFiles ⇒
+      case tsc: TransformSourceFromRaw ⇒
         JsObject(
           "type" -> JsString(tsc.getClass.getSimpleName),
           "hello" -> JsString(tsc.getClass.getSimpleName)) //todo to implement
 
+
       case tsc: TransformSourceFromObject ⇒
         JsObject("exp_" -> experimentJson.write(tsc.experiment))
+
+
+      case tsc: TransformSourceFromRaw ⇒
+        JsObject("test" -> experimentJson.write(tsc.experiment))
 
 //      case tsc: TransformSourceRegex ⇒
 //        JsObject("type" -> JsString(tsc.getClass.getSimpleName))
 
-      case tsc: TransformAsSource4Transform ⇒
-        JsObject("type" -> JsString(tsc.getClass.getSimpleName))
+//      case tsc: TransformAsSource4Transform ⇒
+//        JsObject("type" -> JsString(tsc.getClass.getSimpleName))
 
     }
 
@@ -131,6 +136,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val getTransformerJson = jsonFormat1(GetTransfDef)
 
   implicit val runTransformOnObjectJson = jsonFormat3(RunTransformOnObject)
+  implicit val runTransformOnRawDataJson = jsonFormat3(RunTransformOnRawData)
   implicit val runTransformFromFilesJson = jsonFormat4(RunTransformOnFiles)
   implicit val runTransformFromTransformJson = jsonFormat5(RunTransformOnTransform)
   implicit val runTransformFromFolderJson = jsonFormat6(RunTransformOnFolderAndRegex)
