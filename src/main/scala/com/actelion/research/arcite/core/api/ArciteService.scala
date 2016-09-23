@@ -65,8 +65,6 @@ object ArciteService {
 
   case class ExperimentFound(exp: Experiment) extends GetExperimentResponse
 
-  //todo to be renamed
-
   case class ExperimentsFound(exp: Set[Experiment]) extends GetExperimentResponse
 
   case object DidNotFindExperiment extends GetExperimentResponse
@@ -131,56 +129,8 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
       ManageTransformCluster.getNextFrontEnd() forward gtd
 
 
-    case rt: ProceedWithTransform ⇒ // todo for comprehension, etc. should be improved.
-      log.info(s"transform requested ${rt}")
-      // create a transform
-      // get experiment
-
-      import akka.pattern.ask
-      import scala.concurrent.ExecutionContext._
-      import scala.concurrent.duration._
-      import scala.concurrent.Await
-
-      val getExp = ask(expManager, GetExperiment(rt.experimentDigest))
-      val tdf = ask(ManageTransformCluster.getNextFrontEnd(), GetTransfDef(rt.transfDefDigest))
-
-      //todo remove the blocking Await and replace with something like below (commented out)
-      //todo implement failed type (Class cast exception)
-
-      val exp = Await.result(getExp, 2 seconds).asInstanceOf[ExperimentFound]
-      val td = Await.result(tdf, 2 seconds).asInstanceOf[OneTransfDef]
-
-      rt match {
-        case RunTransformOnObject(_, _, params) ⇒
-          val t = Transform(td.transfDefId.fullName, TransformSourceFromObject(exp.exp), params)
-          ManageTransformCluster.getNextFrontEnd() forward t
-
-        case RunTransformOnRawData(_,_, params) ⇒
-          val t = Transform(td.transfDefId.fullName, TransformSourceFromRaw(exp.exp), params)
-          ManageTransformCluster.getNextFrontEnd() forward t
-
-        case _ ⇒
-          sender() ! "NOT IMPLEMENTED..."
-      }
-
-
-    //      val vv = for {
-    //        aa <- getExp.mapTo[ExperimentFound]
-    //        bb <- td.mapTo[TransformDefinition]
-    //        t <- (aa.exp, bb)
-    //      } yield t
-    //
-    //      vv foreach { p ⇒
-    //        val ab = p.asInstanceOf[(ExperimentFound, TransformDefinition)]
-    //
-    //        rt match {
-    //          case RunTransformOnObject(_, _, params) ⇒
-    //            val t = Transform(ab._2, TransformSourceFromObject(ab._1.exp), params)
-    //            ManageTransformCluster.getNextFrontEnd() forward t
-    //          case _ ⇒
-    //            "NOT IMPLEMENTED..."
-    //        }
-    //      }
+    case rt: ProceedWithTransform ⇒
+      context.system.actorOf(ScatGathTransform.props(self, expManager)) forward rt
 
 
     // messages to workers cluster
