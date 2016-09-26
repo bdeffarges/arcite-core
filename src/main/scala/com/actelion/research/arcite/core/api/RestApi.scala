@@ -42,7 +42,7 @@ trait ArciteServiceApi extends LazyLogging {
 
   def getExperiment(digest: String) = {
     logger.debug(s"asking for experiment with digest= $digest")
-    arciteService.ask(GetExperiment(digest)).mapTo[GetExperimentResponse]
+    arciteService.ask(GetExperiment(digest)).mapTo[ExperimentFoundResponse]
   }
 
   def search4Experiments(search: String, maxHits: Int) = {
@@ -75,23 +75,23 @@ trait ArciteServiceApi extends LazyLogging {
   }
 
   def runTransformFromFiles(runTransform: RunTransformOnFiles) = {
-    arciteService.ask(runTransform).mapTo[TransformJobAccepted]
+    arciteService.ask(runTransform).mapTo[TransformJobAcceptance]
   }
 
   def runTransformFromRaw(runTransform: RunTransformOnRawData) = {
-    arciteService.ask(runTransform).mapTo[TransformJobAccepted]
+    arciteService.ask(runTransform).mapTo[TransformJobAcceptance]
   }
 
   def runTransformFromObject(runTransform: RunTransformOnObject) = {
-    arciteService.ask(runTransform).mapTo[TransformJobAccepted]
+    arciteService.ask(runTransform).mapTo[TransformJobAcceptance]
   }
 
   def runTransformFromTransform(runTransform: RunTransformOnTransform) = {
-    arciteService.ask(runTransform).mapTo[TransformJobAccepted]
+    arciteService.ask(runTransform).mapTo[TransformJobAcceptance]
   }
 
   def runTransformFromFolderAndRegex(runTransform: RunTransformOnFolderAndRegex) = {
-    arciteService.ask(runTransform).mapTo[TransformJobAccepted]
+    arciteService.ask(runTransform).mapTo[TransformJobAcceptance]
   }
 
   def jobStatus(qws: QueryWorkStatus) = {
@@ -196,7 +196,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       get {
         logger.debug(s"get experiment: = $experiment")
         onSuccess(getExperiment(experiment)) {
-          case DidNotFindExperiment ⇒ complete(OK, """{"error" : ""} """)
+          case NoExperimentFound ⇒ complete(OK, """{"error" : ""} """)
           case ExperimentFound(exp) ⇒ complete(OK, exp)
         }
       }
@@ -277,10 +277,10 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       post {
         logger.debug("running a transform on the raw data from an experiment.")
         entity(as[RunTransformOnRawData]) { rtf ⇒
-          val saved: Future[TransformJobAccepted] = runTransformFromRaw(rtf)
+          val saved: Future[TransformJobAcceptance] = runTransformFromRaw(rtf)
           onSuccess(saved) {
             case Ok(t) ⇒ complete(OK, t)
-            case NotOk ⇒ complete(OK, "failed") // todo needs improvment
+            case NotOk(msg) ⇒ complete(OK, msg) // todo needs improvment
           }
         }
       }
@@ -289,10 +289,10 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
         post {
           logger.debug("running a transform on files ")
           entity(as[RunTransformOnFiles]) { rtf ⇒
-            val saved: Future[TransformJobAccepted] = runTransformFromFiles(rtf)
+            val saved: Future[TransformJobAcceptance] = runTransformFromFiles(rtf)
             onSuccess(saved) {
               case Ok(t) ⇒ complete(OK, t)
-              case NotOk ⇒ complete(OK, "failed") // todo needs improvment
+              case NotOk(msg) ⇒ complete(OK, msg) // todo needs improvment
             }
           }
         }
@@ -301,10 +301,10 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
         post {
           logger.debug("running a transform on folders and regex")
           entity(as[RunTransformOnFolderAndRegex]) { rtf ⇒
-            val saved: Future[TransformJobAccepted] = runTransformFromFolderAndRegex(rtf)
+            val saved: Future[TransformJobAcceptance] = runTransformFromFolderAndRegex(rtf)
             onSuccess(saved) {
               case Ok(t) ⇒ complete(OK, t)
-              case NotOk ⇒ complete(OK, "failed") // todo needs improvment
+              case NotOk(msg) ⇒ complete(OK, msg) // todo needs improvment
             }
           }
         }
@@ -313,10 +313,10 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
         post {
           logger.debug("running a transform from a previous transform ")
           entity(as[RunTransformOnTransform]) { rtf ⇒
-            val saved: Future[TransformJobAccepted] = runTransformFromTransform(rtf)
+            val saved: Future[TransformJobAcceptance] = runTransformFromTransform(rtf)
             onSuccess(saved) {
               case Ok(t) ⇒ complete(OK, t)
-              case NotOk ⇒ complete(OK, "failed") // todo needs improvment
+              case NotOk(msg) ⇒ complete(OK, msg) // todo needs improvment
             }
           }
         }
@@ -325,10 +325,10 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
         post {
           logger.debug("running a transform from a JS structure as definition object ")
           entity(as[RunTransformOnObject]) { rtf ⇒
-            val saved: Future[TransformJobAccepted] = runTransformFromObject(rtf)
+            val saved: Future[TransformJobAcceptance] = runTransformFromObject(rtf)
             onSuccess(saved) {
               case Ok(t) ⇒ complete(OK, t)
-              case NotOk ⇒ complete(OK, "failed") // todo needs improvment
+              case NotOk(msg) ⇒ complete(OK, msg) // todo needs improvment
             }
           }
         }

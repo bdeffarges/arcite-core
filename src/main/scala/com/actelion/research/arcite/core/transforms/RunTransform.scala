@@ -33,7 +33,6 @@ object RunTransform {
     def transfDefDigest: String
   }
 
-
   case class RunTransformOnFiles(experimentDigest: String, transfDefDigest: String, filesAndFolders: Set[String],
                                  parameters: JsValue) extends ProceedWithTransform
 

@@ -61,13 +61,13 @@ object ArciteService {
   case class FailedAddingExperiment(reason: String) extends AddExperimentResponse
 
 
-  sealed trait GetExperimentResponse
+  sealed trait ExperimentFoundResponse
 
-  case class ExperimentFound(exp: Experiment) extends GetExperimentResponse
+  case class ExperimentFound(exp: Experiment) extends ExperimentFoundResponse
 
-  case class ExperimentsFound(exp: Set[Experiment]) extends GetExperimentResponse
+  case class ExperimentsFound(exp: Set[Experiment]) extends ExperimentFoundResponse
 
-  case object DidNotFindExperiment extends GetExperimentResponse
+  case object NoExperimentFound extends ExperimentFoundResponse
 
 }
 
@@ -90,47 +90,39 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
       expManager ! GetAllExperimentsWithRequester(sender())
 
     case SearchExperiments(search, maxHits) ⇒
-
       expManager ! SearchForXResultsWithRequester(SearchForXResults(search, maxHits), sender())
 
 
     case GetExperiment(digest) ⇒
-
       expManager ! GetExperimentWithRequester(digest, sender())
 
 
     case AddExperiment(exp) ⇒
-
       expManager ! AddExperimentWithRequester(exp, sender())
 
 
     case rds: RawDataSet ⇒
-
       defineRawDataAct ! RawDataSetWithRequester(rds, sender())
 
 
     case rds: RawDataSetRegex ⇒
-
       defineRawDataAct ! RawDataSetRegexWithRequester(rds, sender())
 
 
     case GetAllTransfDefs ⇒
-
       ManageTransformCluster.getNextFrontEnd() forward GetAllTransfDefs
 
 
     case ft: FindTransfDefs ⇒
-
       ManageTransformCluster.getNextFrontEnd() forward ft
 
 
     case gtd: GetTransfDef ⇒
-
       ManageTransformCluster.getNextFrontEnd() forward gtd
 
 
     case rt: ProceedWithTransform ⇒
-      context.system.actorOf(ScatGathTransform.props(self, expManager)) forward rt
+      context.system.actorOf(ScatGathTransform.props(sender(), expManager)) ! rt
 
 
     // messages to workers cluster
@@ -147,7 +139,7 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
 
     //don't know what to do with this message...
-    case _ ⇒ log.error("don't know what to do with the passed message... ")
+    case msg: Any ⇒ log.error(s"don't know what to do with the passed message [$msg]")
   }
 }
 

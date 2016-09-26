@@ -11,9 +11,9 @@ import com.actelion.research.arcite.core.transforms.Transform
 
 object Frontend {
 
-  sealed trait TransformJobAccepted
-  case class Ok(transfUID: String) extends TransformJobAccepted
-  case object NotOk extends TransformJobAccepted
+  sealed trait TransformJobAcceptance
+  case class Ok(transfUID: String) extends TransformJobAcceptance
+  case class NotOk(reason: String) extends TransformJobAcceptance
 
   case class QueryWorkStatus(uid: String)
 

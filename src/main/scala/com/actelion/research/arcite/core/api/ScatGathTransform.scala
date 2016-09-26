@@ -1,12 +1,11 @@
 package com.actelion.research.arcite.core.api
 
-import akka.actor.Actor.Receive
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSelection, Props}
-import breeze.numerics.exp
-import com.actelion.research.arcite.core.api.ArciteService.{ExperimentFound, GetExperiment, GetExperimentResponse}
-import com.actelion.research.arcite.core.api.ScatGathTransform.ReadyForTransform
+import com.actelion.research.arcite.core.api.ArciteService.{ExperimentFound, ExperimentFoundResponse, GetExperiment}
+import com.actelion.research.arcite.core.api.ScatGathTransform.{PrepareTransform, ReadyForTransform}
 import com.actelion.research.arcite.core.transforms.RunTransform.{ProceedWithTransform, RunTransformOnObject, RunTransformOnRawData}
 import com.actelion.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, MsgFromTransfDefsManager, OneTransfDef}
+import com.actelion.research.arcite.core.transforms.cluster.Frontend.NotOk
 import com.actelion.research.arcite.core.transforms.{Transform, TransformSourceFromObject, TransformSourceFromRaw}
 import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
 
@@ -35,55 +34,77 @@ import com.actelion.research.arcite.core.transforms.cluster.ManageTransformClust
   */
 class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends Actor with ActorLogging {
 
-  var experimentFound = None
-  var oneTransfDef = None
+  var readyForTransform = ReadyForTransform(None, None, None)
 
   override def receive = {
 
     case rt: ProceedWithTransform ⇒
       log.info(s"transform requested ${rt}")
 
+      readyForTransform = ReadyForTransform(None, None, Some(rt))
+
       expManager ! GetExperiment(rt.experimentDigest)
 
       ManageTransformCluster.getNextFrontEnd() ! GetTransfDef(rt.transfDefDigest)
 
-//      val exp = Await.result(getExp, 2 seconds).asInstanceOf[ExperimentFound]
-//      val td = Await.result(tdf, 2 seconds).asInstanceOf[OneTransfDef]
 
 
-    case rft: ReadyForTransform ⇒
-      //imbricated case for exp and def. returning failed if it could not return an exp. or def.
-      rft.transfDef match {
-        case otd: OneTransfDef ⇒
-          rft.expFound match {
-            case exp: ExperimentFound ⇒
-              rft.pwt match {
-                case RunTransformOnObject(_, _, params) ⇒
-                  val t = Transform(td.transfDefId.fullName, TransformSourceFromObject(exp.exp), params)
-                  ManageTransformCluster.getNextFrontEnd() forward t
+    case efr: ExperimentFoundResponse ⇒
+      efr match {
+        case ef: ExperimentFound ⇒
+          readyForTransform = readyForTransform.copy(expFound = Some(ef))
+          if (readyForTransform.expFound.isDefined &&
+            readyForTransform.transfDef.isDefined) self ! PrepareTransform
 
-                case RunTransformOnRawData(_, _, params) ⇒
-                  val t = Transform(td.transfDefId.fullName, TransformSourceFromRaw(exp.exp), params)
-                  ManageTransformCluster.getNextFrontEnd() forward t
-
-                case _ ⇒
-                  sender() ! "NOT IMPLEMENTED..."
-              }
-          }
-
-        case _ ⇒ requester !  "failed"
+        case _ ⇒
+          requester ! NotOk("could not find experiment for given id.")
       }
 
 
-    case rtexptd: (ProceedWithTransform, )
+    case mftdm: MsgFromTransfDefsManager ⇒
+      mftdm match {
+        case otd: OneTransfDef ⇒
+          readyForTransform = readyForTransform.copy(transfDef = Some(otd))
+          if (readyForTransform.expFound.isDefined &&
+            readyForTransform.transfDef.isDefined) self ! PrepareTransform
 
-    case _ ⇒ sender() ! "don't know how to handle message"
+        case _ ⇒
+          requester ! NotOk("could not find transform definition for given id.")
+      }
+
+
+    case PrepareTransform ⇒
+      val td = readyForTransform.transfDef.get.transfDefId
+      val exp = readyForTransform.expFound.get.exp
+
+      readyForTransform.pwt.get match {
+        case RunTransformOnObject(_, _, params) ⇒
+          val t = Transform(td.fullName, TransformSourceFromObject(exp), params)
+          ManageTransformCluster.getNextFrontEnd() ! t
+
+        case RunTransformOnRawData(_, _, params) ⇒
+          val t = Transform(td.fullName, TransformSourceFromRaw(exp), params)
+          ManageTransformCluster.getNextFrontEnd() ! t
+
+        case _ ⇒
+          requester ! NotOk("Transform not implemented yet")
+      }
+
+    case msg: Any ⇒
+      requester ! msg
   }
 }
 
 object ScatGathTransform {
   def props(reqRef: ActorRef, expManag: ActorSelection) = Props(classOf[ScatGathTransform], reqRef, expManag)
 
-  case class ReadyForTransform(expFound: GetExperimentResponse, transfDef: MsgFromTransfDefsManager,
-                               pwt: ProceedWithTransform)
+  case class ReadyForTransform(expFound: Option[ExperimentFound],
+                               transfDef: Option[OneTransfDef], pwt: Option[ProceedWithTransform])
+
+
+  sealed trait TransformResponse
+
+  case object PrepareTransform extends TransformResponse
+
+
 }
