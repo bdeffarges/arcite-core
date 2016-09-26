@@ -7,18 +7,13 @@ import akka.http.scaladsl.server._
 import akka.pattern.ask
 import akka.util.Timeout
 import com.actelion.research.arcite.core.api.ArciteService._
-import com.actelion.research.arcite.core.experiments._
 import com.actelion.research.arcite.core.experiments.ManageExperiments.AddExperiment
 import com.actelion.research.arcite.core.rawdata._
-import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments, ReturnExperiment}
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.{NotOk, _}
 import com.actelion.research.arcite.core.transforms.cluster.WorkState._
-import com.actelion.research.arcite.core.transforms._
-import com.actelion.research.arcite.core.utils.FullName
 import com.typesafe.scalalogging.LazyLogging
-import spray.json.{DefaultJsonProtocol, JsString}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -74,11 +69,11 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(GetTransfDef(digest)).mapTo[MsgFromTransfDefsManager]
   }
 
-  def runTransformFromFiles(runTransform: RunTransformOnFiles) = {
+  def runTransformFromRaw(runTransform: RunTransformOnRawData) = {
     arciteService.ask(runTransform).mapTo[TransformJobAcceptance]
   }
 
-  def runTransformFromRaw(runTransform: RunTransformOnRawData) = {
+  def runTransformFromRaw(runTransform: RunTransformOnRawDataWithExclusion) = {
     arciteService.ask(runTransform).mapTo[TransformJobAcceptance]
   }
 
@@ -90,7 +85,7 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(runTransform).mapTo[TransformJobAcceptance]
   }
 
-  def runTransformFromFolderAndRegex(runTransform: RunTransformOnFolderAndRegex) = {
+  def runTransformFromTransform(runTransform: RunTransformOnTransformWithExclusion) = {
     arciteService.ask(runTransform).mapTo[TransformJobAcceptance]
   }
 
@@ -285,31 +280,31 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
         }
       }
     } ~
-      path("on_files") {
-        post {
-          logger.debug("running a transform on files ")
-          entity(as[RunTransformOnFiles]) { rtf ⇒
-            val saved: Future[TransformJobAcceptance] = runTransformFromFiles(rtf)
-            onSuccess(saved) {
-              case Ok(t) ⇒ complete(OK, t)
-              case NotOk(msg) ⇒ complete(OK, msg) // todo needs improvment
-            }
-          }
-        }
-      } ~
-      path("on_folders") {
-        post {
-          logger.debug("running a transform on folders and regex")
-          entity(as[RunTransformOnFolderAndRegex]) { rtf ⇒
-            val saved: Future[TransformJobAcceptance] = runTransformFromFolderAndRegex(rtf)
-            onSuccess(saved) {
-              case Ok(t) ⇒ complete(OK, t)
-              case NotOk(msg) ⇒ complete(OK, msg) // todo needs improvment
-            }
-          }
-        }
-      } ~
       path("on_transform") {
+        post {
+          logger.debug("running a transform from a previous transform ")
+          entity(as[RunTransformOnTransform]) { rtf ⇒
+            val saved: Future[TransformJobAcceptance] = runTransformFromTransform(rtf)
+            onSuccess(saved) {
+              case Ok(t) ⇒ complete(OK, t)
+              case NotOk(msg) ⇒ complete(OK, msg) // todo needs improvment
+            }
+          }
+        }
+      } ~
+      path("on_raw_data_with_exclusions") {
+        post {
+          logger.debug("running a transform on the raw data from an experiment.")
+          entity(as[RunTransformOnRawDataWithExclusion]) { rtf ⇒
+            val saved: Future[TransformJobAcceptance] = runTransformFromRaw(rtf)
+            onSuccess(saved) {
+              case Ok(t) ⇒ complete(OK, t)
+              case NotOk(msg) ⇒ complete(OK, msg) // todo needs improvment
+            }
+          }
+        }
+      } ~
+      path("on_transform_with_exclusions") {
         post {
           logger.debug("running a transform from a previous transform ")
           entity(as[RunTransformOnTransform]) { rtf ⇒
@@ -359,7 +354,6 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       }
     }
   }
-
 }
 
 /**
@@ -373,3 +367,4 @@ class RestApi(system: ActorSystem, timeout: Timeout) extends RestRoutes {
 
   def createArciteApi = system.actorOf(ArciteService.props, ArciteService.name)
 }
+

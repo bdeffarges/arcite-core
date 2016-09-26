@@ -98,7 +98,7 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
 
   def working: Receive = {
     case WorkComplete(result) =>
-      log.info("Work is complete. Result {}.", result)
+      log.info("Work is completed. Result {}.", result)
       sendToMaster(WorkIsDone(workerId, transform, result))
       context.setReceiveTimeout(5.seconds)
       context.become(waitForWorkIsDoneAck(result))

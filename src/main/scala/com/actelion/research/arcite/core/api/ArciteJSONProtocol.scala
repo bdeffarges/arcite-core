@@ -137,9 +137,9 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
 
   implicit val runTransformOnObjectJson = jsonFormat3(RunTransformOnObject)
   implicit val runTransformOnRawDataJson = jsonFormat3(RunTransformOnRawData)
-  implicit val runTransformFromFilesJson = jsonFormat4(RunTransformOnFiles)
-  implicit val runTransformFromTransformJson = jsonFormat5(RunTransformOnTransform)
-  implicit val runTransformFromFolderJson = jsonFormat6(RunTransformOnFolderAndRegex)
+  implicit val runTransformOnRawDataWithExclusionsJson = jsonFormat5(RunTransformOnRawDataWithExclusion)
+  implicit val runTransformFromTransformJson = jsonFormat4(RunTransformOnTransform)
+  implicit val runTransformFromTransformWExclusionsJson = jsonFormat6(RunTransformOnTransformWithExclusion)
 
   implicit val transformJSon = jsonFormat4(Transform)
   implicit val getAllJobsFeedbackJson = jsonFormat3(AllJobsFeedback)

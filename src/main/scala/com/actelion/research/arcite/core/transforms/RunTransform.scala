@@ -29,23 +29,27 @@ import spray.json.{JsString, JsValue}
 object RunTransform {
 
   sealed trait ProceedWithTransform {
-    def experimentDigest: String
-    def transfDefDigest: String
+    def experiment: String
+
+    def transformDefinition: String
   }
 
-  case class RunTransformOnFiles(experimentDigest: String, transfDefDigest: String, filesAndFolders: Set[String],
-                                 parameters: JsValue) extends ProceedWithTransform
-
-  case class RunTransformOnRawData(experimentDigest: String, transfDefDigest: String,
+  case class RunTransformOnRawData(experiment: String, transformDefinition: String,
                                    parameters: JsValue) extends ProceedWithTransform
 
-  case class RunTransformOnTransform(experimentDigest: String, transfDefDigest: String, transformOrigin: String,
-                                     filesAndFolders: Set[String], parameters: JsValue) extends ProceedWithTransform
+  case class RunTransformOnRawDataWithExclusion(experiment: String, transformDefinition: String,
+                                                excludes: Set[String] = Set(), excludesRegex: Set[String] = Set(),
+                                                parameters: JsValue) extends ProceedWithTransform
 
-  case class RunTransformOnFolderAndRegex(experimentDigest: String, transfDefDigest: String, folder: String, regex: String,
-                                          withSubfolder: Boolean, parameters: JsValue) extends ProceedWithTransform
+  case class RunTransformOnTransform(experiment: String, transformDefinition: String, transformOrigin: String,
+                                     parameters: JsValue) extends ProceedWithTransform
 
-  case class RunTransformOnObject(experimentDigest: String, transfDefDigest: String,
+  case class RunTransformOnTransformWithExclusion(experiment: String, transformDefinition: String,
+                                                  transformOrigin: String, excludes: Set[String] = Set(),
+                                                  excludesRegex: Set[String] = Set(),
+                                                  parameters: JsValue) extends ProceedWithTransform
+
+  case class RunTransformOnObject(experiment: String, transformDefinition: String,
                                   parameters: JsValue) extends ProceedWithTransform
 
 }

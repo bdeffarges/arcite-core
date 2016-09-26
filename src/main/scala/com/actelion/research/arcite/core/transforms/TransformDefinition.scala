@@ -61,13 +61,8 @@ case class TransformSourceFromRawWithExclusion(experiment: Experiment, excludes:
   }
 }
 
-case class TransformSourceFromTransform(experiment: Experiment, transformUID: String)
-  extends TransformSource {
-
-  def inputFiles(): Set[String] = {
-    Set()
-  }
-}
+case class TransformSourceFromTransform(experiment: Experiment, sourceTransformID: String)
+  extends TransformSource
 
 case class TransformSourceFromTransformWithExclusion(experiment: Experiment, transformUID: String,
                                                      excludes: Set[String] = Set(), excludesRegex: Set[String] = Set())
@@ -78,8 +73,8 @@ case class TransformSourceFromTransformWithExclusion(experiment: Experiment, tra
   }
 }
 
-
 case class TransformSourceFromObject(experiment: Experiment) extends TransformSource
+
 
 
 /**

@@ -43,9 +43,9 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
 
       readyForTransform = ReadyForTransform(None, None, Some(rt))
 
-      expManager ! GetExperiment(rt.experimentDigest)
+      expManager ! GetExperiment(rt.experiment)
 
-      ManageTransformCluster.getNextFrontEnd() ! GetTransfDef(rt.transfDefDigest)
+      ManageTransformCluster.getNextFrontEnd() ! GetTransfDef(rt.transformDefinition)
 
 
 
