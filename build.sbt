@@ -1,4 +1,5 @@
 import com.typesafe.sbt.SbtNativePackager.autoImport.NativePackagerHelper._
+import com.typesafe.sbt.packager.docker.ExecCmd
 
 organization := "com.actelion.research.arcite"
 
@@ -79,18 +80,18 @@ libraryDependencies ++= {
 }
 
 enablePlugins(JavaServerAppPackaging)
-//enablePlugins(JavaAppPackaging)
-//enablePlugins(DockerPlugin)
+enablePlugins(JavaAppPackaging)
+enablePlugins(DockerPlugin)
 
-//enablePlugins(DockerSpotifyClientPlugin)
+enablePlugins(DockerSpotifyClientPlugin)
 
-//mainClass in Compile := Some("com.actelion.research.arcite.core.api.Main")
+mainClass in Compile := Some("com.actelion.research.arcite.core.api.Main")
 
-//dockerCommands ++= Seq(
-//  ExecCmd("RUN", "su"),
-//  ExecCmd("RUN", "apt-get", "update"),
-//  ExecCmd("RUN", "apt-get", "install", "netstat")
-//)
+dockerCommands ++= Seq(
+  ExecCmd("RUN", "su"),
+  ExecCmd("RUN", "apt-get", "update"),
+  ExecCmd("RUN", "apt-get", "install", "netstat")
+)
 
 mappings in Universal ++= {
   // optional example illustrating how to copy additional directory
@@ -104,5 +105,4 @@ mappings in Universal ++= {
 // when starting the application
 scriptClasspath := Seq("../config/") ++ scriptClasspath.value
 
-
-dockerExposedPorts := Seq(3585)
+dockerExposedPorts := Seq(8084)
