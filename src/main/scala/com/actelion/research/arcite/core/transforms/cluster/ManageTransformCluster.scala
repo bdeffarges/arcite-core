@@ -27,7 +27,7 @@ object ManageTransformCluster {
 
   val arcWorkerActSys = "ArcWorkerActSys"
 
-  def workTimeout = 10.seconds
+  def workTimeout = 500.seconds
 
   val workConf = ConfigFactory.load("transform-worker")
 

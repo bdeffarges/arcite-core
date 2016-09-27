@@ -3,10 +3,10 @@ package com.actelion.research.arcite.core.api
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSelection, Props}
 import com.actelion.research.arcite.core.api.ArciteService.{ExperimentFound, ExperimentFoundResponse, GetExperiment}
 import com.actelion.research.arcite.core.api.ScatGathTransform.{PrepareTransform, ReadyForTransform}
-import com.actelion.research.arcite.core.transforms.RunTransform.{ProceedWithTransform, RunTransformOnObject, RunTransformOnRawData}
+import com.actelion.research.arcite.core.transforms.RunTransform.{ProceedWithTransform, RunTransformOnObject, RunTransformOnRawData, RunTransformOnTransform}
 import com.actelion.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, MsgFromTransfDefsManager, OneTransfDef}
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.NotOk
-import com.actelion.research.arcite.core.transforms.{Transform, TransformSourceFromObject, TransformSourceFromRaw}
+import com.actelion.research.arcite.core.transforms.{Transform, TransformSourceFromObject, TransformSourceFromRaw, TransformSourceFromTransform}
 import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
 
 /**
@@ -84,6 +84,10 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
 
         case RunTransformOnRawData(_, _, params) ⇒
           val t = Transform(td.fullName, TransformSourceFromRaw(exp), params)
+          ManageTransformCluster.getNextFrontEnd() ! t
+
+        case RunTransformOnTransform(_, _, transfOrigin, params) ⇒
+          val t = Transform(td.fullName, TransformSourceFromTransform(exp, transfOrigin), params)
           ManageTransformCluster.getNextFrontEnd() ! t
 
         case _ ⇒

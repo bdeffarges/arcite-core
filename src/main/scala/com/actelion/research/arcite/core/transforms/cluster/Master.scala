@@ -79,7 +79,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
 
     case MasterWorkerProtocol.WorkerRequestsWork(workerId) =>
-      log.info(s"total pending jobs = ${workState.numberOfPendingJobs()} worker requesting work... do we have something for him?")
+      log.info(s"total pending jobs = ${workState.numberOfPendingJobs()} worker requesting work... do we have something to be done?")
       val td = workers(workerId).transDef
       if (td.isDefined && workState.hasWork(td.get.fullName)) {
         workers.get(workerId) match {
@@ -135,7 +135,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       log.info(s"master received transform [${transf.uid}]")
       // idempotent
       if (workState.isAccepted(transf.uid)) {
-        log.info("transform [${transf.uid}] is accepted, workstate.isAccepted for uid returned true. ")
+        log.info(s"transform [${transf.uid}] is accepted, Ack is returned.")
         sender() ! Master.Ack(transf)
       } else {
         log.info(s"transform [${transf.uid}] accepted.")
@@ -196,7 +196,8 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
 
   def notifyWorkers(): Unit = if (workState.hasWorkLeft) {
-    log.info(s"workstate=${workState.workStateSizeSummary()} ,has some work left ?")
+    log.info(s"workstate=${workState.workStateSizeSummary()}, has some work left ?")
+
     // could pick a few random instead of all
     workers.foreach {
       case (_, WorkerState(ref, Idle, _)) => ref ! MasterWorkerProtocol.WorkIsReady

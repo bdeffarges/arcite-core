@@ -22,7 +22,7 @@ class RWrapperWorker extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case rc: RunRCode ⇒
-
+      log.info("preparing to run R code in detached process. ")
       val wdir = new File(rc.workingDir)
       if (!wdir.exists()) wdir.mkdirs()
 
@@ -31,14 +31,14 @@ class RWrapperWorker extends Actor with ActorLogging {
 
       val rCmd = Seq(rScriptPath, rc.rCodePath) ++ rc.arguments
 
-      val process = sys.process.Process(rCmd, wdir)
+      val process = scala.sys.process.Process(rCmd, wdir)
 
-      log.debug(s"starting process: $process")
+      log.info(s"starting process: $process")
 
       val status = process.!(ProcessLogger(output append _, error append _))
 
       val result = Rreturn(rc.transform, status, output.toString, error.toString)
-      log.debug(s"rscript result is: $result")
+      log.info(s"rscript result is: $result")
 
       sender() ! WorkComplete(result)
 
