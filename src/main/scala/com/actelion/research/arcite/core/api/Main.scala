@@ -29,6 +29,8 @@ trait RequestTimeout {
   * Created by deffabe1 on 2/29/16.
   */
 object Main extends App with RequestTimeout {
+  println(args.mkString(" ; "))
+  if (args.length >0 && args(0).toLowerCase().startsWith("env=")) Env.setEnv(args(0).substring(4))
 
   // start experiment manager
   ManageExperiments.startActorSystemForExperiments
@@ -41,7 +43,7 @@ object Main extends App with RequestTimeout {
 
   implicit val system = ActorSystem("rest-api", config.getConfig("arcite-core"))
 
-    implicit val ec = system.dispatcher //bindAndHandle requires an implicit ExecutionContext
+  implicit val ec = system.dispatcher //bindAndHandle requires an implicit ExecutionContext
 
   val api = new RestApi(system, requestTimeout(config)).routes // the RestApi provides a Route
 
@@ -62,14 +64,15 @@ object Main extends App with RequestTimeout {
   }
 
   // start worker cluster
-//  ManageTransformCluster.startSomeDefaultClusterForTesting()
+  //  ManageTransformCluster.startSomeDefaultClusterForTesting()
   ManageTransformCluster.main(Array())
 
   // wait for the user to stop the server
-  log.debug("Press <enter> to exit.")
-  Console.in.read.toChar
-//   gracefully shut down the server
+//  log.debug("Press <enter> to exit.")
 
-  bindingFuture.flatMap(_.unbind()).onComplete(_ ⇒ system.terminate())
+//  Console.in.read.toChar
+  //   gracefully shut down the server
+//  log.debug("shutting down server, unbinding port.")
+//  bindingFuture.flatMap(_.unbind()).onComplete(_ ⇒ system.terminate())
 }
 

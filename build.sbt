@@ -9,6 +9,27 @@ version := "1.0.0-SNAPSHOT"
 
 scalaVersion := "2.11.8"
 
+scmInfo := Some(
+  ScmInfo(
+    url("https://chiron.europe.actelion.com/stash/projects/ARC/repos/arcite-core/browse"),
+    "scm:ssh://git@chiron.europe.actelion.com:7999/arc/arcite-core.git",
+    Some("scm:git:git@chiron.europe.actelion.com:7999/arc/arcite-core.git")
+  )
+)
+
+// These options will be used for *all* versions.
+scalacOptions ++= Seq(
+  "-deprecation"
+  ,"-unchecked"
+  ,"-encoding", "UTF-8"
+  ,"-Xlint"
+  ,"-Yclosure-elim"
+  ,"-Yinline"
+  ,"-Xverify"
+  ,"-feature"
+  ,"-language:postfixOps"
+)
+
 credentials += Credentials("Sonatype Nexus Repository Manager", "bioinfo.it.actelion.com", "deployment", "biodeploy")
 
 publishMavenStyle := true
@@ -80,18 +101,14 @@ libraryDependencies ++= {
 }
 
 enablePlugins(JavaServerAppPackaging)
+
 enablePlugins(JavaAppPackaging)
+
 enablePlugins(DockerPlugin)
 
 enablePlugins(DockerSpotifyClientPlugin)
 
 mainClass in Compile := Some("com.actelion.research.arcite.core.api.Main")
-
-dockerCommands ++= Seq(
-  ExecCmd("RUN", "su"),
-  ExecCmd("RUN", "apt-get", "update"),
-  ExecCmd("RUN", "apt-get", "install", "netstat")
-)
 
 mappings in Universal ++= {
   // optional example illustrating how to copy additional directory
@@ -100,9 +117,10 @@ mappings in Universal ++= {
     contentOf("src/main/resources").toMap.mapValues("config/" + _)
 }
 
-// add ’config’ directory first in the classpath of the start script,
-// an alternative is to set the config file locations via CLI parameters
-// when starting the application
-scriptClasspath := Seq("../config/") ++ scriptClasspath.value
+maintainer in Docker := "Bernard Deffarges bernard.deffarges@actelion.com"
 
-dockerExposedPorts := Seq(8084)
+dockerExposedPorts := Seq(8084, 2551, 2552)
+
+licenses := Seq(("CC0", url("http://creativecommons.org/publicdomain/zero/1.0")))
+
+//dockerCommands ++= Seq(ExecCmd("CMD", "ENV=$environment"))
