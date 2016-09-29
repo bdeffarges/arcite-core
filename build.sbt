@@ -119,7 +119,7 @@ mappings in Universal ++= {
 
 maintainer in Docker := "Bernard Deffarges bernard.deffarges@actelion.com"
 
-dockerExposedPorts := Seq(8084, 2551, 2552)
+dockerExposedPorts := Seq(8084, 2551, 2552, 2553, 2554, 2555, 2556, 2557, 2558)
 
 licenses := Seq(("CC0", url("http://creativecommons.org/publicdomain/zero/1.0")))
 

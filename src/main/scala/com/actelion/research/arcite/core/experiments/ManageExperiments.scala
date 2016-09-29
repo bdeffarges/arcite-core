@@ -151,9 +151,9 @@ object ManageExperiments extends ArciteJSONProtocol {
   }
 
   def startActorSystemForExperiments = {
-    val config = ConfigFactory.load()
+    val config = ConfigFactory.load("experiments")
 
-    val actSystem = ActorSystem("experiments-actor-system", config.getConfig("experiments-actor-system"))
+    val actSystem = ActorSystem("experiments-actor-system", config)
 
     val manExpActor = actSystem.actorOf(Props(classOf[ManageExperiments]), "experiments_manager")
     val defineRawDataAct = actSystem.actorOf(Props(classOf[DefineRawData]), "define_raw_data")

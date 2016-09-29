@@ -44,7 +44,7 @@ object ManageTransformCluster {
   def defaultTransformClusterStart(backendPorts: Seq[Int], frontEnds: Int): Unit = {
     backendPorts.foreach(startBackend(_, "backend"))
 
-    frontends = (0 to frontEnds).map(_ ⇒ startFrontend(0))
+    frontends = (1 to frontEnds).map(_ ⇒ startFrontend(0))
   }
 
   def getNextFrontEnd(): ActorRef = {
@@ -80,8 +80,6 @@ object ManageTransformCluster {
       withFallback(ConfigFactory.load("transform-cluster"))
 
     val system = ActorSystem(arcTransfActClustSys, conf)
-
-//    system.actorOf(Props[WorkResultConsumer], "consumer")
 
     system.actorOf(Props[Frontend], "frontend")
   }

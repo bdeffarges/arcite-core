@@ -21,18 +21,17 @@ object Main extends App {
   println(args.mkString(" ; "))
   if (args.length >0 && args(0).toLowerCase().startsWith("env=")) Env.setEnv(args(0).substring(4))
 
-  val config = ConfigFactory.load()
-
   // start experiments actor system
   ManageExperiments.startActorSystemForExperiments
   // start cluster actor sytem
   ManageTransformCluster.main(Array())
 
   // Gets the host and a port from the configuration
+  val config = ConfigFactory.load()
   val host = config.getString(s"${Env.getEnv()}.http.host")
   val port = config.getInt(s"${Env.getEnv()}.http.port")
 
-  implicit val system = ActorSystem("rest-api", config.getConfig("arcite-core"))
+  implicit val system = ActorSystem("rest-api", config)
 
   implicit val ec = system.dispatcher //bindAndHandle requires an implicit ExecutionContext
 

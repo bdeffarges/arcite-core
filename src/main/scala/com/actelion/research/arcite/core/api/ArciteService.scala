@@ -74,8 +74,8 @@ object ArciteService {
 
 class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
-  val conf = ConfigFactory.load()
-  val actSys = conf.getString("experiments-actor-system.akka.uri")
+  val conf = ConfigFactory.load("experiments")
+  val actSys = conf.getString("akka.uri")
 
   //todo move it to another executor
   val expManager = context.actorSelection(ActorPath.fromString(s"${actSys}/user/experiments_manager"))

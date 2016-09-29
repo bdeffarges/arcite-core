@@ -58,7 +58,7 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
     var map = Map[String, Experiment]()
 
     def deeperUntilMeta(currentFolder: File) {
-      logger.debug(s"currentFolder: $currentFolder")
+//      logger.debug(s"currentFolder: $currentFolder")
       if (currentFolder.getName == "meta") {
         val expFile = new File(currentFolder.getAbsolutePath + File.separator + EXPERIMENT_FILE_NAME)
         if (expFile.exists()) {
