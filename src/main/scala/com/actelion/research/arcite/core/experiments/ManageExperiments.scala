@@ -157,6 +157,9 @@ object ManageExperiments extends ArciteJSONProtocol {
 
     val manExpActor = actSystem.actorOf(Props(classOf[ManageExperiments]), "experiments_manager")
     val defineRawDataAct = actSystem.actorOf(Props(classOf[DefineRawData]), "define_raw_data")
+  }
 
+  def main(args: Array[String]): Unit = {
+    startActorSystemForExperiments
   }
 }

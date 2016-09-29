@@ -6,36 +6,27 @@ import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.stream.ActorMaterializer
-import akka.util.Timeout
 import com.actelion.research.arcite.core.experiments.ManageExperiments
 import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
 import com.actelion.research.arcite.core.utils.Env
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.Future
 
-trait RequestTimeout {
-
-  import scala.concurrent.duration._
-
-  def requestTimeout(config: Config): Timeout = {
-    val t = config.getString("akka.http.server.request-timeout")
-    val d = Duration(t)
-    FiniteDuration(d.length, d.unit)
-  }
-}
 
 /**
   * Created by deffabe1 on 2/29/16.
   */
-object Main extends App with RequestTimeout {
+object Main extends App {
   println(args.mkString(" ; "))
   if (args.length >0 && args(0).toLowerCase().startsWith("env=")) Env.setEnv(args(0).substring(4))
 
-  // start experiment manager
-  ManageExperiments.startActorSystemForExperiments
-
   val config = ConfigFactory.load()
+
+  // start experiments actor system
+  ManageExperiments.startActorSystemForExperiments
+  // start cluster actor sytem
+  ManageTransformCluster.main(Array())
 
   // Gets the host and a port from the configuration
   val host = config.getString(s"${Env.getEnv()}.http.host")
@@ -45,7 +36,12 @@ object Main extends App with RequestTimeout {
 
   implicit val ec = system.dispatcher //bindAndHandle requires an implicit ExecutionContext
 
-  val api = new RestApi(system, requestTimeout(config)).routes // the RestApi provides a Route
+  import scala.concurrent.duration.{Duration, FiniteDuration}
+  val t = config.getString("akka.http.server.request-timeout")
+  val d = Duration(t)
+  val requestTimeout = FiniteDuration(d.length, d.unit)
+
+  val api = new RestApi(system, requestTimeout).routes // the RestApi provides a Route
 
   implicit val materializer = ActorMaterializer()
 
@@ -63,10 +59,6 @@ object Main extends App with RequestTimeout {
       system.terminate()
   }
 
-  // start worker cluster
-  //  ManageTransformCluster.startSomeDefaultClusterForTesting()
-  ManageTransformCluster.main(Array())
-
   // wait for the user to stop the server
 //  log.debug("Press <enter> to exit.")
 
@@ -75,4 +67,6 @@ object Main extends App with RequestTimeout {
 //  log.debug("shutting down server, unbinding port.")
 //  bindingFuture.flatMap(_.unbind()).onComplete(_ ⇒ system.terminate())
 }
+
+
 
