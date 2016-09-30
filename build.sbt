@@ -1,5 +1,5 @@
 import com.typesafe.sbt.SbtNativePackager.autoImport.NativePackagerHelper._
-import com.typesafe.sbt.packager.docker.ExecCmd
+import com.typesafe.sbt.packager.docker.{Cmd, ExecCmd}
 
 organization := "com.actelion.research.arcite"
 
@@ -108,6 +108,8 @@ enablePlugins(DockerPlugin)
 
 enablePlugins(DockerSpotifyClientPlugin)
 
+maintainer in Docker := "Bernard Deffarges bernard.deffarges@actelion.com"
+
 mainClass in Compile := Some("com.actelion.research.arcite.core.api.Main")
 
 mappings in Universal ++= {
@@ -117,7 +119,7 @@ mappings in Universal ++= {
     contentOf("src/main/resources").toMap.mapValues("config/" + _)
 }
 
-maintainer in Docker := "Bernard Deffarges bernard.deffarges@actelion.com"
+//dockerCommands += Cmd("RUN", "echo Europe/Berlin > /etc/timezone && dpkg-reconfigure --frontend noninteractive tzdata")
 
 dockerExposedPorts := Seq(8084, 2551, 2552, 2553, 2554, 2555, 2556, 2557, 2558)
 

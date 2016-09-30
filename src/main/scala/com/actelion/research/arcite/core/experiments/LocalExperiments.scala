@@ -37,8 +37,9 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
 
 
   def loadAllLocalExperiments(): Map[String, Experiment] = {
-    logger.debug("loading all experiments from local network... ")
     val path = Env.getConf("arcite.home")
+
+    logger.debug(s"loading all experiments from local network $path... ")
 
     loadAllExperiments(path) +
       (DefaultExperiment.defaultExperiment.digest -> DefaultExperiment.defaultExperiment)

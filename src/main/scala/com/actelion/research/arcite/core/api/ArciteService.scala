@@ -11,6 +11,7 @@ import com.actelion.research.arcite.core.transforms.{Transform, TransformSourceF
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.{AllJobsStatus, QueryJobInfo, QueryWorkStatus}
 import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
+import com.actelion.research.arcite.core.utils.Env
 import com.typesafe.config.ConfigFactory
 
 /**
@@ -75,13 +76,14 @@ object ArciteService {
 class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
   val conf = ConfigFactory.load("experiments")
-  val actSys = conf.getString("akka.uri")
+  val actSys = conf.getString(s"${Env.getEnv()}.akka.uri")
 
   //todo move it to another executor
   val expManager = context.actorSelection(ActorPath.fromString(s"${actSys}/user/experiments_manager"))
-  log.debug(s"exp Manager actor: $expManager")
+  log.info(s"connect exp Manager actor: $expManager")
 
   val defineRawDataAct = context.actorSelection(ActorPath.fromString(s"${actSys}/user/define_raw_data"))
+  log.info(s"connect raw actor: $defineRawDataAct")
 
   import ArciteService._
 

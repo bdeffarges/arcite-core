@@ -12,6 +12,7 @@ import akka.persistence.journal.leveldb.{SharedLeveldbJournal, SharedLeveldbStor
 import akka.util.Timeout
 import com.actelion.research.arcite.core.transforms.TransformDefinition
 import com.actelion.research.arcite.core.transforms.cluster.workers.WorkExecUpperCase
+import com.actelion.research.arcite.core.utils.Env
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 
@@ -33,7 +34,7 @@ object ManageTransformCluster {
 
   private val workSystem = ActorSystem(arcWorkerActSys, workConf)
 
-  private val workInitialContacts = immutableSeq(workConf.getStringList("contact-points")).map {
+  private val workInitialContacts = immutableSeq(workConf.getStringList(s"${Env.getEnv()}.contact-points")).map {
     case AddressFromURIString(addr) ⇒ RootActorPath(addr) / "system" / "receptionist"
   }.toSet
 
@@ -51,7 +52,7 @@ object ManageTransformCluster {
     // todo random for now, instead it should pick-up those that are available
     //
     val i = ThreadLocalRandom.current().nextInt(frontends.size)
-    val ar =    frontends(i)
+    val ar = frontends(i)
     logger.info(s"pickup id[$i] => $ar}")
 
     ar
@@ -60,13 +61,16 @@ object ManageTransformCluster {
   def startBackend(port: Int, role: String) = {
     val conf = ConfigFactory.parseString(s"akka.cluster.roles=[$role]").
       withFallback(ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port)).
-      withFallback(ConfigFactory.load("transform-cluster"))
+      withFallback(ConfigFactory.load("transform-cluster").getConfig(Env.getEnv()))
+
+    val actorStoreLoc = s"akka.tcp://$arcTransfActClustSys@${conf.getString("store")}"
+    logger.info(s"actor store location: $actorStoreLoc")
 
     val system = ActorSystem(arcTransfActClustSys, conf)
 
     //todo journal seed node port?
-    startupSharedJournal(system, startStore = (port == 2551),
-      path = ActorPath.fromString(s"akka.tcp://$arcTransfActClustSys@127.0.0.1:2551/user/store"))
+    startupSharedJournal(system, startStore = port == 2551,
+      path = ActorPath.fromString(actorStoreLoc))
 
     system.actorOf(ClusterSingletonManager.props(
       Master.props(workTimeout),
@@ -77,7 +81,7 @@ object ManageTransformCluster {
 
   def startFrontend(port: Int): ActorRef = {
     val conf = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port).
-      withFallback(ConfigFactory.load("transform-cluster"))
+      withFallback(ConfigFactory.load("transform-cluster").getConfig(Env.getEnv()))
 
     val system = ActorSystem(arcTransfActClustSys, conf)
 
@@ -101,8 +105,8 @@ object ManageTransformCluster {
   def startupSharedJournal(system: ActorSystem, startStore: Boolean, path: ActorPath): Unit = {
     // Start the shared journal on one node (don't crash this SPOF)
     // This will not be needed with a distributed journal
-    if (startStore)
-      system.actorOf(Props[SharedLeveldbStore], "store")
+    if (startStore) system.actorOf(Props[SharedLeveldbStore], "store")
+
     // register the shared journal
     import system.dispatcher
     implicit val timeout = Timeout(15.seconds)
@@ -138,5 +142,5 @@ object ManageTransformCluster {
     defaultTransformClusterStart(Seq(2551, 2552, 2553, 2554, 2555, 2556, 2557, 2558), 30)
     ManageTransformCluster.addWorker(WorkExecUpperCase.definition)
     ManageTransformCluster.addWorker(WorkExecUpperCase.definition)
- }
+  }
 }
