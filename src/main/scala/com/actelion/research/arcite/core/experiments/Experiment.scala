@@ -3,6 +3,7 @@ package com.actelion.research.arcite.core.experiments
 import java.nio.file.Paths
 
 import com.actelion.research.arcite.core.utils._
+import com.typesafe.config.ConfigFactory
 
 
 /**
@@ -37,9 +38,11 @@ case class ExperimentSummary(name: String, description: String, owner: Owner, ui
 
 case class ExperimentFolderVisitor(exp: Experiment) {
 
+  val config = ConfigFactory.load()
+
   val defaultMetaFileName = "meta.json" // the default file that describes the content of a folder
 
-  val arciteHome = Env.getConf("arcite.home")
+  val arciteHome = config.getString("arcite.home")
 
   // relative paths
   val folderName = name.replaceAll("\\s", "_")

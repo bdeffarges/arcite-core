@@ -5,10 +5,11 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths, StandardOpenOption}
 
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
-import com.actelion.research.arcite.core.utils.Env
+import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 
 object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
+  val config = ConfigFactory.load()
 
   val EXPERIMENT_FILE_NAME = "experiment"
   val EXPERIMENT_DIGEST_FILE_NAME = "digest"
@@ -37,7 +38,7 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
 
 
   def loadAllLocalExperiments(): Map[String, Experiment] = {
-    val path = Env.getConf("arcite.home")
+    val path = config.getString("arcite.home")
 
     logger.debug(s"loading all experiments from local network $path... ")
 

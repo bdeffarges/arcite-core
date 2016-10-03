@@ -5,13 +5,13 @@ import java.nio.file._
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
-import com.actelion.research.arcite.core.api.ArciteService.{NoExperimentFound, GetAllExperiments, _}
+import com.actelion.research.arcite.core.api.ArciteService.{GetAllExperiments, NoExperimentFound, _}
 import com.actelion.research.arcite.core.experiments.LocalExperiments._
 import com.actelion.research.arcite.core.rawdata.DefineRawData
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex._
-import com.actelion.research.arcite.core.utils.Env
 import com.typesafe.config.ConfigFactory
+import org.slf4j.LoggerFactory
 
 /**
   * Created by bernitu on 06/03/16.
@@ -114,7 +114,11 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
 object ManageExperiments extends ArciteJSONProtocol {
 
-  val filePath = Env.getConf("arcite.snapshot")
+  val config = ConfigFactory.load()
+
+  val logger = LoggerFactory.getLogger(ManageExperiments.getClass)
+
+  val filePath = config.getString("arcite.snapshot")
 
   val path = Paths.get(filePath)
 
@@ -150,18 +154,18 @@ object ManageExperiments extends ArciteJSONProtocol {
     experiments.get(digest)
   }
 
-  def startActorSystemForExperiments = {
-    val config = ConfigFactory.load("experiments").getConfig(Env.getEnv())
+  def startActorSystemForExperiments() = {
 
-    val actSystem = ActorSystem("experiments-actor-system", config)
+    val actSystem = ActorSystem("experiments-actor-system", config.getConfig("experiments-manager"))
 
     val manExpActor = actSystem.actorOf(Props(classOf[ManageExperiments]), "experiments_manager")
     val defineRawDataAct = actSystem.actorOf(Props(classOf[DefineRawData]), "define_raw_data")
 
-
+    logger.info(s"exp manager actor: [$manExpActor]")
+    logger.info(s"raw data define: [$defineRawDataAct]")
   }
 
   def main(args: Array[String]): Unit = {
-    startActorSystemForExperiments
+    startActorSystemForExperiments()
   }
 }

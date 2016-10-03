@@ -8,7 +8,6 @@ import akka.http.scaladsl.Http.ServerBinding
 import akka.stream.ActorMaterializer
 import com.actelion.research.arcite.core.experiments.ManageExperiments
 import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
-import com.actelion.research.arcite.core.utils.Env
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.Future
@@ -19,17 +18,18 @@ import scala.concurrent.Future
   */
 object Main extends App {
   println(args.mkString(" ; "))
-  if (args.length >0 && args(0).toLowerCase().startsWith("env=")) Env.setEnv(args(0).substring(4))
 
-  // start experiments actor system
-  ManageExperiments.startActorSystemForExperiments
   // start cluster actor sytem
   ManageTransformCluster.main(Array())
 
+  // start experiments actor system
+  ManageExperiments.startActorSystemForExperiments()
+
   // Gets the host and a port from the configuration
   val config = ConfigFactory.load()
-  val host = config.getString(s"${Env.getEnv()}.http.host")
-  val port = config.getInt(s"${Env.getEnv()}.http.port")
+
+  val host = config.getString("http.host")
+  val port = config.getInt("http.port")
 
   implicit val system = ActorSystem("rest-api", config)
 

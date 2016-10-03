@@ -12,7 +12,6 @@ import akka.persistence.journal.leveldb.{SharedLeveldbJournal, SharedLeveldbStor
 import akka.util.Timeout
 import com.actelion.research.arcite.core.transforms.TransformDefinition
 import com.actelion.research.arcite.core.transforms.cluster.workers.WorkExecUpperCase
-import com.actelion.research.arcite.core.utils.Env
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 
@@ -30,11 +29,13 @@ object ManageTransformCluster {
 
   def workTimeout = 500.seconds
 
-  val workConf = ConfigFactory.load("transform-worker")
+  val config = ConfigFactory.load()
+
+  val workConf = config.getConfig("transform_worker")
 
   private val workSystem = ActorSystem(arcWorkerActSys, workConf)
 
-  private val workInitialContacts = immutableSeq(workConf.getStringList(s"${Env.getEnv()}.contact-points")).map {
+  private val workInitialContacts = immutableSeq(workConf.getStringList("contact-points")).map {
     case AddressFromURIString(addr) ⇒ RootActorPath(addr) / "system" / "receptionist"
   }.toSet
 
@@ -61,7 +62,7 @@ object ManageTransformCluster {
   def startBackend(port: Int, role: String) = {
     val conf = ConfigFactory.parseString(s"akka.cluster.roles=[$role]").
       withFallback(ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port)).
-      withFallback(ConfigFactory.load("transform-cluster").getConfig(Env.getEnv()))
+      withFallback(config.getConfig("transform_cluster"))
 
     val actorStoreLoc = s"akka.tcp://$arcTransfActClustSys@${conf.getString("store")}"
     logger.info(s"actor store location: $actorStoreLoc")
@@ -81,7 +82,7 @@ object ManageTransformCluster {
 
   def startFrontend(port: Int): ActorRef = {
     val conf = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port).
-      withFallback(ConfigFactory.load("transform-cluster").getConfig(Env.getEnv()))
+      withFallback(config.getConfig("transform_cluster"))
 
     val system = ActorSystem(arcTransfActClustSys, conf)
 

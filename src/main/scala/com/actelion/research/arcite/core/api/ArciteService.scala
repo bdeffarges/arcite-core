@@ -11,7 +11,6 @@ import com.actelion.research.arcite.core.transforms.{Transform, TransformSourceF
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.{AllJobsStatus, QueryJobInfo, QueryWorkStatus}
 import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
-import com.actelion.research.arcite.core.utils.Env
 import com.typesafe.config.ConfigFactory
 
 /**
@@ -75,15 +74,19 @@ object ArciteService {
 
 class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
-  val conf = ConfigFactory.load("experiments")
-  val actSys = conf.getString(s"${Env.getEnv()}.akka.uri")
+  val conf = ConfigFactory.load().getConfig("experiments-manager")
+  val actSys = conf.getString("akka.uri")
+
+  val expManSelect = s"${actSys}/user/experiments_manager"
+  val rawDSelect = s"${actSys}/user/define_raw_data"
 
   //todo move it to another executor
-  val expManager = context.actorSelection(ActorPath.fromString(s"${actSys}/user/experiments_manager"))
-  log.info(s"connect exp Manager actor: $expManager")
+  val expManager = context.actorSelection(ActorPath.fromString(expManSelect))
+  log.info(s"connect exp Manager [$expManSelect] actor: $expManager")
+  expManager ! "hello world"
 
-  val defineRawDataAct = context.actorSelection(ActorPath.fromString(s"${actSys}/user/define_raw_data"))
-  log.info(s"connect raw actor: $defineRawDataAct")
+  val defineRawDataAct = context.actorSelection(ActorPath.fromString(rawDSelect))
+  log.info(s"connect raw [$rawDSelect] actor: $defineRawDataAct")
 
   import ArciteService._
 

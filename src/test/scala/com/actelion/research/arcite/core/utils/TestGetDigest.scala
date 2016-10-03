@@ -2,6 +2,7 @@ package com.actelion.research.arcite.core.utils
 
 import java.io.File
 
+import com.typesafe.config.ConfigFactory
 import org.scalatest.{FlatSpec, Matchers}
 
 
@@ -10,7 +11,9 @@ import org.scalatest.{FlatSpec, Matchers}
   */
 class TestGetDigest extends FlatSpec with Matchers {
 
-  val pathToTest = Env.getConf("arcite.test.digest") + File.separator
+  val config = ConfigFactory.load()
+
+  val pathToTest = config.getString("arcite.test.digest") + File.separator
   println(s"path to test files: $pathToTest")
 
   "get digest " should "get the same digest when called twice on the same file " in {

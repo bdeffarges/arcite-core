@@ -9,7 +9,7 @@ import com.actelion.research.arcite.core.TestHelpers._
 import com.actelion.research.arcite.core.api.ArciteService.AddedExperiment
 import com.actelion.research.arcite.core.experiments.LocalExperiments.{ExperimentExisted, LoadExperiment, SaveExperiment, SaveExperimentSuccessful}
 import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddExperiment, GetExperiments, SnapshotTaken}
-import com.actelion.research.arcite.core.utils.Env
+import com.typesafe.config.ConfigFactory
 import org.scalatest.{BeforeAndAfterAll, MustMatchers, WordSpecLike}
 
 import scala.concurrent.duration.FiniteDuration
@@ -21,7 +21,9 @@ import scala.concurrent.duration.FiniteDuration
 class ManageExperimentsTest extends TestKit(ActorSystem("Experiments"))
   with WordSpecLike with MustMatchers with BeforeAndAfterAll {
 
-  val pathToArciteHome = Env.getConf("arcite.home") + File.separator
+  val config = ConfigFactory.load()
+
+  val pathToArciteHome = config.getString("arcite.home") + File.separator
 
   override def afterAll() {
     system.terminate()

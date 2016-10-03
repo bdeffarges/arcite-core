@@ -6,7 +6,7 @@ import akka.actor.{ActorSystem, Props}
 import akka.testkit.{TestKit, TestProbe}
 import com.actelion.research.arcite.core.rawdata.TransferSelectedRawData.TransferFolder
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.Ok
-import com.actelion.research.arcite.core.utils.Env
+import com.typesafe.config.ConfigFactory
 import org.scalatest.{BeforeAndAfterAll, MustMatchers, WordSpecLike}
 
 import scala.concurrent.duration.FiniteDuration
@@ -27,8 +27,10 @@ class TransferSelectedRawDataTest extends TestKit(ActorSystem("AgilentArraySyste
 
       val endProbe = TestProbe()
 
-      val folder = s"${Env.getConf("microarrays")}raw_data/AMS0089"
-      val target = s"${Env.getConf("arcite.home")}AMS0089/raw_data"
+      val config = ConfigFactory.load()
+
+      val folder = s"${config.getString("microarrays")}raw_data/AMS0089"
+      val target = s"${config.getString("arcite.home")}AMS0089/raw_data"
       val actorRef = system.actorOf(Props(new TransferSelectedRawData(endProbe.ref, target)))
 
       actorRef ! TransferFolder(folder, """.*_(\d{10,15}+).*_(\d_\d)\.txt""".r, true)

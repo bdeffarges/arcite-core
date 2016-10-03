@@ -8,7 +8,9 @@ import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.Work
 import com.actelion.research.arcite.core.transforms.cluster.workers.RWrapperWorker.{Rreturn, RunRCode}
 import com.actelion.research.arcite.core.transforms.cluster.{GetTransfDefId, TransformType}
 import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformDefinitionIdentity, TransformDescription}
-import com.actelion.research.arcite.core.utils.{Env, FullName}
+import com.actelion.research.arcite.core.utils.FullName
+
+import com.typesafe.config.ConfigFactory
 
 import scala.sys.process.ProcessLogger
 
@@ -18,7 +20,9 @@ import scala.sys.process.ProcessLogger
   */
 class RWrapperWorker extends Actor with ActorLogging {
 
-  val rScriptPath = Env.getConf("rscript")
+  val config = ConfigFactory.load()
+
+  val rScriptPath = config.getString("rscript")
 
   override def receive: Receive = {
     case rc: RunRCode ⇒
@@ -43,11 +47,9 @@ class RWrapperWorker extends Actor with ActorLogging {
       sender() ! WorkComplete(result)
 
 
-
     case GetTransfDefId(wi) ⇒
       log.debug(s"asking worker type for $wi")
       sender() ! TransformType(wi, RWrapperWorker.defLight)
-
 
 
     case msg: Any ⇒
