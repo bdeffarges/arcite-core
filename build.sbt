@@ -20,14 +20,14 @@ scmInfo := Some(
 // These options will be used for *all* versions.
 scalacOptions ++= Seq(
   "-deprecation"
-  ,"-unchecked"
-  ,"-encoding", "UTF-8"
-  ,"-Xlint"
-  ,"-Yclosure-elim"
-  ,"-Yinline"
-  ,"-Xverify"
-  ,"-feature"
-  ,"-language:postfixOps"
+  , "-unchecked"
+  , "-encoding", "UTF-8"
+  , "-Xlint"
+  , "-Yclosure-elim"
+  , "-Yinline"
+  , "-Xverify"
+  , "-feature"
+  , "-language:postfixOps"
 )
 
 credentials += Credentials("Sonatype Nexus Repository Manager", "bioinfo.it.actelion.com", "deployment", "biodeploy")
@@ -118,6 +118,18 @@ mappings in Universal ++= {
     // copy configuration files to config directory
     contentOf("src/main/resources").toMap.mapValues("config/" + _)
 }
+
+javaOptions in Universal ++= Seq(
+  // -J params will be added as jvm parameters
+  //  "-J-Xmx64m",
+  //  "-J-Xms64m",
+
+  //   others will be added as app parameters
+  "-Dconfig.resource=docker_test.conf"
+
+  // you can access any build setting/task here
+  //  s"-version=${version.value}"
+)
 
 //dockerCommands += Cmd("RUN", "echo Europe/Berlin > /etc/timezone && dpkg-reconfigure --frontend noninteractive tzdata")
 

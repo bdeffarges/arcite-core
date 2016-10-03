@@ -18,6 +18,7 @@ import scala.concurrent.Future
   */
 object Main extends App {
   println(args.mkString(" ; "))
+  println(s"config environment file: ${System.getProperty("config.resource")}")
 
   // start cluster actor sytem
   ManageTransformCluster.main(Array())
