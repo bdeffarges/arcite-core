@@ -1,7 +1,7 @@
 package com.actelion.research.arcite.core.transforms.cluster.workers
 
 import akka.actor.{Actor, ActorLogging, Props}
-import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.WorkComplete
+import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.WorkCompletionStatus
 import com.actelion.research.arcite.core.transforms.cluster.{GetTransfDefId, TransformType}
 import com.actelion.research.arcite.core.transforms._
 import com.actelion.research.arcite.core.utils.FullName

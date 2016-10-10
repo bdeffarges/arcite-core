@@ -35,19 +35,26 @@ object WorkState {
     jobsAccepted = Set.empty,
     jobsDone = Set.empty)
 
-  sealed trait WorkStatus
+  sealed trait WorkStatus {
+    def transform: Transform
+    def feedback: String
+    def logging: String
+    def errors: String
+  }
 
-  case class WorkAccepted(transformLight: Transform) extends WorkStatus
+  case class WorkAccepted(transform: Transform) extends WorkStatus
 
-  case class WorkInProgress(transformLight: Transform, percentProgress: Int) extends WorkStatus
+  case class WorkInProgress(transform: Transform, percentProgress: Int) extends WorkStatus
 
-  case class WorkCompleted(transformLight: Transform, result: Any) extends WorkStatus
+  case class WorkCompleted(transform: Transform, result: Option[AnyVal]) extends WorkStatus
 
   case class WorkLost(uid: String) extends WorkStatus
 
-  case class WorkerFailed(transformLight: Transform, comment: String) extends WorkStatus
+  case class WorkerFailed(transform: Transform, comment: String) extends WorkStatus
 
-  case class WorkerTimedOut(transformLight: Transform) extends WorkStatus
+  case class WorkerTimedOut(transform: Transform) extends WorkStatus
+
+
 
   //the summary of the workState
   case class AllJobsFeedback(pendingJobs: Set[String], jobsInProgress: Set[String],

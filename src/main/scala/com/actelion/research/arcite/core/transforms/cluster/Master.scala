@@ -7,6 +7,8 @@ import akka.persistence.PersistentActor
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend._
 import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformDefinitionIdentity}
+import com.actelion.research.arcite.core.utils.WriteFeedbackActor
+import com.actelion.research.arcite.core.utils.WriteFeedbackActor.WriteFeedback
 
 import scala.concurrent.duration.{Deadline, FiniteDuration}
 
@@ -102,21 +104,24 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       }
 
 
-    case MasterWorkerProtocol.WorkIsDone(workerId, transf, result) =>
+    case wid: MasterWorkerProtocol.WorkerIsDone =>
+      // write transform feedback report
+      context.actorOf(WriteFeedbackActor.props) ! WriteFeedback(wid)
+
       // idempotent
-      if (workState.isDone(transf.uid)) {
+      if (workState.isDone(wid.transf.uid)) {
         // previous Ack was lost, confirm again that this is done
-        sender() ! MasterWorkerProtocol.Ack(transf)
-      } else if (!workState.isInProgress(transf.uid)) {
-        log.info("Work {} not in progress, reported as done by worker {}", transf, workerId)
+        sender() ! MasterWorkerProtocol.Ack(wid.transf)
+      } else if (!workState.isInProgress(wid.transf.uid)) {
+        log.info("Work {} not in progress, reported as done by worker {}", wid.transf, wid.workerId)
       } else {
-        log.info("Work {} is done by worker {}", transf, workerId)
-        changeWorkerToIdle(workerId, transf)
-        persist(WorkCompleted(transf, result)) { event ⇒
+        log.info("Work {} is done by worker {}", wid.transf, wid.workerId)
+        changeWorkerToIdle(wid.workerId, wid.transf)
+        persist(WorkCompleted(wid.transf, wid.result)) { event ⇒
           workState = workState.updated(event)
 
           // Ack back to original sender
-          sender() ! MasterWorkerProtocol.Ack(transf)
+          sender() ! MasterWorkerProtocol.Ack(wid.transf)
         }
       }
 

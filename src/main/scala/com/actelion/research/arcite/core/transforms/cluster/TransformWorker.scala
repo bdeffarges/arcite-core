@@ -2,15 +2,13 @@ package com.actelion.research.arcite.core.transforms.cluster
 
 import java.util.UUID
 
-import scala.concurrent.duration._
 import akka.actor.SupervisorStrategy.{Restart, Stop}
 import akka.actor.{Actor, ActorInitializationException, ActorLogging, ActorRef, DeathPactException, OneForOneStrategy, Props, ReceiveTimeout, Terminated}
 import akka.cluster.client.ClusterClient.SendToAll
-
-import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.WorkComplete
+import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.{WorkCompletionStatus, WorkFailed, WorkSuccessFull}
 import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition}
 
-import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent.duration.{Duration, FiniteDuration, _}
 
 /**
   * arcite-core
@@ -97,17 +95,25 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
   }
 
   def working: Receive = {
-    case WorkComplete(result) =>
-      log.info("Work is completed. Result {}.", result)
-      sendToMaster(WorkIsDone(workerId, transform, result))
-      context.setReceiveTimeout(5.seconds)
-      context.become(waitForWorkIsDoneAck(result))
+    case wc: WorkCompletionStatus ⇒ wc match {
+      case ws: WorkSuccessFull ⇒
+        log.info(s"Work is completed. feedback: ${ws.feedback}")
+        sendToMaster(WorkerSuccess(workerId, transform, ws))
+        context.setReceiveTimeout(5.seconds)
+        context.become(waitForWorkIsDoneAck(ws))
+
+      case wf: WorkFailed ⇒
+        log.info(s"Work failed. feedback: ${wf.feedback}")
+        sendToMaster(WorkerFailed(workerId, transform, wf))
+        context.setReceiveTimeout(5.seconds)
+        context.become(waitForWorkIsDoneAck(wf))
+    }
 
     case _: Transform =>
       log.info("Yikes. Master told me to do work, while I'm working.")
   }
 
-  def waitForWorkIsDoneAck(result: Any): Receive = {
+  def waitForWorkIsDoneAck(result: WorkCompletionStatus): Receive = {
 
     case Ack(trans) if trans == transform =>
       sendToMaster(WorkerRequestsWork(workerId))
@@ -116,7 +122,12 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
 
     case ReceiveTimeout =>
       log.info("No ack from master, retrying")
-      sendToMaster(WorkIsDone(workerId, transform, result))
+      result match {
+        case ws: WorkSuccessFull ⇒
+          sendToMaster(WorkerSuccess(workerId, transform, ws))
+        case wf: WorkFailed ⇒
+          sendToMaster(WorkerFailed(workerId, transform, wf))
+      }
   }
 
   override def unhandled(message: Any): Unit = message match {
@@ -128,7 +139,6 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
   def sendToMaster(msg: Any): Unit = {
     clusterClient ! SendToAll("/user/master/singleton", msg)
   }
-
 }
 
 object TransformWorker {
@@ -136,7 +146,15 @@ object TransformWorker {
             registerInterval: FiniteDuration = 10.seconds): Props =
     Props(classOf[TransformWorker], clusterClient, transfDef, registerInterval)
 
-  case class WorkComplete(result: Any)
+  sealed trait WorkCompletionStatus {
+    def feedback: String
+
+    def logging: String
+  }
+
+  case class WorkSuccessFull(result: Option[AnyVal], feedback: String = "", logging: String = "") extends WorkCompletionStatus
+
+  case class WorkFailed(feedback: String = "", logging: String = "", error: String = "") extends WorkCompletionStatus
 
 }
 

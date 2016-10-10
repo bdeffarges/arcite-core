@@ -3,8 +3,8 @@ package com.actelion.research.arcite.core.transforms.cluster.workers
 import java.io.File
 
 import akka.actor.{Actor, ActorLogging, Props}
-import com.actelion.research.arcite.core.transforms.cluster.MasterWorkerProtocol.WorkFailed
-import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.WorkComplete
+import com.actelion.research.arcite.core.transforms.cluster.MasterWorkerProtocol.WorkerFailed
+import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.WorkCompletionStatus
 import com.actelion.research.arcite.core.transforms.cluster.workers.RWrapperWorker.{Rreturn, RunRCode}
 import com.actelion.research.arcite.core.transforms.cluster.{GetTransfDefId, TransformType}
 import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformDefinitionIdentity, TransformDescription}
@@ -55,7 +55,7 @@ class RWrapperWorker extends Actor with ActorLogging {
     case msg: Any ⇒
       val s = s"unable to deal with this message: $msg"
       log.error(s)
-      sender() ! WorkFailed(s)
+      sender() ! WorkerFailed(s)
   }
 }
 
