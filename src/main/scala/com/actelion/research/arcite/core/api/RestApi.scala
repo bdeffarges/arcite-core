@@ -337,8 +337,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
         logger.debug(s"ask for job status? $workID")
         onSuccess(jobStatus(QueryWorkStatus(workID))) {
           case WorkLost(uid) ⇒ complete(s"job $uid was lost")
-          case WorkCompleted(t, feedback) ⇒ complete(s"job is completed $feedback")
-          case WorkInProgress(t, perDone) ⇒ complete(s"job is running $perDone %")
+          case WorkCompleted(t) ⇒ complete(s"job is completed")
+          case WorkInProgress(t) ⇒ complete(s"job is running")
           case WorkAccepted(t) ⇒ complete("job queued...")
         }
       }

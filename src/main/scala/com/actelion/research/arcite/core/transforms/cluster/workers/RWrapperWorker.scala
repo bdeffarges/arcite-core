@@ -4,12 +4,11 @@ import java.io.File
 
 import akka.actor.{Actor, ActorLogging, Props}
 import com.actelion.research.arcite.core.transforms.cluster.MasterWorkerProtocol.WorkerFailed
-import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.WorkCompletionStatus
+import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.{WorkCompletionStatus, WorkFailed, WorkSuccessFull}
 import com.actelion.research.arcite.core.transforms.cluster.workers.RWrapperWorker.{Rreturn, RunRCode}
 import com.actelion.research.arcite.core.transforms.cluster.{GetTransfDefId, TransformType}
 import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformDefinitionIdentity, TransformDescription}
 import com.actelion.research.arcite.core.utils.FullName
-
 import com.typesafe.config.ConfigFactory
 
 import scala.sys.process.ProcessLogger
@@ -44,7 +43,7 @@ class RWrapperWorker extends Actor with ActorLogging {
       val result = Rreturn(rc.transform, status, output.toString, error.toString)
       log.info(s"rscript result is: $result")
 
-      sender() ! WorkComplete(result)
+      sender() ! WorkSuccessFull(Some(result))
 
 
     case GetTransfDefId(wi) ⇒
@@ -55,7 +54,7 @@ class RWrapperWorker extends Actor with ActorLogging {
     case msg: Any ⇒
       val s = s"unable to deal with this message: $msg"
       log.error(s)
-      sender() ! WorkerFailed(s)
+      sender() ! WorkFailed(s)
   }
 }
 

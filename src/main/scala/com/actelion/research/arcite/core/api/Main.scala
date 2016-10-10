@@ -21,7 +21,7 @@ object Main extends App {
   println(s"config environment file: ${System.getProperty("config.resource")}")
 
   // start cluster actor sytem
-  ManageTransformCluster.main(Array())
+  ManageTransformCluster.defaultTransformClusterStartFromConf()
 
   // start experiments actor system
   ManageExperiments.startActorSystemForExperiments()

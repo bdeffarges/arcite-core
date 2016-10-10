@@ -91,7 +91,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
               if (w.nonEmpty) {
                 //todo maybe we don't need both checks
                 val transf = w.get
-                persist(WorkInProgress(transf, 0)) { event =>
+                persist(WorkInProgress(transf)) { event =>
                   log.info(s"Giving worker [$workerId] something to do [${transf}]")
                   workState = workState.updated(event)
                   workers += (workerId -> s.copy(status = Busy(transf, Deadline.now + workTimeout)))
@@ -117,7 +117,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       } else {
         log.info("Work {} is done by worker {}", wid.transf, wid.workerId)
         changeWorkerToIdle(wid.workerId, wid.transf)
-        persist(WorkCompleted(wid.transf, wid.result)) { event ⇒
+        persist(WorkCompleted(wid.transf)) { event ⇒
           workState = workState.updated(event)
 
           // Ack back to original sender

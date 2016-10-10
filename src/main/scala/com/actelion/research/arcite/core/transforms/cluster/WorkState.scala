@@ -35,22 +35,17 @@ object WorkState {
     jobsAccepted = Set.empty,
     jobsDone = Set.empty)
 
-  sealed trait WorkStatus {
-    def transform: Transform
-    def feedback: String
-    def logging: String
-    def errors: String
-  }
+  sealed trait WorkStatus
 
   case class WorkAccepted(transform: Transform) extends WorkStatus
 
-  case class WorkInProgress(transform: Transform, percentProgress: Int) extends WorkStatus
+  case class WorkInProgress(transform: Transform) extends WorkStatus
 
-  case class WorkCompleted(transform: Transform, result: Option[AnyVal]) extends WorkStatus
+  case class WorkCompleted(transform: Transform) extends WorkStatus
 
   case class WorkLost(uid: String) extends WorkStatus
 
-  case class WorkerFailed(transform: Transform, comment: String) extends WorkStatus
+  case class WorkerFailed(transform: Transform) extends WorkStatus
 
   case class WorkerTimedOut(transform: Transform) extends WorkStatus
 
@@ -90,9 +85,9 @@ case class WorkState(pendingJobs: Queue[Transform],
 
   def jobState(transfID: String): WorkStatus = {
     val jd = jobsDone.find(_.uid == transfID)
-    if (jd.isDefined) return WorkCompleted(jd.get, "")
+    if (jd.isDefined) return WorkCompleted(jd.get)
 
-    if (jobsInProgress(transfID) != null) return WorkInProgress(jobsInProgress(transfID), 0)
+    if (jobsInProgress(transfID) != null) return WorkInProgress(jobsInProgress(transfID))
 
     val pj = pendingJobs.find(_.uid == transfID)
     if (pj.isDefined) return WorkAccepted(pj.get)
@@ -106,7 +101,7 @@ case class WorkState(pendingJobs: Queue[Transform],
         pendingJobs = pendingJobs enqueue transf,
         jobsAccepted = jobsAccepted + transf)
 
-    case WorkInProgress(transf, progres) ⇒
+    case WorkInProgress(transf) ⇒
       pendingJobs.find(_.transfDefName == transf.transfDefName) match {
         case Some(t) ⇒
           val (work, rest) = (t, pendingJobs.filterNot(t == _))
@@ -117,12 +112,12 @@ case class WorkState(pendingJobs: Queue[Transform],
           this
       }
 
-    case WorkCompleted(transf, result) ⇒
+    case WorkCompleted(transf) ⇒
       copy(
         jobsInProgress = jobsInProgress - transf.uid,
         jobsDone = jobsDone + transf)
 
-    case WorkerFailed(t, cmt) ⇒
+    case WorkerFailed(t) ⇒
       copy(
         pendingJobs = pendingJobs enqueue jobsInProgress(t.uid),
         jobsInProgress = jobsInProgress - t.uid)

@@ -1,7 +1,7 @@
 package com.actelion.research.arcite.core.utils
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.Files
+import java.nio.file.{Files, Paths}
 import java.nio.file.StandardOpenOption._
 
 import akka.actor.{Actor, ActorLogging, Props}
@@ -36,7 +36,7 @@ class WriteFeedbackActor extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case WriteFeedback(wid) ⇒
-    log.info(s"writting feedback for [${wid.transf.uid}]")
+    log.info(s"writing feedback for [${wid.transf.uid}]")
 
       val transfFolder = TransformHelper(wid.transf).getTransformFolder()
 
@@ -49,11 +49,13 @@ class WriteFeedbackActor extends Actor with ActorLogging {
           ("transform", None, None)
         case tst: TransformSourceFromTransformWithExclusion ⇒
           ("transform", Some(tst.excludes), Some(tst.excludesRegex))
+        case tob: TransformSourceFromObject ⇒
+          ("json", None, None)
       }
 
       val fs = FeedbackSource(kofs._1, kofs._2, kofs._3)
 
-      val status: (String, String) = wid.result match {
+      val status: (String, String) = wid match {
         case ws: WorkerSuccess ⇒
           ("SUCCESS", "")
         case wf: WorkerFailed ⇒
@@ -62,15 +64,16 @@ class WriteFeedbackActor extends Actor with ActorLogging {
 
       val digest = GetDigest.getFolderContentDigest(transfFolder.toFile)
 
-      val fb = Feedback(wid.transf.uid, wid.transf.transfDefName.toString, wid.transf.source.experiment.digest,
+      val fb = Feedback(wid.transf.uid, wid.transf.transfDefName, wid.transf.source.experiment.digest,
         fs, status._1, wid.result.feedback, wid.result.logging, status._2, digest)
 
       import spray.json._
       import DefaultJsonProtocol._
       implicit val feedbackSourceJsonFormat = jsonFormat3(FeedbackSource)
+      implicit val fullNameJsonFormat = jsonFormat2(FullName)
       implicit val feedbackJsonFormat = jsonFormat9(Feedback)
 
-      Files.write(transfFolder, fb.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
+      Files.write(Paths.get(transfFolder.toString, "transform_output.json"), fb.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
   }
 }
 
@@ -79,7 +82,7 @@ object WriteFeedbackActor {
 
   case class WriteFeedback(wid: WorkerIsDone)
 
-  case class Feedback(transform: String, transformDefinition: String, experiment: String,
+  case class Feedback(transform: String, transformDefinition: FullName, experiment: String,
                       source: FeedbackSource, status: String, feedback: String,
                       logging: String, errors: String, digest: String)
 

@@ -1,9 +1,10 @@
 package com.actelion.research.arcite.core.transforms.cluster.workers
 
 import akka.actor.{Actor, ActorLogging, Props}
-import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.WorkCompletionStatus
+import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.{WorkCompletionStatus, WorkSuccessFull}
 import com.actelion.research.arcite.core.transforms.cluster.{GetTransfDefId, TransformType}
 import com.actelion.research.arcite.core.transforms._
+import com.actelion.research.arcite.core.transforms.cluster.WorkState.WorkCompleted
 import com.actelion.research.arcite.core.utils.FullName
 
 class WorkExecUpperCase extends Actor with ActorLogging {
@@ -22,7 +23,7 @@ class WorkExecUpperCase extends Actor with ActorLogging {
           implicit val toUpperCaseJson = jsonFormat1(ToUpperCase)
           log.info("waited enough time, doing the work now...")
           val toBeTransformed = t.parameters.convertTo[ToUpperCase]
-          sender() ! WorkComplete(s"in upperString=${toBeTransformed.stgToUpperCase.toUpperCase()}")
+          sender() ! WorkSuccessFull(Some(s"in upperString=${toBeTransformed.stgToUpperCase.toUpperCase()}"))
       }
 
     case GetTransfDefId(wi) ⇒

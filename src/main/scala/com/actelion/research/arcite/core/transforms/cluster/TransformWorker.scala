@@ -1,12 +1,13 @@
 package com.actelion.research.arcite.core.transforms.cluster
 
+import java.nio.file.Files
 import java.util.UUID
 
 import akka.actor.SupervisorStrategy.{Restart, Stop}
 import akka.actor.{Actor, ActorInitializationException, ActorLogging, ActorRef, DeathPactException, OneForOneStrategy, Props, ReceiveTimeout, Terminated}
 import akka.cluster.client.ClusterClient.SendToAll
 import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.{WorkCompletionStatus, WorkFailed, WorkSuccessFull}
-import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition}
+import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformHelper}
 
 import scala.concurrent.duration.{Duration, FiniteDuration, _}
 
@@ -82,6 +83,9 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
 
     case t: Transform =>
       log.info(s"Got a transform: ${t.transfDefName} / ${t.uid} / ${t.source.experiment.name} / ${t.source.getClass.getSimpleName}")
+
+      TransformHelper(t).getTransformFolder().toFile.mkdirs()
+
       currentTransform = Some(t)
       workExecutor ! t
       context.become(working)
@@ -146,14 +150,13 @@ object TransformWorker {
             registerInterval: FiniteDuration = 10.seconds): Props =
     Props(classOf[TransformWorker], clusterClient, transfDef, registerInterval)
 
+
   sealed trait WorkCompletionStatus {
     def feedback: String
 
     def logging: String
   }
-
-  case class WorkSuccessFull(result: Option[AnyVal], feedback: String = "", logging: String = "") extends WorkCompletionStatus
-
+  case class WorkSuccessFull(result: Option[Any], feedback: String = "", logging: String = "") extends WorkCompletionStatus
   case class WorkFailed(feedback: String = "", logging: String = "", error: String = "") extends WorkCompletionStatus
 
 }

@@ -43,6 +43,14 @@ object ManageTransformCluster {
 
   private var frontends = Seq[ActorRef]()
 
+  def defaultTransformClusterStartFromConf(): Unit = {
+    val bePorts = config.getIntList("transform_cluster.backends.ports")
+    val fePorts = config.getInt("transform_cluster.frontends.numberOfports")
+    import scala.collection.convert.wrapAsScala._
+    defaultTransformClusterStart(bePorts.toIndexedSeq.map(_.intValue()), fePorts)
+    startUpperCaseWorkersForTests()
+  }
+
   def defaultTransformClusterStart(backendPorts: Seq[Int], frontEnds: Int): Unit = {
     backendPorts.foreach(startBackend(_, "backend"))
 
@@ -70,7 +78,7 @@ object ManageTransformCluster {
     val system = ActorSystem(arcTransfActClustSys, conf)
 
     //todo journal seed node port?
-    startupSharedJournal(system, startStore = port == 2551,
+    startupSharedJournal(system, startStore = port == config.getInt("sharedJournal.port"),
       path = ActorPath.fromString(actorStoreLoc))
 
     system.actorOf(ClusterSingletonManager.props(
@@ -135,12 +143,15 @@ object ManageTransformCluster {
     */
   def main(args: Array[String]): Unit = {
     defaultTransformClusterStart(Seq(2551, 2552, 2553, 2554, 2555, 2556, 2557, 2558), 10)
-    ManageTransformCluster.addWorker(WorkExecUpperCase.definition)
   }
-
 
   def startSomeDefaultClusterForTesting(): Unit = {
     defaultTransformClusterStart(Seq(2551, 2552, 2553, 2554, 2555, 2556, 2557, 2558), 30)
+    startUpperCaseWorkersForTests()
+  }
+
+  def startUpperCaseWorkersForTests(): Unit = {
+    ManageTransformCluster.addWorker(WorkExecUpperCase.definition)
     ManageTransformCluster.addWorker(WorkExecUpperCase.definition)
     ManageTransformCluster.addWorker(WorkExecUpperCase.definition)
   }
