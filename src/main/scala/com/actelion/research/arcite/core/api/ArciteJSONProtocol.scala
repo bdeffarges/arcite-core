@@ -144,6 +144,6 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val getAllJobsFeedbackJson = jsonFormat3(AllJobsFeedback)
 
   implicit val feedbackSourceJsonFormat = jsonFormat5(TransformDoneSource)
-  implicit val feedbackJsonFormat = jsonFormat7(TransformDoneInfo)
+  implicit val feedbackJsonFormat = jsonFormat9(TransformDoneInfo)
 
 }

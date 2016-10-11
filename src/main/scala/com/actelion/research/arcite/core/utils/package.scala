@@ -1,5 +1,8 @@
 package com.actelion.research.arcite.core
 
+import java.text.SimpleDateFormat
+import java.util.Date
+
 /**
   * arcite-core
   *
@@ -14,7 +17,7 @@ package com.actelion.research.arcite.core
   *
   * This program is distributed in the hope that it will be useful,
   * but WITHOUT ANY WARRANTY; without even the implied warranty of
-  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
   * GNU General Public License for more details.
   *
   * You should have received a copy of the GNU General Public License
@@ -25,4 +28,11 @@ package com.actelion.research.arcite.core
   */
 package object utils {
 
+  val dateDefaultFormatter = new SimpleDateFormat("yyyy/MM/dd-HH:mm:ss")
+
+  def getCurrentDateAsString() = dateDefaultFormatter.format(new Date())
+
+  def getDateAsString(time: Long) = dateDefaultFormatter.format(new Date(time))
+
+  def getAsDate(date: String) = dateDefaultFormatter.parse(date)
 }

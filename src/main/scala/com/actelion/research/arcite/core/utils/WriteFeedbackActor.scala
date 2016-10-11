@@ -69,7 +69,7 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
 
       val params = Option(wid.transf.parameters)
       val fb = TransformDoneInfo(wid.transf.uid, wid.transf.transfDefName, fs, params,
-                                 status._1, wid.result.feedback, Option(status._2))
+                                 status._1, wid.result.feedback, Option(status._2), wid.startTime)
 
       import spray.json._
       import DefaultJsonProtocol._

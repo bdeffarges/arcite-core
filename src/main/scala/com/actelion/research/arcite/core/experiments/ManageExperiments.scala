@@ -12,7 +12,6 @@ import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex._
 import com.actelion.research.arcite.core.transforms.TransformDoneInfo
 import com.actelion.research.arcite.core.utils.WriteFeedbackActor
-import com.actelion.research.arcite.core.utils.WriteFeedbackActor.WriteFeedback
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 
@@ -149,7 +148,9 @@ object ManageExperiments extends ArciteJSONProtocol {
 
   case class TransformsForExperiment(transforms: Set[TransformDoneInfo])
 
-  case class TransformsForExperimentTree() // todo to be implemented
+  case class TransformsForExperimentTree()
+
+  // todo to be implemented
 
 
   private var experiments: Map[String, Experiment] = LocalExperiments.loadAllLocalExperiments()
@@ -188,9 +189,9 @@ object ManageExperiments extends ArciteJSONProtocol {
     import spray.json._
 
     transfF.toFile.listFiles().filter(_.isDirectory)
-      .map(f ⇒ Files.readAllLines(Paths.get(f.toString, WriteFeedbackActor.FILE_NAME))
-        .toList.mkString("\n").parseJson.convertTo[TransformDoneInfo])
-      .toSet
+      .map(d ⇒ Paths.get(d.getAbsolutePath, WriteFeedbackActor.FILE_NAME))
+      .filter(p ⇒ p.toFile.exists())
+      .map(p ⇒ Files.readAllLines(p).toList.mkString("\n").parseJson.convertTo[TransformDoneInfo]).toSet
   }
 
 

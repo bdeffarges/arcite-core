@@ -1,13 +1,14 @@
 package com.actelion.research.arcite.core.transforms.cluster
 
 import java.nio.file.Files
-import java.util.UUID
+import java.util.{Date, UUID}
 
 import akka.actor.SupervisorStrategy.{Restart, Stop}
 import akka.actor.{Actor, ActorInitializationException, ActorLogging, ActorRef, DeathPactException, OneForOneStrategy, Props, ReceiveTimeout, Terminated}
 import akka.cluster.client.ClusterClient.SendToAll
 import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.{WorkCompletionStatus, WorkFailed, WorkSuccessFull}
 import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformHelper}
+import com.actelion.research.arcite.core.utils
 
 import scala.concurrent.duration.{Duration, FiniteDuration, _}
 
@@ -52,6 +53,8 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
 
   var currentTransform: Option[Transform] = None
 
+  var time: Long = 0L
+
   log.info(s"worker [$workerId] for work executor [$workExecutor] created.")
 
   def transform: Transform = currentTransform match {
@@ -82,8 +85,9 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
       sendToMaster(WorkerRequestsWork(workerId))
 
     case t: Transform =>
-      log.info(s"Got a transform: ${t.transfDefName} / ${t.uid} / ${t.source.experiment.name} / ${t.source.getClass.getSimpleName}")
+      time = System.currentTimeMillis()
 
+      log.info(s"Got a transform: ${t.transfDefName} / ${t.uid} / ${t.source.experiment.name} / ${t.source.getClass.getSimpleName}")
       TransformHelper(t).getTransformFolder().toFile.mkdirs()
 
       currentTransform = Some(t)
@@ -102,13 +106,13 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
     case wc: WorkCompletionStatus ⇒ wc match {
       case ws: WorkSuccessFull ⇒
         log.info(s"Work is completed. feedback: ${ws.feedback}")
-        sendToMaster(WorkerSuccess(workerId, transform, ws))
+        sendToMaster(WorkerSuccess(workerId, transform, ws, utils.getDateAsString(time)))
         context.setReceiveTimeout(5.seconds)
         context.become(waitForWorkIsDoneAck(ws))
 
       case wf: WorkFailed ⇒
         log.info(s"Work failed. feedback: ${wf.feedback}")
-        sendToMaster(WorkerFailed(workerId, transform, wf))
+        sendToMaster(WorkerFailed(workerId, transform, wf, utils.getDateAsString(time)))
         context.setReceiveTimeout(5.seconds)
         context.become(waitForWorkIsDoneAck(wf))
     }
@@ -128,9 +132,9 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
       log.info("No ack from master, retrying")
       result match {
         case ws: WorkSuccessFull ⇒
-          sendToMaster(WorkerSuccess(workerId, transform, ws))
+          sendToMaster(WorkerSuccess(workerId, transform, ws, utils.getDateAsString(time)))
         case wf: WorkFailed ⇒
-          sendToMaster(WorkerFailed(workerId, transform, wf))
+          sendToMaster(WorkerFailed(workerId, transform, wf, utils.getDateAsString(time)))
       }
   }
 
@@ -154,7 +158,9 @@ object TransformWorker {
   sealed trait WorkCompletionStatus {
     def feedback: String
   }
+
   case class WorkSuccessFull(result: Option[Any], feedback: String = "") extends WorkCompletionStatus
+
   case class WorkFailed(feedback: String = "", error: String = "") extends WorkCompletionStatus
 
 }

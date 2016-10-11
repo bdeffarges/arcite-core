@@ -5,6 +5,7 @@ import java.util.UUID
 
 import akka.actor.Props
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor}
+import com.actelion.research.arcite.core.utils
 import com.actelion.research.arcite.core.utils.{FullName, GetDigest}
 import spray.json.JsValue
 
@@ -98,5 +99,6 @@ case class TransformDoneSource(experiment: String, kindOfSource: String, fromTra
                                excludes: Option[Set[String]], excludesRegex: Option[Set[String]])
 
 case class TransformDoneInfo(transform: String, transformDefinition: FullName, source: TransformDoneSource,
-                             parameters: Option[JsValue], status: String, feedback: String, errors: Option[String])
+                             parameters: Option[JsValue], status: String, feedback: String, errors: Option[String],
+                             startTime: String , endTime: String = utils.getCurrentDateAsString())
 
