@@ -1,17 +1,16 @@
 package com.actelion.research.arcite.core.api
 
 import com.actelion.research.arcite.core.api.ArciteService.SomeExperiments
-import com.actelion.research.arcite.core.experiments._
 import com.actelion.research.arcite.core.experiments.ManageExperiments.AddExperiment
+import com.actelion.research.arcite.core.experiments._
 import com.actelion.research.arcite.core.rawdata.{RawDataSet, RawDataSetRegex}
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments}
 import com.actelion.research.arcite.core.transforms.RunTransform._
-import com.actelion.research.arcite.core.transforms._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, ManyTransfDefs, OneTransfDef}
+import com.actelion.research.arcite.core.transforms._
 import com.actelion.research.arcite.core.transforms.cluster.WorkState.AllJobsFeedback
 import com.actelion.research.arcite.core.utils.{FullName, Owner}
-import spray.json.DefaultJsonProtocol
-import spray.json._
+import spray.json.{DefaultJsonProtocol, _}
 
 /**
   * arcite-core
@@ -143,4 +142,8 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
 
   implicit val transformJSon = jsonFormat4(Transform)
   implicit val getAllJobsFeedbackJson = jsonFormat3(AllJobsFeedback)
+
+  implicit val feedbackSourceJsonFormat = jsonFormat5(TransformDoneSource)
+  implicit val feedbackJsonFormat = jsonFormat7(TransformDoneInfo)
+
 }

@@ -61,10 +61,10 @@ case class TransformSourceFromRawWithExclusion(experiment: Experiment, excludes:
   }
 }
 
-case class TransformSourceFromTransform(experiment: Experiment, sourceTransformID: String)
+case class TransformSourceFromTransform(experiment: Experiment, srcTransformID: String)
   extends TransformSource
 
-case class TransformSourceFromTransformWithExclusion(experiment: Experiment, transformUID: String,
+case class TransformSourceFromTransformWithExclusion(experiment: Experiment, srcTransformUID: String,
                                                      excludes: Set[String] = Set(), excludesRegex: Set[String] = Set())
   extends TransformSource {
 
@@ -74,7 +74,6 @@ case class TransformSourceFromTransformWithExclusion(experiment: Experiment, tra
 }
 
 case class TransformSourceFromObject(experiment: Experiment) extends TransformSource
-
 
 
 /**
@@ -95,5 +94,9 @@ case class TransformHelper(transform: Transform) {
   }
 }
 
+case class TransformDoneSource(experiment: String, kindOfSource: String, fromTransform: Option[String],
+                               excludes: Option[Set[String]], excludesRegex: Option[Set[String]])
 
-case class TransformResult(transform: Transform, result: Any)
+case class TransformDoneInfo(transform: String, transformDefinition: FullName, source: TransformDoneSource,
+                             parameters: Option[JsValue], status: String, feedback: String, errors: Option[String])
+

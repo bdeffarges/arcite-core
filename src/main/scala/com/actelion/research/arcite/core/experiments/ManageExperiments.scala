@@ -5,11 +5,14 @@ import java.nio.file._
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
-import com.actelion.research.arcite.core.api.ArciteService.{GetAllExperiments, NoExperimentFound, _}
+import com.actelion.research.arcite.core.api.ArciteService._
 import com.actelion.research.arcite.core.experiments.LocalExperiments._
 import com.actelion.research.arcite.core.rawdata.DefineRawData
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex._
+import com.actelion.research.arcite.core.transforms.TransformDoneInfo
+import com.actelion.research.arcite.core.utils.WriteFeedbackActor
+import com.actelion.research.arcite.core.utils.WriteFeedbackActor.WriteFeedback
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 
@@ -104,8 +107,11 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
 
     case GetExperiment(digest) ⇒
-      self forward(GetExperimentWithRequester(digest, sender()))
+      self forward GetExperimentWithRequester(digest, sender())
 
+
+    case GetAllTransforms(experiment) ⇒
+      sender ! TransformsForExperiment(getAllTransforms(experiment))
 
     case any: Any ⇒ log.debug(s"don't know what to do with this message $any")
   }
@@ -138,6 +144,14 @@ object ManageExperiments extends ArciteJSONProtocol {
 
   case object SnapshotTaken
 
+
+  case class GetAllTransforms(experiment: String)
+
+  case class TransformsForExperiment(transforms: Set[TransformDoneInfo])
+
+  case class TransformsForExperimentTree() // todo to be implemented
+
+
   private var experiments: Map[String, Experiment] = LocalExperiments.loadAllLocalExperiments()
 
   import scala.collection.convert.wrapAsScala._
@@ -164,6 +178,21 @@ object ManageExperiments extends ArciteJSONProtocol {
     logger.info(s"exp manager actor: [$manExpActor]")
     logger.info(s"raw data define: [$defineRawDataAct]")
   }
+
+
+  def getAllTransforms(experiment: String): Set[TransformDoneInfo] = {
+    val exp = experiments(experiment)
+
+    val transfF = ExperimentFolderVisitor(exp).transformFolderPath
+
+    import spray.json._
+
+    transfF.toFile.listFiles().filter(_.isDirectory)
+      .map(f ⇒ Files.readAllLines(Paths.get(f.toString, WriteFeedbackActor.FILE_NAME))
+        .toList.mkString("\n").parseJson.convertTo[TransformDoneInfo])
+      .toSet
+  }
+
 
   def main(args: Array[String]): Unit = {
     startActorSystemForExperiments()

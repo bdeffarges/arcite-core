@@ -2,12 +2,13 @@ package com.actelion.research.arcite.core.api
 
 import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, Props}
 import akka.util.Timeout
-import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddExperiment, AddExperimentWithRequester}
+import breeze.numerics.exp
+import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddExperiment, AddExperimentWithRequester, GetAllTransforms}
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSummary}
 import com.actelion.research.arcite.core.rawdata._
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{SearchForXResults, SearchForXResultsWithRequester}
 import com.actelion.research.arcite.core.transforms.RunTransform._
-import com.actelion.research.arcite.core.transforms.{Transform, TransformSourceFromObject, TransformSourceFromRaw}
+import com.actelion.research.arcite.core.transforms.{Transform, TransformDoneInfo, TransformSourceFromObject, TransformSourceFromRaw}
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.{AllJobsStatus, QueryJobInfo, QueryWorkStatus}
 import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
@@ -54,11 +55,13 @@ object ArciteService {
   case class AllExperiments(experiments: Set[ExperimentSummary]) extends ExperimentsResponse
 
 
+
   sealed trait AddExperimentResponse
 
   case object AddedExperiment extends AddExperimentResponse
 
   case class FailedAddingExperiment(reason: String) extends AddExperimentResponse
+
 
 
   sealed trait ExperimentFoundResponse
@@ -106,13 +109,16 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
       expManager ! AddExperimentWithRequester(exp, sender())
 
 
+    case gat: GetAllTransforms ⇒
+      expManager forward gat
+
+
     case rds: RawDataSet ⇒
       defineRawDataAct ! RawDataSetWithRequester(rds, sender())
 
 
     case rds: RawDataSetRegex ⇒
       defineRawDataAct ! RawDataSetRegexWithRequester(rds, sender())
-
 
     case GetAllTransfDefs ⇒
       ManageTransformCluster.getNextFrontEnd() forward GetAllTransfDefs

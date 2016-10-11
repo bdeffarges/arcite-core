@@ -1,13 +1,14 @@
 package com.actelion.research.arcite.core.utils
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Paths}
 import java.nio.file.StandardOpenOption._
+import java.nio.file.{Files, Paths}
 
 import akka.actor.{Actor, ActorLogging, Props}
+import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.transforms._
 import com.actelion.research.arcite.core.transforms.cluster.MasterWorkerProtocol.{WorkerFailed, WorkerIsDone, WorkerSuccess}
-import com.actelion.research.arcite.core.utils.WriteFeedbackActor.{Feedback, FeedbackSource, WriteFeedback}
+import com.actelion.research.arcite.core.utils.WriteFeedbackActor.WriteFeedback
 
 /**
   * arcite-core
@@ -32,7 +33,9 @@ import com.actelion.research.arcite.core.utils.WriteFeedbackActor.{Feedback, Fee
   * Created by Bernard Deffarges on 2016/10/10.
   *
   */
-class WriteFeedbackActor extends Actor with ActorLogging {
+class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol {
+
+  import WriteFeedbackActor._
 
   override def receive: Receive = {
     case WriteFeedback(wid) ⇒
@@ -40,53 +43,52 @@ class WriteFeedbackActor extends Actor with ActorLogging {
 
       val transfFolder = TransformHelper(wid.transf).getTransformFolder()
 
-      val kofs: (String, Option[Set[String]], Option[Set[String]]) = wid.transf.source match {
-        case tsr: TransformSourceFromRaw ⇒
-          ("raw", None, None)
-        case tsr: TransformSourceFromRawWithExclusion ⇒
-          ("raw", Some(tsr.excludes), Some(tsr.excludesRegex))
-        case tst: TransformSourceFromTransform ⇒
-          ("transform", None, None)
-        case tst: TransformSourceFromTransformWithExclusion ⇒
-          ("transform", Some(tst.excludes), Some(tst.excludesRegex))
-        case tob: TransformSourceFromObject ⇒
-          ("json", None, None)
-      }
+      val exp = wid.transf.source.experiment.digest
 
-      val fs = FeedbackSource(kofs._1, kofs._2, kofs._3)
+      val fs: TransformDoneSource = wid.transf.source match {
+        case tsr: TransformSourceFromRaw ⇒
+          TransformDoneSource(exp,RAW, None, None, None)
+        case tsr: TransformSourceFromRawWithExclusion ⇒
+          TransformDoneSource(exp,RAW,None,  Some(tsr.excludes), Some(tsr.excludesRegex))
+        case tst: TransformSourceFromTransform ⇒
+          TransformDoneSource(exp,TRANSFORM, Some(tst.srcTransformID), None, None)
+        case tst: TransformSourceFromTransformWithExclusion ⇒
+          TransformDoneSource(exp,TRANSFORM, Some(tst.srcTransformUID), Some(tst.excludes), Some(tst.excludesRegex))
+        case tob: TransformSourceFromObject ⇒
+          TransformDoneSource(exp,JSON, None, None, None)
+      }
 
       val status: (String, String) = wid match {
         case ws: WorkerSuccess ⇒
-          ("SUCCESS", "")
+          (SUCCESS, "")
         case wf: WorkerFailed ⇒
-          ("FAILED", wf.result.error)
+          (FAILED, wf.result.error)
       }
 
       val digest = GetDigest.getFolderContentDigest(transfFolder.toFile)
 
-      val fb = Feedback(wid.transf.uid, wid.transf.transfDefName, wid.transf.source.experiment.digest,
-        fs, status._1, wid.result.feedback, wid.result.logging, status._2, digest)
+      val params = Option(wid.transf.parameters)
+      val fb = TransformDoneInfo(wid.transf.uid, wid.transf.transfDefName, fs, params,
+                                 status._1, wid.result.feedback, Option(status._2))
 
       import spray.json._
       import DefaultJsonProtocol._
-      implicit val feedbackSourceJsonFormat = jsonFormat3(FeedbackSource)
-      implicit val fullNameJsonFormat = jsonFormat2(FullName)
-      implicit val feedbackJsonFormat = jsonFormat9(Feedback)
 
-      Files.write(Paths.get(transfFolder.toString, "transform_output.json"), fb.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
+      Files.write(Paths.get(transfFolder.toString, FILE_NAME), fb.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
   }
 }
 
 object WriteFeedbackActor {
+  val FILE_NAME = "transform_output.json"
+  val SUCCESS = "SUCCESS"
+  val FAILED = "FAILED"
+  val RAW = "RAW"
+  val TRANSFORM = "TRANSFORM"
+  val JSON = "JSON"
+
+
   def props(): Props = Props(classOf[WriteFeedbackActor])
 
   case class WriteFeedback(wid: WorkerIsDone)
 
-  case class Feedback(transform: String, transformDefinition: FullName, experiment: String,
-                      source: FeedbackSource, status: String, feedback: String,
-                      logging: String, errors: String, digest: String)
-
-  case class FeedbackSource(kindOfSource: String, excludes: Option[Set[String]], excludesRegex: Option[Set[String]])
-
-  // todo add info about origin transform or object, etc.
 }

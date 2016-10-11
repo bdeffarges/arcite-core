@@ -7,7 +7,7 @@ import akka.http.scaladsl.server._
 import akka.pattern.ask
 import akka.util.Timeout
 import com.actelion.research.arcite.core.api.ArciteService._
-import com.actelion.research.arcite.core.experiments.ManageExperiments.AddExperiment
+import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddExperiment, GetAllTransforms, TransformsForExperiment}
 import com.actelion.research.arcite.core.rawdata._
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
@@ -89,6 +89,10 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(runTransform).mapTo[TransformJobAcceptance]
   }
 
+  def allTransformsForExperiment(exp: String) = {
+    arciteService.ask(GetAllTransforms(exp)).mapTo[TransformsForExperiment]
+  }
+
   def jobStatus(qws: QueryWorkStatus) = {
     arciteService.ask(qws).mapTo[WorkStatus]
   }
@@ -105,7 +109,6 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
 
   def routes: Route = experimentsRoute ~
     experimentRoute ~
-    experiment2Route ~
     rawDataRoute ~
     rawData2Route ~
     getTransformsRoute ~
@@ -123,10 +126,12 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
 
           |GET  /experiments?search=searchString&maxHits=number                                                                  searching for the given string in the experiments and returning a maximum of maxHits results
           |
-          |POST /experiments all experiments found with {"search" : "search string"}                                             return all experiments for the given search string
+          |POST /experiments {"search" : "search string"}                                                                        return all experiments for the given search string
           |
           |GET  /experiment/{digest}:  return a full experiment                                                                   return one experiment given its digest
           |
+          |GET /experiment/experiment_digest/transforms                                                                           returned all the transforms for this experiment
+          |          |
           |POST /experiment {"experiment" : "...."}                                                                               add a new experiment
           |
           |POST /experiment_commit {"expDigest" : "...."}                                                                         commit changes to experiment
@@ -170,11 +175,11 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       }
     } ~
       parameters('search, 'maxHits ? 10) { (search, maxHits) ⇒
-      val exps: Future[SomeExperiments] = search4Experiments(search, maxHits)
-      onSuccess(exps) { fe ⇒
-        complete(fe)
-      }
-    } ~
+        val exps: Future[SomeExperiments] = search4Experiments(search, maxHits)
+        onSuccess(exps) { fe ⇒
+          complete(fe)
+        }
+      } ~
       get {
         logger.debug("GET on /experiments, should return all experiments")
         onSuccess(getAllExperiments) { exps ⇒
@@ -186,21 +191,28 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
 
   import akka.http.scaladsl.model.StatusCodes._
 
-  def experimentRoute = pathPrefix("experiment" / Segment) { experiment ⇒
-    pathEnd {
-      get {
-        logger.debug(s"get experiment: = $experiment")
-        onSuccess(getExperiment(experiment)) {
-          case NoExperimentFound ⇒ complete(OK, """{"error" : ""} """)
-          case ExperimentFound(exp) ⇒ complete(OK, exp)
+  def experimentRoute = pathPrefix("experiment") {
+    pathPrefix(Segment) { experiment ⇒
+      path("transforms") {
+        get {
+          logger.info(s"get all transforms for experiment: = $experiment")
+          onSuccess(allTransformsForExperiment(experiment)) {
+            case TransformsForExperiment(transformDoneInfoes) ⇒ complete(OK, transformDoneInfoes)
+          }
+        }
+      } ~
+      pathEnd {
+        get {
+          logger.info(s"get experiment: = $experiment")
+          onSuccess(getExperiment(experiment)) {
+            case NoExperimentFound ⇒ complete(OK, """{"error" : ""} """)
+            case ExperimentFound(exp) ⇒ complete(OK, exp)
+          }
         }
       }
-    }
-  }
-
-  def experiment2Route = path("experiment") {
+    } ~
     post {
-      logger.debug(s"adding a new experiment... ")
+      logger.info(s"adding a new experiment... ")
       entity(as[AddExperiment]) { exp ⇒
         val saved: Future[AddExperimentResponse] = addNewExperiment(exp)
         onSuccess(saved) {
@@ -212,12 +224,15 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
   }
 
   def getTransformsRoute = path("transform_definitions") {
-    parameter('search) { search ⇒
-      logger.debug(s"GET on /transform_definitions, should return all transform definitions searching for ${search}")
-      onSuccess(findTransfDefs(search)) {
-        case ManyTransfDefs(tdis) ⇒ complete(OK, tdis)
-        case NoTransfDefFound ⇒ complete(OK, """{"results" : "empty"}""")
-      }
+    parameter('search) {
+      search ⇒
+        logger.debug(s"GET on /transform_definitions, should return all transform definitions searching for ${
+          search
+        }")
+        onSuccess(findTransfDefs(search)) {
+          case ManyTransfDefs(tdis) ⇒ complete(OK, tdis)
+          case NoTransfDefFound ⇒ complete(OK, """{"results" : "empty"}""")
+        }
     } ~
       get {
         logger.debug("GET on /transform_definitions, should return all transform definitions")
@@ -228,28 +243,30 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       }
   }
 
-  def getOneTransformRoute = pathPrefix("transform_definition" / Segment) { transform ⇒
-    pathEnd {
-      get {
-        logger.debug(s"get transform definition for uid: = $transform")
-        onSuccess(getTransfDef(transform)) {
-          case NoTransfDefFound ⇒ complete(OK, """{"error" : ""} """)
-          case OneTransfDef(tr) ⇒ complete(OK, tr)
+  def getOneTransformRoute = pathPrefix("transform_definition" / Segment) {
+    transform ⇒
+      pathEnd {
+        get {
+          logger.debug(s"get transform definition for uid: = $transform")
+          onSuccess(getTransfDef(transform)) {
+            case NoTransfDefFound ⇒ complete(OK, """{"error" : ""} """)
+            case OneTransfDef(tr) ⇒ complete(OK, tr)
+          }
         }
       }
-    }
   }
 
   def rawDataRoute = path("rawdata") {
     //todo replace raw data location with an uri location
     post {
       logger.debug(s"adding raw data...")
-      entity(as[RawDataSet]) { drd ⇒
-        val saved: Future[RawDataSetResponse] = defineRawData(drd)
-        onSuccess(saved) {
-          case RawDataSetAdded ⇒ complete(OK, "raw data added. ")
-          case RawDataSetFailed(msg) ⇒ complete(msg)
-        }
+      entity(as[RawDataSet]) {
+        drd ⇒
+          val saved: Future[RawDataSetResponse] = defineRawData(drd)
+          onSuccess(saved) {
+            case RawDataSetAdded ⇒ complete(OK, "raw data added. ")
+            case RawDataSetFailed(msg) ⇒ complete(msg)
+          }
       }
     }
   }
@@ -257,12 +274,13 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
   def rawData2Route = path("rawdata2") {
     post {
       logger.debug(s"adding raw data...")
-      entity(as[RawDataSetRegex]) { drd ⇒
-        val saved: Future[RawDataSetResponse] = defineRawData2(drd)
-        onSuccess(saved) {
-          case RawDataSetAdded ⇒ complete(OK, "raw data added. ")
-          case RawDataSetFailed(msg) ⇒ complete(msg)
-        }
+      entity(as[RawDataSetRegex]) {
+        drd ⇒
+          val saved: Future[RawDataSetResponse] = defineRawData2(drd)
+          onSuccess(saved) {
+            case RawDataSetAdded ⇒ complete(OK, "raw data added. ")
+            case RawDataSetFailed(msg) ⇒ complete(msg)
+          }
       }
     }
   }
@@ -271,78 +289,84 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
     path("on_raw_data") {
       post {
         logger.debug("running a transform on the raw data from an experiment.")
-        entity(as[RunTransformOnRawData]) { rtf ⇒
-          val saved: Future[TransformJobAcceptance] = runTransformFromRaw(rtf)
-          onSuccess(saved) {
-            case Ok(t) ⇒ complete(OK, t)
-            case NotOk(msg) ⇒ complete(OK, msg) // todo needs improvment
-          }
+        entity(as[RunTransformOnRawData]) {
+          rtf ⇒
+            val saved: Future[TransformJobAcceptance] = runTransformFromRaw(rtf)
+            onSuccess(saved) {
+              case Ok(t) ⇒ complete(OK, t)
+              case NotOk(msg) ⇒ complete(OK, msg) // todo needs improvment
+            }
         }
       }
     } ~
       path("on_transform") {
         post {
           logger.debug("running a transform from a previous transform ")
-          entity(as[RunTransformOnTransform]) { rtf ⇒
-            val saved: Future[TransformJobAcceptance] = runTransformFromTransform(rtf)
-            onSuccess(saved) {
-              case Ok(t) ⇒ complete(OK, t)
-              case NotOk(msg) ⇒ complete(OK, msg) // todo needs improvment
-            }
+          entity(as[RunTransformOnTransform]) {
+            rtf ⇒
+              val saved: Future[TransformJobAcceptance] = runTransformFromTransform(rtf)
+              onSuccess(saved) {
+                case Ok(t) ⇒ complete(OK, t)
+                case NotOk(msg) ⇒ complete(OK, msg) // todo needs improvment
+              }
           }
         }
       } ~
       path("on_raw_data_with_exclusions") {
         post {
           logger.debug("running a transform on the raw data from an experiment.")
-          entity(as[RunTransformOnRawDataWithExclusion]) { rtf ⇒
-            val saved: Future[TransformJobAcceptance] = runTransformFromRaw(rtf)
-            onSuccess(saved) {
-              case Ok(t) ⇒ complete(OK, t)
-              case NotOk(msg) ⇒ complete(OK, msg) // todo needs improvment
-            }
+          entity(as[RunTransformOnRawDataWithExclusion]) {
+            rtf ⇒
+              val saved: Future[TransformJobAcceptance] = runTransformFromRaw(rtf)
+              onSuccess(saved) {
+                case Ok(t) ⇒ complete(OK, t)
+                case NotOk(msg) ⇒ complete(OK, msg) // todo needs improvment
+              }
           }
         }
       } ~
       path("on_transform_with_exclusions") {
         post {
           logger.debug("running a transform from a previous transform ")
-          entity(as[RunTransformOnTransform]) { rtf ⇒
-            val saved: Future[TransformJobAcceptance] = runTransformFromTransform(rtf)
-            onSuccess(saved) {
-              case Ok(t) ⇒ complete(OK, t)
-              case NotOk(msg) ⇒ complete(OK, msg) // todo needs improvment
-            }
+          entity(as[RunTransformOnTransform]) {
+            rtf ⇒
+              val saved: Future[TransformJobAcceptance] = runTransformFromTransform(rtf)
+              onSuccess(saved) {
+                case Ok(t) ⇒ complete(OK, t)
+                case NotOk(msg) ⇒ complete(OK, msg) // todo needs improvment
+              }
           }
         }
       } ~
       pathEnd {
         post {
           logger.debug("running a transform from a JS structure as definition object ")
-          entity(as[RunTransformOnObject]) { rtf ⇒
-            val saved: Future[TransformJobAcceptance] = runTransformFromObject(rtf)
-            onSuccess(saved) {
-              case Ok(t) ⇒ complete(OK, t)
-              case NotOk(msg) ⇒ complete(OK, msg) // todo needs improvment
-            }
+          entity(as[RunTransformOnObject]) {
+            rtf ⇒
+              val saved: Future[TransformJobAcceptance] = runTransformFromObject(rtf)
+              onSuccess(saved) {
+                case Ok(t) ⇒ complete(OK, t)
+                case NotOk(msg) ⇒ complete(OK, msg) // todo needs improvment
+              }
           }
         }
       }
   }
 
   //todo not yet push but only pull...
-  def transformFeedbackRoute = pathPrefix("job_status" / Segment) { workID ⇒
-    pathEnd {
-      get {
-        logger.debug(s"ask for job status? $workID")
-        onSuccess(jobStatus(QueryWorkStatus(workID))) {
-          case WorkLost(uid) ⇒ complete(s"job $uid was lost")
-          case WorkCompleted(t) ⇒ complete(s"job is completed")
-          case WorkInProgress(t) ⇒ complete(s"job is running")
-          case WorkAccepted(t) ⇒ complete("job queued...")
+  def transformFeedbackRoute = pathPrefix("job_status" / Segment) {
+    workID ⇒
+      pathEnd {
+        get {
+          logger.debug(s"ask for job status? $workID")
+          onSuccess(jobStatus(QueryWorkStatus(workID))) {
+            case WorkLost(uid) ⇒ complete(s"job $uid was lost")
+            case WorkCompleted(t) ⇒ complete(s"job is completed")
+            case WorkInProgress(t) ⇒ complete(s"job is running")
+            case WorkAccepted(t) ⇒ complete("job queued...")
+          }
         }
       }
-    }
   }
 
   def allTransformsFeedbackRoute = path("all_jobs_status") {
