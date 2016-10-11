@@ -3,9 +3,8 @@ package com.actelion.research.arcite.core.transforms.cluster.workers
 import java.io.File
 
 import akka.actor.{Actor, ActorLogging, Props}
-import com.actelion.research.arcite.core.transforms.cluster.MasterWorkerProtocol.WorkerFailed
-import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.{WorkCompletionStatus, WorkFailed, WorkSuccessFull}
-import com.actelion.research.arcite.core.transforms.cluster.workers.RWrapperWorker.{Rreturn, RunRCode}
+import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.{WorkFailed, WorkSuccessFull}
+import com.actelion.research.arcite.core.transforms.cluster.workers.RWrapperWorker.RunRCode
 import com.actelion.research.arcite.core.transforms.cluster.{GetTransfDefId, TransformType}
 import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformDefinitionIdentity, TransformDescription}
 import com.actelion.research.arcite.core.utils.FullName
@@ -40,10 +39,12 @@ class RWrapperWorker extends Actor with ActorLogging {
 
       val status = process.!(ProcessLogger(output append _, error append _))
 
-      val result = Rreturn(rc.transform, status, output.toString, error.toString)
-      log.info(s"rscript result is: $result")
+      val rreturn = if (status == 0) WorkSuccessFull(Some(s"returned status: $status"), output.toString takeRight 500)
+      else WorkFailed(output.toString takeRight 500, error.toString takeRight 1000)
 
-      sender() ! WorkSuccessFull(Some(result))
+      log.info(s"rscript result is: $rreturn")
+
+      sender() ! rreturn
 
 
     case GetTransfDefId(wi) ⇒
@@ -73,7 +74,6 @@ object RWrapperWorker {
 
   case class RunRCode(transform: Transform, workingDir: String, rCodePath: String, arguments: Seq[String])
 
-  case class Rreturn(origin: Transform, status: Int, output: String, error: String)
 
 }
 

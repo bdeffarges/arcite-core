@@ -153,11 +153,9 @@ object TransformWorker {
 
   sealed trait WorkCompletionStatus {
     def feedback: String
-
-    def logging: String
   }
-  case class WorkSuccessFull(result: Option[Any], feedback: String = "", logging: String = "") extends WorkCompletionStatus
-  case class WorkFailed(feedback: String = "", logging: String = "", error: String = "") extends WorkCompletionStatus
+  case class WorkSuccessFull(result: Option[Any], feedback: String = "") extends WorkCompletionStatus
+  case class WorkFailed(feedback: String = "", error: String = "") extends WorkCompletionStatus
 
 }
 
