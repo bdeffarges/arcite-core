@@ -148,10 +148,8 @@ object ManageExperiments extends ArciteJSONProtocol {
 
   case class TransformsForExperiment(transforms: Set[TransformDoneInfo])
 
-  case class TransformsForExperimentTree()
-
   // todo to be implemented
-
+  case class TransformsForExperimentTree()
 
   private var experiments: Map[String, Experiment] = LocalExperiments.loadAllLocalExperiments()
 

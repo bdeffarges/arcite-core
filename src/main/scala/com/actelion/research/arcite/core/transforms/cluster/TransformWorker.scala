@@ -1,7 +1,6 @@
 package com.actelion.research.arcite.core.transforms.cluster
 
-import java.nio.file.Files
-import java.util.{Date, UUID}
+import java.util.UUID
 
 import akka.actor.SupervisorStrategy.{Restart, Stop}
 import akka.actor.{Actor, ActorInitializationException, ActorLogging, ActorRef, DeathPactException, OneForOneStrategy, Props, ReceiveTimeout, Terminated}
