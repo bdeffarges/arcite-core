@@ -49,7 +49,7 @@ class RWrapperWorker extends Actor with ActorLogging {
 
     case GetTransfDefId(wi) ⇒
       log.debug(s"asking worker type for $wi")
-      sender() ! TransformType(wi, RWrapperWorker.defLight)
+      sender() ! TransformType(wi, RWrapperWorker.defIdent)
 
 
     case msg: Any ⇒
@@ -63,12 +63,12 @@ class RWrapperWorker extends Actor with ActorLogging {
 object RWrapperWorker {
 
   val fullName = FullName("com.actelion.research.arcite.core", "Simple-R-wrapper")
-  val defLight = TransformDefinitionIdentity(fullName, "r-wrapper",
+  val defIdent = TransformDefinitionIdentity(fullName, "r-wrapper",
     TransformDescription("A simple wrapper to run a r process wrapped in an akka actor",
       "takes several arguments to start a R script",
       "returns a status code, output and error Strings, R output (PDF, dataframe) have to be returned somewhere else"))
 
-  val definition = TransformDefinition(defLight, props)
+  val definition = TransformDefinition(defIdent, props)
 
   def props(): Props = Props(classOf[RWrapperWorker])
 

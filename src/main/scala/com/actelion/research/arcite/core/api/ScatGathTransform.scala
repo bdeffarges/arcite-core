@@ -3,10 +3,10 @@ package com.actelion.research.arcite.core.api
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSelection, Props}
 import com.actelion.research.arcite.core.api.ArciteService.{ExperimentFound, ExperimentFoundResponse, GetExperiment}
 import com.actelion.research.arcite.core.api.ScatGathTransform.{PrepareTransform, ReadyForTransform}
-import com.actelion.research.arcite.core.transforms.RunTransform.{ProceedWithTransform, RunTransformOnObject, RunTransformOnRawData, RunTransformOnTransform}
-import com.actelion.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, MsgFromTransfDefsManager, OneTransfDef}
+import com.actelion.research.arcite.core.transforms.RunTransform._
+import com.actelion.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, GetTransfDefFromName, MsgFromTransfDefsManager, OneTransfDef}
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.NotOk
-import com.actelion.research.arcite.core.transforms.{Transform, TransformSourceFromObject, TransformSourceFromRaw, TransformSourceFromTransform}
+import com.actelion.research.arcite.core.transforms._
 import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
 
 /**
@@ -34,27 +34,26 @@ import com.actelion.research.arcite.core.transforms.cluster.ManageTransformClust
   */
 class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends Actor with ActorLogging {
 
-  var readyForTransform = ReadyForTransform(None, None, None)
+  private var readyForTransform = ReadyForTransform(None, None)
+
+  private var procWTransf: Option[ProceedWithTransform] = None
 
   override def receive = {
 
-    case rt: ProceedWithTransform ⇒
-      log.info(s"transform requested ${rt}")
+    case pwt: ProceedWithTransform ⇒
+      log.info(s"transform requested ${pwt}")
+      procWTransf = Some(pwt)
 
-      readyForTransform = ReadyForTransform(None, None, Some(rt))
+      expManager ! GetExperiment(pwt.experiment)
 
-      expManager ! GetExperiment(rt.experiment)
-
-      ManageTransformCluster.getNextFrontEnd() ! GetTransfDef(rt.transformDefinition)
-
+      ManageTransformCluster.getNextFrontEnd() ! GetTransfDef(pwt.transformDefinition)
 
 
     case efr: ExperimentFoundResponse ⇒
       efr match {
         case ef: ExperimentFound ⇒
           readyForTransform = readyForTransform.copy(expFound = Some(ef))
-          if (readyForTransform.expFound.isDefined &&
-            readyForTransform.transfDef.isDefined) self ! PrepareTransform
+          if (readyForTransform.transfDef.isDefined) self ! PrepareTransform
 
         case _ ⇒
           requester ! NotOk("could not find experiment for given id.")
@@ -64,20 +63,50 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
     case mftdm: MsgFromTransfDefsManager ⇒
       mftdm match {
         case otd: OneTransfDef ⇒
-          readyForTransform = readyForTransform.copy(transfDef = Some(otd))
-          if (readyForTransform.expFound.isDefined &&
-            readyForTransform.transfDef.isDefined) self ! PrepareTransform
+          if (otd.transfDefId.digestUID == procWTransf.get.transformDefinition) {
+            readyForTransform = readyForTransform.copy(transfDef = Some(otd.transfDefId))
+            if (otd.transfDefId.dependsOn.isDefined) {
+              ManageTransformCluster.getNextFrontEnd() ! GetTransfDefFromName(otd.transfDefId.dependsOn.get)
+            } else if (readyForTransform.expFound.isDefined) {
+              log.info("preparing transform, no dependency on transform type. ")
+              self ! PrepareTransform
+            }
+          } else {
+            procWTransf.get match {
+              case ptft: ProcTransfFromTransf ⇒
+                if (otd.transfDefId.digestUID == ptft.transformOrigin) {
+                  if (readyForTransform.transfDef.isDefined &&
+                    readyForTransform.expFound.isDefined) {
+                    log.info(s"preparing transform, dependency to previous transform has been checked [${otd.transfDefId.fullName}]")
+                    self ! PrepareTransform
+                  }
+                } else {
+                  val error =
+                    s"""transform origin [${ptft.transformOrigin}] and expected
+                        |[${otd.transfDefId.fullName}] are not the same.""".stripMargin
+                  log.error(error)
+                  requester ! NotOk(error)
+                }
+
+              case _ ⇒
+                val error =
+                  s"""received an origin transform definition [${otd.transfDefId}]
+                      |which does seem to make sense as the current transform is ${procWTransf} """.stripMargin
+                log.error(error)
+                requester ! NotOk(error)
+            }
+          }
 
         case _ ⇒
-          requester ! NotOk("could not find transform definition for given id.")
+          requester ! NotOk("could not find ONE transform definition for given id.")
       }
 
 
     case PrepareTransform ⇒
-      val td = readyForTransform.transfDef.get.transfDefId
+      val td = readyForTransform.transfDef.get
       val exp = readyForTransform.expFound.get.exp
 
-      readyForTransform.pwt.get match {
+      procWTransf.get match {
         case RunTransformOnObject(_, _, params) ⇒
           val t = Transform(td.fullName, TransformSourceFromObject(exp), params)
           ManageTransformCluster.getNextFrontEnd() ! t
@@ -102,13 +131,10 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
 object ScatGathTransform {
   def props(reqRef: ActorRef, expManag: ActorSelection) = Props(classOf[ScatGathTransform], reqRef, expManag)
 
-  case class ReadyForTransform(expFound: Option[ExperimentFound],
-                               transfDef: Option[OneTransfDef], pwt: Option[ProceedWithTransform])
-
+  case class ReadyForTransform(expFound: Option[ExperimentFound], transfDef: Option[TransformDefinitionIdentity])
 
   sealed trait TransformResponse
 
   case object PrepareTransform extends TransformResponse
-
 
 }

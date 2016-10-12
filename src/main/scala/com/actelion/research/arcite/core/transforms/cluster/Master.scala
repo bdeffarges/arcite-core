@@ -197,6 +197,12 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
         case Some(x) ⇒ sender() ! OneTransfDef(x)
         case _ ⇒ sender() ! NoTransfDefFound
       }
+
+    case GetTransfDefFromName(fn) ⇒
+      transformDefs.find(_.fullName == fn) match {
+        case Some(x) ⇒ sender() ! OneTransfDef(x)
+        case _ ⇒ sender() ! NoTransfDefFound
+      }
   }
 
 

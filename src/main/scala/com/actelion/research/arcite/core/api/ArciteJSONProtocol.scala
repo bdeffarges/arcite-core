@@ -38,6 +38,8 @@ import spray.json.{DefaultJsonProtocol, _}
 trait ArciteJSONProtocol extends DefaultJsonProtocol {
 
 
+  val noDependsOn = FullName("none", "none")
+
   implicit object TransformDefinitionIdentityJsonFormat extends RootJsonFormat[TransformDefinitionIdentity] {
 
     def write(tdi: TransformDefinitionIdentity) = {
@@ -48,11 +50,14 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
         "description_summary" -> JsString(tdi.description.summary),
         "description_consumes" -> JsString(tdi.description.consumes),
         "description_produces" -> JsString(tdi.description.produces),
+        "depends_on_organization" -> JsString(tdi.dependsOn.getOrElse(noDependsOn).organization),
+        "depends_on_name" -> JsString(tdi.dependsOn.getOrElse(noDependsOn).name),
         "digest" -> JsString(tdi.digestUID)
       )
     }
 
     def read(value: JsValue) = {
+      // todo actually read should not be necessary
       value.asJsObject.getFields("organization", "name", "short_name", "description_summary",
         "description_consumes", "description_produces", "digest") match {
         case Seq(JsString(organization), JsString(name), JsString(shortName),
@@ -102,11 +107,11 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
       case tsc: TransformSourceFromRaw ⇒
         JsObject("test" -> experimentJson.write(tsc.experiment))
 
-//      case tsc: TransformSourceRegex ⇒
-//        JsObject("type" -> JsString(tsc.getClass.getSimpleName))
+      //      case tsc: TransformSourceRegex ⇒
+      //        JsObject("type" -> JsString(tsc.getClass.getSimpleName))
 
-//      case tsc: TransformAsSource4Transform ⇒
-//        JsObject("type" -> JsString(tsc.getClass.getSimpleName))
+      //      case tsc: TransformAsSource4Transform ⇒
+      //        JsObject("type" -> JsString(tsc.getClass.getSimpleName))
 
     }
 

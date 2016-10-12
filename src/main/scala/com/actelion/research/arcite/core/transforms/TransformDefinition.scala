@@ -25,12 +25,12 @@ case class TransformDescription(summary: String, consumes: String, produces: Str
 
 /**
   * Basic definition of a transform. What it does and its unique name.
-  * todo should add a dependsOn to describe on what this transform depends on
   *
   * @param fullName
   * @param description
   */
-case class TransformDefinitionIdentity(fullName: FullName, shortName: String, description: TransformDescription) {
+case class TransformDefinitionIdentity(fullName: FullName, shortName: String,
+                                       description: TransformDescription, dependsOn: Option[FullName] = None) {
   lazy val digestUID = GetDigest.getDigest(s"$fullName $description")
 }
 
@@ -55,24 +55,13 @@ sealed trait TransformSource {
 case class TransformSourceFromRaw(experiment: Experiment) extends TransformSource
 
 case class TransformSourceFromRawWithExclusion(experiment: Experiment, excludes: Set[String] = Set(),
-                                               excludesRegex: Set[String] = Set()) extends TransformSource {
+                                               excludesRegex: Set[String] = Set()) extends TransformSource
 
-  def inputFiles(): Set[String] = {
-    Set() // todo implement exclusion
-  }
-}
-
-case class TransformSourceFromTransform(experiment: Experiment, srcTransformID: String)
-  extends TransformSource
+case class TransformSourceFromTransform(experiment: Experiment, srcTransformID: String) extends TransformSource
 
 case class TransformSourceFromTransformWithExclusion(experiment: Experiment, srcTransformUID: String,
-                                                     excludes: Set[String] = Set(), excludesRegex: Set[String] = Set())
-  extends TransformSource {
-
-  def inputFiles(): Set[String] = {
-    Set() // todo implement
-  }
-}
+                                                     excludes: Set[String] = Set(),
+                                                     excludesRegex: Set[String] = Set()) extends TransformSource
 
 case class TransformSourceFromObject(experiment: Experiment) extends TransformSource
 
@@ -100,5 +89,5 @@ case class TransformDoneSource(experiment: String, kindOfSource: String, fromTra
 
 case class TransformDoneInfo(transform: String, transformDefinition: FullName, source: TransformDoneSource,
                              parameters: Option[JsValue], status: String, feedback: String, errors: Option[String],
-                             startTime: String , endTime: String = utils.getCurrentDateAsString())
+                             startTime: String, endTime: String = utils.getCurrentDateAsString())
 

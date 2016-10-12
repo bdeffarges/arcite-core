@@ -1,5 +1,7 @@
 package com.actelion.research.arcite.core.transforms
 
+import com.actelion.research.arcite.core.utils.FullName
+
 /**
   * Created by deffabe1 on 5/19/16.
   *
@@ -16,6 +18,8 @@ object TransfDefMsg {
   case class FindTransfDefs(search: String) extends Msg2TransfDefsManager
 
   case class GetTransfDef(digest: String) extends Msg2TransfDefsManager
+
+  case class GetTransfDefFromName(fullName: FullName) extends Msg2TransfDefsManager
 
 
   sealed trait MsgFromTransfDefsManager

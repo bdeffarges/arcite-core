@@ -1,10 +1,13 @@
 package com.actelion.research.arcite.core.transforms.cluster.workers
 
+import java.nio.charset.StandardCharsets
+import java.nio.file.StandardOpenOption._
+import java.nio.file.{Files, Paths}
+
 import akka.actor.{Actor, ActorLogging, Props}
-import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.{WorkCompletionStatus, WorkSuccessFull}
+import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.WorkSuccessFull
 import com.actelion.research.arcite.core.transforms.cluster.{GetTransfDefId, TransformType}
 import com.actelion.research.arcite.core.transforms._
-import com.actelion.research.arcite.core.transforms.cluster.WorkState.WorkCompleted
 import com.actelion.research.arcite.core.utils.FullName
 
 class WorkExecUpperCase extends Actor with ActorLogging {
@@ -14,7 +17,7 @@ class WorkExecUpperCase extends Actor with ActorLogging {
   def receive = {
     case t: Transform =>
       log.info(s"transformDef: ${t.transfDefName} defLight=$transfDefId")
-      require (t.transfDefName == transfDefId.fullName)
+      require(t.transfDefName == transfDefId.fullName)
       log.info("starting work but will wait for fake...")
       Thread.sleep(10000)
       t.source match {
@@ -23,7 +26,10 @@ class WorkExecUpperCase extends Actor with ActorLogging {
           implicit val toUpperCaseJson = jsonFormat1(ToUpperCase)
           log.info("waited enough time, doing the work now...")
           val toBeTransformed = t.parameters.convertTo[ToUpperCase]
-          sender() ! WorkSuccessFull(Some(s"in upperString=${toBeTransformed.stgToUpperCase.toUpperCase()}"))
+          val upperCased = toBeTransformed.stgToUpperCase.toUpperCase()
+          val p = Paths.get(TransformHelper(t).getTransformFolder().toString, "uppercase.txt")
+          Files.write(p, upperCased.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
+          sender() ! WorkSuccessFull(Some(s"in upperString=$upperCased"))
       }
 
     case GetTransfDefId(wi) ⇒
@@ -45,4 +51,5 @@ object WorkExecUpperCase {
   def props(): Props = Props(classOf[WorkExecUpperCase])
 
   case class ToUpperCase(stgToUpperCase: String)
+
 }

@@ -6,7 +6,7 @@ import akka.pattern._
 import akka.util.Timeout
 import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
 import com.actelion.research.arcite.core.transforms.RunTransform.ProceedWithTransform
-import com.actelion.research.arcite.core.transforms.TransfDefMsg.{FindTransfDefs, GetAllTransfDefs, GetTransfDef}
+import com.actelion.research.arcite.core.transforms.TransfDefMsg.{FindTransfDefs, GetAllTransfDefs, GetTransfDef, GetTransfDefFromName}
 import com.actelion.research.arcite.core.transforms.Transform
 
 object Frontend {
@@ -71,6 +71,10 @@ class Frontend extends Actor with ActorLogging {
       (masterProxy ? ft) pipeTo sender()
 
     case gtd: GetTransfDef ⇒
+      implicit val timeout = Timeout(2.seconds)
+      (masterProxy ? gtd) pipeTo sender()
+
+    case gtd: GetTransfDefFromName ⇒
       implicit val timeout = Timeout(2.seconds)
       (masterProxy ? gtd) pipeTo sender()
 

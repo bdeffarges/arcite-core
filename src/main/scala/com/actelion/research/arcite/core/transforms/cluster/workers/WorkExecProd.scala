@@ -18,7 +18,7 @@ class WorkExecProd extends Actor with ActorLogging {
 
     case GetTransfDefId(wi) ⇒
       log.debug(s"asking worker type for $wi")
-      sender() ! TransformType(wi, defLight)
+      sender() ! TransformType(wi, defIdent)
 
     case msg: Any ⇒ log.error(s"unable to deal with message $msg")
   }
@@ -29,10 +29,10 @@ object WorkExecProd {
   def props(): Props = Props(classOf[WorkExecProd])
 
   val fullName = FullName("com.actelion.research.arcite.core", "product1")
-  val defLight = TransformDefinitionIdentity(fullName, "product1",
+  val defIdent = TransformDefinitionIdentity(fullName, "product1",
     TransformDescription("product1", "number", "number"))
 
-  val definition = TransformDefinition(defLight, props)
+  val definition = TransformDefinition(defIdent, props)
 
   case class CalcProd(n: Int)
 }

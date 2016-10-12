@@ -32,22 +32,33 @@ object RunTransform {
     def experiment: String
 
     def transformDefinition: String
+
+    def parameters: JsValue
   }
 
+
+  sealed trait TransfOnRaw extends ProceedWithTransform
+
   case class RunTransformOnRawData(experiment: String, transformDefinition: String,
-                                   parameters: JsValue) extends ProceedWithTransform
+                                   parameters: JsValue) extends TransfOnRaw
 
   case class RunTransformOnRawDataWithExclusion(experiment: String, transformDefinition: String,
                                                 excludes: Set[String] = Set(), excludesRegex: Set[String] = Set(),
-                                                parameters: JsValue) extends ProceedWithTransform
+                                                parameters: JsValue) extends TransfOnRaw
+
+
+  sealed trait ProcTransfFromTransf extends ProceedWithTransform {
+    def transformOrigin: String
+  }
 
   case class RunTransformOnTransform(experiment: String, transformDefinition: String, transformOrigin: String,
-                                     parameters: JsValue) extends ProceedWithTransform
+                                     parameters: JsValue) extends ProcTransfFromTransf
 
   case class RunTransformOnTransformWithExclusion(experiment: String, transformDefinition: String,
                                                   transformOrigin: String, excludes: Set[String] = Set(),
                                                   excludesRegex: Set[String] = Set(),
-                                                  parameters: JsValue) extends ProceedWithTransform
+                                                  parameters: JsValue) extends ProcTransfFromTransf
+
 
   case class RunTransformOnObject(experiment: String, transformDefinition: String,
                                   parameters: JsValue) extends ProceedWithTransform
