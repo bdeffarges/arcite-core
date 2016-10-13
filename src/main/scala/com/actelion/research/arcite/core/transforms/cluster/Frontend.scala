@@ -5,6 +5,7 @@ import akka.actor.{Actor, ActorLogging}
 import akka.pattern._
 import akka.util.Timeout
 import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
+import com.actelion.research.arcite.core.experiments.ManageExperiments.GetTransfDefFromExpAndTransf
 import com.actelion.research.arcite.core.transforms.RunTransform.ProceedWithTransform
 import com.actelion.research.arcite.core.transforms.TransfDefMsg.{FindTransfDefs, GetAllTransfDefs, GetTransfDef, GetTransfDefFromName}
 import com.actelion.research.arcite.core.transforms.Transform
@@ -67,17 +68,16 @@ class Frontend extends Actor with ActorLogging {
       (masterProxy ? GetAllTransfDefs) pipeTo sender()
 
     case ft: FindTransfDefs ⇒
-      implicit val timeout = Timeout(4.seconds)
+      implicit val timeout = Timeout(3.seconds)
       (masterProxy ? ft) pipeTo sender()
 
     case gtd: GetTransfDef ⇒
-      implicit val timeout = Timeout(2.seconds)
+      implicit val timeout = Timeout(3.seconds)
       (masterProxy ? gtd) pipeTo sender()
 
     case gtd: GetTransfDefFromName ⇒
-      implicit val timeout = Timeout(2.seconds)
+      implicit val timeout = Timeout(3.seconds)
       (masterProxy ? gtd) pipeTo sender()
-
 
     case m: Any ⇒ log.error(s"don't know what to do with message $m")
   }

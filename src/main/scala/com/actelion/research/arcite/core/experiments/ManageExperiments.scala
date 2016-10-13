@@ -11,7 +11,7 @@ import com.actelion.research.arcite.core.rawdata.DefineRawData
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex._
 import com.actelion.research.arcite.core.transforms.TransformDoneInfo
-import com.actelion.research.arcite.core.utils.WriteFeedbackActor
+import com.actelion.research.arcite.core.utils.{FullName, WriteFeedbackActor}
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 
@@ -110,7 +110,14 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
 
     case GetAllTransforms(experiment) ⇒
-      sender ! TransformsForExperiment(getAllTransforms(experiment))
+      val allTransforms = getAllTransforms(experiment)
+      sender ! TransformsForExperiment(allTransforms)
+
+
+    case GetTransfDefFromExpAndTransf(experiment, transform) ⇒
+      val transDef = getTransfDefFromExpAndTransf(experiment, transform)
+      sender() ! transDef
+
 
     case any: Any ⇒ log.debug(s"don't know what to do with this message $any")
   }
@@ -143,10 +150,14 @@ object ManageExperiments extends ArciteJSONProtocol {
 
   case object SnapshotTaken
 
-
   case class GetAllTransforms(experiment: String)
 
   case class TransformsForExperiment(transforms: Set[TransformDoneInfo])
+
+  case class GetTransfDefFromExpAndTransf(experiment: String, transform: String)
+
+  case class FoundTransfDefFullName(fullName: FullName)
+
 
   // todo to be implemented
   case class TransformsForExperimentTree()
@@ -192,6 +203,19 @@ object ManageExperiments extends ArciteJSONProtocol {
       .map(p ⇒ Files.readAllLines(p).toList.mkString("\n").parseJson.convertTo[TransformDoneInfo]).toSet
   }
 
+  def getTransfDefFromExpAndTransf(experiment: String, transform: String): FoundTransfDefFullName = {
+
+    val exp = experiments(experiment)
+    val ef = ExperimentFolderVisitor(exp).transformFolderPath
+
+    import spray.json._
+
+    //todo check whether it exists...
+    val f = Paths.get(ef.toString, transform, WriteFeedbackActor.FILE_NAME)
+    val tdi = Files.readAllLines(f).toList.mkString("\n").parseJson.convertTo[TransformDoneInfo]
+
+    FoundTransfDefFullName(tdi.transformDefinition)
+  }
 
   def main(args: Array[String]): Unit = {
     startActorSystemForExperiments()
