@@ -25,7 +25,7 @@ class DefineRawData extends Actor {
   override def receive: Receive = {
 
     case rds: RawDataSetWithRequester ⇒
-      val exp = ManageExperiments.getExperimentFromDigest(rds.rds.experimentDigest)
+      val exp = ManageExperiments.getExperimentFromDigest(rds.rds.experiment)
       val response = exp.map(exp ⇒ defineRawData(exp, rds.rds))
 
       // transfer file if required
@@ -45,15 +45,15 @@ class DefineRawData extends Actor {
         .map(f ⇒ (f._1.getAbsolutePath, f._2))
 
       self ! RawDataSetWithRequester(
-        RawDataSet(rdsr.rdsr.experimentDigest, rdsr.rdsr.transferFiles, files), rdsr.requester)
+        RawDataSet(rdsr.rdsr.experiment, rdsr.rdsr.transferFiles, files), rdsr.requester)
   }
 }
 
-case class RawDataSet(experimentDigest: String, transferFiles: Boolean, filesAndTarget: Map[String, String])
+case class RawDataSet(experiment: String, transferFiles: Boolean, filesAndTarget: Map[String, String])
 
 case class RawDataSetWithRequester(rds: RawDataSet, requester: ActorRef)
 
-case class RawDataSetRegex(experimentDigest: String, transferFiles: Boolean, folder: String, regex: String, withSubfolder: Boolean)
+case class RawDataSetRegex(experiment: String, transferFiles: Boolean, folder: String, regex: String, withSubfolder: Boolean)
 
 case class RawDataSetRegexWithRequester(rdsr: RawDataSetRegex, requester: ActorRef)
 
@@ -71,7 +71,7 @@ object DefineRawData extends ArciteJSONProtocol with LazyLogging {
   import spray.json._
 
   def mergeRawDataSet(rds1: RawDataSet, rds2: RawDataSet): RawDataSet = {
-    RawDataSet(rds1.experimentDigest, rds1.transferFiles | rds2.transferFiles, rds1.filesAndTarget ++ rds2.filesAndTarget)
+    RawDataSet(rds1.experiment, rds1.transferFiles | rds2.transferFiles, rds1.filesAndTarget ++ rds2.filesAndTarget)
   }
 
   def saveRawDataSetJson(rds: RawDataSet, path: Path) = {

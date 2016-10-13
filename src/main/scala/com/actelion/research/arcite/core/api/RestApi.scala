@@ -110,7 +110,6 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
   def routes: Route = experimentsRoute ~
     experimentRoute ~
     rawDataRoute ~
-    rawData2Route ~
     getTransformsRoute ~
     getOneTransformRoute ~
     runTransformRoute ~
@@ -120,46 +119,65 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
 
   def defaultRoute = {
     get {
-      complete(
-        """arcite ver-0.1.0
-          |GET  /experiments                                                                                                     return all experiments summary info or a few hundrets if there are too many
-
-          |GET  /experiments?search=searchString&maxHits=number                                                                  searching for the given string in the experiments and returning a maximum of maxHits results
+      complete(NotFound,
+        """{ "error" : "arcite 1.0.0-SNAPSHOT API:
           |
-          |POST /experiments {"search" : "search string"}                                                                        return all experiments for the given search string
           |
-          |GET  /experiment/{digest}:  return a full experiment                                                                   return one experiment given its digest
+          |GET  /experiments ==>  return all experiments summary info or a few hundrets if there are too many
           |
-          |GET /experiment/experiment_digest/transforms                                                                           returned all the transforms for this experiment
-          |          |
-          |POST /experiment {"experiment" : "...."}                                                                               add a new experiment
           |
-          |POST /experiment_commit {"expDigest" : "...."}                                                                         commit changes to experiment
+          |GET  /experiments?search=searchString&maxHits=number ==>  searching for the given string in the experiments and returning a maximum of maxHits results
           |
-          |POST /experiment_rollback {"expDigest" : "...."}                                                                       remove last change from experiment
           |
-          |POST /design {"expdigest": "digest", "design": {}}                                                                     add design to experiment
+          |POST /experiments {"search" : "search string"} ==>   return all experiments for the given search string, same as previous but with post
           |
-          |POST /rawdata {"experimentDigest": "digest", "files" : ["rawfiles list"], "copy": boolean                              define raw files for a experiment
           |
-          |POST /rawdata2 {"experimentDigest": "digest", "folder" : "folder", "regex": "regex", "copy": boolean                   define raw data folder with regex to pick up files for a experiment
+          |GET  /experiment/{uid} ==>  return one experiment with every information regarding its design
           |
-          |GET  /transform_definitions                                                                                            returns all possible transform definitions
-
-          |GET  /transform_definitions?search=search_string                                                                       returns all transform definitions based on serach criteria
           |
-          |GET  /transform_definition/digest                                                                                      one specific transform
+          |GET /experiment/{uid}/transforms ==>  returned all the transforms for this experiment
           |
-          |POST /run_transform/{"experiment": "digest", "transform": "digest", "parameters": JSValue}                             run the specified transform on the given experiment with the given json parameters as parameter object
           |
-          |POST /run_transform/on_files/{"experiment": "digest", "transform": "digest", "parameters": JSValue}                    run the specified transform on the given experiment using the given files, the given json parameter can be added
+          |POST /experiment {"experiment" : "...."}  ==>  add a new experiment
           |
-          |POST /run_transform/on_folders/{"experiment": "digest", "transform": "digest", "parameters": JSValue}                  run the specified transform on the given experiment using the given folder(s), the given json parameter can be added
           |
-          |POST /run_transform/on_transform/{"experiment": "digest", "transform": "digest", "parameters": JSValue}                run the specified transform on the given experiment starting from another transform, the given json parameter can be added
+          |POST /design {"experiment": "uid", "design": {}} ==>  add design to experiment
           |
-          |POST /run_transform/on_raw_data/{"experiment": "digest", "transform": "digest", "parameters": JSValue}                 run the specified transform on the given experiment starting with the default raw data (usually the first transform), the given json parameter can be added
           |
+          |POST /raw_data/files {"experiment": "uid", "filesAndTarget" : ["rawfiles list"], "transferFiles": boolean } ==>  defines raw files for a experiment, files and target is a map, one original file to a target name for the file. If target name is omited, arcite will take the current file name.
+          |
+          |
+          |POST /raw_data/folder {"experiment": "uid", "folder" : "folder", "regex": "regex", "withSubfolder": boolean, "transferFiles": boolean} ==>  defines raw data folder with regex to pick up files for a experiment
+          |
+          |
+          |GET  /transform_definitions ==>   returns all possible transform definitions
+          |
+          |
+          |GET  /transform_definitions?search=search_string ==>  returns all transform definitions based on search criteria
+          |
+          |
+          |GET  /transform_definition/{uid} ==>   one specific transform
+          |
+          |
+          |POST /run_transform/{"experiment": "uid", "transformDefinition": "uid", "parameters": JSValue} ==>  run the specified transform on the given experiment with the given json parameters as parameter object
+          |
+          |
+          |POST /run_transform/on_transform/{"experiment": "uid", "transformDefinition": "uid", "transformOrigin" :"uid", "parameters": JSValue} ==>  run the specified transform on the given experiment starting from another transform, the given json parameter can be added
+          |
+          |
+          |POST /run_transform/on_raw_data/{"experiment": "uid", "transformDefinition": "uid", "transformOrigin" :"uid", "parameters": JSValue} ==>  run the specified transform on the given experiment starting with the default raw data (usually the first transform), the given json parameter can be added
+          |
+          |
+          |POST /run_transform/on_transform_with_exclusions/{"experiment": "uid", "transformDefinition": "uid", "transformOrigin" :"uid",  "excludes": [], "excludesRegex": [], "parameters": JSValue} ==>  run the specified transform on the given experiment starting from another transform, the given json parameter can be added
+          |
+          |
+          |POST /run_transform/on_raw_data_with_exclusions/{"experiment": "uid", "transformDefinition": "uid", "transformOrigin" :"uid", "excludes": [], "excludesRegex": [], parameters": JSValue} ==>  run the specified transform on the given experiment starting with the default raw data (usually the first transform), the given json parameter can be added
+          |
+          |
+          |GET /job_status/{uid} ==>  information about the job with the given uid
+          |
+          |
+          |GET /all_jobs_status ==>  information about all current jobs (running, completed, in progress, ...)"}
         """.stripMargin)
     }
   }
@@ -201,26 +219,26 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           }
         }
       } ~
-      pathEnd {
-        get {
-          logger.info(s"get experiment: = $experiment")
-          onSuccess(getExperiment(experiment)) {
-            case NoExperimentFound ⇒ complete(OK, """{"error" : ""} """)
-            case ExperimentFound(exp) ⇒ complete(OK, exp)
+        pathEnd {
+          get {
+            logger.info(s"get experiment: = $experiment")
+            onSuccess(getExperiment(experiment)) {
+              case NoExperimentFound ⇒ complete(OK, """{"error" : ""} """)
+              case ExperimentFound(exp) ⇒ complete(OK, exp)
+            }
+          }
+        }
+    } ~
+      post {
+        logger.info(s"adding a new experiment... ")
+        entity(as[AddExperiment]) { exp ⇒
+          val saved: Future[AddExperimentResponse] = addNewExperiment(exp)
+          onSuccess(saved) {
+            case AddedExperiment ⇒ complete(OK, "experiment added. ")
+            case FailedAddingExperiment(msg) ⇒ complete(msg)
           }
         }
       }
-    } ~
-    post {
-      logger.info(s"adding a new experiment... ")
-      entity(as[AddExperiment]) { exp ⇒
-        val saved: Future[AddExperimentResponse] = addNewExperiment(exp)
-        onSuccess(saved) {
-          case AddedExperiment ⇒ complete(OK, "experiment added. ")
-          case FailedAddingExperiment(msg) ⇒ complete(msg)
-        }
-      }
-    }
   }
 
   def getTransformsRoute = path("transform_definitions") {
@@ -256,33 +274,39 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       }
   }
 
-  def rawDataRoute = path("rawdata") {
-    //todo replace raw data location with an uri location
-    post {
-      logger.debug(s"adding raw data...")
-      entity(as[RawDataSet]) {
-        drd ⇒
-          val saved: Future[RawDataSetResponse] = defineRawData(drd)
-          onSuccess(saved) {
-            case RawDataSetAdded ⇒ complete(OK, "raw data added. ")
-            case RawDataSetFailed(msg) ⇒ complete(msg)
+  //todo replace raw data location with an uri location
+  def rawDataRoute = pathPrefix("raw_data") {
+    path("files") {
+      pathEnd {
+        post {
+          logger.debug(s"adding raw data (files based)...")
+          entity(as[RawDataSet]) {
+            drd ⇒
+              val saved: Future[RawDataSetResponse] = defineRawData(drd)
+              onSuccess(saved) {
+                case RawDataSetAdded ⇒ complete(OK, "raw data added. ")
+                case RawDataSetFailed(msg) ⇒ complete(msg)
+              }
           }
+        }
       }
-    }
-  }
+    } ~
+      path("folder") {
+        pathEnd {
 
-  def rawData2Route = path("rawdata2") {
-    post {
-      logger.debug(s"adding raw data...")
-      entity(as[RawDataSetRegex]) {
-        drd ⇒
-          val saved: Future[RawDataSetResponse] = defineRawData2(drd)
-          onSuccess(saved) {
-            case RawDataSetAdded ⇒ complete(OK, "raw data added. ")
-            case RawDataSetFailed(msg) ⇒ complete(msg)
+          post {
+            logger.debug(s"adding raw data (folder and regex based)...")
+            entity(as[RawDataSetRegex]) {
+              drd ⇒
+                val saved: Future[RawDataSetResponse] = defineRawData2(drd)
+                onSuccess(saved) {
+                  case RawDataSetAdded ⇒ complete(OK, "raw data added. ")
+                  case RawDataSetFailed(msg) ⇒ complete(msg)
+                }
+            }
           }
+        }
       }
-    }
   }
 
   def runTransformRoute = pathPrefix("run_transform") {
@@ -328,7 +352,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       path("on_transform_with_exclusions") {
         post {
           logger.debug("running a transform from a previous transform ")
-          entity(as[RunTransformOnTransform]) {
+          entity(as[RunTransformOnTransformWithExclusion]) {
             rtf ⇒
               val saved: Future[TransformJobAcceptance] = runTransformFromTransform(rtf)
               onSuccess(saved) {
