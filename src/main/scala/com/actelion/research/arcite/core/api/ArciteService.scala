@@ -3,12 +3,11 @@ package com.actelion.research.arcite.core.api
 import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, Props}
 import akka.util.Timeout
 import breeze.numerics.exp
-import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddExperiment, AddExperimentWithRequester, GetAllTransforms}
+import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddDesign, AddDesignWithRequester, AddExperiment, AddExperimentWithRequester, GetAllTransforms}
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSummary}
 import com.actelion.research.arcite.core.rawdata._
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{SearchForXResults, SearchForXResultsWithRequester}
 import com.actelion.research.arcite.core.transforms.RunTransform._
-import com.actelion.research.arcite.core.transforms.{Transform, TransformDoneInfo, TransformSourceFromObject, TransformSourceFromRaw}
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.{AllJobsStatus, QueryJobInfo, QueryWorkStatus}
 import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
@@ -58,10 +57,16 @@ object ArciteService {
 
   sealed trait AddExperimentResponse
 
-  case object AddedExperiment extends AddExperimentResponse
+  case class AddedExperiment(uid: String) extends AddExperimentResponse
 
-  case class FailedAddingExperiment(reason: String) extends AddExperimentResponse
+  case class FailedAddingExperiment(error: String) extends AddExperimentResponse
 
+
+  sealed trait AddDesignFeedback
+
+  case class AddedDesign(uid: String) extends AddDesignFeedback
+
+  case class FailedAddingDesign(error: String) extends AddDesignFeedback
 
 
   sealed trait ExperimentFoundResponse
@@ -107,6 +112,10 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
     case AddExperiment(exp) ⇒
       expManager ! AddExperimentWithRequester(exp, sender())
+
+
+    case d: AddDesign ⇒
+      expManager ! AddDesignWithRequester(d, sender())
 
 
     case gat: GetAllTransforms ⇒

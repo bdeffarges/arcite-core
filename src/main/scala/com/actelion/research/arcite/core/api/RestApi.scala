@@ -7,7 +7,8 @@ import akka.http.scaladsl.server._
 import akka.pattern.ask
 import akka.util.Timeout
 import com.actelion.research.arcite.core.api.ArciteService._
-import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddExperiment, GetAllTransforms, TransformsForExperiment}
+import com.actelion.research.arcite.core.experiments.ExperimentalDesign
+import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddDesign, AddExperiment, GetAllTransforms, TransformsForExperiment}
 import com.actelion.research.arcite.core.rawdata._
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
@@ -47,6 +48,10 @@ trait ArciteServiceApi extends LazyLogging {
 
   def addNewExperiment(addExp: AddExperiment) = {
     arciteService.ask(AddExperiment(addExp.experiment)).mapTo[AddExperimentResponse]
+  }
+
+  def addDesign(addDesign: AddDesign) = {
+    arciteService.ask(addDesign).mapTo[AddDesignFeedback]
   }
 
   def defineRawData(rawData: RawDataSet) = {
@@ -141,7 +146,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           |POST /experiment {"experiment" : "...."}  ==>  add a new experiment
           |
           |
-          |POST /design {"experiment": "uid", "design": {}} ==>  add design to experiment
+          |POST /design {"experiment": "uid", "design": {"description" : "desc", "sampleConditions" : [[{"name": "AA1", "description": "AA1", "category": "sampleID"}, {"name": "ACT-1234", "description": "ACT-1234", "category": "compound"}]..]}} ==>  add design to experiment
           |
           |
           |POST /raw_data/files {"experiment": "uid", "filesAndTarget" : ["rawfiles list"], "transferFiles": boolean } ==>  defines raw files for a experiment, files and target is a map, one original file to a target name for the file. If target name is omited, arcite will take the current file name.
@@ -229,13 +234,29 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           }
         }
     } ~
-      post {
-        logger.info(s"adding a new experiment... ")
-        entity(as[AddExperiment]) { exp ⇒
-          val saved: Future[AddExperimentResponse] = addNewExperiment(exp)
-          onSuccess(saved) {
-            case AddedExperiment ⇒ complete(OK, "experiment added. ")
-            case FailedAddingExperiment(msg) ⇒ complete(msg)
+      path("design") {
+        pathEnd {
+          post {
+            logger.info("adding design to experiment.")
+            entity(as[AddDesign]) { design ⇒
+              val saved: Future[AddDesignFeedback] = addDesign(design)
+              onSuccess(saved) {
+                case AddedDesign(uid) ⇒ complete(Created, s"""{"experiment": $uid", "comment": "new design added." """)
+                case FailedAddingDesign(msg) ⇒ complete(BadRequest, """{"error" : "$msg" }""")
+              }
+            }
+          }
+        }
+      } ~
+      pathEnd {
+        post {
+          logger.info(s"adding a new experiment... ")
+          entity(as[AddExperiment]) { exp ⇒
+            val saved: Future[AddExperimentResponse] = addNewExperiment(exp)
+            onSuccess(saved) {
+              case AddedExperiment(uid) ⇒ complete(Created, s"""{"experiment": $uid", "comment": "new experiment added." """)
+              case FailedAddingExperiment(msg) ⇒ complete(BadRequest, """{"error" : "$msg" }""")
+            }
           }
         }
       }

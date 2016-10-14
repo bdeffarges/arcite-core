@@ -11,19 +11,21 @@ package com.actelion.research.arcite.core.experiments
 case class ExperimentalDesign(description: String = "", sampleConditions: Set[ConditionsForSample] = Set())
 
 /**
-  * a condition can be described and belongs to a category
+  * a condition that belongs to a category (e.g. 323223 in category barcode)
   *
   * @param name
-  * @param description
+  * @param description some added information about the condition
   * @param category
   */
 case class Condition(name: String, description: String, category: String)
 
 /**
-  * one sample in an experiment can have multiple conditions (treatment, barcode, dose, etc.)
-  * One condition should enable the mapping between the actual sample and the conditions that define it
+  * each sample in an experiment can have multiple conditions (treatment, barcode, dose, etc.). Usually the total
+  * number of conditions per sample should be the same for the whole experiment.
+  * One condition or a set of conditions should uniquely define each sample (e.g. in microarray studies the
+  * slide barcode and the array id uniquely distinguish each array in the experiment).
   *
   * @param conditions
   */
-case class ConditionsForSample(conditions: List[Condition]) //todo list to set?
+case class ConditionsForSample(conditions: Set[Condition]) //todo list to set?
 

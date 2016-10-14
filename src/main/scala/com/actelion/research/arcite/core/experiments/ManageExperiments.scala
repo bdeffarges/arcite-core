@@ -43,13 +43,24 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
     case AddExperimentWithRequester(exp, requester) ⇒ //todo should be merged with previous case
       if (!experiments.keySet.contains(exp.digest)) {
-        experiments += ((exp.digest, exp))
-        requester ! AddedExperiment
+        val dig = exp.digest
+        experiments += ((dig, exp))
+        requester ! AddedExperiment(dig)
         self ! TakeSnapshot
         luceneRamSearchAct ! IndexExperiment(exp)
       } else {
         requester ! FailedAddingExperiment("experiment already exists. ")
       }
+
+
+    case AddDesignWithRequester(design, requester) ⇒
+      val exp = experiments.get(design.experiment)
+      if (exp.isDefined) {
+
+      } else {
+        requester ! FailedAddingDesign("Experiment does not exist")
+      }
+
 
 
     case GetExperiments ⇒ //todo remove?
@@ -59,7 +70,8 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
     case GetAllExperimentsWithRequester(requester) ⇒
       log.info(s"asking ManageExperiments for all experiments, returning first 100... to $requester}")
-      requester ! AllExperiments(experiments.values.map(exp ⇒ ExperimentSummary(exp.name, exp.description, exp.owner, exp.digest)).take(500).toSet)
+      requester ! AllExperiments(experiments.values.map(exp ⇒
+        ExperimentSummary(exp.name, exp.description, exp.owner, exp.digest)).take(500).toSet)
 
 
     case TakeSnapshot ⇒
@@ -136,9 +148,16 @@ object ManageExperiments extends ArciteJSONProtocol {
 
   case class State(experiments: Set[Experiment] = Set())
 
+
   case class AddExperiment(experiment: Experiment)
 
   case class AddExperimentWithRequester(experiment: Experiment, requester: ActorRef)
+
+
+  case class AddDesign(experiment: String, design: ExperimentalDesign)
+
+  case class AddDesignWithRequester(addDesign: AddDesign, requester: ActorRef)
+
 
   case class SaveLocalExperiment(experiment: Experiment)
 
