@@ -4,12 +4,16 @@ import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths, StandardOpenOption}
 
-import akka.actor.{Actor, ActorRef, Props}
+import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, Props}
 import akka.event.Logging
 import com.actelion.research.arcite.core
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
+import com.actelion.research.arcite.core.experiments.ManageExperiments.FoundTransfDefFullName
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor, ManageExperiments}
 import com.actelion.research.arcite.core.rawdata.TransferSelectedRawData.TransferFilesToFolder
+import com.actelion.research.arcite.core.transforms.TransformDoneInfo
+import com.actelion.research.arcite.core.utils.WriteFeedbackActor
+import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import spray.json.DefaultJsonProtocol
 
@@ -17,7 +21,7 @@ import spray.json.DefaultJsonProtocol
   * Created by deffabe1 on 5/12/16.
   */
 
-class DefineRawData extends Actor {
+class DefineRawData(expActor: ActorRef) extends Actor with ActorLogging {
   val logger = Logging(context.system, this)
 
   import DefineRawData._
@@ -25,18 +29,21 @@ class DefineRawData extends Actor {
   override def receive: Receive = {
 
     case rds: RawDataSetWithRequester ⇒
-      val exp = ManageExperiments.getExperimentFromDigest(rds.rds.experiment)
-      val response = exp.map(exp ⇒ defineRawData(exp, rds.rds))
+      expActor ! GetExperimentForRawDataSet(rds)
+
+    case rdse: RawDataSetWithRequesterAndExperiment ⇒
+      val exp = rdse.experiment
+      val response = defineRawData(exp, rdse.rdsr.rds)
 
       // transfer file if required
-      if (rds.rds.transferFiles) {
-        val target = ExperimentFolderVisitor(exp.get).rawFolderPath.toString
+      if (rdse.rdsr.rds.transferFiles) {
+        val target = ExperimentFolderVisitor(exp).rawFolderPath.toString
         val transferActor = context.actorOf(Props(new TransferSelectedRawData(self, target)))
-        val filesMap = rds.rds.filesAndTarget.map(f ⇒ (new File(f._1), f._2))
+        val filesMap = rdse.rdsr.rds.filesAndTarget.map(f ⇒ (new File(f._1), f._2))
         transferActor ! TransferFilesToFolder(filesMap, target)
-        rds.requester ! RawDataSetAdded //todo hopefully it works, nor exception nor error nor counter yet !!
+        rdse.rdsr.requester ! RawDataSetAdded //todo hopefully it works, nor exception nor error nor counter yet !!
       } else {
-        rds.requester ! response.getOrElse(RawDataSetFailed("unknown reason..."))
+        rdse.rdsr.requester ! response
       }
 
     case rdsr: RawDataSetRegexWithRequester ⇒
@@ -47,24 +54,32 @@ class DefineRawData extends Actor {
       self ! RawDataSetWithRequester(
         RawDataSet(rdsr.rdsr.experiment, rdsr.rdsr.transferFiles, files), rdsr.requester)
   }
+
 }
-
-case class RawDataSet(experiment: String, transferFiles: Boolean, filesAndTarget: Map[String, String])
-
-case class RawDataSetWithRequester(rds: RawDataSet, requester: ActorRef)
-
-case class RawDataSetRegex(experiment: String, transferFiles: Boolean, folder: String, regex: String, withSubfolder: Boolean)
-
-case class RawDataSetRegexWithRequester(rdsr: RawDataSetRegex, requester: ActorRef)
-
-sealed trait RawDataSetResponse
-
-case object RawDataSetAdded extends RawDataSetResponse
-
-case class RawDataSetFailed(msg: String) extends RawDataSetResponse
 
 
 object DefineRawData extends ArciteJSONProtocol with LazyLogging {
+
+  case class RawDataSet(experiment: String, transferFiles: Boolean, filesAndTarget: Map[String, String])
+
+  case class RawDataSetWithRequester(rds: RawDataSet, requester: ActorRef)
+
+  case class RawDataSetRegex(experiment: String, transferFiles: Boolean, folder: String, regex: String, withSubfolder: Boolean)
+
+  case class RawDataSetRegexWithRequester(rdsr: RawDataSetRegex, requester: ActorRef)
+
+  //todo fix hack
+  case class GetExperimentForRawDataSet(rdsr: RawDataSetWithRequester)
+
+  case class RawDataSetWithRequesterAndExperiment(rdsr: RawDataSetWithRequester, experiment: Experiment)
+
+
+  sealed trait RawDataSetResponse
+
+  case object RawDataSetAdded extends RawDataSetResponse
+
+  case class RawDataSetFailed(error: String) extends RawDataSetResponse
+
 
   import StandardOpenOption._
 

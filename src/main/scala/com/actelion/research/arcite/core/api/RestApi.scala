@@ -7,9 +7,8 @@ import akka.http.scaladsl.server._
 import akka.pattern.ask
 import akka.util.Timeout
 import com.actelion.research.arcite.core.api.ArciteService._
-import com.actelion.research.arcite.core.experiments.ExperimentalDesign
 import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddDesign, AddExperiment, GetAllTransforms, TransformsForExperiment}
-import com.actelion.research.arcite.core.rawdata._
+import com.actelion.research.arcite.core.rawdata.DefineRawData._
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.{NotOk, _}
@@ -241,7 +240,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             entity(as[AddDesign]) { design ⇒
               val saved: Future[AddDesignFeedback] = addDesign(design)
               onSuccess(saved) {
-                case AddedDesign(uid) ⇒ complete(Created, s"""{"experiment": $uid", "comment": "new design added." """)
+                case AddedDesignSuccess(uid) ⇒ complete(Created, s"""{"experiment": $uid", "comment": "new design added." """)
                 case FailedAddingDesign(msg) ⇒ complete(BadRequest, """{"error" : "$msg" }""")
               }
             }

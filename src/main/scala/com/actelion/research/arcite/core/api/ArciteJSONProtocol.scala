@@ -1,9 +1,9 @@
 package com.actelion.research.arcite.core.api
 
 import com.actelion.research.arcite.core.api.ArciteService.SomeExperiments
-import com.actelion.research.arcite.core.experiments.ManageExperiments.AddExperiment
+import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddDesign, AddExperiment}
 import com.actelion.research.arcite.core.experiments._
-import com.actelion.research.arcite.core.rawdata.{RawDataSet, RawDataSetRegex}
+import com.actelion.research.arcite.core.rawdata.DefineRawData.{RawDataSet, RawDataSetRegex}
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments}
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, ManyTransfDefs, OneTransfDef}
@@ -134,6 +134,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val foundExperimentsJson = jsonFormat1(FoundExperiments)
   implicit val someExperimentsJson = jsonFormat2(SomeExperiments)
   implicit val addExperimentResponseJson = jsonFormat1(AddExperiment)
+  implicit val addDesignJson = jsonFormat2(AddDesign)
 
   implicit val fullNameJson = jsonFormat2(FullName)
 

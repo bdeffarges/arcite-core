@@ -21,3 +21,11 @@ import scala.sys.process.ProcessLogger
 //println(error)
 //
 //println(output)
+
+var a = Map("a" -> "hlll", "b" -> "hhhd", "c" -> "blkjdf")
+
+a += (("bd" , "dddw"))
+
+a += (("b", "sdafjlkdasfjlkdasf"))
+
+println(a)

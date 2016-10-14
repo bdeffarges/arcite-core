@@ -8,6 +8,7 @@ import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.api.ArciteService._
 import com.actelion.research.arcite.core.experiments.LocalExperiments._
 import com.actelion.research.arcite.core.rawdata.DefineRawData
+import com.actelion.research.arcite.core.rawdata.DefineRawData.{GetExperimentForRawDataSet, RawDataSetFailed, RawDataSetWithRequesterAndExperiment}
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex._
 import com.actelion.research.arcite.core.transforms.TransformDoneInfo
@@ -25,12 +26,26 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
   val luceneRamSearchAct = context.system.actorOf(Props(new ArciteLuceneRamIndex(self)))
 
+  private var experiments: Map[String, Experiment] = LocalExperiments.loadAllLocalExperiments()
+
   experiments.values.foreach(exp ⇒ luceneRamSearchAct ! IndexExperiment(exp))
 
+  import scala.collection.convert.wrapAsScala._
   import StandardOpenOption._
   import spray.json._
 
   implicit val stateJSon = jsonFormat1(State)
+
+  if (path.toFile.exists()) {
+    val st = Files.readAllLines(path).toList.mkString.parseJson.convertTo[State]
+    experiments ++= st.experiments.map(e ⇒ (e.digest, e)).toMap
+  }
+
+  if (path.toFile.exists()) {
+    val st = Files.readAllLines(path).toList.mkString.parseJson.convertTo[State]
+    experiments ++= st.experiments.map(e ⇒ (e.digest, e)).toMap
+  }
+
 
   override def receive = {
 
@@ -54,13 +69,15 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
 
     case AddDesignWithRequester(design, requester) ⇒
-      val exp = experiments.get(design.experiment)
-      if (exp.isDefined) {
+      val uid = design.experiment
 
+      val exp = experiments.get(uid)
+      if (exp.isDefined) {
+        experiments += ((uid, exp.get.copy(design = design.design)))
+        requester ! AddedDesignSuccess(uid)
       } else {
         requester ! FailedAddingDesign("Experiment does not exist")
       }
-
 
 
     case GetExperiments ⇒ //todo remove?
@@ -108,7 +125,7 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
 
     case GetExperimentWithRequester(digest, requester) ⇒
-      log.debug(s"retrieving request with digest: $digest")
+      log.debug(s"retrieving experiment with digest: $digest")
       val exp = experiments.get(digest)
       if (exp.isDefined) {
         requester ! ExperimentFound(loadExperiment(ExperimentFolderVisitor(exp.get).experimentFilePath))
@@ -119,6 +136,17 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
     case GetExperiment(digest) ⇒
       self forward GetExperimentWithRequester(digest, sender())
+
+
+    case rdsw: GetExperimentForRawDataSet ⇒
+      val uid = rdsw.rdsr.rds.experiment
+      log.debug(s"retrieving experiment with uid: $uid")
+      val exp = experiments.get(uid)
+      if (exp.isDefined) {
+      sender() ! RawDataSetWithRequesterAndExperiment(rdsw.rdsr, exp.get)
+      } else {
+        rdsw.rdsr.requester ! RawDataSetFailed(error = s"could not find exp for uid=${uid}")
+      }
 
 
     case GetAllTransforms(experiment) ⇒
@@ -134,6 +162,32 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
     case any: Any ⇒ log.debug(s"don't know what to do with this message $any")
   }
 
+  def getAllTransforms(experiment: String): Set[TransformDoneInfo] = {
+    val exp = experiments(experiment)
+
+    val transfF = ExperimentFolderVisitor(exp).transformFolderPath
+
+    import spray.json._
+
+    transfF.toFile.listFiles().filter(_.isDirectory)
+      .map(d ⇒ Paths.get(d.getAbsolutePath, WriteFeedbackActor.FILE_NAME))
+      .filter(p ⇒ p.toFile.exists())
+      .map(p ⇒ Files.readAllLines(p).toList.mkString("\n").parseJson.convertTo[TransformDoneInfo]).toSet
+  }
+
+  def getTransfDefFromExpAndTransf(experiment: String, transform: String): FoundTransfDefFullName = {
+
+    val exp = experiments(experiment)
+    val ef = ExperimentFolderVisitor(exp).transformFolderPath
+
+    import spray.json._
+
+    //todo check whether it exists...
+    val f = Paths.get(ef.toString, transform, WriteFeedbackActor.FILE_NAME)
+    val tdi = Files.readAllLines(f).toList.mkString("\n").parseJson.convertTo[TransformDoneInfo]
+
+    FoundTransfDefFullName(tdi.transformDefinition)
+  }
 }
 
 object ManageExperiments extends ArciteJSONProtocol {
@@ -177,66 +231,19 @@ object ManageExperiments extends ArciteJSONProtocol {
 
   case class FoundTransfDefFullName(fullName: FullName)
 
-
   // todo to be implemented
   case class TransformsForExperimentTree()
 
-  private var experiments: Map[String, Experiment] = LocalExperiments.loadAllLocalExperiments()
-
-  import scala.collection.convert.wrapAsScala._
-  import spray.json._
-
-  implicit val stateJSon = jsonFormat1(State)
-
-  if (path.toFile.exists()) {
-    val st = Files.readAllLines(path).toList.mkString.parseJson.convertTo[State]
-    experiments ++= st.experiments.map(e ⇒ (e.digest, e)).toMap
-  }
-
-  def getExperimentFromDigest(digest: String): Option[Experiment] = {
-    experiments.get(digest)
-  }
 
   def startActorSystemForExperiments() = {
 
     val actSystem = ActorSystem("experiments-actor-system", config.getConfig("experiments-manager"))
 
     val manExpActor = actSystem.actorOf(Props(classOf[ManageExperiments]), "experiments_manager")
-    val defineRawDataAct = actSystem.actorOf(Props(classOf[DefineRawData]), "define_raw_data")
+    val defineRawDataAct = actSystem.actorOf(Props(classOf[DefineRawData], manExpActor), "define_raw_data")
 
     logger.info(s"exp manager actor: [$manExpActor]")
     logger.info(s"raw data define: [$defineRawDataAct]")
   }
 
-
-  def getAllTransforms(experiment: String): Set[TransformDoneInfo] = {
-    val exp = experiments(experiment)
-
-    val transfF = ExperimentFolderVisitor(exp).transformFolderPath
-
-    import spray.json._
-
-    transfF.toFile.listFiles().filter(_.isDirectory)
-      .map(d ⇒ Paths.get(d.getAbsolutePath, WriteFeedbackActor.FILE_NAME))
-      .filter(p ⇒ p.toFile.exists())
-      .map(p ⇒ Files.readAllLines(p).toList.mkString("\n").parseJson.convertTo[TransformDoneInfo]).toSet
-  }
-
-  def getTransfDefFromExpAndTransf(experiment: String, transform: String): FoundTransfDefFullName = {
-
-    val exp = experiments(experiment)
-    val ef = ExperimentFolderVisitor(exp).transformFolderPath
-
-    import spray.json._
-
-    //todo check whether it exists...
-    val f = Paths.get(ef.toString, transform, WriteFeedbackActor.FILE_NAME)
-    val tdi = Files.readAllLines(f).toList.mkString("\n").parseJson.convertTo[TransformDoneInfo]
-
-    FoundTransfDefFullName(tdi.transformDefinition)
-  }
-
-  def main(args: Array[String]): Unit = {
-    startActorSystemForExperiments()
-  }
 }

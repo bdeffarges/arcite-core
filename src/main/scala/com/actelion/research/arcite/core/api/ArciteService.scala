@@ -5,6 +5,7 @@ import akka.util.Timeout
 import breeze.numerics.exp
 import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddDesign, AddDesignWithRequester, AddExperiment, AddExperimentWithRequester, GetAllTransforms}
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSummary}
+import com.actelion.research.arcite.core.rawdata.DefineRawData.{RawDataSet, RawDataSetRegex, RawDataSetRegexWithRequester, RawDataSetWithRequester}
 import com.actelion.research.arcite.core.rawdata._
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{SearchForXResults, SearchForXResultsWithRequester}
 import com.actelion.research.arcite.core.transforms.RunTransform._
@@ -64,7 +65,7 @@ object ArciteService {
 
   sealed trait AddDesignFeedback
 
-  case class AddedDesign(uid: String) extends AddDesignFeedback
+  case class AddedDesignSuccess(uid: String) extends AddDesignFeedback
 
   case class FailedAddingDesign(error: String) extends AddDesignFeedback
 
@@ -91,7 +92,6 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
   //todo move it to another executor
   val expManager = context.actorSelection(ActorPath.fromString(expManSelect))
   log.info(s"connect exp Manager [$expManSelect] actor: $expManager")
-  expManager ! "hello world"
 
   val defineRawDataAct = context.actorSelection(ActorPath.fromString(rawDSelect))
   log.info(s"connect raw [$rawDSelect] actor: $defineRawDataAct")

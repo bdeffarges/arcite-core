@@ -24,10 +24,10 @@ object TestHelpers {
   val cond33 = Condition("3", "3", "sampleid")
   val cond44 = Condition("4", "4", "sampleid")
 
-  val condFS1 = ConditionsForSample(cond1 :: cond11 :: Nil)
-  val condFS2 = ConditionsForSample(cond2 :: cond22 :: Nil)
-  val condFS3 = ConditionsForSample(cond3 :: cond33 :: Nil)
-  val condFS4 = ConditionsForSample(cond4 :: cond44 :: Nil)
+  val condFS1 = ConditionsForSample((cond1 :: cond11 :: Nil).toSet)
+  val condFS2 = ConditionsForSample((cond2 :: cond22 :: Nil).toSet)
+  val condFS3 = ConditionsForSample((cond3 :: cond33 :: Nil).toSet)
+  val condFS4 = ConditionsForSample((cond4 :: cond44 :: Nil).toSet)
 
   val expDesign1 = ExperimentalDesign("hello", (condFS1 :: condFS2 :: condFS3 :: condFS4 :: Nil).toSet)
   val expDesign2 = ExperimentalDesign("hello", (condFS1 :: condFS2 :: condFS3 :: condFS4 :: Nil).toSet)
