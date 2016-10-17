@@ -1,11 +1,15 @@
 package com.actelion.research.arcite.core.api
 
+import java.nio.file.Paths
+
+import akka.actor.Status.Failure
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.pattern.ask
-import akka.util.Timeout
+import akka.stream.scaladsl.{FileIO, Framing}
+import akka.util.{ByteString, Timeout}
 import com.actelion.research.arcite.core.api.ArciteService._
 import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddDesign, AddExperiment, GetAllTransforms, TransformsForExperiment}
 import com.actelion.research.arcite.core.rawdata.DefineRawData._
@@ -223,6 +227,43 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           }
         }
       } ~
+        pathPrefix("design") {
+          path("file_upload") {
+            post {
+              extractRequestContext {
+                ctx => {
+                  implicit val materializer = ctx.materializer
+                  implicit val ec = ctx.executionContext
+
+                  fileUpload("fileupload") {
+                    case (fileInfo, fileStream) =>
+                      val sink = FileIO.toPath(Paths.get("/tmp") resolve fileInfo.fileName)
+                      val writeResult = fileStream.runWith(sink)
+                      onSuccess(writeResult) { result =>
+                        result.status match {
+                          case _ ⇒ complete(OK, "ok")
+//                          case Success(_) => complete(s"Successfully written ${result.count} bytes")
+//                          case Failure(e) => throw e
+                        }
+                      }
+                  }
+                }
+              }
+            }
+          } ~
+            pathEnd {
+              post {
+                logger.info("adding design to experiment.")
+                entity(as[AddDesign]) { design ⇒
+                  val saved: Future[AddDesignFeedback] = addDesign(design)
+                  onSuccess(saved) {
+                    case AddedDesignSuccess(uid) ⇒ complete(Created, s"""{"experiment": $uid", "comment": "new design added." """)
+                    case FailedAddingDesign(msg) ⇒ complete(BadRequest, """{"error" : "$msg" }""")
+                  }
+                }
+              }
+            }
+        } ~
         pathEnd {
           get {
             logger.info(s"get experiment: = $experiment")
@@ -232,21 +273,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             }
           }
         }
+
     } ~
-      path("design") {
-        pathEnd {
-          post {
-            logger.info("adding design to experiment.")
-            entity(as[AddDesign]) { design ⇒
-              val saved: Future[AddDesignFeedback] = addDesign(design)
-              onSuccess(saved) {
-                case AddedDesignSuccess(uid) ⇒ complete(Created, s"""{"experiment": $uid", "comment": "new design added." """)
-                case FailedAddingDesign(msg) ⇒ complete(BadRequest, """{"error" : "$msg" }""")
-              }
-            }
-          }
-        }
-      } ~
       pathEnd {
         post {
           logger.info(s"adding a new experiment... ")
