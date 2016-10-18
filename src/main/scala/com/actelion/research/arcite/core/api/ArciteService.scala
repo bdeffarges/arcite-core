@@ -1,5 +1,7 @@
 package com.actelion.research.arcite.core.api
 
+import java.nio.file.Path
+
 import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, Props}
 import akka.util.Timeout
 import breeze.numerics.exp
@@ -63,11 +65,13 @@ object ArciteService {
   case class FailedAddingExperiment(error: String) extends AddExperimentResponse
 
 
+
   sealed trait AddDesignFeedback
 
   case class AddedDesignSuccess(uid: String) extends AddDesignFeedback
 
   case class FailedAddingDesign(error: String) extends AddDesignFeedback
+
 
 
   sealed trait ExperimentFoundResponse
@@ -78,6 +82,16 @@ object ArciteService {
 
   case object NoExperimentFound extends ExperimentFoundResponse
 
+
+
+  sealed trait MoveUploadedFile {
+    def experiment: String
+    def filePath: String
+  }
+
+  case class MoveMetaFile(experiment: String, filePath: String) extends MoveUploadedFile
+
+  case class MoveRawFile(experiment: String, filePath: String) extends MoveUploadedFile
 }
 
 
@@ -120,6 +134,10 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
     case gat: GetAllTransforms ⇒
       expManager forward gat
+
+
+    case fileUp : MoveUploadedFile ⇒
+      expManager forward fileUp
 
 
     case rds: RawDataSet ⇒

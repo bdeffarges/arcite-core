@@ -1,8 +1,8 @@
 package com.actelion.research.arcite.core.api
 
-import java.nio.file.Paths
+import java.nio.file.{Path, Paths}
+import java.util.UUID
 
-import akka.actor.Status.Failure
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives._
@@ -20,6 +20,7 @@ import com.actelion.research.arcite.core.transforms.cluster.WorkState._
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Failure
 
 trait ArciteServiceApi extends LazyLogging {
 
@@ -109,6 +110,10 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(AllJobsStatus).mapTo[AllJobsFeedback]
   }
 
+  def fileUploaded(experiment: String, filePath: Path, meta: Boolean) = {
+    val fileUp = if (meta) MoveMetaFile(experiment, filePath.toString) else MoveRawFile(experiment, filePath.toString)
+    arciteService ! fileUp
+  }
 }
 
 trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSONProtocol with LazyLogging {
@@ -227,7 +232,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           }
         }
       } ~
-        pathPrefix("design") {
+        pathPrefix("meta") {
           path("file_upload") {
             post {
               extractRequestContext {
@@ -237,32 +242,71 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
 
                   fileUpload("fileupload") {
                     case (fileInfo, fileStream) =>
-                      val sink = FileIO.toPath(Paths.get("/tmp") resolve fileInfo.fileName)
+                      val tempp = Paths.get("/tmp", UUID.randomUUID().toString)
+                      tempp.toFile.mkdirs()
+                      val fileP = tempp resolve fileInfo.fileName
+                      val sink = FileIO.toPath(fileP)
                       val writeResult = fileStream.runWith(sink)
                       onSuccess(writeResult) { result =>
                         result.status match {
-                          case _ ⇒ complete(OK, "ok")
-//                          case Success(_) => complete(s"Successfully written ${result.count} bytes")
-//                          case Failure(e) => throw e
+                          case scala.util.Success(s) =>
+                            fileUploaded(experiment, fileP, true)
+                            complete(OK, s"""{ "message" : "Successfully written ${result.count} bytes" }""")
+
+                          case Failure(e) =>
+                            complete(BadRequest, s"""{ "error" : "${e.getCause}" }""")
                         }
                       }
                   }
                 }
               }
             }
-          } ~
-            pathEnd {
-              post {
-                logger.info("adding design to experiment.")
-                entity(as[AddDesign]) { design ⇒
-                  val saved: Future[AddDesignFeedback] = addDesign(design)
-                  onSuccess(saved) {
-                    case AddedDesignSuccess(uid) ⇒ complete(Created, s"""{"experiment": $uid", "comment": "new design added." """)
-                    case FailedAddingDesign(msg) ⇒ complete(BadRequest, """{"error" : "$msg" }""")
+          }
+        } ~
+        pathPrefix("raw") {
+          path("file_upload") {
+            post {
+              extractRequestContext {
+                ctx => {
+                  implicit val materializer = ctx.materializer
+                  implicit val ec = ctx.executionContext
+
+                  fileUpload("fileupload") {
+                    case (fileInfo, fileStream) =>
+                      val tempp = Paths.get("/tmp", UUID.randomUUID().toString)
+                      tempp.toFile.mkdirs()
+                      val fileP = tempp resolve fileInfo.fileName
+                      val sink = FileIO.toPath(fileP)
+                      val writeResult = fileStream.runWith(sink)
+                      onSuccess(writeResult) { result =>
+                        result.status match {
+                          case scala.util.Success(s) =>
+                            fileUploaded(experiment, fileP, false)
+                            complete(OK, s"""{ "message" : "Successfully written ${result.count} bytes" }""")
+
+                          case Failure(e) =>
+                            complete(BadRequest, s"""{ "error" : "${e.getCause}" }""")
+                        }
+                      }
                   }
                 }
               }
             }
+          }
+        } ~
+        pathPrefix("design") {
+          pathEnd {
+            post {
+              logger.info("adding design to experiment.")
+              entity(as[AddDesign]) { design ⇒
+                val saved: Future[AddDesignFeedback] = addDesign(design)
+                onSuccess(saved) {
+                  case AddedDesignSuccess(uid) ⇒ complete(Created, s"""{"experiment": $uid", "comment": "new design added." """)
+                  case FailedAddingDesign(msg) ⇒ complete(BadRequest, """{"error" : "$msg" }""")
+                }
+              }
+            }
+          }
         } ~
         pathEnd {
           get {

@@ -159,6 +159,25 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
       sender() ! transDef
 
 
+    case mf: MoveUploadedFile ⇒
+      import StandardCopyOption._
+      log.debug("move uploaded file to right place. ")
+      val exp = experiments.get(mf.experiment)
+      if (exp.isDefined) {
+        val v = ExperimentFolderVisitor(exp.get)
+        val fp = Paths.get(mf.filePath)
+        mf match {
+          case MoveMetaFile(_, _) ⇒
+            Files.copy(fp, v.metaFolderPath resolve fp.getFileName, REPLACE_EXISTING)
+          case MoveRawFile(_, _) ⇒
+            val tempp = v.rawFolderPath resolve "uploaded_files"
+            tempp.toFile.mkdirs()
+            Files.copy(fp,  tempp resolve fp.getFileName, REPLACE_EXISTING)
+        }
+        Files.delete(fp)
+        Files.delete(fp.getParent)
+      }
+
     case any: Any ⇒ log.debug(s"don't know what to do with this message $any")
   }
 
