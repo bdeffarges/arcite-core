@@ -29,12 +29,14 @@ object DefaultExperiment {
 
 /**
   * An experiment summary information (no details like design)
+  *
   * @param name
   * @param description
   * @param owner
   * @param uid the actual digest (from digest function)
   */
 case class ExperimentSummary(name: String, description: String, owner: Owner, uid: String)
+
 
 case class ExperimentFolderVisitor(exp: Experiment) {
 
@@ -46,63 +48,68 @@ case class ExperimentFolderVisitor(exp: Experiment) {
 
   // relative paths
   val folderName = name.replaceAll("\\s", "_")
-  val relFolderPath = Paths.get(owner.asFileStructure, folderName)
-  val relMetaFolderPath = Paths.get(owner.asFileStructure, folderName, "meta")
-  val relRawFolderPath = Paths.get(owner.asFileStructure, folderName, "raw")
-  val relTransformFolderPath = Paths.get(owner.asFileStructure, folderName, "transforms")
-  val relPublishedFolderPath = Paths.get(owner.asFileStructure, folderName, "published")
+
+  val owner = exp.owner
+
+  val owfs = owner.asFileStructure
+  val relFolderPath = Paths.get(owfs, folderName)
+  val relMetaFolderPath = Paths.get(owfs, folderName, "meta")
+  val relRawFolderPath = Paths.get(owfs, folderName, "raw")
+  val relTransformFolderPath = Paths.get(owfs, folderName, "transforms")
+  val relPublishedFolderPath = Paths.get(owfs, folderName, "published")
 
   def name = exp.name
 
   def description = exp.description
 
-  def owner = exp.owner
+  val arcitH = Paths.get(arciteHome)
 
   def properties = exp.properties
 
-  def expFolderPath = Paths.get(arciteHome, relFolderPath.toString)
+  def expFolderPath = arcitH resolve relFolderPath
 
-  def rawFolderPath = Paths.get(arciteHome, relRawFolderPath.toString)
+  def rawFolderPath = arcitH resolve relRawFolderPath
 
-  def metaFolderPath = Paths.get(arciteHome, relMetaFolderPath.toString)
+  def metaFolderPath = arcitH resolve relMetaFolderPath
 
-  def transformFolderPath = Paths.get(arciteHome, relTransformFolderPath.toString)
+  def transformFolderPath = arcitH resolve relTransformFolderPath
 
-  def publishedFolderPath = Paths.get(arciteHome, relPublishedFolderPath.toString)
+  def publishedFolderPath = arcitH resolve relPublishedFolderPath
 
-  def experimentFilePath = Paths.get(arciteHome, relMetaFolderPath.toString, LocalExperiments.EXPERIMENT_FILE_NAME)
+  def experimentFilePath = metaFolderPath resolve LocalExperiments.EXPERIMENT_FILE_NAME
 
+  def digestFilePath = metaFolderPath resolve LocalExperiments.EXPERIMENT_DIGEST_FILE_NAME
+
+  def ensureFolderStructure(): Unit = {
+    expFolderPath.toFile.mkdirs()
+    rawFolderPath.toFile.mkdirs()
+    metaFolderPath.toFile.mkdirs()
+    transformFolderPath.toFile.mkdirs()
+    publishedFolderPath.toFile.mkdirs()
+  }
+
+  ensureFolderStructure()
 }
 
 /**
-  * in which state an experiment can be:
-  * New: the experiment is new, only local and virtual, nothing is setup on disk
-  * Saved: the experiment folder structure has been created but nothing has been saved yet
-  * Processed: something has been done with this experiment, data has been transformed, etc.
-  * Published: the local experiment has been published globally
-  * Global: it's a global experiment that can be queried and retrieved from local
+  * The different states for an experiment:
+  *
+  * New: the experiment is only local, it's saved and everything except its name can be changed.
+  *
+  * Sealed: A successful transform has been completed therefore the experiment design cannot be changed anymore.
+  * The experiment is final, to modify it, it must be cloned into another one.
+  *
+  * Published: the local experiment has been published globally. At least its specification can be queried from outside.
+  *
+  * Remote: this is a remote experiment. We retrieved first its design, the rest is retrieved on demand
   */
-sealed trait ExperimentState {
-  def name: String
-}
+sealed trait ExperimentState
 
-case object New extends ExperimentState {
-  val name = "new"
-}
+case object New extends ExperimentState
 
-case object Saved extends ExperimentState {
-  val name = "saved"
-}
+case object Sealed extends ExperimentState
 
-case object Processed extends ExperimentState {
-  val name = "processed"
-}
+case object Published extends ExperimentState
 
-case object Published extends ExperimentState {
-  val name = "published"
-}
-
-case object Global extends ExperimentState {
-  val name = "global"
-}
+case object Remote extends ExperimentState
 
