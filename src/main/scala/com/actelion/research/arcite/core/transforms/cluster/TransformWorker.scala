@@ -8,6 +8,7 @@ import akka.cluster.client.ClusterClient.SendToAll
 import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.{WorkCompletionStatus, WorkFailed, WorkSuccessFull}
 import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformHelper}
 import com.actelion.research.arcite.core.utils
+import tachyon.client.WorkerFileSystemMasterClient
 
 import scala.concurrent.duration.{Duration, FiniteDuration, _}
 
@@ -66,9 +67,10 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
 
     case _: DeathPactException => Stop
 
-    case _: Exception =>
-      currentTransform foreach { transf ⇒ //todo reimplement
-        //        sendToMaster(WorkFailed(workerId, transf))
+    case excp: Exception =>
+      currentTransform foreach { transf ⇒
+        val wf = WorkFailed("worker failed", excp.toString)
+        sendToMaster(WorkerFailed(workerId, transf, wf, utils.getDateAsString(time)))
       }
       context.become(idle)
       Restart

@@ -34,7 +34,6 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
   import StandardOpenOption._
   import spray.json._
 
-  implicit val stateJSon = jsonFormat1(State)
 
   if (path.toFile.exists()) {
     val st = Files.readAllLines(path).toList.mkString.parseJson.convertTo[State]
@@ -77,6 +76,19 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
         requester ! AddedDesignSuccess(uid)
       } else {
         requester ! FailedAddingDesign("Experiment does not exist")
+      }
+
+
+    case AddExpPropertiesWithRequester(addProps, requester) ⇒
+      val uid = addProps.exp
+
+      val exp = experiments.get(uid)
+      if (exp.isDefined) {
+        val ex = exp.get
+        experiments += ((uid, ex.copy(properties = ex.properties ++ addProps.properties)))
+        requester ! AddedPropertiesSuccess
+      } else {
+        requester ! FailedAddingProperties("Experiment does not exist")
       }
 
 
@@ -178,6 +190,10 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
         Files.delete(fp.getParent)
       }
 
+
+    case addProps: AddExpPropertiesWithRequester ⇒
+
+
     case any: Any ⇒ log.debug(s"don't know what to do with this message $any")
   }
 
@@ -223,14 +239,16 @@ object ManageExperiments extends ArciteJSONProtocol {
 
 
   case class AddExperiment(experiment: Experiment)
-
   case class AddExperimentWithRequester(experiment: Experiment, requester: ActorRef)
 
 
   case class AddDesign(experiment: String, design: ExperimentalDesign)
-
   case class AddDesignWithRequester(addDesign: AddDesign, requester: ActorRef)
 
+
+  case class AddExpProps(properties: Map[String, String])
+  case class AddExpProperties(exp: String, properties: Map[String, String])
+  case class AddExpPropertiesWithRequester(addProps: AddExpProperties, requester: ActorRef)
 
   case class SaveLocalExperiment(experiment: Experiment)
 

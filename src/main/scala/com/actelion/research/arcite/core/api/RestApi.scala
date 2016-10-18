@@ -11,7 +11,7 @@ import akka.pattern.ask
 import akka.stream.scaladsl.{FileIO, Framing}
 import akka.util.{ByteString, Timeout}
 import com.actelion.research.arcite.core.api.ArciteService._
-import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddDesign, AddExperiment, GetAllTransforms, TransformsForExperiment}
+import com.actelion.research.arcite.core.experiments.ManageExperiments.{path => _, _}
 import com.actelion.research.arcite.core.rawdata.DefineRawData._
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
@@ -56,6 +56,10 @@ trait ArciteServiceApi extends LazyLogging {
 
   def addDesign(addDesign: AddDesign) = {
     arciteService.ask(addDesign).mapTo[AddDesignFeedback]
+  }
+
+  def addExpProperties(newProps: AddExpProperties) = {
+    arciteService.ask(newProps).mapTo[AddedPropertiesFeedback]
   }
 
   def defineRawData(rawData: RawDataSet) = {
@@ -149,6 +153,15 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           |
           |
           |GET /experiment/{uid}/transforms ==>  returned all the transforms for this experiment
+          |
+          |
+          |POST /experiment/{uid}/meta/file_upload ==>  upload a file to the meta information section (e.g. curl --form "fileupload=@README.md http://server:port/experiment/{uid}/meta/file_upload
+          |
+          |
+          |POST /experiment/{uid}/raw/file_upload ==>  upload a file to the raw data section (e.g. curl --form "fileupload=@README.md http://server:port/experiment/{uid}/raw/file_upload
+          |
+          |
+          |POST /experiment/{uid}/properties ==>  add properties to the experiment {"property_name" : "property_value"}
           |
           |
           |POST /experiment {"experiment" : "...."}  ==>  add a new experiment
@@ -298,11 +311,25 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           pathEnd {
             post {
               logger.info("adding design to experiment.")
-              entity(as[AddDesign]) { design ⇒
-                val saved: Future[AddDesignFeedback] = addDesign(design)
+              entity(as[AddDesign]) { des ⇒
+                val saved: Future[AddDesignFeedback] = addDesign(des)
                 onSuccess(saved) {
                   case AddedDesignSuccess(uid) ⇒ complete(Created, s"""{"experiment": $uid", "comment": "new design added." """)
-                  case FailedAddingDesign(msg) ⇒ complete(BadRequest, """{"error" : "$msg" }""")
+                  case FailedAddingDesign(msg) ⇒ complete(BadRequest, s"""{"error" : "$msg" }""")
+                }
+              }
+            }
+          }
+        } ~
+        path("properties") {
+          pathEnd {
+            post {
+              logger.info("adding design to experiment.")
+              entity(as[AddExpProps]) { props ⇒
+                val saved: Future[AddedPropertiesFeedback] = addExpProperties(AddExpProperties(experiment, props.properties))
+                onSuccess(saved) {
+                  case AddedPropertiesSuccess ⇒ complete(Created, """{"message": "properties added successfully." """)
+                  case adp: FailedAddingProperties ⇒ complete(BadRequest, s"""{"error" : "${adp}" }""")
                 }
               }
             }

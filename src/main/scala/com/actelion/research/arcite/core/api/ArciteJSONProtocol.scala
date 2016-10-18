@@ -1,7 +1,7 @@
 package com.actelion.research.arcite.core.api
 
 import com.actelion.research.arcite.core.api.ArciteService.SomeExperiments
-import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddDesign, AddExperiment}
+import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddDesign, AddExpProps, AddExperiment, State}
 import com.actelion.research.arcite.core.experiments._
 import com.actelion.research.arcite.core.rawdata.DefineRawData.{RawDataSet, RawDataSetRegex}
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments}
@@ -91,6 +91,9 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val experimentJson = jsonFormat6(Experiment)
   implicit val experimentSummaryJson = jsonFormat4(ExperimentSummary)
 
+  implicit val stateJSon = jsonFormat1(State)
+
+
   implicit object TransformSourceJsonFormat extends RootJsonFormat[TransformSource] {
 
     def write(ts: TransformSource) = ts match {
@@ -152,4 +155,5 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val feedbackSourceJsonFormat = jsonFormat5(TransformDoneSource)
   implicit val feedbackJsonFormat = jsonFormat9(TransformDoneInfo)
 
+  implicit val addPropertiesJSonFormat = jsonFormat1(AddExpProps)
 }

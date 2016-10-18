@@ -5,7 +5,7 @@ import java.nio.file.Path
 import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, Props}
 import akka.util.Timeout
 import breeze.numerics.exp
-import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddDesign, AddDesignWithRequester, AddExperiment, AddExperimentWithRequester, GetAllTransforms}
+import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSummary}
 import com.actelion.research.arcite.core.rawdata.DefineRawData.{RawDataSet, RawDataSetRegex, RawDataSetRegexWithRequester, RawDataSetWithRequester}
 import com.actelion.research.arcite.core.rawdata._
@@ -74,6 +74,14 @@ object ArciteService {
 
 
 
+  sealed trait AddedPropertiesFeedback
+
+  case object AddedPropertiesSuccess extends AddedPropertiesFeedback
+
+  case class FailedAddingProperties(error: String) extends AddedPropertiesFeedback
+
+
+
   sealed trait ExperimentFoundResponse
 
   case class ExperimentFound(exp: Experiment) extends ExperimentFoundResponse
@@ -130,6 +138,10 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
     case d: AddDesign ⇒
       expManager ! AddDesignWithRequester(d, sender())
+
+
+    case p: AddExpProperties ⇒
+      expManager ! AddExpPropertiesWithRequester(p, sender())
 
 
     case gat: GetAllTransforms ⇒
