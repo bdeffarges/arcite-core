@@ -71,14 +71,13 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   }
 
   implicit object ExpStateJsonFormat extends RootJsonFormat[ExperimentState] {
-    def write(c: ExperimentState) = JsString(c.name)
+    def write(c: ExperimentState) = JsString(c.getClass.getName)
 
     def read(value: JsValue) = value match {
-      case JsString("new") ⇒ New
-      case JsString("saved") ⇒ Saved
-      case JsString("processed") ⇒ Processed
-      case JsString("published") ⇒ Published
-      case JsString("global") ⇒ Global
+      case JsString("New") ⇒ New
+      case JsString("Sealed") ⇒ Sealed
+      case JsString("Published") ⇒ Published
+      case JsString("Remote") ⇒ Remote
 
       case _ ⇒ deserializationError("Experiment state expected")
     }

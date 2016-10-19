@@ -23,18 +23,7 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
 
   case object SaveExperimentSuccessful extends SaveExperimentFeedback
 
-  case object SaveExperimentFailed extends SaveExperimentFeedback
-
-  case object ExperimentExisted extends SaveExperimentFeedback
-
-
-  sealed trait FolderCreationFeedback
-
-  case object FolderStructureNewOrEmpty extends FolderCreationFeedback
-
-  case object FolderStructureExistedNotEmpty extends FolderCreationFeedback
-
-  case object FolderStructureProblem extends FolderCreationFeedback
+  case class SaveExperimentFailed(error: String) extends SaveExperimentFeedback
 
 
   def loadAllLocalExperiments(): Map[String, Experiment] = {
@@ -44,7 +33,7 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
 
     loadAllExperiments(path) +
       (DefaultExperiment.defaultExperiment.digest -> DefaultExperiment.defaultExperiment)
-   }
+  }
 
 
   /**
@@ -60,7 +49,7 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
     var map = Map[String, Experiment]()
 
     def deeperUntilMeta(currentFolder: File) {
-//      logger.debug(s"currentFolder: $currentFolder")
+      //      logger.debug(s"currentFolder: $currentFolder")
       if (currentFolder.getName == "meta") {
         val expFile = new File(currentFolder.getAbsolutePath + File.separator + EXPERIMENT_FILE_NAME)
         if (expFile.exists()) {
@@ -89,59 +78,33 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
     Files.readAllLines(path).toList.mkString("\n").parseJson.convertTo[Experiment]
   }
 
-  def buildLocalDirectoryStructure(experiment: Experiment): FolderCreationFeedback = {
-
-    val expFVisit = ExperimentFolderVisitor(experiment)
-
-    val folder = expFVisit.relFolderPath.toFile
-
-    folder.mkdirs
-    expFVisit.metaFolderPath.toFile.mkdirs
-    expFVisit.rawFolderPath.toFile.mkdirs
-    expFVisit.transformFolderPath.toFile.mkdirs
-    expFVisit.publishedFolderPath.toFile.mkdirs
-
-    if (folder.isDirectory) {
-      if (folder.list().size < 1) {
-        FolderStructureNewOrEmpty
-      } else {
-        FolderStructureExistedNotEmpty
-      }
-    } else {
-      FolderStructureProblem
-    }
-  }
-
   def saveExperiment(exp: Experiment): SaveExperimentFeedback = {
 
     import spray.json._
 
-    buildLocalDirectoryStructure(exp) match {
-      case FolderStructureNewOrEmpty ⇒ {
-        val expFVisit = ExperimentFolderVisitor(exp)
+    val expFVisit = ExperimentFolderVisitor(exp)
 
-        val strg = exp.toJson.prettyPrint
+    val strg = exp.toJson.prettyPrint
 
-        val dig = exp.digest
+    val dig = exp.digest
 
-        import StandardOpenOption._
+    import StandardOpenOption._
+    import java.nio.file.StandardCopyOption._
 
-        Files.write(Paths.get(expFVisit.metaFolderPath.toString, EXPERIMENT_FILE_NAME),
-          strg.getBytes(StandardCharsets.UTF_8), CREATE)
+    val fp = expFVisit.experimentFilePath
+    val dp = expFVisit.digestFilePath
 
-        Files.write(Paths.get(expFVisit.metaFolderPath.toString, EXPERIMENT_DIGEST_FILE_NAME),
-          dig.getBytes(StandardCharsets.UTF_8), CREATE)
+    try {
+      if (fp.toFile.exists) Files.move(fp, Paths.get(fp.toString + "_bkup"), REPLACE_EXISTING)
 
-        SaveExperimentSuccessful
-      }
+      Files.write(fp, strg.getBytes(StandardCharsets.UTF_8), CREATE)
 
-      case FolderStructureExistedNotEmpty ⇒ {
-        if (exp == loadExperiment(Paths.get(ExperimentFolderVisitor(exp).metaFolderPath.toString, EXPERIMENT_FILE_NAME)))
-          ExperimentExisted
-        else SaveExperimentFailed
-      }
+      Files.write(dp, dig.getBytes(StandardCharsets.UTF_8), CREATE)
 
-      case FolderStructureProblem ⇒ SaveExperimentFailed
+      SaveExperimentSuccessful
+
+    } catch {
+      case e: Exception ⇒ SaveExperimentFailed(e.toString) //todo more info
     }
   }
 }

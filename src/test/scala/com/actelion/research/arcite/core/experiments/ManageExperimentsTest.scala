@@ -7,7 +7,7 @@ import akka.actor.{ActorSystem, Props}
 import akka.testkit.{TestKit, TestProbe}
 import com.actelion.research.arcite.core.TestHelpers._
 import com.actelion.research.arcite.core.api.ArciteService.AddedExperiment
-import com.actelion.research.arcite.core.experiments.LocalExperiments.{ExperimentExisted, LoadExperiment, SaveExperiment, SaveExperimentSuccessful}
+import com.actelion.research.arcite.core.experiments.LocalExperiments.{LoadExperiment, SaveExperiment, SaveExperimentSuccessful}
 import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddExperiment, GetExperiments, SnapshotTaken}
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{BeforeAndAfterAll, MustMatchers, WordSpecLike}
@@ -38,7 +38,7 @@ class ManageExperimentsTest extends TestKit(ActorSystem("Experiments"))
 
       actorRef ! SaveExperiment(experiment1)
 
-      endProbe.expectMsgAnyOf(FiniteDuration(1, TimeUnit.SECONDS), SaveExperimentSuccessful, ExperimentExisted)
+      endProbe.expectMsgAnyOf(FiniteDuration(1, TimeUnit.SECONDS), SaveExperimentSuccessful)
     }
   }
 
@@ -51,7 +51,7 @@ class ManageExperimentsTest extends TestKit(ActorSystem("Experiments"))
 
       actorRef ! SaveExperiment(experiment2)
 
-      endProbe.expectMsgAnyOf(FiniteDuration(1, TimeUnit.SECONDS), SaveExperimentSuccessful, ExperimentExisted)
+      endProbe.expectMsgAnyOf(FiniteDuration(1, TimeUnit.SECONDS), SaveExperimentSuccessful)
 
       actorRef ! LoadExperiment(s"${ExperimentFolderVisitor(experiment2).metaFolderPath}/experiment")
 

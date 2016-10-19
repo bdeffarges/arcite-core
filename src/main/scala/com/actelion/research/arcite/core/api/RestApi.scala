@@ -11,7 +11,7 @@ import akka.pattern.ask
 import akka.stream.scaladsl.{FileIO, Framing}
 import akka.util.{ByteString, Timeout}
 import com.actelion.research.arcite.core.api.ArciteService._
-import com.actelion.research.arcite.core.experiments.ManageExperiments.{path => _, _}
+import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.rawdata.DefineRawData._
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._

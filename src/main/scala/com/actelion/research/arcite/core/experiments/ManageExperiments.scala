@@ -24,6 +24,12 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
   import ManageExperiments._
 
+  val config = ConfigFactory.load()
+
+  val filePath = config.getString("arcite.snapshot")
+
+  val path = Paths.get(filePath)
+
   val luceneRamSearchAct = context.system.actorOf(Props(new ArciteLuceneRamIndex(self)))
 
   private var experiments: Map[String, Experiment] = LocalExperiments.loadAllLocalExperiments()
@@ -33,11 +39,6 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
   import scala.collection.convert.wrapAsScala._
   import StandardOpenOption._
   import spray.json._
-
-  if (path.toFile.exists()) {
-    val st = Files.readAllLines(path).toList.mkString.parseJson.convertTo[State]
-    experiments ++= st.experiments.map(e ⇒ (e.digest, e)).toMap
-  }
 
   if (path.toFile.exists()) {
     val st = Files.readAllLines(path).toList.mkString.parseJson.convertTo[State]
@@ -102,7 +103,7 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
 
     case TakeSnapshot ⇒
-      val savedExps = experiments.values.filter(e ⇒ e.state == Global || e.state == New).toSet
+      val savedExps = experiments.values.filter(e ⇒ e.state == Remote || e.state == New).toSet
       val strg = State(savedExps).toJson.prettyPrint
 
       if (path.toFile.exists()) {
@@ -223,15 +224,15 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
   }
 }
 
+
+
+
+
+
 object ManageExperiments extends ArciteJSONProtocol {
 
-  val config = ConfigFactory.load()
 
   val logger = LoggerFactory.getLogger(ManageExperiments.getClass)
-
-  val filePath = config.getString("arcite.snapshot")
-
-  val path = Paths.get(filePath)
 
   case class State(experiments: Set[Experiment] = Set())
 
