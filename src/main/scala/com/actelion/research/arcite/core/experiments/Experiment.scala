@@ -94,14 +94,17 @@ case class ExperimentFolderVisitor(exp: Experiment) {
 /**
   * The different states for an experiment:
   *
-  * New: the experiment is only local, it's saved and everything except its name can be changed.
+  * New: the experiment is defined, local and saved in the file structure and everything except its "full name" can be changed.
   *
-  * Sealed: A successful transform has been completed therefore the experiment design cannot be changed anymore.
-  * The experiment is final, to modify it, it must be cloned into another one.
+  * Sealed: At least one successful transform has been completed. From now on, the experiment cannot be modified including
+  * any of its meta data. The experiment is final, it must be cloned into another one to change the meta information
+  * like experiment design.
   *
   * Published: the local experiment has been published globally. At least its specification can be queried from outside.
   *
   * Remote: this is a remote experiment. We retrieved first its design, the rest is retrieved on demand
+  *
+  * some more states might be needed: draft (for temp exp.?)
   */
 sealed trait ExperimentState
 

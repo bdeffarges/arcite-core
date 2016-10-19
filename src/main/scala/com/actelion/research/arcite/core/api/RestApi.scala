@@ -42,7 +42,7 @@ trait ArciteServiceApi extends LazyLogging {
 
   def getExperiment(digest: String) = {
     logger.debug(s"asking for experiment with digest= $digest")
-    arciteService.ask(GetExperiment(digest)).mapTo[ExperimentFoundResponse]
+    arciteService.ask(GetExperiment(digest)).mapTo[ExperimentFoundFeedback]
   }
 
   def search4Experiments(search: String, maxHits: Int) = {
@@ -152,6 +152,9 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           |GET  /experiment/{uid} ==>  return one experiment with every information regarding its design
           |
           |
+          |DELETE  /experiment/{uid} ==>  delete the experiment
+          |
+          |
           |GET /experiment/{uid}/transforms ==>  returned all the transforms for this experiment
           |
           |
@@ -165,6 +168,9 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           |
           |
           |POST /experiment {"experiment" : "...."}  ==>  add a new experiment
+          |
+          |
+          |POST /experiment/clone {"experiment" : "....", "organization": "new organization path, if not specified, will use the original", "name": "new name"}  ==>  clone an experiment
           |
           |
           |POST /design {"experiment": "uid", "design": {"description" : "desc", "sampleConditions" : [[{"name": "AA1", "description": "AA1", "category": "sampleID"}, {"name": "ACT-1234", "description": "ACT-1234", "category": "compound"}]..]}} ==>  add design to experiment
@@ -314,7 +320,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
               entity(as[AddDesign]) { des ⇒
                 val saved: Future[AddDesignFeedback] = addDesign(des)
                 onSuccess(saved) {
-                  case AddedDesignSuccess(uid) ⇒ complete(Created, s"""{"experiment": $uid", "comment": "new design added." """)
+                  case AddedDesignSuccess ⇒ complete(Created, s"""{"message": "new design added." """)
                   case FailedAddingDesign(msg) ⇒ complete(BadRequest, s"""{"error" : "$msg" }""")
                 }
               }
@@ -341,6 +347,12 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             onSuccess(getExperiment(experiment)) {
               case NoExperimentFound ⇒ complete(OK, """{"error" : ""} """)
               case ExperimentFound(exp) ⇒ complete(OK, exp)
+            }
+          }
+          delete {
+            logger.info(s"deleting experiment: $experiment")
+            onSuccess(deleteExperiment(experiment)) {
+
             }
           }
         }

@@ -1,12 +1,19 @@
 package com.actelion.research.arcite
 
 import java.io.File
+import java.nio.file.Paths
+
+import com.typesafe.config.ConfigFactory
 
 /**
   * Created by deffabe1 on 7/12/16.
   */
 package object core {
 
+  val config = ConfigFactory.load
+
+  val archivePath = Paths.get(config.getString("arcite.home"), "_archives")
+  if (!archivePath.toFile.exists) archivePath.toFile.mkdir()
 
   def allRegexFilesInFolderAndSubfolder(folder: String, regex: String, includeSubfolder: Boolean): Map[File, String] = {
     val reg = regex.r

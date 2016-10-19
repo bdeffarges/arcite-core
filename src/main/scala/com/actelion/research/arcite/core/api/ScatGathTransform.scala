@@ -1,7 +1,7 @@
 package com.actelion.research.arcite.core.api
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSelection, Props}
-import com.actelion.research.arcite.core.api.ArciteService.{ExperimentFound, ExperimentFoundResponse, GetExperiment}
+import com.actelion.research.arcite.core.api.ArciteService.{ExperimentFound, ExperimentFoundFeedback, GetExperiment}
 import com.actelion.research.arcite.core.api.ScatGathTransform.{PrepareTransform, ReadyForTransform}
 import com.actelion.research.arcite.core.experiments.ManageExperiments.{FoundTransfDefFullName, GetTransfDefFromExpAndTransf}
 import com.actelion.research.arcite.core.transforms.RunTransform._
@@ -52,7 +52,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
       ManageTransformCluster.getNextFrontEnd() ! GetTransfDef(pwt.transformDefinition)
 
 
-    case efr: ExperimentFoundResponse ⇒
+    case efr: ExperimentFoundFeedback ⇒
       efr match {
         case ef: ExperimentFound ⇒
           readyForTransform = readyForTransform.copy(expFound = Some(ef))

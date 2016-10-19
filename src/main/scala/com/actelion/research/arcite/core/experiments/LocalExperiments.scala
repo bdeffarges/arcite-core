@@ -99,7 +99,7 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
 
       Files.write(fp, strg.getBytes(StandardCharsets.UTF_8), CREATE)
 
-      Files.write(dp, dig.getBytes(StandardCharsets.UTF_8), CREATE)
+      if (!dp.toFile.exists) Files.write(dp, dig.getBytes(StandardCharsets.UTF_8), CREATE)
 
       SaveExperimentSuccessful
 

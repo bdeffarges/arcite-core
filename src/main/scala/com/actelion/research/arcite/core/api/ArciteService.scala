@@ -68,7 +68,7 @@ object ArciteService {
 
   sealed trait AddDesignFeedback
 
-  case class AddedDesignSuccess(uid: String) extends AddDesignFeedback
+  case object AddedDesignSuccess extends AddDesignFeedback
 
   case class FailedAddingDesign(error: String) extends AddDesignFeedback
 
@@ -82,13 +82,17 @@ object ArciteService {
 
 
 
-  sealed trait ExperimentFoundResponse
+  sealed trait ExperimentFoundFeedback
 
-  case class ExperimentFound(exp: Experiment) extends ExperimentFoundResponse
+  case class ExperimentFound(exp: Experiment) extends ExperimentFoundFeedback
 
-  case class ExperimentsFound(exp: Set[Experiment]) extends ExperimentFoundResponse
+  case class ExperimentsFound(exp: Set[Experiment]) extends ExperimentFoundFeedback
 
-  case object NoExperimentFound extends ExperimentFoundResponse
+  case object NoExperimentFound extends ExperimentFoundFeedback
+
+
+  sealed trait DeleteExperimentFeedback
+
 
 
 

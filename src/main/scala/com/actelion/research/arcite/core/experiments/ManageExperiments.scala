@@ -47,23 +47,25 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
   override def receive = {
 
-    case AddExperiment(exp) ⇒ // so far for experiments read locally on hard drive
+    case AddExperiment(exp) ⇒
+      self ! AddExperimentWithRequester(exp, sender())
+
+
+    case AddExperimentWithRequester(exp, requester) ⇒
       experiments += ((exp.digest, exp))
 
-      sender() ! AddedExperiment
-      self ! TakeSnapshot
+      LocalExperiments.saveExperiment(exp) match {
 
+        case SaveExperimentSuccessful ⇒
+          requester ! AddedExperiment
 
-    case AddExperimentWithRequester(exp, requester) ⇒ //todo should be merged with previous case
-      if (!experiments.keySet.contains(exp.digest)) {
-        val dig = exp.digest
-        experiments += ((dig, exp))
-        requester ! AddedExperiment(dig)
-        self ! TakeSnapshot
-        luceneRamSearchAct ! IndexExperiment(exp)
-      } else {
-        requester ! FailedAddingExperiment("experiment already exists. ")
+        case SaveExperimentFailed(error) ⇒
+          requester ! FailedAddingExperiment(error)
       }
+
+      luceneRamSearchAct ! IndexExperiment(exp)
+
+      self ! TakeSnapshot
 
 
     case AddDesignWithRequester(design, requester) ⇒
@@ -71,8 +73,19 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
       val exp = experiments.get(uid)
       if (exp.isDefined) {
-        experiments += ((uid, exp.get.copy(design = design.design)))
-        requester ! AddedDesignSuccess(uid)
+        val nexp = exp.get.copy(design = design.design)
+        experiments += ((uid, nexp))
+
+        LocalExperiments.saveExperiment(nexp) match {
+
+          case SaveExperimentSuccessful ⇒
+            requester ! AddedDesignSuccess
+            self ! TakeSnapshot
+            luceneRamSearchAct ! IndexExperiment(nexp)
+
+          case SaveExperimentFailed(error) ⇒
+            requester ! FailedAddingDesign(error)
+        }
       } else {
         requester ! FailedAddingDesign("Experiment does not exist")
       }
@@ -84,8 +97,18 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
       val exp = experiments.get(uid)
       if (exp.isDefined) {
         val ex = exp.get
-        experiments += ((uid, ex.copy(properties = ex.properties ++ addProps.properties)))
-        requester ! AddedPropertiesSuccess
+        val nex = ex.copy(properties = ex.properties ++ addProps.properties)
+        experiments += ((uid, nex))
+        LocalExperiments.saveExperiment(nex) match {
+
+          case SaveExperimentSuccessful ⇒
+            self ! TakeSnapshot
+            luceneRamSearchAct ! IndexExperiment(nex)
+            requester ! AddedPropertiesSuccess
+
+          case SaveExperimentFailed(error) ⇒
+            requester ! FailedAddingProperties(error)
+        }
       } else {
         requester ! FailedAddingProperties("Experiment does not exist")
       }
@@ -154,7 +177,7 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
       log.debug(s"retrieving experiment with uid: $uid")
       val exp = experiments.get(uid)
       if (exp.isDefined) {
-      sender() ! RawDataSetWithRequesterAndExperiment(rdsw.rdsr, exp.get)
+        sender() ! RawDataSetWithRequesterAndExperiment(rdsw.rdsr, exp.get)
       } else {
         rdsw.rdsr.requester ! RawDataSetFailed(error = s"could not find exp for uid=${uid}")
       }
@@ -183,7 +206,7 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
           case MoveRawFile(_, _) ⇒
             val tempp = v.rawFolderPath resolve "uploaded_files"
             tempp.toFile.mkdirs()
-            Files.copy(fp,  tempp resolve fp.getFileName, REPLACE_EXISTING)
+            Files.copy(fp, tempp resolve fp.getFileName, REPLACE_EXISTING)
         }
         Files.delete(fp)
         Files.delete(fp.getParent)
@@ -225,10 +248,6 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 }
 
 
-
-
-
-
 object ManageExperiments extends ArciteJSONProtocol {
 
 
@@ -238,15 +257,19 @@ object ManageExperiments extends ArciteJSONProtocol {
 
 
   case class AddExperiment(experiment: Experiment)
+
   case class AddExperimentWithRequester(experiment: Experiment, requester: ActorRef)
 
 
   case class AddDesign(experiment: String, design: ExperimentalDesign)
+
   case class AddDesignWithRequester(addDesign: AddDesign, requester: ActorRef)
 
 
   case class AddExpProps(properties: Map[String, String])
+
   case class AddExpProperties(exp: String, properties: Map[String, String])
+
   case class AddExpPropertiesWithRequester(addProps: AddExpProperties, requester: ActorRef)
 
   case class SaveLocalExperiment(experiment: Experiment)
