@@ -34,7 +34,6 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
   import StandardOpenOption._
   import spray.json._
 
-
   if (path.toFile.exists()) {
     val st = Files.readAllLines(path).toList.mkString.parseJson.convertTo[State]
     experiments ++= st.experiments.map(e ⇒ (e.digest, e)).toMap
@@ -44,7 +43,6 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
     val st = Files.readAllLines(path).toList.mkString.parseJson.convertTo[State]
     experiments ++= st.experiments.map(e ⇒ (e.digest, e)).toMap
   }
-
 
   override def receive = {
 
