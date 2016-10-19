@@ -68,6 +68,19 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
       self ! TakeSnapshot
 
 
+    case DeleteExperimentWithRequester(digest, requester) ⇒
+      val exp = experiments.get(digest)
+
+      if (exp.isDefined) {
+        experiments -= digest
+        luceneRamSearchAct ! RemoveFromIndex(exp.get)
+        self ! TakeSnapshot
+        requester ! LocalExperiments.safeDeleteExperiment(exp.get)
+      } else {
+        requester ! ExperimentDeleteFailed("experiment does not exist. ")
+      }
+
+
     case AddDesignWithRequester(design, requester) ⇒
       val uid = design.experiment
 
@@ -135,13 +148,9 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
         Files.move(path, pbkup, StandardCopyOption.ATOMIC_MOVE)
       }
 
-      Files.write(path, strg.getBytes(StandardCharsets.UTF_8), CREATE, CREATE_NEW)
+      Files.write(path, strg.getBytes(StandardCharsets.UTF_8), CREATE)
 
       sender() ! SnapshotTaken
-
-
-    case SaveExperiment(exp) ⇒
-      sender() ! LocalExperiments.saveExperiment(exp)
 
 
     case LoadExperiment(folder: String) ⇒
@@ -162,7 +171,8 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
       log.debug(s"retrieving experiment with digest: $digest")
       val exp = experiments.get(digest)
       if (exp.isDefined) {
-        requester ! ExperimentFound(loadExperiment(ExperimentFolderVisitor(exp.get).experimentFilePath))
+        val ex = loadExperiment(ExperimentFolderVisitor(exp.get).experimentFilePath)
+        requester ! ExperimentFound(ex)
       } else {
         requester ! NoExperimentFound
       }
@@ -289,9 +299,6 @@ object ManageExperiments extends ArciteJSONProtocol {
   case class GetTransfDefFromExpAndTransf(experiment: String, transform: String)
 
   case class FoundTransfDefFullName(fullName: FullName)
-
-  // todo to be implemented
-  case class TransformsForExperimentTree()
 
 
   def startActorSystemForExperiments() = {

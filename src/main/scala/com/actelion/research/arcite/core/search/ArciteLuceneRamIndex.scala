@@ -34,6 +34,7 @@ class ArciteLuceneRamIndex(actorRef: ActorRef) extends Actor {
   override def receive = {
     case IndexExperiment(exp) ⇒
       val config = new IndexWriterConfig(ArciteAnalyzerFactory.perfieldAnalyzerWrapper)
+
       // todo move config and index writer somewhere else
       val indexWriter = new IndexWriter(directory, config)
 
@@ -42,7 +43,7 @@ class ArciteLuceneRamIndex(actorRef: ActorRef) extends Actor {
       val d = new Document
       d.add(new TextField(luc_name, exp.name, Field.Store.NO))
       d.add(new TextField(luc_description, exp.description, Field.Store.NO))
-      val content = s"${exp.name} ${exp.description}"
+      val content = s"${exp.name} ${exp.description}" //todo add design and properties to index
       d.add(new TextField(luc_content, content, Field.Store.NO))
       d.add(new StringField(luc_digest, exp.digest, Field.Store.YES))
       indexWriter.addDocument(d)
@@ -50,6 +51,15 @@ class ArciteLuceneRamIndex(actorRef: ActorRef) extends Actor {
       indexWriter.close() //todo when to close the writer?
 
       actorRef ! IndexingCompletedForExp(exp)
+
+
+    case RemoveFromIndex(exp) ⇒
+      val config = new IndexWriterConfig(ArciteAnalyzerFactory.perfieldAnalyzerWrapper)
+
+      // todo move config and index writer somewhere else
+      val indexWriter = new IndexWriter(directory, config)
+      indexWriter.deleteDocuments(new TermQuery(new Term(luc_digest, exp.digest)))
+      indexWriter.close() //todo when to close the writer?
 
 
     case Search(text) ⇒
@@ -137,13 +147,15 @@ object ArciteLuceneRamIndex {
 
   case class IndexExperiment(experiment: Experiment) extends TalkToLuceneRamDir
 
-  //  case class IndexExperiments(experiment: List[Experiment]) extends TalkToLuceneRamDir
+  case class RemoveFromIndex(experiment: Experiment) extends TalkToLuceneRamDir
 
   case class AddCondition(condition: Condition) extends TalkToLuceneRamDir
 
   case class Search(text: String) extends TalkToLuceneRamDir
 
   case class SearchForXResults(text: String, size: Int) extends TalkToLuceneRamDir
+
+
 
   case class SearchForXResultsWithRequester(searchForXResults: SearchForXResults, requester: ActorRef)
 

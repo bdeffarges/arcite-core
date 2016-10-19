@@ -28,4 +28,8 @@ a += (("bd" , "dddw"))
 
 a += (("b", "sdafjlkdasfjlkdasf"))
 
+//a -= "b"
+//
+//a -= "sdfa"
+
 println(a)

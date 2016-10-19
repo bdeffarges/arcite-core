@@ -80,7 +80,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
       case JsString("Remote") ⇒ Remote
       case _ ⇒ Sealed
 
-      case _ ⇒ deserializationError("Experiment state expected")
+//      case _ ⇒ deserializationError("Experiment state expected")
     }
   }
 

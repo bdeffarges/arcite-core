@@ -2,6 +2,7 @@ package com.actelion.research.arcite.core.experiments
 
 import java.nio.file.Paths
 
+import com.actelion.research.arcite.core
 import com.actelion.research.arcite.core.utils._
 import com.typesafe.config.ConfigFactory
 
@@ -44,14 +45,13 @@ case class ExperimentFolderVisitor(exp: Experiment) {
 
   val defaultMetaFileName = "meta.json" // the default file that describes the content of a folder
 
-  val arciteHome = config.getString("arcite.home")
-
   // relative paths
   val folderName = name.replaceAll("\\s", "_")
 
   val owner = exp.owner
 
   val owfs = owner.asFileStructure
+  val relParentPath = Paths.get(owfs)
   val relFolderPath = Paths.get(owfs, folderName)
   val relMetaFolderPath = Paths.get(owfs, folderName, "meta")
   val relRawFolderPath = Paths.get(owfs, folderName, "raw")
@@ -62,9 +62,11 @@ case class ExperimentFolderVisitor(exp: Experiment) {
 
   def description = exp.description
 
-  val arcitH = Paths.get(arciteHome)
+  val arcitH = core.dataPath
 
   def properties = exp.properties
+
+  def parentFolderPath = arcitH resolve relParentPath
 
   def expFolderPath = arcitH resolve relFolderPath
 

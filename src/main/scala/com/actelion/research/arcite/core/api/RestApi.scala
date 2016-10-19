@@ -45,6 +45,11 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(GetExperiment(digest)).mapTo[ExperimentFoundFeedback]
   }
 
+  def deleteExperiment(experiment: String) = {
+    logger.debug(s"trying to delete experiment $experiment")
+    arciteService.ask(DeleteExperiment(experiment)).mapTo[DeleteExperimentFeedback]
+  }
+
   def search4Experiments(search: String, maxHits: Int) = {
     logger.debug(s"searching for $search, returning $maxHits hits.")
     arciteService.ask(SearchExperiments(search, maxHits)).mapTo[SomeExperiments]
@@ -345,14 +350,15 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           get {
             logger.info(s"get experiment: = $experiment")
             onSuccess(getExperiment(experiment)) {
-              case NoExperimentFound ⇒ complete(OK, """{"error" : ""} """)
+              case NoExperimentFound ⇒ complete(BadRequest, """{"error" : "no experiment found. "} """)
               case ExperimentFound(exp) ⇒ complete(OK, exp)
             }
-          }
+          }~
           delete {
             logger.info(s"deleting experiment: $experiment")
             onSuccess(deleteExperiment(experiment)) {
-
+              case ExperimentDeletedSuccess ⇒ complete(OK, """{"message" : "experiment deleted."}""")
+              case ExperimentDeleteFailed(error) ⇒ complete(BadRequest, s"""{"error" : "$error"}""")
             }
           }
         }

@@ -13,7 +13,10 @@ package object core {
   val config = ConfigFactory.load
 
   val archivePath = Paths.get(config.getString("arcite.home"), "_archives")
-  if (!archivePath.toFile.exists) archivePath.toFile.mkdir()
+  if (!archivePath.toFile.exists) archivePath.toFile.mkdirs()
+
+  val dataPath = Paths.get(config.getString("arcite.home"), "experiments")
+  if (!dataPath.toFile.exists) dataPath.toFile.mkdirs()
 
   def allRegexFilesInFolderAndSubfolder(folder: String, regex: String, includeSubfolder: Boolean): Map[File, String] = {
     val reg = regex.r

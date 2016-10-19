@@ -91,9 +91,15 @@ object ArciteService {
   case object NoExperimentFound extends ExperimentFoundFeedback
 
 
+  case class DeleteExperiment(digest: String)
+
+  case class DeleteExperimentWithRequester(digest: String, requester: ActorRef)
+
   sealed trait DeleteExperimentFeedback
 
+  case object ExperimentDeletedSuccess extends DeleteExperimentFeedback
 
+  case class ExperimentDeleteFailed(error: String) extends DeleteExperimentFeedback
 
 
   sealed trait MoveUploadedFile {
@@ -138,6 +144,10 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
     case AddExperiment(exp) ⇒
       expManager ! AddExperimentWithRequester(exp, sender())
+
+
+    case DeleteExperiment(exp) ⇒
+      expManager ! DeleteExperimentWithRequester(exp, sender())
 
 
     case d: AddDesign ⇒

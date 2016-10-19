@@ -1,10 +1,12 @@
 package com.actelion.research.arcite.core.experiments
 
-import java.io.File
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Path, Paths, StandardOpenOption}
+import java.nio.file._
 
+import com.actelion.research.arcite.core
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
+import com.actelion.research.arcite.core.api.ArciteService.{DeleteExperimentFeedback, ExperimentDeleteFailed, ExperimentDeletedSuccess}
+import com.actelion.research.arcite.core.utils
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 
@@ -13,8 +15,6 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
 
   val EXPERIMENT_FILE_NAME = "experiment"
   val EXPERIMENT_DIGEST_FILE_NAME = "digest"
-
-  case class SaveExperiment(exp: Experiment)
 
   case class LoadExperiment(folder: String)
 
@@ -27,11 +27,10 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
 
 
   def loadAllLocalExperiments(): Map[String, Experiment] = {
-    val path = config.getString("arcite.home")
 
-    logger.debug(s"loading all experiments from local network $path... ")
+    logger.debug(s"loading all experiments from local network ${core.dataPath}... ")
 
-    loadAllExperiments(path) +
+    loadAllExperiments() +
       (DefaultExperiment.defaultExperiment.digest -> DefaultExperiment.defaultExperiment)
   }
 
@@ -39,33 +38,33 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
   /**
     * read all experiments in a folder and its subfolder...
     *
-    * @param path
     * @return
     */
-  def loadAllExperiments(path: String): Map[String, Experiment] = {
+  def loadAllExperiments(): Map[String, Experiment] = {
 
     //todo while going deeper should verify match between structure and name/organization
     // todo when to check digest??
     var map = Map[String, Experiment]()
 
-    def deeperUntilMeta(currentFolder: File) {
+    def deeperUntilMeta(currentFolder: Path) {
       //      logger.debug(s"currentFolder: $currentFolder")
-      if (currentFolder.getName == "meta") {
-        val expFile = new File(currentFolder.getAbsolutePath + File.separator + EXPERIMENT_FILE_NAME)
+      if (currentFolder.toFile.getName == "meta") {
+        val expFile = currentFolder.resolve(EXPERIMENT_FILE_NAME).toFile
+
         if (expFile.exists()) {
           import scala.collection.convert.wrapAsScala._
-          val digest = Files
-            .readAllLines(Paths.get(currentFolder.getAbsolutePath + File.separator + EXPERIMENT_DIGEST_FILE_NAME))
+          val digest = Files.readAllLines(currentFolder resolve EXPERIMENT_DIGEST_FILE_NAME)
             .toList.mkString("\n")
 
           val expCond = loadExperiment(expFile.toPath)
           map += ((digest, expCond))
         }
       }
-      if (currentFolder.isDirectory) currentFolder.listFiles().toList.foreach(f ⇒ deeperUntilMeta(f))
+      if (currentFolder.toFile.isDirectory)
+        currentFolder.toFile.listFiles().toList.foreach(f ⇒ deeperUntilMeta(f.toPath))
     }
 
-    deeperUntilMeta(new File(path))
+    deeperUntilMeta(core.dataPath)
 
     map
   }
@@ -104,7 +103,24 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
       SaveExperimentSuccessful
 
     } catch {
-      case e: Exception ⇒ SaveExperimentFailed(e.toString) //todo more info
+      case e: Exception ⇒ SaveExperimentFailed(e.toString)
+    }
+  }
+
+  def safeDeleteExperiment(exp: Experiment): DeleteExperimentFeedback = {
+    val expFoldVis = ExperimentFolderVisitor(exp)
+
+    try {
+      val p = core.archivePath resolve s"deleted_${utils.getDateForFolderName}" resolve expFoldVis.relFolderPath
+      p.toFile.mkdirs()
+
+      Files.move(expFoldVis.expFolderPath, p, StandardCopyOption.ATOMIC_MOVE)
+
+      ExperimentDeletedSuccess
+    } catch {
+      case e: Exception ⇒
+        logger.error(e.toString)
+        ExperimentDeleteFailed(e.toString)
     }
   }
 }
