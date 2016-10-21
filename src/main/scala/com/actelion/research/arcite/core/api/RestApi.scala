@@ -8,8 +8,8 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.pattern.ask
-import akka.stream.scaladsl.{FileIO, Framing}
-import akka.util.{ByteString, Timeout}
+import akka.stream.scaladsl.FileIO
+import akka.util.Timeout
 import com.actelion.research.arcite.core.api.ArciteService._
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.rawdata.DefineRawData._
