@@ -101,6 +101,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
 
 
     case FoundTransfDefFullName(fullName) ⇒
+      //todo before actual transform, what about a transform precheck (are all the properties, infos, etc. available ?
       if (readyForTransform.transfDef.get.dependsOn.isDefined &&
         readyForTransform.transfDef.get.dependsOn.get == fullName) {
         dependsOnIsFine = true

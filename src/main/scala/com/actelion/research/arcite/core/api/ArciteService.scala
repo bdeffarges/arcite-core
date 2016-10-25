@@ -5,6 +5,7 @@ import java.nio.file.Path
 import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, Props}
 import akka.util.Timeout
 import breeze.numerics.exp
+import com.actelion.research.arcite.core.FileInformationWithSubFolder
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSummary}
 import com.actelion.research.arcite.core.rawdata.DefineRawData.{RawDataSet, RawDataSetRegex, RawDataSetRegexWithRequester, RawDataSetWithRequester}
@@ -110,6 +111,12 @@ object ArciteService {
   case class MoveMetaFile(experiment: String, filePath: String) extends MoveUploadedFile
 
   case class MoveRawFile(experiment: String, filePath: String) extends MoveUploadedFile
+
+
+  case class GetRawFiles(experiment: String)
+
+  case class GetMetaFiles(experiment: String)
+
 }
 
 
@@ -166,6 +173,14 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
       expManager forward fileUp
 
 
+    case gmf: GetMetaFiles ⇒
+      expManager forward gmf
+
+
+    case grf: GetRawFiles ⇒
+      expManager forward grf
+
+
     case rds: RawDataSet ⇒
       defineRawDataAct ! RawDataSetWithRequester(rds, sender())
 
@@ -200,6 +215,8 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
     case ji: QueryJobInfo ⇒
       ManageTransformCluster.getNextFrontEnd() forward ji
+
+
 
 
     //don't know what to do with this message...

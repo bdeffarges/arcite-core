@@ -94,18 +94,40 @@ package object core {
          |${splitted.takeRight(maxnbrOfLines / 2).mkString("\n")}""".stripMargin
     }
   }
+
+
+  def getFilesInformation(subFolder: File): Set[FileInformationWithSubFolder] = {
+
+    def getFInfo(prefix: String, subF: File): Set[FileInformationWithSubFolder] = {
+      if (subF.isFile) Set(FileInformationWithSubFolder(prefix, FileVisitor(subF).fileInformation))
+      else {
+        val newPrefix = s"$prefix/${subF.getName}"
+        subF.listFiles().flatMap(f ⇒ getFInfo(newPrefix, f)).toSet
+      }
+    }
+
+    getFInfo("", subFolder)
+  }
+
+  case class FileInformation(name: String, fileSize: String)
+
+  case class FileInformationWithSubFolder(subFolder: String, fileInformation: FileInformation)
+
+  case class FileVisitor(file: File) {
+    require(file.exists())
+
+    def sizeToString(fileSize: Long): String = {
+      if (fileSize < 1024) s"$fileSize B"
+      else {
+        val z = (63 - java.lang.Long.numberOfLeadingZeros(fileSize)) / 10
+        val res = (fileSize.toDouble / (1L << (z * 10))).toInt
+        val uni = "KMGTPE" (z - 1)
+        s""" $res ${uni}B"""
+      }
+    }
+
+    lazy val fileInformation = FileInformation(file.getName, sizeToString(file.length()))
+  }
+
+
 }
-
-
-sealed abstract class TransformTool
-
-case object JVM_module extends TransformTool
-
-case object R_Code extends TransformTool
-
-case object ActorCode extends TransformTool
-
-case object SparkJob extends TransformTool
-
-case class Position(row: Int, col: Int)
-

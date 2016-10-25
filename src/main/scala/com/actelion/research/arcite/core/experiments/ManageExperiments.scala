@@ -7,6 +7,8 @@ import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.api.ArciteService._
 import com.actelion.research.arcite.core.experiments.LocalExperiments._
+import com.actelion.research.arcite.core.fileservice.FileServiceActor
+import com.actelion.research.arcite.core.fileservice.FileServiceActor.{config => _, _}
 import com.actelion.research.arcite.core.rawdata.DefineRawData
 import com.actelion.research.arcite.core.rawdata.DefineRawData.{GetExperimentForRawDataSet, RawDataSetFailed, RawDataSetWithRequesterAndExperiment}
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex
@@ -31,6 +33,8 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
   val path = Paths.get(filePath)
 
   val luceneRamSearchAct = context.system.actorOf(Props(new ArciteLuceneRamIndex(self)))
+
+  val fileServiceAct = context.system.actorOf(FileServiceActor.props(), "file_service")
 
   private var experiments: Map[String, Experiment] = LocalExperiments.loadAllLocalExperiments()
 
@@ -212,18 +216,37 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
         val fp = Paths.get(mf.filePath)
         mf match {
           case MoveMetaFile(_, _) ⇒
-            Files.copy(fp, v.metaFolderPath resolve fp.getFileName, REPLACE_EXISTING)
+            Files.copy(fp, v.userMetaFolderPath resolve fp.getFileName, REPLACE_EXISTING)
           case MoveRawFile(_, _) ⇒
-            val tempp = v.rawFolderPath resolve "uploaded_files"
-            tempp.toFile.mkdirs()
-            Files.copy(fp, tempp resolve fp.getFileName, REPLACE_EXISTING)
+            Files.copy(fp, v.userRawFolderPath resolve fp.getFileName, REPLACE_EXISTING)
         }
         Files.delete(fp)
         Files.delete(fp.getParent)
       }
 
 
-    case addProps: AddExpPropertiesWithRequester ⇒
+    case addProps: AddExpPropertiesWithRequester ⇒ //todo implement
+
+
+    case grf: GetRawFiles ⇒
+      logger.info("looking for raw data files list")
+      val actRef = sender()
+      val exp = experiments.get(grf.experiment)
+      if (exp.isDefined) {
+        fileServiceAct ! GetAllFilesWithRequester(GetAllFiles(FromRawFolder(exp.get)), actRef)
+      } else {
+        sender() ! FolderFilesInformation(Set())
+      }
+
+    case gmf: GetMetaFiles ⇒
+      logger.info("looking for meta data files list")
+      val exp = experiments.get(gmf.experiment)
+      val actRef = sender()
+      if (exp.isDefined) {
+        fileServiceAct ! GetAllFilesWithRequester(GetAllFiles(FromMetaFolder(exp.get)), actRef)
+      } else {
+        sender() ! FolderFilesInformation(Set())
+      }
 
 
     case any: Any ⇒ log.debug(s"don't know what to do with this message $any")
@@ -260,8 +283,7 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
 object ManageExperiments extends ArciteJSONProtocol {
 
-
-  val logger = LoggerFactory.getLogger(ManageExperiments.getClass)
+  val logger = LoggerFactory.getLogger(getClass)
 
   case class State(experiments: Set[Experiment] = Set())
 
@@ -311,5 +333,4 @@ object ManageExperiments extends ArciteJSONProtocol {
     logger.info(s"exp manager actor: [$manExpActor]")
     logger.info(s"raw data define: [$defineRawDataAct]")
   }
-
 }

@@ -1,8 +1,10 @@
 package com.actelion.research.arcite.core.api
 
+import com.actelion.research.arcite.core.{FileInformation, FileInformationWithSubFolder}
 import com.actelion.research.arcite.core.api.ArciteService.SomeExperiments
 import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddDesign, AddExpProps, AddExperiment, State}
 import com.actelion.research.arcite.core.experiments._
+import com.actelion.research.arcite.core.fileservice.FileServiceActor.FolderFilesInformation
 import com.actelion.research.arcite.core.rawdata.DefineRawData.{RawDataSet, RawDataSetRegex}
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments}
 import com.actelion.research.arcite.core.transforms.RunTransform._
@@ -10,6 +12,7 @@ import com.actelion.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, 
 import com.actelion.research.arcite.core.transforms._
 import com.actelion.research.arcite.core.transforms.cluster.WorkState.AllJobsFeedback
 import com.actelion.research.arcite.core.utils.{FullName, Owner}
+
 import spray.json.{DefaultJsonProtocol, _}
 
 /**
@@ -36,7 +39,6 @@ import spray.json.{DefaultJsonProtocol, _}
   *
   */
 trait ArciteJSONProtocol extends DefaultJsonProtocol {
-
 
   val noDependsOn = FullName("none", "none")
 
@@ -156,4 +158,8 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val feedbackJsonFormat = jsonFormat9(TransformDoneInfo)
 
   implicit val addPropertiesJSonFormat = jsonFormat1(AddExpProps)
+
+  implicit val fileInfoJsonFormat = jsonFormat2(FileInformation)
+  implicit val fileInfoWithSubFolderJsonFormat = jsonFormat2(FileInformationWithSubFolder)
+  implicit val folderFileJsonFormat = jsonFormat1(FolderFilesInformation)
 }

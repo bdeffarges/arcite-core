@@ -1,9 +1,10 @@
 package com.actelion.research.arcite.core.fileservice
 
-import java.io.File
 import java.nio.file.Path
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import com.actelion.research.arcite.core
+import com.actelion.research.arcite.core.{FileInformation, FileInformationWithSubFolder, FileVisitor}
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor}
 import com.typesafe.config.{Config, ConfigFactory}
 
@@ -46,14 +47,21 @@ class FileServiceActor(config: Config) extends Actor with ActorLogging {
     case SetSourceFolder(name, path) ⇒
       sourceFolders += ((name, path))
 
+
     case GetSourceFolders ⇒
       sender() ! SourceFoldersAsString(sourceFolders.map(sf ⇒ (sf._1, sf._2.toString)))
+
 
     case GetFiles(rootFileLoc, subFolder) ⇒
       rootFileLoc match {
         case rfl: FromExperiment ⇒
           val ev = ExperimentFolderVisitor(rfl.experiment)
-          sender() ! getFolderAndFiles(ev.metaFolderPath, subFolder)
+          rfl match {
+            case r: FromRawFolder ⇒
+              sender() ! getFolderAndFiles(ev.rawFolderPath, subFolder)
+            case r: FromMetaFolder ⇒
+              sender() ! getFolderAndFiles(ev.metaFolderPath, subFolder)
+          }
 
         case rfl: FromSourceFolder ⇒
           val sourceF = sourceFolders.get(rfl.name)
@@ -77,6 +85,23 @@ class FileServiceActor(config: Config) extends Actor with ActorLogging {
           FoundFiles(GetFiles(rootFileLoc, subFolderPath), Set(), Set())
         }
       }
+
+    case GetAllFilesWithRequester(fromExp, requester) ⇒
+
+      val ev = ExperimentFolderVisitor(fromExp.fromExp.experiment)
+
+      val path = fromExp.fromExp match {
+        case r : FromRawFolder ⇒
+          ev.userRawFolderPath
+        case r : FromMetaFolder ⇒
+          ev.userMetaFolderPath
+      }
+      val result = core.getFilesInformation(path.toFile)
+      requester ! FolderFilesInformation(result)
+
+
+    case msg: Any ⇒
+      log.error("Cannot process message. ")
   }
 }
 
@@ -98,22 +123,6 @@ object FileServiceActor {
   case class FromSourceFolder(name: String) extends RootFileLocations
 
 
-  case class FileInformation(name: String, fileSize: String)
-
-  case class FileVisitor(file: File) {
-    require(file.exists())
-
-    def sizeToString(fileSize: Long): String = {
-      if (fileSize < 1024) s"$fileSize B"
-      else {
-        val z = (63 - java.lang.Long.numberOfLeadingZeros(fileSize)) / 10
-        s""" ${fileSize.toDouble / (1L << (z * 10))} ${"KMGTPE" (z - 1)}"""
-      }
-    }
-
-    lazy val fileInformation = FileInformation(file.getName, sizeToString(file.length()))
-  }
-
   case class SetSourceFolder(name: String, fullPath: Path)
 
 
@@ -125,7 +134,12 @@ object FileServiceActor {
 
   case class GetFiles(rootLocation: RootFileLocations, subFolder: List[String] = List())
 
-
   case class FoundFiles(getFilesList: GetFiles, folders: Set[String], files: Set[FileInformation])
+
+  case class GetAllFiles(fromExp: FromExperiment)
+
+  case class GetAllFilesWithRequester(getAllFiles: GetAllFiles, requester: ActorRef)
+
+  case class FolderFilesInformation(files: Set[FileInformationWithSubFolder])
 
 }

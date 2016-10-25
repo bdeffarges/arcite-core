@@ -45,6 +45,8 @@ case class ExperimentFolderVisitor(exp: Experiment) {
 
   val defaultMetaFileName = "meta.json" // the default file that describes the content of a folder
 
+  val name = exp.name
+
   // relative paths
   val folderName = name.replaceAll("\\s", "_")
 
@@ -54,38 +56,44 @@ case class ExperimentFolderVisitor(exp: Experiment) {
   val relParentPath = Paths.get(owfs)
   val relFolderPath = Paths.get(owfs, folderName)
   val relMetaFolderPath = Paths.get(owfs, folderName, "meta")
+  val relUserMetaFolderPath = Paths.get(owfs, folderName, "user_meta")
   val relRawFolderPath = Paths.get(owfs, folderName, "raw")
+  val relUserRawFolderPath = Paths.get(owfs, folderName, "raw", "uploaded_files")
   val relTransformFolderPath = Paths.get(owfs, folderName, "transforms")
   val relPublishedFolderPath = Paths.get(owfs, folderName, "published")
 
-  def name = exp.name
-
-  def description = exp.description
-
   val arcitH = core.dataPath
 
-  def properties = exp.properties
+  val description = exp.description
 
-  def parentFolderPath = arcitH resolve relParentPath
+  val properties = exp.properties
 
-  def expFolderPath = arcitH resolve relFolderPath
+  val parentFolderPath = arcitH resolve relParentPath
 
-  def rawFolderPath = arcitH resolve relRawFolderPath
+  val expFolderPath = arcitH resolve relFolderPath
 
-  def metaFolderPath = arcitH resolve relMetaFolderPath
+  val rawFolderPath = arcitH resolve relRawFolderPath
 
-  def transformFolderPath = arcitH resolve relTransformFolderPath
+  val userRawFolderPath = arcitH resolve relUserRawFolderPath
 
-  def publishedFolderPath = arcitH resolve relPublishedFolderPath
+  val metaFolderPath = arcitH resolve relMetaFolderPath
 
-  def experimentFilePath = metaFolderPath resolve LocalExperiments.EXPERIMENT_FILE_NAME
+  val userMetaFolderPath = arcitH resolve relUserMetaFolderPath
 
-  def digestFilePath = metaFolderPath resolve LocalExperiments.EXPERIMENT_DIGEST_FILE_NAME
+  val transformFolderPath = arcitH resolve relTransformFolderPath
+
+  val publishedFolderPath = arcitH resolve relPublishedFolderPath
+
+  val experimentFilePath = metaFolderPath resolve LocalExperiments.EXPERIMENT_FILE_NAME
+
+  val digestFilePath = metaFolderPath resolve LocalExperiments.EXPERIMENT_DIGEST_FILE_NAME
 
   def ensureFolderStructure(): Unit = {
     expFolderPath.toFile.mkdirs()
     rawFolderPath.toFile.mkdirs()
+    userRawFolderPath.toFile.mkdirs()
     metaFolderPath.toFile.mkdirs()
+    userMetaFolderPath.toFile.mkdirs()
     transformFolderPath.toFile.mkdirs()
     publishedFolderPath.toFile.mkdirs()
   }

@@ -12,6 +12,7 @@ import akka.stream.scaladsl.FileIO
 import akka.util.Timeout
 import com.actelion.research.arcite.core.api.ArciteService._
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
+import com.actelion.research.arcite.core.fileservice.FileServiceActor.{FolderFilesInformation}
 import com.actelion.research.arcite.core.rawdata.DefineRawData._
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
@@ -87,6 +88,14 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(GetTransfDef(digest)).mapTo[MsgFromTransfDefsManager]
   }
 
+  def getAllRawFiles(digest: String) = {
+    arciteService.ask(GetRawFiles(digest)).mapTo[FolderFilesInformation]
+  }
+
+  def getAllMetaFiles(digest: String) = {
+    arciteService.ask(GetMetaFiles(digest)).mapTo[FolderFilesInformation]
+  }
+
   def runTransformFromRaw(runTransform: RunTransformOnRawData) = {
     arciteService.ask(runTransform).mapTo[TransformJobAcceptance]
   }
@@ -145,7 +154,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
         """{ "error" : "arcite 1.0.0-SNAPSHOT API:
           |
           |
-          |GET  /experiments ==>  return all experiments summary info or a few hundrets if there are too many
+          |GET  /experiments ==>  return all experiments summary info or a few hundred if there are too many
           |
           |
           |GET  /experiments?search=searchString&maxHits=number ==>  searching for the given string in the experiments and returning a maximum of maxHits results
@@ -163,16 +172,19 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           |GET /experiment/{uid}/transforms ==>  returns all the transforms for this experiment
           |
           |
-          |GET /experiment/{uid}/files/raw/{subfolder_path} ==>  returns list of raw
+          |POST /experiment/{uid}/file_upload/meta ==>  upload a file to the meta information section (e.g. curl --form "fileupload=@file" http://server:port/experiment/{uid}/file_upload/meta
           |
           |
-          |POST /experiment/{uid}/meta/file_upload ==>  upload a file to the meta information section (e.g. curl --form "fileupload=@README.md http://server:port/experiment/{uid}/meta/file_upload
-          |
-          |
-          |POST /experiment/{uid}/raw/file_upload ==>  upload a file to the raw data section (e.g. curl --form "fileupload=@README.md http://server:port/experiment/{uid}/raw/file_upload
+          |POST /experiment/{uid}/file_upload/raw ==>  upload a file to the raw data section (e.g. curl --form "fileupload=@file" http://server:port/experiment/{uid}/file_upload/raw
           |
           |
           |POST /experiment/{uid}/properties ==>  add properties to the experiment {"property_name" : "property_value"}
+          |
+          |
+          |GET /experiment/{uid}/files/raw ==>  returns list of raw files
+          |
+          |
+          |GET /experiment/{uid}/files/meta ==>  returns list of meta files
           |
           |
           |POST /experiment {"experiment" : "...."}  ==>  add a new experiment
@@ -228,14 +240,14 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       entity(as[SearchExperiments]) { gexp ⇒
         val exps: Future[SomeExperiments] = search4Experiments(gexp.search, gexp.maxHits)
         onSuccess(exps) { fe ⇒
-          complete(fe)
+          complete(OK, fe)
         }
       }
     } ~
       parameters('search, 'maxHits ? 10) { (search, maxHits) ⇒
         val exps: Future[SomeExperiments] = search4Experiments(search, maxHits)
         onSuccess(exps) { fe ⇒
-          complete(fe)
+          complete(OK, fe)
         }
       } ~
       get {
@@ -255,12 +267,12 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
         get {
           logger.info(s"get all transforms for experiment: = $experiment")
           onSuccess(allTransformsForExperiment(experiment)) {
-            case TransformsForExperiment(transformDoneInfoes) ⇒ complete(OK, transformDoneInfoes)
+            case TransformsForExperiment(tdis) ⇒ complete(OK, tdis)
           }
         }
       } ~
-        pathPrefix("meta") {
-          path("file_upload") {
+        pathPrefix("file_upload") {
+          path("meta") {
             post {
               extractRequestContext {
                 ctx => {
@@ -288,38 +300,56 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
                 }
               }
             }
-          }
-        } ~
-        pathPrefix("raw") {
-          path("file_upload") {
-            post {
-              extractRequestContext {
-                ctx => {
-                  implicit val materializer = ctx.materializer
-                  implicit val ec = ctx.executionContext
+          } ~
+            pathPrefix("raw") {
+              post {
+                extractRequestContext {
+                  ctx => {
+                    implicit val materializer = ctx.materializer
+                    implicit val ec = ctx.executionContext
 
-                  fileUpload("fileupload") {
-                    case (fileInfo, fileStream) =>
-                      val tempp = Paths.get("/tmp", UUID.randomUUID().toString)
-                      tempp.toFile.mkdirs()
-                      val fileP = tempp resolve fileInfo.fileName
-                      val sink = FileIO.toPath(fileP)
-                      val writeResult = fileStream.runWith(sink)
-                      onSuccess(writeResult) { result =>
-                        result.status match {
-                          case scala.util.Success(s) =>
-                            fileUploaded(experiment, fileP, false)
-                            complete(OK, s"""{ "message" : "Successfully written ${result.count} bytes" }""")
+                    fileUpload("fileupload") {
+                      case (fileInfo, fileStream) =>
+                        val tempp = Paths.get("/tmp", UUID.randomUUID().toString)
+                        tempp.toFile.mkdirs()
+                        val fileP = tempp resolve fileInfo.fileName
+                        val sink = FileIO.toPath(fileP)
+                        val writeResult = fileStream.runWith(sink)
+                        onSuccess(writeResult) { result =>
+                          result.status match {
+                            case scala.util.Success(s) =>
+                              fileUploaded(experiment, fileP, false)
+                              complete(OK, s"""{ "message" : "Successfully written ${result.count} bytes" }""")
 
-                          case Failure(e) =>
-                            complete(BadRequest, s"""{ "error" : "${e.getCause}" }""")
+                            case Failure(e) =>
+                              complete(BadRequest, s"""{ "error" : "${e.getCause}" }""")
+                          }
                         }
-                      }
+                    }
                   }
                 }
               }
             }
-          }
+        } ~
+        pathPrefix("files") {
+          path("meta") {
+            get {
+              logger.info(s"returning all META files for experiment: $experiment")
+              onSuccess(getAllMetaFiles(experiment)) {
+                case FolderFilesInformation(ffi) ⇒ complete(OK, ffi)
+                case _ ⇒ complete(BadRequest, """{"error": "could not find files" }""")
+              }
+            }
+          } ~
+            path("raw") {
+              get {
+                logger.info(s"returning all RAW files for experiment: $experiment")
+                onSuccess(getAllRawFiles(experiment)) {
+                  case FolderFilesInformation(ffi) ⇒ complete(OK, ffi)
+                  case _ ⇒ complete(BadRequest, """{"error": "could not find files" }""")
+                }
+              }
+            }
         } ~
         pathPrefix("design") {
           pathEnd {
@@ -356,14 +386,14 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
               case NoExperimentFound ⇒ complete(BadRequest, """{"error" : "no experiment found. "} """)
               case ExperimentFound(exp) ⇒ complete(OK, exp)
             }
-          }~
-          delete {
-            logger.info(s"deleting experiment: $experiment")
-            onSuccess(deleteExperiment(experiment)) {
-              case ExperimentDeletedSuccess ⇒ complete(OK, """{"message" : "experiment deleted."}""")
-              case ExperimentDeleteFailed(error) ⇒ complete(BadRequest, s"""{"error" : "$error"}""")
+          } ~
+            delete {
+              logger.info(s"deleting experiment: $experiment")
+              onSuccess(deleteExperiment(experiment)) {
+                case ExperimentDeletedSuccess ⇒ complete(OK, """{"message" : "experiment deleted."}""")
+                case ExperimentDeleteFailed(error) ⇒ complete(BadRequest, s"""{"error" : "$error"}""")
+              }
             }
-          }
         }
 
     } ~
