@@ -160,7 +160,10 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           |DELETE  /experiment/{uid} ==>  delete the experiment
           |
           |
-          |GET /experiment/{uid}/transforms ==>  returned all the transforms for this experiment
+          |GET /experiment/{uid}/transforms ==>  returns all the transforms for this experiment
+          |
+          |
+          |GET /experiment/{uid}/files/raw/{subfolder_path} ==>  returns list of raw
           |
           |
           |POST /experiment/{uid}/meta/file_upload ==>  upload a file to the meta information section (e.g. curl --form "fileupload=@README.md http://server:port/experiment/{uid}/meta/file_upload

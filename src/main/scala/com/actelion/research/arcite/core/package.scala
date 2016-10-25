@@ -4,6 +4,7 @@ import java.io.File
 import java.nio.file.Paths
 
 import com.typesafe.config.ConfigFactory
+import org.slf4j.LoggerFactory
 
 /**
   * Created by deffabe1 on 7/12/16.
@@ -12,11 +13,15 @@ package object core {
 
   val config = ConfigFactory.load
 
+  val logger = LoggerFactory.getLogger(getClass)
+
   val archivePath = Paths.get(config.getString("arcite.home"), "_archives")
   if (!archivePath.toFile.exists) archivePath.toFile.mkdirs()
 
   val dataPath = Paths.get(config.getString("arcite.home"), "experiments")
   if (!dataPath.toFile.exists) dataPath.toFile.mkdirs()
+  logger.debug(s"data Path: $dataPath")
+  logger.debug(s"archive path: $archivePath")
 
   def allRegexFilesInFolderAndSubfolder(folder: String, regex: String, includeSubfolder: Boolean): Map[File, String] = {
     val reg = regex.r

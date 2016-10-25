@@ -1,9 +1,10 @@
 package com.actelion.research.arcite.core.fileservice
 
+import java.io.File
 import java.nio.file.Path
 
 import akka.actor.{Actor, ActorLogging, Props}
-import com.actelion.research.arcite.core.experiments.Experiment
+import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor}
 import com.typesafe.config.{Config, ConfigFactory}
 
 /**
@@ -37,12 +38,46 @@ import com.typesafe.config.{Config, ConfigFactory}
   */
 class FileServiceActor(config: Config) extends Actor with ActorLogging {
 
+  import FileServiceActor._
+
+  var sourceFolders = Map[String, Path]()
 
   override def receive = {
+    case SetSourceFolder(name, path) ⇒
+      sourceFolders += ((name, path))
 
+    case GetSourceFolders ⇒
+      sender() ! SourceFoldersAsString(sourceFolders.map(sf ⇒ (sf._1, sf._2.toString)))
+
+    case GetFiles(rootFileLoc, subFolder) ⇒
+      rootFileLoc match {
+        case rfl: FromExperiment ⇒
+          val ev = ExperimentFolderVisitor(rfl.experiment)
+          sender() ! getFolderAndFiles(ev.metaFolderPath, subFolder)
+
+        case rfl: FromSourceFolder ⇒
+          val sourceF = sourceFolders.get(rfl.name)
+          if (sourceF.isDefined) sender() ! getFolderAndFiles(sourceF.get, subFolder)
+          else sender() ! FoundFiles(GetFiles(rootFileLoc, subFolder), Set(), Set())
+      }
+
+      def getFolderAndFiles(sourceP: Path, subFolderPath: List[String]): FoundFiles = {
+
+        val folder = subFolderPath.foldLeft(sourceP)((p, s) ⇒ p resolve s).toFile
+
+        if (folder.exists()) {
+          if (folder.isDirectory) {
+            val subdirs = folder.listFiles.filter(f ⇒ f.isDirectory).map(_.toString).toSet
+            val files = folder.listFiles.filter(f ⇒ f.isFile).map(FileVisitor(_).fileInformation).toSet
+            FoundFiles(GetFiles(rootFileLoc, subFolderPath), subdirs, files)
+          } else {
+            FoundFiles(GetFiles(rootFileLoc, subFolderPath), Set(), Set(FileVisitor(folder).fileInformation))
+          }
+        } else {
+          FoundFiles(GetFiles(rootFileLoc, subFolderPath), Set(), Set())
+        }
+      }
   }
-
-
 }
 
 object FileServiceActor {
@@ -51,12 +86,46 @@ object FileServiceActor {
   def props(): Props = Props(classOf[FileServiceActor], config)
 
   sealed trait RootFileLocations
-  case class RawFolder(experiment: Experiment) extends RootFileLocations
-  case class MetaFolder(experiment: Experiment) extends RootFileLocations
-  case class SourceFolder(name: String, fullPath: Path) extends RootFileLocations
 
-  case class FileInformation(name: String, )
-  case class GetFilesList(rootLocation: RootFileLocations, subFolder: List[String] = List())
+  sealed trait FromExperiment extends RootFileLocations {
+    def experiment: Experiment
+  }
 
-  case class FoundFiles(getFilesList: GetFilesList, folders: Set[String], files: Set[String])
+  case class FromRawFolder(experiment: Experiment) extends FromExperiment
+
+  case class FromMetaFolder(experiment: Experiment) extends FromExperiment
+
+  case class FromSourceFolder(name: String) extends RootFileLocations
+
+
+  case class FileInformation(name: String, fileSize: String)
+
+  case class FileVisitor(file: File) {
+    require(file.exists())
+
+    def sizeToString(fileSize: Long): String = {
+      if (fileSize < 1024) s"$fileSize B"
+      else {
+        val z = (63 - java.lang.Long.numberOfLeadingZeros(fileSize)) / 10
+        s""" ${fileSize.toDouble / (1L << (z * 10))} ${"KMGTPE" (z - 1)}"""
+      }
+    }
+
+    lazy val fileInformation = FileInformation(file.getName, sizeToString(file.length()))
+  }
+
+  case class SetSourceFolder(name: String, fullPath: Path)
+
+
+  case object GetSourceFolders
+
+
+  case class SourceFoldersAsString(sourceFolders: Map[String, String])
+
+
+  case class GetFiles(rootLocation: RootFileLocations, subFolder: List[String] = List())
+
+
+  case class FoundFiles(getFilesList: GetFiles, folders: Set[String], files: Set[FileInformation])
+
 }

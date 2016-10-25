@@ -1,4 +1,5 @@
 import java.io.File
+import java.nio.file.{Path, Paths}
 
 import scala.sys.process.ProcessLogger
 
@@ -21,15 +22,70 @@ import scala.sys.process.ProcessLogger
 //println(error)
 //
 //println(output)
-
-var a = Map("a" -> "hlll", "b" -> "hhhd", "c" -> "blkjdf")
-
-a += (("bd" , "dddw"))
-
-a += (("b", "sdafjlkdasfjlkdasf"))
-
-//a -= "b"
 //
-//a -= "sdfa"
+//var a = Map("a" -> "hlll", "b" -> "hhhd", "c" -> "blkjdf")
+//
+//a += (("bd" , "dddw"))
+//
+//a += (("b", "sdafjlkdasfjlkdasf"))
+//
+////a -= "b"
+////
+////a -= "sdfa"
+//
+//println(a)
+//
+//
+//java.lang.Long.numberOfLeadingZeros(0)
+//java.lang.Long.numberOfLeadingZeros(1)
+//java.lang.Long.numberOfLeadingZeros(2)
+//java.lang.Long.numberOfLeadingZeros(3)
+//java.lang.Long.numberOfLeadingZeros(4)
+//java.lang.Long.numberOfLeadingZeros(1024)
+//java.lang.Long.numberOfLeadingZeros(1025)
+//java.lang.Long.numberOfLeadingZeros(Long.MaxValue)
+//java.lang.Long.numberOfLeadingZeros(Long.MinValue)
+//
+//
+//def sizeAsString(fileSize: Long): String = {
+//  if (fileSize < 1024) return s"$fileSize B"
+//  else {
+//    val z = (63 - java.lang.Long.numberOfLeadingZeros(fileSize)) / 10
+//    return s""" ${fileSize.toDouble / (1L << (z*10))} ${"KMGTPE"(z-1)}"""
+//  }
+//}
+//
+//sizeAsString(1023)
+//sizeAsString(1024)
+//sizeAsString(1025)
+//sizeAsString(4096)
+//sizeAsString(1024*1024)
+//
+//
+//1L << 10
+//
+//10 >> 1L
+//10 >> 1
+//
+//1.toBinaryString
+//
+//
+//127.toBinaryString
+//128.toBinaryString
+//-128.toBinaryString
+//-1.toBinaryString
+//Int.MaxValue.toBinaryString
+//-2.toBinaryString
+//-3.toBinaryString
+//Int.MinValue.toBinaryString
+//
 
-println(a)
+
+//val sl = List("hello", "world", "jupiter")
+val sl = List[String]()
+
+val p = Paths.get("hello")
+
+val f = sl.foldLeft(p)((p, s) ⇒ p resolve s)
+
+
