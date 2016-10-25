@@ -404,7 +404,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             val saved: Future[AddExperimentResponse] = addNewExperiment(exp)
             onSuccess(saved) {
               case AddedExperiment(uid) ⇒ complete(Created, s"""{"experiment": $uid", "comment": "new experiment added." """)
-              case FailedAddingExperiment(msg) ⇒ complete(BadRequest, """{"error" : "$msg" }""")
+              case FailedAddingExperiment(msg) ⇒ complete(BadRequest, s"""{"error" : "$msg" }""")
             }
           }
         }
@@ -414,9 +414,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
   def getTransformsRoute = path("transform_definitions") {
     parameter('search) {
       search ⇒
-        logger.debug(s"GET on /transform_definitions, should return all transform definitions searching for ${
-          search
-        }")
+        logger.debug(s"""GET on /transform_definitions,
+                 should return all transform definitions searching for ${search}""")
         onSuccess(findTransfDefs(search)) {
           case ManyTransfDefs(tdis) ⇒ complete(OK, tdis)
           case NoTransfDefFound ⇒ complete(OK, """{"results" : "empty"}""")

@@ -56,20 +56,24 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
 
     case AddExperimentWithRequester(exp, requester) ⇒
-      experiments += ((exp.digest, exp))
+      if (!experiments.get(exp.digest).isDefined) {
+        experiments += ((exp.digest, exp))
 
-      LocalExperiments.saveExperiment(exp) match {
+        LocalExperiments.saveExperiment(exp) match {
 
-        case SaveExperimentSuccessful ⇒
-          requester ! AddedExperiment
+          case SaveExperimentSuccessful ⇒
+            requester ! AddedExperiment(exp.digest)
 
-        case SaveExperimentFailed(error) ⇒
-          requester ! FailedAddingExperiment(error)
+          case SaveExperimentFailed(error) ⇒
+            requester ! FailedAddingExperiment(error)
+        }
+
+        luceneRamSearchAct ! IndexExperiment(exp)
+
+        self ! TakeSnapshot
+      } else {
+        requester ! FailedAddingExperiment(s"same experiment ${exp.owner.organization}/${exp.name} already exists. ")
       }
-
-      luceneRamSearchAct ! IndexExperiment(exp)
-
-      self ! TakeSnapshot
 
 
     case DeleteExperimentWithRequester(digest, requester) ⇒
