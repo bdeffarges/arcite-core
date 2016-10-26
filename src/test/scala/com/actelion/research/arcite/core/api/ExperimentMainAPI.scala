@@ -13,21 +13,38 @@ class ExperimentMainAPI extends CornichonFeature {
 
   lazy val conf = ConfigFactory.load(System.getProperty("api.test.config.resource"))
     .withFallback(ConfigFactory.load("api.test.conf"))
-    .withFallback(ConfigFactory.load())
 
   override lazy val baseUrl = s"""http://${conf.getString("http.host")}:${conf.getString("http.port")}"""
 
-
   lazy val feature = Feature("Experiments API") {
 
-    Scenario("list of all experiments available ") {
+    Scenario("All experiments available ") {
 
       When I get("/experiments")
 
       Then assert status.is(200)
 
-      And assert body.path("experiments[0].name").is("AMS0023")
     }
+
+    Scenario("Find one experiment") {
+
+      When I get("/experiments").withParams(
+        "search" -> "AMS0094",
+        "maxHits" -> "1"
+      )
+
+      Then assert status.is(200)
+
+      And assert body.path("totalResults").is(1)
+
+      And assert body.path("experiments").asArray.hasSize(1)
+
+      And assert body.path("experiments[0].name").is("AMS0094")
+    }
+
+//    Scenario("retrieve one experiment") {
+//
+//    }
 //    Scenario("search for some experiments ") {
 //
 //      When I post("/experiments", """{"search" : "bleomycyn"}""")
