@@ -51,7 +51,7 @@ object Main extends App {
     log.info(s"RestApi bound to ${serverBinding.localAddress} ")
   }.onFailure {
     case ex: Exception ⇒
-      log.error(ex, "Failed to bind to {}:{}!", host, port)
+      log.error(ex, s"Failed to bind to $host:$port")
       system.terminate()
   }
 }

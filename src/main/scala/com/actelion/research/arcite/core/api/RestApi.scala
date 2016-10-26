@@ -4,6 +4,7 @@ import java.nio.file.{Path, Paths}
 import java.util.UUID
 
 import akka.actor.{ActorRef, ActorSystem}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
@@ -12,18 +13,23 @@ import akka.stream.scaladsl.FileIO
 import akka.util.Timeout
 import com.actelion.research.arcite.core.api.ArciteService._
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
-import com.actelion.research.arcite.core.fileservice.FileServiceActor.{FolderFilesInformation}
+import com.actelion.research.arcite.core.fileservice.FileServiceActor.FolderFilesInformation
 import com.actelion.research.arcite.core.rawdata.DefineRawData._
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.{NotOk, _}
 import com.actelion.research.arcite.core.transforms.cluster.WorkState._
+import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Failure
 
 trait ArciteServiceApi extends LazyLogging {
+
+  val config = ConfigFactory.load()
+
+  val apiSpec = config.getString("api.specification")
 
   def createArciteApi(): ActorRef
 
@@ -150,87 +156,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
 
   def defaultRoute = {
     get {
-      complete(NotFound,
-        """{ "error" : "arcite 1.0.0-SNAPSHOT API:
-          |
-          |
-          |GET  /experiments ==>  return all experiments summary info or a few hundred if there are too many
-          |
-          |
-          |GET  /experiments?search=searchString&maxHits=number ==>  searching for the given string in the experiments and returning a maximum of maxHits results
-          |
-          |
-          |POST /experiments {"search" : "search string"} ==>   return all experiments for the given search string, same as previous but with post
-          |
-          |
-          |GET  /experiment/{uid} ==>  return one experiment with every information regarding its design
-          |
-          |
-          |DELETE  /experiment/{uid} ==>  delete the experiment
-          |
-          |
-          |GET  /experiment/{uid}/transforms ==>  returns all the transforms for this experiment
-          |
-          |
-          |POST  /experiment/{uid}/file_upload/meta ==>  upload a file to the meta information section (e.g. curl --form "fileupload=@file" http://server:port/experiment/{uid}/file_upload/meta
-          |
-          |
-          |POST  /experiment/{uid}/file_upload/raw ==>  upload a file to the raw data section (e.g. curl --form "fileupload=@file" http://server:port/experiment/{uid}/file_upload/raw
-          |
-          |
-          |POST  /experiment/{uid}/properties ==>  add properties to the experiment {"property_name" : "property_value"}
-          |
-          |
-          |GET  /experiment/{uid}/files/raw ==>  returns list of raw files
-          |
-          |
-          |GET  /experiment/{uid}/files/meta ==>  returns list of meta files
-          |
-          |
-          |POST /experiment {"experiment" : "...."}  ==>  add a new experiment
-          |
-          |
-          |POST /experiment/clone {"experiment" : "....", "organization": "new organization path, if not specified, will use the original", "name": "new name"}  ==>  clone an experiment
-          |
-          |
-          |POST /design {"experiment": "uid", "design": {"description" : "desc", "sampleConditions" : [[{"name": "AA1", "description": "AA1", "category": "sampleID"}, {"name": "ACT-1234", "description": "ACT-1234", "category": "compound"}]..]}} ==>  add design to experiment
-          |
-          |
-          |POST /raw_data/files {"experiment": "uid", "filesAndTarget" : ["rawfiles list"], "transferFiles": boolean } ==>  defines raw files for a experiment, files and target is a map, one original file to a target name for the file. If target name is omited, arcite will take the current file name.
-          |
-          |
-          |POST /raw_data/folder {"experiment": "uid", "folder" : "folder", "regex": "regex", "withSubfolder": boolean, "transferFiles": boolean} ==>  defines raw data folder with regex to pick up files for a experiment
-          |
-          |
-          |GET  /transform_definitions ==>   returns all possible transform definitions
-          |
-          |
-          |GET  /transform_definitions?search=search_string ==>  returns all transform definitions based on search criteria
-          |
-          |
-          |GET  /transform_definition/{uid} ==>   one specific transform
-          |
-          |
-          |POST /run_transform/{"experiment": "uid", "transformDefinition": "uid", "parameters": JSValue} ==>  run the specified transform on the given experiment with the given json parameters as parameter object
-          |
-          |
-          |POST /run_transform/on_transform/{"experiment": "uid", "transformDefinition": "uid", "transformOrigin" :"uid", "parameters": JSValue} ==>  run the specified transform on the given experiment starting from another transform, the given json parameter can be added
-          |
-          |
-          |POST /run_transform/on_raw_data/{"experiment": "uid", "transformDefinition": "uid", "transformOrigin" :"uid", "parameters": JSValue} ==>  run the specified transform on the given experiment starting with the default raw data (usually the first transform), the given json parameter can be added
-          |
-          |
-          |POST /run_transform/on_transform_with_exclusions/{"experiment": "uid", "transformDefinition": "uid", "transformOrigin" :"uid",  "excludes": [], "excludesRegex": [], "parameters": JSValue} ==>  run the specified transform on the given experiment starting from another transform, the given json parameter can be added
-          |
-          |
-          |POST /run_transform/on_raw_data_with_exclusions/{"experiment": "uid", "transformDefinition": "uid", "transformOrigin" :"uid", "excludes": [], "excludesRegex": [], parameters": JSValue} ==>  run the specified transform on the given experiment starting with the default raw data (usually the first transform), the given json parameter can be added
-          |
-          |
-          |GET /job_status/{uid} ==>  information about the job with the given uid
-          |
-          |
-          |GET /all_jobs_status ==>  information about all current jobs (running, completed, in progress, ...)"}
-        """.stripMargin)
+      complete(HttpEntity(ContentTypes.`text/html(UTF-8)`,apiSpec.stripMargin))
     }
   }
 
@@ -414,7 +340,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
   def getTransformsRoute = path("transform_definitions") {
     parameter('search) {
       search ⇒
-        logger.debug(s"""GET on /transform_definitions,
+        logger.debug(
+          s"""GET on /transform_definitions,
                  should return all transform definitions searching for ${search}""")
         onSuccess(findTransfDefs(search)) {
           case ManyTransfDefs(tdis) ⇒ complete(OK, tdis)

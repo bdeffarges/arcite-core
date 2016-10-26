@@ -59,10 +59,10 @@ libraryDependencies ++= {
 
   Seq(
     "org.specs2" %% "specs2-core" % "3.7" % "test",
-    "org.scalatest" %% "scalatest" % "2.2.6" % "test",
+    "org.scalatest" %% "scalatest" % "3.0.0" % "test",
     "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",
     "com.typesafe.akka" %% "akka-multi-node-testkit" % akkaVersion % "test",
-    "com.github.agourlay" %% "cornichon" % "0.7.2" % "test",
+    "com.github.agourlay" %% "cornichon" % "0.9.3" % "test",
     "org.json4s" %% "json4s-jackson" % "3.3.0" % "test",
     "com.typesafe.akka" %% "akka-kernel" % akkaVersion,
     "com.typesafe.akka" %% "akka-actor" % akkaVersion,
