@@ -169,22 +169,22 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           |DELETE  /experiment/{uid} ==>  delete the experiment
           |
           |
-          |GET /experiment/{uid}/transforms ==>  returns all the transforms for this experiment
+          |GET  /experiment/{uid}/transforms ==>  returns all the transforms for this experiment
           |
           |
-          |POST /experiment/{uid}/file_upload/meta ==>  upload a file to the meta information section (e.g. curl --form "fileupload=@file" http://server:port/experiment/{uid}/file_upload/meta
+          |POST  /experiment/{uid}/file_upload/meta ==>  upload a file to the meta information section (e.g. curl --form "fileupload=@file" http://server:port/experiment/{uid}/file_upload/meta
           |
           |
-          |POST /experiment/{uid}/file_upload/raw ==>  upload a file to the raw data section (e.g. curl --form "fileupload=@file" http://server:port/experiment/{uid}/file_upload/raw
+          |POST  /experiment/{uid}/file_upload/raw ==>  upload a file to the raw data section (e.g. curl --form "fileupload=@file" http://server:port/experiment/{uid}/file_upload/raw
           |
           |
-          |POST /experiment/{uid}/properties ==>  add properties to the experiment {"property_name" : "property_value"}
+          |POST  /experiment/{uid}/properties ==>  add properties to the experiment {"property_name" : "property_value"}
           |
           |
-          |GET /experiment/{uid}/files/raw ==>  returns list of raw files
+          |GET  /experiment/{uid}/files/raw ==>  returns list of raw files
           |
           |
-          |GET /experiment/{uid}/files/meta ==>  returns list of meta files
+          |GET  /experiment/{uid}/files/meta ==>  returns list of meta files
           |
           |
           |POST /experiment {"experiment" : "...."}  ==>  add a new experiment
