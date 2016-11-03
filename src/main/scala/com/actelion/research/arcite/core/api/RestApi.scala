@@ -6,6 +6,7 @@ import java.util.UUID
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
 import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.pattern.ask
@@ -144,19 +145,26 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
 
   import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 
-  def routes: Route = experimentsRoute ~
-    experimentRoute ~
-    rawDataRoute ~
-    getTransformsRoute ~
-    getOneTransformRoute ~
-    runTransformRoute ~
-    transformFeedbackRoute ~
-    allTransformsFeedbackRoute ~
-    defaultRoute
+  //todo try cors again with lomigmegard/akka-http-cors
+  val corsHeaders = List(RawHeader("Access-Control-Allow-Origin", "*"),
+    RawHeader("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS, DELETE"),
+    RawHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization") )
+
+  def routes: Route = respondWithHeaders(corsHeaders) {
+    experimentsRoute ~
+      experimentRoute ~
+      rawDataRoute ~
+      getTransformsRoute ~
+      getOneTransformRoute ~
+      runTransformRoute ~
+      transformFeedbackRoute ~
+      allTransformsFeedbackRoute ~
+      defaultRoute
+  }
 
   def defaultRoute = {
     get {
-      complete(HttpEntity(ContentTypes.`text/html(UTF-8)`,apiSpec.stripMargin))
+      complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, apiSpec.stripMargin))
     }
   }
 

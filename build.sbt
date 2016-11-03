@@ -53,7 +53,7 @@ resolvers ++= Seq(
 
 
 libraryDependencies ++= {
-  val akkaVersion = "2.4.10"
+  val akkaVersion = "2.4.12"
   val sparkVersion = "1.6.2"
   val luceneVersion = "5.0.0"
 
@@ -73,11 +73,9 @@ libraryDependencies ++= {
     "com.typesafe.akka" %% "akka-kernel" % akkaVersion,
     "com.typesafe.akka" %% "akka-stream" % akkaVersion,
     "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
-    "com.typesafe.akka" %% "akka-http-core" % akkaVersion,
-    "com.typesafe.akka" %% "akka-http-experimental" % akkaVersion,
-    "com.typesafe.akka" %% "akka-http-testkit" % akkaVersion,
+    "com.typesafe.akka" %% "akka-http" % "3.0.0-RC1", // core, test, etc. should come as well as dependencies
+    "com.typesafe.akka" %% "akka-http-spray-json" % "3.0.0-RC1",
     "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
-    "com.typesafe.akka" %% "akka-http-spray-json-experimental" % akkaVersion,
     "com.typesafe.scala-logging" %% "scala-logging" % "3.1.0",
     "org.apache.spark" %% "spark-core" % sparkVersion,
     "org.apache.spark" %% "spark-graphx" % sparkVersion,
