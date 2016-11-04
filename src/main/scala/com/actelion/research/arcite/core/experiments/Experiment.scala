@@ -3,6 +3,7 @@ package com.actelion.research.arcite.core.experiments
 import java.nio.file.Paths
 
 import com.actelion.research.arcite.core
+import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.utils._
 import com.typesafe.config.ConfigFactory
 
@@ -24,9 +25,13 @@ case class Experiment(name: String, description: String, owner: Owner, state: Ex
 
 object DefaultExperiment {
 
-  val defaultExperiment = Experiment("default-experiment", "an experiment to experiment with the system or to do anything that does not require the definition of an experiment", DefaultOwner.systemOwner)
-
+  val defaultExperiment = Experiment("default-experiment",
+    "an experiment to experiment with the system or to do anything that does not require the definition of an experiment",
+    DefaultOwner.systemOwner)
 }
+
+case class ExperimentForAPI(name: String, description: String, owner: Owner, state: ExperimentState,
+                            design: ExperimentalDesign, properties: Map[String, String], digest: String)
 
 /**
   * An experiment summary information (no details like design)
@@ -126,3 +131,11 @@ case object Published extends ExperimentState
 
 case object Remote extends ExperimentState
 
+
+object ExperimentHelper extends ArciteJSONProtocol {
+  import spray.json._
+
+  def getAsJsonApiString(exp: ExperimentForAPI): String = exp.toJson.prettyPrint
+
+  def getAsJsonString(exp: Experiment): String = exp.toJson.prettyPrint
+}

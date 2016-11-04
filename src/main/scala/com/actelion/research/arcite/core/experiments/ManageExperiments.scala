@@ -171,7 +171,8 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
 
     case FoundExperimentsWithRequester(foundExperiments, requester) ⇒
-      val resp = foundExperiments.experiments.map(f ⇒ (f.digest, experiments(f.digest))).toMap
+      val resp = foundExperiments.experiments.map(f ⇒ experiments(f.digest))
+        .map(f ⇒ ExperimentForAPI(f.name, f.description, f.owner, f.state, f.design, f.properties, f.digest))
       requester ! SomeExperiments(resp.size, resp)
 
 

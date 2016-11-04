@@ -92,9 +92,9 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val experimentalDesignJson = jsonFormat2(ExperimentalDesign)
   implicit val experimentJson = jsonFormat6(Experiment)
   implicit val experimentSummaryJson = jsonFormat4(ExperimentSummary)
+  implicit val experimentForApiJson = jsonFormat7(ExperimentForAPI)
 
   implicit val stateJSon = jsonFormat1(State)
-
 
   implicit object TransformSourceJsonFormat extends RootJsonFormat[TransformSource] {
 

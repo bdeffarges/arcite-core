@@ -2,11 +2,13 @@ package com.actelion.research.arcite.core.api
 
 import java.util.UUID
 
-import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentalDesign}
+import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentHelper, ExperimentalDesign}
 import com.actelion.research.arcite.core.utils.Owner
 import com.github.agourlay.cornichon.CornichonFeature
 import com.typesafe.config.ConfigFactory
 import akka.http.scaladsl.model.StatusCodes._
+import com.github.agourlay.cornichon.steps.regular.assertStep.{AssertStep, CustomMessageAssertion}
+import org.slf4j.LoggerFactory
 
 abstract class ApiTestingWithCornichon extends CornichonFeature {
   lazy val conf = ConfigFactory.load(System.getProperty("api.test.config.resource"))
@@ -20,6 +22,21 @@ abstract class ApiTestingWithCornichon extends CornichonFeature {
   val owner = Owner(organization, person)
   val design1 = ExperimentalDesign("testing design")
 
+  val logger = LoggerFactory.getLogger(this.getClass)
+}
+
+case class experimentsSize(source: String) {
+
+  private def szError(v: Int, ms: Int): Boolean ⇒ String = b ⇒ s"$v is not bigger than $ms"
+
+  def isBigger(minSize: Int) =
+    AssertStep(
+      title = s"size of json array $source is bigger than $minSize",
+      action = s ⇒ {
+        val v = s.get(source).toInt
+        CustomMessageAssertion(true, v > minSize, szError(v, minSize))
+      }
+    )
 }
 
 /**
@@ -43,16 +60,13 @@ class FindExperiments extends ApiTestingWithCornichon {
     Scenario("Find many experiment") {
 
       When I get("/experiments").withParams(
-        "search" -> "AMS",
-        "maxHits" -> "20"
+        "search" -> "replicate",
+        "maxHits" -> "10"
       )
 
       Then assert status.is(200)
 
-      And assert body.path("totalResults").is(1)
-
-      And assert body.path("experiments").asArray.hasSize(20)
-
+      And assert body.path("experiments").asArray.hasSize(10)
     }
 
     Scenario("Find one experiment") {
@@ -70,53 +84,15 @@ class FindExperiments extends ApiTestingWithCornichon {
 
       And assert body.path("experiments[0].name").is("AMS0094")
     }
-
-    //    Scenario("retrieve one experiment") {
-    //
-    //    }
-    //    Scenario("search for some experiments ") {
-    //
-    //      When I post("/experiments", """{"search" : "bleomycyn"}""")
-    //
-    //      Then assert status.is(200)
-    //
-    //      And assert body.path("experiments.b33b369d48caa3d791cc7136e65c679db7c7419fc0fcda16542fcb4c96782ad5.name")
-    //        .is("AMS0014_2")
-    //    }
-    //
-    //    Scenario("insert new experiment") {
-    //
-    //      When I post("/experiment",
-    //        """
-    //          {
-    //            "experiment" : {
-    //              "name": "hello mars", "description": "Mars is great", "state": "new",
-    //              "design": {
-    //                "description": "design for Mars", "sampleConditions":[]},
-    //                "owner": {
-    //                  "organization" : "com.actelion.research", "person" : "B. Deffarges"
-    //                },
-    //                "properties": {}}}
-    //        """)
-    //
-    //      Then assert status.is(200)
-
-    //    }
-
   }
 }
 
 
 class AddDeleteExperiment extends ApiTestingWithCornichon {
 
-  def feature = Feature("Add and delete experiment") {
-    val name = s"test-experiment-${UUID.randomUUID()}"
-    import spray.json._
-    val exp1 = Experiment(name = name, description = description,
-      owner = owner, design = design1)
+  var expAsJson: String = _
 
-
-    val expAsJson = exp1.toJson.prettyPrint
+  lazy val feature = Feature("Add and delete experiment") {
 
     Scenario("add an experiment") {
 
@@ -125,6 +101,7 @@ class AddDeleteExperiment extends ApiTestingWithCornichon {
       Then assert status.is(Created.intValue)
     }
 
+
     Scenario("add same experiment") {
 
       When I post("/experiment").withBody(expAsJson)
@@ -132,17 +109,35 @@ class AddDeleteExperiment extends ApiTestingWithCornichon {
       Then assert status.is(Conflict.intValue)
     }
 
-    Scenario("delete experiment") {
-      When I delete(s"/experiment/${exp1.digest}")
 
-      Then assert status.is(OK.intValue)
-    }
+//    Scenario("delete experiment") {
+//
+//      When I delete(s"/experiment/${exp1.digest}")
+//
+//      Then assert status.is(OK.intValue)
+//    }
+//
+//
+//    Scenario("delete experiment again") {
+//      When I delete(s"/experiment/${exp1.digest}")
+//
+//      Then assert status.is(NotFound.intValue)
+//    }
+  }
 
-    Scenario("delete experiment again") {
-      When I delete(s"/experiment/${exp1.digest}")
 
-      Then assert status.is(NotFound.intValue)
-    }
+  beforeFeature {
+    val name = s"test-experiment-${UUID.randomUUID()}"
+
+    val exp1 = Experiment(name = name, description = description,
+      owner = owner, design = design1)
+
+    val digest = exp1.digest
+
+    expAsJson = ExperimentHelper.getAsJsonString(exp1)
+
+    logger.info(s"add delete test with exp= $exp1, digest=${exp1.digest}")
+    logger.info(s"add delete test with json exp= $expAsJson")
   }
 
 }
