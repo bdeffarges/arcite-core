@@ -325,7 +325,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
               logger.info(s"deleting experiment: $experiment")
               onSuccess(deleteExperiment(experiment)) {
                 case ExperimentDeletedSuccess ⇒ complete(OK, """{"message" : "experiment deleted."}""")
-                case ExperimentDeleteFailed(error) ⇒ complete(BadRequest, s"""{"error" : "$error"}""")
+                case ExperimentDeleteFailed(error) ⇒ complete(NotFound, s"""{"error" : "$error"}""")
               }
             }
         }
@@ -338,7 +338,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             val saved: Future[AddExperimentResponse] = addNewExperiment(exp)
             onSuccess(saved) {
               case AddedExperiment(uid) ⇒ complete(Created, s"""{"experiment": $uid", "comment": "new experiment added." """)
-              case FailedAddingExperiment(msg) ⇒ complete(BadRequest, s"""{"error" : "$msg" }""")
+              case FailedAddingExperiment(msg) ⇒ complete(Conflict, s"""{"error" : "$msg" }""")
             }
           }
         }

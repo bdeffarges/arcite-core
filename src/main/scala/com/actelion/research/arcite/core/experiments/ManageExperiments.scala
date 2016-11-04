@@ -56,7 +56,7 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
 
     case AddExperimentWithRequester(exp, requester) ⇒
-      if (!experiments.get(exp.digest).isDefined) {
+      if (experiments.get(exp.digest).isEmpty) {
         experiments += ((exp.digest, exp))
 
         LocalExperiments.saveExperiment(exp) match {
