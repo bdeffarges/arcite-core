@@ -81,6 +81,8 @@ case class ExperimentFolderVisitor(exp: Experiment) {
 
   val metaFolderPath = arcitH resolve relMetaFolderPath
 
+  val logsFolderPath = relMetaFolderPath resolve "logs"
+
   val userMetaFolderPath = arcitH resolve relUserMetaFolderPath
 
   val transformFolderPath = arcitH resolve relTransformFolderPath
@@ -96,6 +98,7 @@ case class ExperimentFolderVisitor(exp: Experiment) {
     rawFolderPath.toFile.mkdirs()
     userRawFolderPath.toFile.mkdirs()
     metaFolderPath.toFile.mkdirs()
+    logsFolderPath.toFile.mkdir()
     userMetaFolderPath.toFile.mkdirs()
     transformFolderPath.toFile.mkdirs()
     publishedFolderPath.toFile.mkdirs()
@@ -109,7 +112,7 @@ case class ExperimentFolderVisitor(exp: Experiment) {
   *
   * New: the experiment is defined, local and saved in the file structure and everything except its "full name" can be changed.
   *
-  * Sealed: At least one successful transform has been completed. From now on, the experiment cannot be modified including
+  * Immutable: At least one successful transform has been completed. From now on, the experiment cannot be modified including
   * any of its meta data. The experiment is final, it must be cloned into another one to change the meta information
   * like experiment design.
   *
@@ -123,9 +126,16 @@ sealed trait ExperimentState
 
 case object New extends ExperimentState
 
-case object Sealed extends ExperimentState
+case object Immutable extends ExperimentState
 
 case object Published extends ExperimentState
 
 case object Remote extends ExperimentState
+
+/**
+  * Experiment change log
+  */
+case class ExperimentLog(date: String, action: String)
+
+
 

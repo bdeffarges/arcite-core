@@ -77,10 +77,10 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
 
     def read(value: JsValue) = value match {
       case JsString("New") ⇒ New
-      case JsString("Sealed") ⇒ Sealed
+      case JsString("Sealed") ⇒ Immutable
       case JsString("Published") ⇒ Published
       case JsString("Remote") ⇒ Remote
-      case _ ⇒ Sealed
+      case _ ⇒ Immutable
 
 //      case _ ⇒ deserializationError("Experiment state expected")
     }
