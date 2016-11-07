@@ -31,7 +31,7 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
     logger.debug(s"loading all experiments from local network ${core.dataPath}... ")
 
     loadAllExperiments() +
-      (DefaultExperiment.defaultExperiment.digest -> DefaultExperiment.defaultExperiment)
+      (DefaultExperiment.defaultExperiment.uid -> DefaultExperiment.defaultExperiment)
   }
 
 
@@ -85,7 +85,7 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
 
     val strg = exp.toJson.prettyPrint
 
-    val dig = exp.digest
+    val dig = exp.uid
 
     import StandardOpenOption._
     import java.nio.file.StandardCopyOption._

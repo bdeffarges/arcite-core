@@ -17,6 +17,7 @@ case class Owner(organization: String, person: String) {
   override def toString: String = s"$organization:$person"
 
   def asFileStructure = organization.replace(".", File.separator)
+
 }
 
 object DefaultOwner {

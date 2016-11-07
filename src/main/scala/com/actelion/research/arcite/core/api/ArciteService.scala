@@ -7,7 +7,7 @@ import akka.util.Timeout
 import breeze.numerics.exp
 import com.actelion.research.arcite.core.FileInformationWithSubFolder
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
-import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentForAPI, ExperimentSummary}
+import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSummary}
 import com.actelion.research.arcite.core.rawdata.DefineRawData.{RawDataSet, RawDataSetRegex, RawDataSetRegexWithRequester, RawDataSetWithRequester}
 import com.actelion.research.arcite.core.rawdata._
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{SearchForXResults, SearchForXResultsWithRequester}
@@ -53,7 +53,8 @@ object ArciteService {
 
   case object EmptyListOfExperiments extends ExperimentsResponse
 
-  case class SomeExperiments(totalResults: Int, experiments: List[ExperimentForAPI]) extends ExperimentsResponse //todo  could provide where it was found
+  //todo could provide where it was found
+  case class SomeExperiments(totalResults: Int, experiments: List[ExperimentSummary]) extends ExperimentsResponse
 
   case class AllExperiments(experiments: Set[ExperimentSummary]) extends ExperimentsResponse
 

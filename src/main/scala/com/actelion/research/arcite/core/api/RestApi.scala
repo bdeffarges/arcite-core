@@ -59,7 +59,7 @@ trait ArciteServiceApi extends LazyLogging {
   }
 
   def search4Experiments(search: String, maxHits: Int) = {
-    logger.debug(s"searching for $search, returning $maxHits hits.")
+    logger.debug(s"searching for $search,  returning $maxHits max hits.")
     arciteService.ask(SearchExperiments(search, maxHits)).mapTo[SomeExperiments]
   }
 
@@ -178,7 +178,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
         }
       }
     } ~
-      parameters('search, 'maxHits ? 10) { (search, maxHits) ⇒
+      parameters('search, 'maxHits ? 100) { (search, maxHits) ⇒
         val exps: Future[SomeExperiments] = search4Experiments(search, maxHits)
         onSuccess(exps) { fe ⇒
           complete(OK, fe)

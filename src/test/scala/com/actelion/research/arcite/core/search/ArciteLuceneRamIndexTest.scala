@@ -29,7 +29,7 @@ class ArciteLuceneRamIndexTest extends TestKit(ActorSystem("LuceneRamIndexSystem
 
       val endProbe = TestProbe()
 
-      val actorRef = system.actorOf(Props(new ArciteLuceneRamIndex(endProbe.ref)))
+      val actorRef = system.actorOf(Props(classOf[ArciteLuceneRamIndex]))
 
       import com.actelion.research.arcite.core.TestHelpers._
       import scala.concurrent.duration._

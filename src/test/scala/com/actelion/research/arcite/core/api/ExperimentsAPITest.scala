@@ -2,7 +2,7 @@ package com.actelion.research.arcite.core.api
 
 import java.util.UUID
 
-import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentHelper, ExperimentalDesign}
+import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSummary, ExperimentalDesign}
 import com.actelion.research.arcite.core.utils.Owner
 import com.github.agourlay.cornichon.CornichonFeature
 import com.typesafe.config.ConfigFactory
@@ -126,18 +126,18 @@ class AddDeleteExperiment extends ApiTestingWithCornichon {
   }
 
 
-  beforeFeature {
-    val name = s"test-experiment-${UUID.randomUUID()}"
-
-    val exp1 = Experiment(name = name, description = description,
-      owner = owner, design = design1)
-
-    val digest = exp1.digest
-
-    expAsJson = ExperimentHelper.getAsJsonString(exp1)
-
-    logger.info(s"add delete test with exp= $exp1, digest=${exp1.digest}")
-    logger.info(s"add delete test with json exp= $expAsJson")
-  }
+//  beforeFeature {
+//    val name = s"test-experiment-${UUID.randomUUID()}"
+//
+//    val exp1 = Experiment(name = name, description = description,
+//      owner = owner, design = design1)
+//
+//    val digest = exp1.uid
+//
+//    expAsJson = ExperimentSummary(exp1.name, exp1.description, exp1.owner, exp1.uid)
+//
+//    logger.info(s"add delete test with exp= $exp1, digest=${exp1.uid}")
+//    logger.info(s"add delete test with json exp= $expAsJson")
+//  }
 
 }

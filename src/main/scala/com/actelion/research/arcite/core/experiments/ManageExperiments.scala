@@ -32,7 +32,7 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
   val path = Paths.get(filePath)
 
-  val luceneRamSearchAct = context.system.actorOf(Props(new ArciteLuceneRamIndex(self)))
+  val luceneRamSearchAct = context.system.actorOf(Props(classOf[ArciteLuceneRamIndex]))
 
   val fileServiceAct = context.system.actorOf(FileServiceActor.props(), "file_service")
 
@@ -46,7 +46,7 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
   if (path.toFile.exists()) {
     val st = Files.readAllLines(path).toList.mkString.parseJson.convertTo[State]
-    experiments ++= st.experiments.map(e ⇒ (e.digest, e)).toMap
+    experiments ++= st.experiments.map(e ⇒ (e.uid, e)).toMap
   }
 
   override def receive = {
@@ -56,13 +56,13 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
 
     case AddExperimentWithRequester(exp, requester) ⇒
-      if (experiments.get(exp.digest).isEmpty) {
-        experiments += ((exp.digest, exp))
+      if (experiments.get(exp.uid).isEmpty) {
+        experiments += ((exp.uid, exp))
 
         LocalExperiments.saveExperiment(exp) match {
 
           case SaveExperimentSuccessful ⇒
-            requester ! AddedExperiment(exp.digest)
+            requester ! AddedExperiment(exp.uid)
 
           case SaveExperimentFailed(error) ⇒
             requester ! FailedAddingExperiment(error)
@@ -143,7 +143,7 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
     case GetAllExperimentsWithRequester(requester) ⇒
       log.info(s"asking ManageExperiments for all experiments, returning first 100... to $requester}")
       requester ! AllExperiments(experiments.values.map(exp ⇒
-        ExperimentSummary(exp.name, exp.description, exp.owner, exp.digest)).take(500).toSet)
+        ExperimentSummary(exp.name, exp.description, exp.owner, exp.uid)).take(500).toSet)
 
 
     case TakeSnapshot ⇒
@@ -171,8 +171,9 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
 
     case FoundExperimentsWithRequester(foundExperiments, requester) ⇒
+      log.debug(s"found ${foundExperiments.experiments.size} experiments ")
       val resp = foundExperiments.experiments.map(f ⇒ experiments(f.digest))
-        .map(f ⇒ ExperimentForAPI(f.name, f.description, f.owner, f.state, f.design, f.properties, f.digest))
+        .map(f ⇒ ExperimentSummary(f.name, f.description, f.owner, f.uid))
       requester ! SomeExperiments(resp.size, resp)
 
 

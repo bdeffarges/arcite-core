@@ -20,7 +20,8 @@ import com.typesafe.config.ConfigFactory
 case class Experiment(name: String, description: String, owner: Owner, state: ExperimentState = New,
                       design: ExperimentalDesign = ExperimentalDesign(), properties: Map[String, String] = Map()) {
 
-  def digest = GetDigest.getDigest(s"${owner.organization}$name")
+  def uid = GetDigest.getDigest(s"${owner.organization}$name")
+
 }
 
 object DefaultExperiment {
@@ -29,9 +30,6 @@ object DefaultExperiment {
     "an experiment to experiment with the system or to do anything that does not require the definition of an experiment",
     DefaultOwner.systemOwner)
 }
-
-case class ExperimentForAPI(name: String, description: String, owner: Owner, state: ExperimentState,
-                            design: ExperimentalDesign, properties: Map[String, String], digest: String)
 
 /**
   * An experiment summary information (no details like design)
@@ -131,11 +129,3 @@ case object Published extends ExperimentState
 
 case object Remote extends ExperimentState
 
-
-object ExperimentHelper extends ArciteJSONProtocol {
-  import spray.json._
-
-  def getAsJsonApiString(exp: ExperimentForAPI): String = exp.toJson.prettyPrint
-
-  def getAsJsonString(exp: Experiment): String = exp.toJson.prettyPrint
-}

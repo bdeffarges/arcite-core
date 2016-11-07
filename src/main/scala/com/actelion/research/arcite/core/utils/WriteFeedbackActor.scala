@@ -43,7 +43,7 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
 
       val transfFolder = TransformHelper(wid.transf).getTransformFolder()
 
-      val exp = wid.transf.source.experiment.digest
+      val exp = wid.transf.source.experiment.uid
 
       val fs: TransformDoneSource = wid.transf.source match {
         case tsr: TransformSourceFromRaw ⇒

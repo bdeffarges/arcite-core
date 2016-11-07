@@ -92,7 +92,6 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val experimentalDesignJson = jsonFormat2(ExperimentalDesign)
   implicit val experimentJson = jsonFormat6(Experiment)
   implicit val experimentSummaryJson = jsonFormat4(ExperimentSummary)
-  implicit val experimentForApiJson = jsonFormat7(ExperimentForAPI)
 
   implicit val stateJSon = jsonFormat1(State)
 
@@ -135,7 +134,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val allExperimentsJson = jsonFormat1(ArciteService.AllExperiments)
   implicit val getExperimentJson = jsonFormat1(ArciteService.GetExperiment)
 
-  implicit val foundExperimentJson = jsonFormat2(FoundExperiment)
+  implicit val foundExperimentJson = jsonFormat3(FoundExperiment)
   implicit val foundExperimentsJson = jsonFormat1(FoundExperiments)
   implicit val someExperimentsJson = jsonFormat2(SomeExperiments)
   implicit val addExperimentResponseJson = jsonFormat1(AddExperiment)

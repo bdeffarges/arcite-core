@@ -1,6 +1,8 @@
 import java.io.File
 import java.nio.file.{Path, Paths}
 
+import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.FoundExperiment
+
 import scala.sys.process.ProcessLogger
 
 //val rinput = Seq("/usr/bin/Rscript",
@@ -82,10 +84,18 @@ import scala.sys.process.ProcessLogger
 
 
 //val sl = List("hello", "world", "jupiter")
-val sl = List[String]()
+//val sl = List[String]()
+//val sl = List[String]()
 
-val p = Paths.get("hello")
+//val p = Paths.get("hello")
+//
+//val f = sl.foldLeft(p)((p, s) ⇒ p resolve s)
 
-val f = sl.foldLeft(p)((p, s) ⇒ p resolve s)
+val f1 = FoundExperiment("a", "www")
+val f2 = FoundExperiment("a", "hhh")
+val f22 = FoundExperiment("a", "hhdfh")
+val f3 = FoundExperiment("b", "iii")
+val f4 = FoundExperiment("c", "qer")
 
-
+val l = List(f1, f2, f22, f3, f4).groupBy(a ⇒ a.digest)
+  .map(b ⇒ FoundExperiment(b._1, b._2.map(c ⇒ c.where).mkString(" ")))
