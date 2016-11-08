@@ -36,11 +36,15 @@ package object utils {
   def getCurrentDateAsString() = dateDefaultFormatter.format(new Date())
 
 
-
   def getDateAsString(time: Long) = dateDefaultFormatter.format(new Date(time))
 
   def getAsDate(date: String) = dateDefaultFormatter.parse(date)
 
 
   def getDateForFolderName() = dateForFolderName.format(new Date())
+
+
+  lazy val almostTenYearsAgo = new Date(System.currentTimeMillis() - (10 * 365 * 24 * 3600 * 1000L))
+
+  lazy val almostTenYearsAgoAsString = dateDefaultFormatter.format(almostTenYearsAgo)
 }

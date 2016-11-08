@@ -151,8 +151,8 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
       val start = galex.page * galex.max
       val end = start + galex.max
 
-      val allExps = metaInfoForExps.map(a ⇒ (a._1, a._2.lastUpdate.date))
-        .toList.sortBy(_._2)
+      val allExps = metaInfoForExps.map(a ⇒ (a._1, a._2.lastUpdate.date)) //todo refactor
+        .toList.sortBy(_._2).reverse
         .slice(start, end)
         .map(k ⇒ (experiments.get(k._1), k._2))
         .filter(_._1.isDefined)

@@ -3,11 +3,9 @@ package com.actelion.research.arcite.core.experiments
 import java.nio.charset.StandardCharsets
 import java.nio.file.StandardOpenOption._
 import java.nio.file.{Files, Path, Paths}
-import java.util
 import java.util.Date
 
 import com.actelion.research.arcite.core
-import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.experiments.ExpState.ExpState
 import com.actelion.research.arcite.core.experiments.LogType.LogType
 import com.actelion.research.arcite.core.utils
@@ -46,7 +44,8 @@ object DefaultExperiment {
   * @param owner
   * @param uid the actual digest (from digest function)
   */
-case class ExperimentSummary(name: String, description: String, owner: Owner, uid: String, lastUpdate: String = utils.getCurrentDateAsString())
+case class ExperimentSummary(name: String, description: String, owner: Owner, uid: String,
+                             lastUpdate: String = utils.almostTenYearsAgoAsString)
 
 case class ExperimentFolderVisitor(exp: Experiment) {
 
@@ -120,7 +119,7 @@ case class ExperimentFolderVisitor(exp: Experiment) {
     Files.write(fp, expL.toString.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
 
     if (lastUpdateLog.toFile.exists) Files.delete(lastUpdateLog)
-    Files.createSymbolicLink(lastUpdateLog, fp)
+    Files.createSymbolicLink(lastUpdateLog, fp.getFileName)
   }
 
   def readLogs(latest: Int = 100): List[ExpLog] = {
@@ -143,7 +142,7 @@ case class ExperimentFolderVisitor(exp: Experiment) {
     if (lastUpdateLog.toFile.exists) {
       parseLog(Files.readAllLines(lastUpdateLog).get(0))
     } else {
-      ExpLog(LogType.UNKNOWN, "unknown")
+      ExpLog(LogType.UNKNOWN, "unknown", utils.almostTenYearsAgo)
     }
   }
 
