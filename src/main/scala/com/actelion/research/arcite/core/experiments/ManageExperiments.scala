@@ -147,7 +147,7 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
 
     case TakeSnapshot ⇒
-      val savedExps = experiments.values.filter(e ⇒ e.state == Remote || e.state == New).toSet
+      val savedExps = experiments.values.filter(e ⇒ e.state == ExpState.REMOTE || e.state == ExpState.NEW).toSet
       val strg = State(savedExps).toJson.prettyPrint
 
       if (path.toFile.exists()) {

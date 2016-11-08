@@ -32,11 +32,15 @@ package object utils {
 
   val dateForFolderName = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss_S")
 
+
   def getCurrentDateAsString() = dateDefaultFormatter.format(new Date())
+
+
 
   def getDateAsString(time: Long) = dateDefaultFormatter.format(new Date(time))
 
   def getAsDate(date: String) = dateDefaultFormatter.parse(date)
+
 
   def getDateForFolderName() = dateForFolderName.format(new Date())
 }

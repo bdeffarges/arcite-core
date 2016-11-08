@@ -2,6 +2,7 @@ package com.actelion.research.arcite.core.api
 
 import com.actelion.research.arcite.core.{FileInformation, FileInformationWithSubFolder}
 import com.actelion.research.arcite.core.api.ArciteService.SomeExperiments
+import com.actelion.research.arcite.core.experiments.ExpState.ExpState
 import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddDesign, AddExpProps, AddExperiment, State}
 import com.actelion.research.arcite.core.experiments._
 import com.actelion.research.arcite.core.fileservice.FileServiceActor.FolderFilesInformation
@@ -12,7 +13,6 @@ import com.actelion.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, 
 import com.actelion.research.arcite.core.transforms._
 import com.actelion.research.arcite.core.transforms.cluster.WorkState.AllJobsFeedback
 import com.actelion.research.arcite.core.utils.{FullName, Owner}
-
 import spray.json.{DefaultJsonProtocol, _}
 
 /**
@@ -72,15 +72,15 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
     }
   }
 
-  implicit object ExpStateJsonFormat extends RootJsonFormat[ExperimentState] {
-    def write(c: ExperimentState) = JsString(c.getClass.getName)
+  implicit object ExpStateJsonFormat extends RootJsonFormat[ExpState] {
+    def write(c: ExpState) = JsString(c.toString)
 
     def read(value: JsValue) = value match {
-      case JsString("New") ⇒ New
-      case JsString("Sealed") ⇒ Immutable
-      case JsString("Published") ⇒ Published
-      case JsString("Remote") ⇒ Remote
-      case _ ⇒ Immutable
+      case JsString("New") ⇒ ExpState.NEW
+      case JsString("Sealed") ⇒ ExpState.IMMUTABLE
+      case JsString("Published") ⇒ ExpState.PUBLISHED
+      case JsString("Remote") ⇒ ExpState.REMOTE
+      case _ ⇒ ExpState.IMMUTABLE
 
 //      case _ ⇒ deserializationError("Experiment state expected")
     }

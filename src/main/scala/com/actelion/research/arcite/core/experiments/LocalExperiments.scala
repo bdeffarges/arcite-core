@@ -100,6 +100,7 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
 
       if (!dp.toFile.exists) Files.write(dp, dig.getBytes(StandardCharsets.UTF_8), CREATE)
 
+      expFVisit.saveLog(LogType.UPDATED, "experiment saved.")
       SaveExperimentSuccessful
 
     } catch {
