@@ -37,9 +37,9 @@ object ArciteService {
 
 
   // available json services
-  case object GetAllExperiments
+  case class GetAllExperiments(page: Int = 0, max: Int = 100)
 
-  case class GetAllExperimentsWithRequester(requester: ActorRef)
+  case class GetAllExperimentsWithRequester(requester: ActorRef, page: Int = 0, max: Int = 100)
 
   case class SearchExperiments(search: String, maxHits: Int)
 
@@ -56,7 +56,7 @@ object ArciteService {
   //todo could provide where it was found
   case class SomeExperiments(totalResults: Int, experiments: List[ExperimentSummary]) extends ExperimentsResponse
 
-  case class AllExperiments(experiments: Set[ExperimentSummary]) extends ExperimentsResponse
+  case class AllExperiments(experiments: List[ExperimentSummary]) extends ExperimentsResponse
 
 
 
@@ -139,8 +139,9 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
   import ArciteService._
 
   override def receive = {
-    case GetAllExperiments ⇒
-      expManager ! GetAllExperimentsWithRequester(sender())
+    case gae: GetAllExperiments ⇒
+      expManager ! GetAllExperimentsWithRequester(sender(), gae.page, gae.max)
+
 
     case SearchExperiments(search, maxHits) ⇒
       expManager ! SearchForXResultsWithRequester(SearchForXResults(search, maxHits), sender())
@@ -218,10 +219,8 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
       ManageTransformCluster.getNextFrontEnd() forward ji
 
 
-
-
     //don't know what to do with this message...
-    case msg: Any ⇒ log.error(s"don't know what to do with the passed message [$msg]")
+    case msg: Any ⇒ log.error(s"don't know what to do with the passed message [$msg] in ${getClass}")
   }
 }
 

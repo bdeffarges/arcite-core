@@ -6,9 +6,9 @@ import java.util.concurrent.TimeUnit
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.{TestKit, TestProbe}
 import com.actelion.research.arcite.core.TestHelpers._
-import com.actelion.research.arcite.core.api.ArciteService.AddedExperiment
+import com.actelion.research.arcite.core.api.ArciteService.{AddedExperiment, GetAllExperimentsWithRequester}
 import com.actelion.research.arcite.core.experiments.LocalExperiments.{LoadExperiment, SaveExperimentSuccessful}
-import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddExperiment, GetExperiments, SnapshotTaken}
+import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddExperiment, SnapshotTaken}
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{BeforeAndAfterAll, MustMatchers, WordSpecLike}
 
@@ -71,7 +71,7 @@ class ManageExperimentsTest extends TestKit(ActorSystem("Experiments"))
       endProbe.expectMsg(FiniteDuration(2, TimeUnit.SECONDS), AddedExperiment)
       endProbe.expectMsg(FiniteDuration(2, TimeUnit.SECONDS), SnapshotTaken)
 
-      actorRef ! GetExperiments
+//      actorRef ! GetAllExperimentsWithRequester(endProbe)
 
       endProbe.expectMsgClass(FiniteDuration(2, TimeUnit.SECONDS), classOf[Set[Experiment]])
 

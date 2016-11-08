@@ -46,8 +46,7 @@ object DefaultExperiment {
   * @param owner
   * @param uid the actual digest (from digest function)
   */
-case class ExperimentSummary(name: String, description: String, owner: Owner, uid: String)
-
+case class ExperimentSummary(name: String, description: String, owner: Owner, uid: String, lastUpdate: String = utils.getCurrentDateAsString())
 
 case class ExperimentFolderVisitor(exp: Experiment) {
 
@@ -116,10 +115,9 @@ case class ExperimentFolderVisitor(exp: Experiment) {
 
   ensureFolderStructure()
 
-  def saveLog(logType: LogType, message: String): Unit = {
-    val el = s"${utils.getCurrentDateAsString()}\t$logType\t$message"
+  def saveLog(expL: ExpLog): Unit = {
     val fp = logsFolderPath resolve s"log_${utils.getDateForFolderName()}"
-    Files.write(fp, el.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
+    Files.write(fp, expL.toString.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
 
     if (lastUpdateLog.toFile.exists) Files.delete(lastUpdateLog)
     Files.createSymbolicLink(lastUpdateLog, fp)
@@ -145,7 +143,7 @@ case class ExperimentFolderVisitor(exp: Experiment) {
     if (lastUpdateLog.toFile.exists) {
       parseLog(Files.readAllLines(lastUpdateLog).get(0))
     } else {
-      ExpLog(new Date(), LogType.UNKNOWN, "unknown")
+      ExpLog(LogType.UNKNOWN, "unknown")
     }
   }
 
@@ -154,12 +152,19 @@ case class ExperimentFolderVisitor(exp: Experiment) {
     if (stg.length == 3) {
       val d = utils.getAsDate(stg(0))
       val typ = LogType.withName(stg(1))
-      ExpLog(d, typ, stg(2))
+      ExpLog(typ, stg(2), d)
     } else {
-      ExpLog(new Date, LogType.UNKNOWN, log)
+      ExpLog(LogType.UNKNOWN, log)
     }
   }
 }
+
+/**
+  * To keep meta information with an experiment
+  *
+  * @param lastUpdate
+  */
+case class ExperimentMetaInformation(lastUpdate: ExpLog, logs: List[ExpLog] = List())
 
 /**
   * The different states for an experiment:
@@ -186,5 +191,7 @@ object LogType extends scala.Enumeration {
   val CREATED, UPDATED, TRANSFORM, UNKNOWN = Value
 }
 
-case class ExpLog(date: Date, logType: LogType, message: String)
+case class ExpLog(logType: LogType, message: String, date: Date = new Date()) {
+  override def toString: String = s"${utils.getDateAsString(date.getTime)}\t$logType\t$message"
+}
 

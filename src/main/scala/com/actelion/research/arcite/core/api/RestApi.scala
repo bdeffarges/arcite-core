@@ -43,9 +43,9 @@ trait ArciteServiceApi extends LazyLogging {
   def createFullRawMatrix(folder: String, target: String) =
     arciteService.ask(CreateAgilentRawMatrix).mapTo[MatrixResponse]
 
-  def getAllExperiments = {
+  def getAllExperiments(page: Int = 0, max: Int = 100) = {
     logger.debug("asking for all experiments. ")
-    arciteService.ask(GetAllExperiments).mapTo[AllExperiments]
+    arciteService.ask(GetAllExperiments(page, max)).mapTo[AllExperiments]
   }
 
   def getExperiment(digest: String) = {
@@ -148,7 +148,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
   //todo try cors again with lomigmegard/akka-http-cors
   val corsHeaders = List(RawHeader("Access-Control-Allow-Origin", "*"),
     RawHeader("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS, DELETE"),
-    RawHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization") )
+    RawHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization"))
 
   def routes: Route = respondWithHeaders(corsHeaders) {
     experimentsRoute ~
@@ -184,9 +184,15 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           complete(OK, fe)
         }
       } ~
+      parameters('page ? 0, 'max ? 100) { (page, max) ⇒
+        logger.debug("GET on /experiments, should return all experiments")
+        onSuccess(getAllExperiments(page, max)) { exps ⇒
+          complete(OK, exps)
+        }
+      } ~
       get {
         logger.debug("GET on /experiments, should return all experiments")
-        onSuccess(getAllExperiments) { exps ⇒
+        onSuccess(getAllExperiments()) { exps ⇒
           complete(OK, exps)
         }
       }

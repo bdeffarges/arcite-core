@@ -14,6 +14,7 @@ import com.actelion.research.arcite.core.rawdata.DefineRawData.{GetExperimentFor
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex._
 import com.actelion.research.arcite.core.transforms.TransformDoneInfo
+import com.actelion.research.arcite.core.utils
 import com.actelion.research.arcite.core.utils.{FullName, WriteFeedbackActor}
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
@@ -36,7 +37,12 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
   val fileServiceAct = context.system.actorOf(FileServiceActor.props(), "file_service")
 
-  private var experiments: Map[String, Experiment] = LocalExperiments.loadAllLocalExperiments()
+  private val lale = LocalExperiments.loadAllLocalExperiments()
+
+  private var experiments: Map[String, Experiment] = lale._1
+
+  private var metaInfoForExps: Map[String, ExperimentMetaInformation] = lale._2
+
 
   experiments.values.foreach(exp ⇒ luceneRamSearchAct ! IndexExperiment(exp))
 
@@ -61,7 +67,8 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
         LocalExperiments.saveExperiment(exp) match {
 
-          case SaveExperimentSuccessful ⇒
+          case SaveExperimentSuccessful(expLog) ⇒
+            metaInfoForExps += ((exp.uid, ExperimentMetaInformation(expLog)))
             requester ! AddedExperiment(exp.uid)
 
           case SaveExperimentFailed(error) ⇒
@@ -81,6 +88,7 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
       if (exp.isDefined) {
         experiments -= digest
+        metaInfoForExps -= digest
         luceneRamSearchAct ! RemoveFromIndex(exp.get)
         self ! TakeSnapshot
         requester ! LocalExperiments.safeDeleteExperiment(exp.get)
@@ -99,7 +107,8 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
         LocalExperiments.saveExperiment(nexp) match {
 
-          case SaveExperimentSuccessful ⇒
+          case SaveExperimentSuccessful(expL) ⇒
+            metaInfoForExps += ((uid, ExperimentMetaInformation(expL)))
             requester ! AddedDesignSuccess
             self ! TakeSnapshot
             luceneRamSearchAct ! IndexExperiment(nexp)
@@ -122,7 +131,8 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
         experiments += ((uid, nex))
         LocalExperiments.saveExperiment(nex) match {
 
-          case SaveExperimentSuccessful ⇒
+          case SaveExperimentSuccessful(expL) ⇒
+            metaInfoForExps += ((uid, ExperimentMetaInformation(expL)))
             self ! TakeSnapshot
             luceneRamSearchAct ! IndexExperiment(nex)
             requester ! AddedPropertiesSuccess
@@ -135,15 +145,22 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
       }
 
 
-    case GetExperiments ⇒ //todo remove?
-      log.info(s"returning list of experiments to sender ${sender()}")
-      sender() ! experiments.values.toSet
+    case galex : GetAllExperimentsWithRequester ⇒
+      log.info(s"asking ManageExperiments for ${galex.max} experiments starting page ${galex.page}... to ${galex.requester}")
 
+      val start = galex.page * galex.max
+      val end = start + galex.max
 
-    case GetAllExperimentsWithRequester(requester) ⇒
-      log.info(s"asking ManageExperiments for all experiments, returning first 100... to $requester}")
-      requester ! AllExperiments(experiments.values.map(exp ⇒
-        ExperimentSummary(exp.name, exp.description, exp.owner, exp.uid)).take(500).toSet)
+      val allExps = metaInfoForExps.map(a ⇒ (a._1, a._2.lastUpdate.date))
+        .toList.sortBy(_._2)
+        .slice(start, end)
+        .map(k ⇒ (experiments.get(k._1), k._2))
+        .filter(_._1.isDefined)
+        .map(t ⇒ (t._1.get, t._2))
+          .map(t ⇒ ExperimentSummary(t._1.name, t._1.description, t._1.owner,
+            t._1.uid, utils.getDateAsString(t._2.getTime)))
+
+        galex.requester ! AllExperiments(allExps)
 
 
     case TakeSnapshot ⇒
@@ -311,8 +328,6 @@ object ManageExperiments extends ArciteJSONProtocol {
   case class AddExpPropertiesWithRequester(addProps: AddExpProperties, requester: ActorRef)
 
   case class SaveLocalExperiment(experiment: Experiment)
-
-  case object GetExperiments
 
   case class Experiments(exps: Set[Experiment])
 
