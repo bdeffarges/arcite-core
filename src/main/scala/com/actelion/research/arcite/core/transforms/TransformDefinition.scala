@@ -79,9 +79,8 @@ case class Transform(transfDefName: FullName, source: TransformSource, parameter
 
 
 case class TransformHelper(transform: Transform) {
-  def getTransformFolder(): Path = {
-    Paths.get(ExperimentFolderVisitor(transform.source.experiment).transformFolderPath.toString, transform.uid)
-  }
+  def getTransformFolder(): Path =
+    ExperimentFolderVisitor(transform.source.experiment).transformFolderPath resolve transform.uid
 }
 
 case class TransformDoneSource(experiment: String, kindOfSource: String, fromTransform: Option[String],

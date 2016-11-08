@@ -76,11 +76,11 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
     def write(c: ExpState) = JsString(c.toString)
 
     def read(value: JsValue) = value match {
-      case JsString("New") ⇒ ExpState.NEW
-      case JsString("Sealed") ⇒ ExpState.IMMUTABLE
-      case JsString("Published") ⇒ ExpState.PUBLISHED
-      case JsString("Remote") ⇒ ExpState.REMOTE
-      case _ ⇒ ExpState.IMMUTABLE
+      case JsString("NEW") ⇒ ExpState.NEW
+      case JsString("IMMUTABLE") ⇒ ExpState.IMMUTABLE
+      case JsString("PUBLISHED") ⇒ ExpState.PUBLISHED
+      case JsString("REMOTE") ⇒ ExpState.REMOTE
+      case _ ⇒ ExpState.UNKNOWN
 
 //      case _ ⇒ deserializationError("Experiment state expected")
     }

@@ -26,7 +26,6 @@ case class Experiment(name: String, description: String, owner: Owner, state: Ex
                       design: ExperimentalDesign = ExperimentalDesign(), properties: Map[String, String] = Map()) {
 
   def uid = GetDigest.getDigest(s"${owner.organization}$name")
-
 }
 
 object DefaultExperiment {
@@ -182,7 +181,7 @@ case class ExperimentMetaInformation(lastUpdate: ExpLog, logs: List[ExpLog] = Li
   */
 object ExpState extends scala.Enumeration {
   type ExpState = Value
-  val NEW, IMMUTABLE, PUBLISHED, REMOTE = Value
+  val NEW, IMMUTABLE, PUBLISHED, REMOTE, UNKNOWN = Value
 }
 
 object LogType extends scala.Enumeration {
