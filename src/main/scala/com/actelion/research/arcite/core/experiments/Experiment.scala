@@ -2,8 +2,9 @@ package com.actelion.research.arcite.core.experiments
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.StandardOpenOption._
-import java.nio.file.{Files, Paths}
+import java.nio.file.{Files, Path, Paths}
 import java.util
+import java.util.Date
 
 import com.actelion.research.arcite.core
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
@@ -123,6 +124,41 @@ case class ExperimentFolderVisitor(exp: Experiment) {
     if (lastUpdateLog.toFile.exists) Files.delete(lastUpdateLog)
     Files.createSymbolicLink(lastUpdateLog, fp)
   }
+
+  def readLogs(latest: Int = 100): List[ExpLog] = {
+    logsFolderPath.toFile.listFiles()
+      .filter(f ⇒ f.getName.startsWith("log_"))
+      .sortBy(f ⇒ f.lastModified()).takeRight(latest)
+      .map(f ⇒ readLog(f.toPath))
+      .filter(_.isDefined).map(lo ⇒ lo.get).toList.sortBy(_.date)
+  }
+
+  def readLog(logFile: Path): Option[ExpLog] = {
+    if (logFile.toFile.exists) {
+      Some(parseLog(Files.readAllLines(logFile).get(0)))
+    } else {
+      None
+    }
+  }
+
+  def getLatestLog(): ExpLog = {
+    if (lastUpdateLog.toFile.exists) {
+      parseLog(Files.readAllLines(lastUpdateLog).get(0))
+    } else {
+      ExpLog(new Date(), LogType.UNKNOWN, "unknown")
+    }
+  }
+
+  def parseLog(log: String): ExpLog = {
+    val stg = log.split("\t")
+    if (stg.length == 3) {
+      val d = utils.getAsDate(stg(0))
+      val typ = LogType.withName(stg(1))
+      ExpLog(d, typ, stg(2))
+    } else {
+      ExpLog(new Date, LogType.UNKNOWN, log)
+    }
+  }
 }
 
 /**
@@ -147,5 +183,8 @@ object ExpState extends scala.Enumeration {
 
 object LogType extends scala.Enumeration {
   type LogType = Value
-  val CREATED, UPDATED, TRANSFORM = Value
+  val CREATED, UPDATED, TRANSFORM, UNKNOWN = Value
 }
+
+case class ExpLog(date: Date, logType: LogType, message: String)
+
