@@ -17,7 +17,7 @@ import org.apache.lucene.search.{FuzzyQuery, IndexSearcher, TermQuery}
 import org.apache.lucene.store.RAMDirectory
 
 /**
-  * Created by bernitu on 13/03/16.
+  * Created by Bernard Deffarges on 13/03/16.
   */
 class ArciteLuceneRamIndex extends Actor with ActorLogging {
 

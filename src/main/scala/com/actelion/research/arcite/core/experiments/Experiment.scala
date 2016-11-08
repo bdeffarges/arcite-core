@@ -14,7 +14,7 @@ import com.typesafe.config.ConfigFactory
 
 
 /**
-  * Created by bernitu on 06/03/16.
+  * Created by Bernard Deffarges on 06/03/16.
   *
   * The main entity is an experiment which is defined by a set of raw data files,
   * design information (col, row header names, etc.) and some general information like name,

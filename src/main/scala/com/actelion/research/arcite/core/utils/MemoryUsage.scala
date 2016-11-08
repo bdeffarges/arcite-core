@@ -1,7 +1,7 @@
 package com.actelion.research.arcite.core.utils
 
 /**
-  * Created by bernitu on 13/03/16.
+  * Created by Bernard Deffarges on 13/03/16.
   */
 object MemoryUsage {
 

@@ -10,7 +10,7 @@ import com.actelion.research.arcite.core.utils.{FullName, GetDigest}
 import spray.json.JsValue
 
 /**
-  * Created by bernitu on 19/04/16.
+  * Created by Bernard Deffarges on 19/04/16.
   *
   */
 

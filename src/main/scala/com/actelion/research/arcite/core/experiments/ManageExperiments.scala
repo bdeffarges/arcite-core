@@ -20,7 +20,7 @@ import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 
 /**
-  * Created by bernitu on 06/03/16.
+  * Created by Bernard Deffarges on 06/03/16.
   */
 
 class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging {
