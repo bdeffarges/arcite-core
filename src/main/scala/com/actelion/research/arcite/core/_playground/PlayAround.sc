@@ -4,6 +4,7 @@ import java.nio.file.{Path, Paths}
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.FoundExperiment
 
 import scala.sys.process.ProcessLogger
+import scala.xml.XML
 
 //val rinput = Seq("/usr/bin/Rscript",
 //  "/home/deffabe1/development/biostats/microarray_prod/prod/normalize_vsn_2ch.R",
@@ -91,11 +92,18 @@ import scala.sys.process.ProcessLogger
 //
 //val f = sl.foldLeft(p)((p, s) ⇒ p resolve s)
 
-val f1 = FoundExperiment("a", "www")
-val f2 = FoundExperiment("a", "hhh")
-val f22 = FoundExperiment("a", "hhdfh")
-val f3 = FoundExperiment("b", "iii")
-val f4 = FoundExperiment("c", "qer")
+//val f1 = FoundExperiment("a", "www")
+//val f2 = FoundExperiment("a", "hhh")
+//val f22 = FoundExperiment("a", "hhdfh")
+//val f3 = FoundExperiment("b", "iii")
+//val f4 = FoundExperiment("c", "qer")
+//
+//val l = List(f1, f2, f22, f3, f4).groupBy(a ⇒ a.digest)
+//  .map(b ⇒ FoundExperiment(b._1, b._2.map(c ⇒ c.where).mkString(" ")))
 
-val l = List(f1, f2, f22, f3, f4).groupBy(a ⇒ a.digest)
-  .map(b ⇒ FoundExperiment(b._1, b._2.map(c ⇒ c.where).mkString(" ")))
+//val fileA = XML.load("/media/deffabe1/DATA/gobetween/Lf69f100f-c766-490f-9143-5e8e0c8cb7c9.xml")
+//
+//(fileA \\ "id").map { elt ⇒
+//
+//  println(elt)
+//}
