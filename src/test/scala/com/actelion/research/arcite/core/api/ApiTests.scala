@@ -1,16 +1,10 @@
 package com.actelion.research.arcite.core.api
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl._
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import org.scalatest.{AsyncFlatSpec, Matchers}
-
-import scala.concurrent.Future
-
 
 /**
   * arcite-core
@@ -35,25 +29,14 @@ import scala.concurrent.Future
   * Created by Bernard Deffarges on 2016/11/10.
   *
   */
-class TestApiWithAkkaHttp extends AsyncFlatSpec with Matchers with ArciteJSONProtocol with LazyLogging {
+class ApiTests extends AsyncFlatSpec with Matchers with ArciteJSONProtocol with LazyLogging {
 
   val config = ConfigFactory.load()
   val refApi = config.getString("api.specification").stripMargin
 
-  "Default get " should "return rest interface specification " in {
-    implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
-    implicit val executionContext = system.dispatcher
+  val host = config.getString("http.host")
+  val port = config.getInt("http.port")
 
-    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
-      Http().outgoingConnection(host = config.getString("http.host"), port = config.getInt("http.port"))
-
-    val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri = "/")).via(connectionFlow).runWith(Sink.head)
-
-    responseFuture.map { r ⇒
-      assert(r.status == StatusCodes.OK)
-      assert(r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8") == refApi)
-    }
-  }
+  implicit val system = ActorSystem()
+  implicit val materializer = ActorMaterializer()
 }

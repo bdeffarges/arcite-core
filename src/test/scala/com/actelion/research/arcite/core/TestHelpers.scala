@@ -1,5 +1,7 @@
 package com.actelion.research.arcite.core
 
+import java.util.UUID
+
 import com.actelion.research.arcite.core.experiments.{Condition, ConditionsForSample, Experiment, ExperimentalDesign}
 import com.actelion.research.arcite.core.utils.Owner
 
@@ -34,5 +36,8 @@ object TestHelpers {
 
   val experiment1 = Experiment("flying to Mars", "Indeed, I will fly to Mars...", owner1, design = expDesign1)
   val experiment2 = Experiment("flying to Neptune", "Flying to Neptune is better...", owner1, design = expDesign2)
+
+  def cloneForFakeExperiment(exp: Experiment): Experiment =
+    exp.copy(name = s"${exp.name}${UUID.randomUUID().toString}")
 
 }
