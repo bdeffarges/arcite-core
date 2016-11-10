@@ -1,7 +1,8 @@
-package com.actelion.research.arcite.core
+package com.actelion.research.arcite.core._trials
 
 import java.io.File
 
+import com.actelion.research.arcite.core._
 import org.scalatest.{FlatSpec, Matchers}
 
 /**

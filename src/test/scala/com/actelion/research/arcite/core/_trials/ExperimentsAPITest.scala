@@ -1,13 +1,11 @@
-package com.actelion.research.arcite.core.api
+package com.actelion.research.arcite.core._trials
 
-import java.util.UUID
-
-import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSummary, ExperimentalDesign}
+import akka.http.scaladsl.model.StatusCodes._
+import com.actelion.research.arcite.core.experiments.ExperimentalDesign
 import com.actelion.research.arcite.core.utils.Owner
 import com.github.agourlay.cornichon.CornichonFeature
-import com.typesafe.config.ConfigFactory
-import akka.http.scaladsl.model.StatusCodes._
 import com.github.agourlay.cornichon.steps.regular.assertStep.{AssertStep, CustomMessageAssertion}
+import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 
 abstract class ApiTestingWithCornichon extends CornichonFeature {
@@ -61,8 +59,7 @@ class FindExperiments extends ApiTestingWithCornichon {
 
       When I get("/experiments").withParams(
         "search" -> "replicate",
-        "maxHits" -> "10"
-      )
+        "maxHits" -> "10")
 
       Then assert status.is(200)
 

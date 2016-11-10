@@ -1,6 +1,10 @@
-package com.actelion.research.arcite.core.api
+package com.actelion.research.arcite.core._trials
 
-import com.actelion.research.arcite.core.APIintegrationSpec
+import akka.http.scaladsl.model.headers.Host
+import akka.http.scaladsl.testkit.ScalatestRouteTest
+import com.actelion.research.arcite.core.api.ArciteJSONProtocol
+import com.typesafe.config.ConfigFactory
+import org.scalatest.{FlatSpec, Matchers}
 
 /**
   * arcite-core
@@ -22,21 +26,19 @@ import com.actelion.research.arcite.core.APIintegrationSpec
   * You should have received a copy of the GNU General Public License
   * along with this program.  If not, see <http://www.gnu.org/licenses/>.
   *
-  * Created by Bernard Deffarges on 2016/11/09.
+  * Created by Bernard Deffarges on 2016/10/26.
+  *
   *
   */
-class MainApiTest extends APIintegrationSpec {
+abstract class APIintegrationSpec extends FlatSpec
+  with Matchers  with ScalatestRouteTest with ArciteJSONProtocol {
 
-  val apiSpec = conf.getString("api.specification")
+  val conf = ConfigFactory.load("api-test-linux-desktop.conf")
+//    .withFallback(ConfigFactory.load("api.test.bamboo.conf"))
+    .withFallback(ConfigFactory.load())
 
-  Main.main(Array())
-  val routes = Main.api
+  lazy val host = Host(conf.getString("http.host"), conf.getString("http.port").toInt)
 
-  println(s"defaultHostInfo $defaultHostInfo")
+  implicit val defaultHostInfo = DefaultHostInfo(host, false)
 
-  "Default get " should "return rest interface specification " in {
-    Get() ~> routes ~> check {
-      responseAs[String] shouldEqual apiSpec.stripMargin
-    }
-  }
 }
