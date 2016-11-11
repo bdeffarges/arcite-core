@@ -10,7 +10,7 @@ import com.actelion.research.arcite.core.utils.Owner
   */
 object TestHelpers {
 
-  val organization = "com.actelion.research.microarray"
+  val organization = "com.actelion.research.bioinfo.mock"
   val person1 = "B. Deffarges"
   val person2 = "B. Renault"
 

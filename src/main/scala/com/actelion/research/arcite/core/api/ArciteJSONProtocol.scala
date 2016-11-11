@@ -161,4 +161,8 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val fileInfoJsonFormat = jsonFormat2(FileInformation)
   implicit val fileInfoWithSubFolderJsonFormat = jsonFormat2(FileInformationWithSubFolder)
   implicit val folderFileJsonFormat = jsonFormat1(FolderFilesInformation)
+
+  implicit val expCreatedJson= jsonFormat2(ExperimentCreated)
+  implicit val successMessageJson= jsonFormat1(SuccessMessage)
+  implicit val errorMessageJson = jsonFormat1(ErrorMessage)
 }

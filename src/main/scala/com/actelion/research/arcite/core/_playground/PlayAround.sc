@@ -1,6 +1,8 @@
 import java.io.File
 import java.nio.file.{Path, Paths}
 
+import akka.http.scaladsl.marshalling.ToResponseMarshallable
+//import akka.http.scaladsl.server.StandardRoute
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.FoundExperiment
 
 import scala.sys.process.ProcessLogger
@@ -107,3 +109,6 @@ import scala.xml.XML
 //
 //  println(elt)
 //}
+
+
+def a(m: ⇒ ToResponseMarshallable): StandardRoute =  StandardRoute(_.complete(m))

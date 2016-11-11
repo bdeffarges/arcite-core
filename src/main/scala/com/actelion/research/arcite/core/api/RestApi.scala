@@ -4,7 +4,7 @@ import java.nio.file.{Path, Paths}
 import java.util.UUID
 
 import akka.actor.{ActorRef, ActorSystem}
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse}
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives._
@@ -230,10 +230,10 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
                         result.status match {
                           case scala.util.Success(s) =>
                             fileUploaded(experiment, fileP, true)
-                            complete(OK, s"""{ "message" : "Successfully written ${result.count} bytes" }""")
+                            complete(OK, SuccessMessage("Successfully written ${result.count} bytes"))
 
                           case Failure(e) =>
-                            complete(BadRequest, s"""{ "error" : "${e.getCause}" }""")
+                            complete(BadRequest, ErrorMessage(e.getCause))
                         }
                       }
                   }
@@ -259,10 +259,11 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
                           result.status match {
                             case scala.util.Success(s) =>
                               fileUploaded(experiment, fileP, false)
-                              complete(OK, s"""{ "message" : "Successfully written ${result.count} bytes" }""")
+                              complete(HttpResponse(OK, ContentTypes.`text/html(UTF-8)`, "<h1>Say hello to akka-http</h1>")
+                              complete(OK, SuccessMessage("Successfully written ${result.count} bytes"))
 
                             case Failure(e) =>
-                              complete(BadRequest, s"""{ "error" : "${e.getCause}" }""")
+                              complete(BadRequest,ErrorMessage(e.getCause))
                           }
                         }
                     }
@@ -277,7 +278,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
               logger.info(s"returning all META files for experiment: $experiment")
               onSuccess(getAllMetaFiles(experiment)) {
                 case FolderFilesInformation(ffi) ⇒ complete(OK, ffi)
-                case _ ⇒ complete(BadRequest, """{"error": "could not find files" }""")
+                case a: Any ⇒ complete(BadRequest, ErrorMessage(s"could not find files ${a.toString}"))
               }
             }
           } ~
@@ -286,7 +287,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
                 logger.info(s"returning all RAW files for experiment: $experiment")
                 onSuccess(getAllRawFiles(experiment)) {
                   case FolderFilesInformation(ffi) ⇒ complete(OK, ffi)
-                  case _ ⇒ complete(BadRequest, """{"error": "could not find files" }""")
+                  case a: Any ⇒ complete(BadRequest, ErrorMessage(s"could not find files ${a.toString}"))
                 }
               }
             }
@@ -524,5 +525,14 @@ class RestApi(system: ActorSystem, timeout: Timeout) extends RestRoutes {
   implicit def executionContext = system.dispatcher
 
   def createArciteApi = system.actorOf(ArciteService.props, ArciteService.name)
+
 }
+
+// Api Misc Messages
+case class ExperimentCreated(uid: String, message: String)
+
+case class SuccessMessage(message: String)
+
+case class ErrorMessage(error: String)
+
 
