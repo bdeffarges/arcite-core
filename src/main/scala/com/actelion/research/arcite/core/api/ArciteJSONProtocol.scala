@@ -1,7 +1,7 @@
 package com.actelion.research.arcite.core.api
 
 import com.actelion.research.arcite.core.{FileInformation, FileInformationWithSubFolder}
-import com.actelion.research.arcite.core.api.ArciteService.SomeExperiments
+import com.actelion.research.arcite.core.api.ArciteService.{FailedAddingProperties, SomeExperiments}
 import com.actelion.research.arcite.core.experiments.ExpState.ExpState
 import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddDesign, AddExpProps, AddExperiment, State}
 import com.actelion.research.arcite.core.experiments._
@@ -165,4 +165,6 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val expCreatedJson= jsonFormat2(ExperimentCreated)
   implicit val successMessageJson= jsonFormat1(SuccessMessage)
   implicit val errorMessageJson = jsonFormat1(ErrorMessage)
+
+  implicit val failedPropsJson = jsonFormat1(FailedAddingProperties)
 }

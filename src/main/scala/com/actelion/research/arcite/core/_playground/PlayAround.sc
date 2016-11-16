@@ -1,12 +1,14 @@
 import java.io.File
 import java.nio.file.{Path, Paths}
 
+import akka.http.javadsl.model.StatusCode
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
+import akka.http.scaladsl.server.StandardRoute
 //import akka.http.scaladsl.server.StandardRoute
-import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.FoundExperiment
+//import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.FoundExperiment
 
-import scala.sys.process.ProcessLogger
-import scala.xml.XML
+//import scala.sys.process.ProcessLogger
+//import scala.xml.XML
 
 //val rinput = Seq("/usr/bin/Rscript",
 //  "/home/deffabe1/development/biostats/microarray_prod/prod/normalize_vsn_2ch.R",
@@ -111,4 +113,6 @@ import scala.xml.XML
 //}
 
 
-def a(m: ⇒ ToResponseMarshallable): StandardRoute =  StandardRoute(_.complete(m))
+//def a(m: ⇒ ToResponseMarshallable): StandardRoute =  StandardRoute(_.complete(m))
+//
+//a("AAAA")

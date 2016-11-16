@@ -164,7 +164,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
 
   def defaultRoute = {
     get {
-      complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, apiSpec.stripMargin))
+      complete(OK -> apiSpec.stripMargin)
     }
   }
 
@@ -172,28 +172,29 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
 
     post {
       entity(as[SearchExperiments]) { gexp ⇒
+        logger.debug(s"search for $gexp")
         val exps: Future[SomeExperiments] = search4Experiments(gexp.search, gexp.maxHits)
         onSuccess(exps) { fe ⇒
-          complete(OK, fe)
+          complete(OK -> fe)
         }
       }
     } ~
       parameters('search, 'maxHits ? 100) { (search, maxHits) ⇒
         val exps: Future[SomeExperiments] = search4Experiments(search, maxHits)
         onSuccess(exps) { fe ⇒
-          complete(OK, fe)
+          complete(OK -> fe)
         }
       } ~
       parameters('page ? 0, 'max ? 100) { (page, max) ⇒
         logger.debug("GET on /experiments, should return all experiments")
         onSuccess(getAllExperiments(page, max)) { exps ⇒
-          complete(OK, exps)
+          complete(OK -> exps)
         }
       } ~
       get {
         logger.debug("GET on /experiments, should return all experiments")
         onSuccess(getAllExperiments()) { exps ⇒
-          complete(OK, exps)
+          complete(OK -> exps)
         }
       }
   }
@@ -207,7 +208,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
         get {
           logger.info(s"get all transforms for experiment: = $experiment")
           onSuccess(allTransformsForExperiment(experiment)) {
-            case TransformsForExperiment(tdis) ⇒ complete(OK, tdis)
+            case TransformsForExperiment(tdis) ⇒ complete(OK -> tdis)
           }
         }
       } ~
@@ -230,10 +231,10 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
                         result.status match {
                           case scala.util.Success(s) =>
                             fileUploaded(experiment, fileP, true)
-                            complete(OK, SuccessMessage("Successfully written ${result.count} bytes"))
+                            complete(OK -> SuccessMessage("Successfully written ${result.count} bytes"))
 
                           case Failure(e) =>
-                            complete(BadRequest, ErrorMessage(e.getCause))
+                            complete(BadRequest -> ErrorMessage(e.getMessage))
                         }
                       }
                   }
@@ -259,11 +260,10 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
                           result.status match {
                             case scala.util.Success(s) =>
                               fileUploaded(experiment, fileP, false)
-                              complete(HttpResponse(OK, ContentTypes.`text/html(UTF-8)`, "<h1>Say hello to akka-http</h1>")
-                              complete(OK, SuccessMessage("Successfully written ${result.count} bytes"))
+                              complete(OK -> SuccessMessage("Successfully written ${result.count} bytes"))
 
                             case Failure(e) =>
-                              complete(BadRequest,ErrorMessage(e.getCause))
+                              complete(BadRequest -> ErrorMessage(e.getMessage))
                           }
                         }
                     }
@@ -277,8 +277,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             get {
               logger.info(s"returning all META files for experiment: $experiment")
               onSuccess(getAllMetaFiles(experiment)) {
-                case FolderFilesInformation(ffi) ⇒ complete(OK, ffi)
-                case a: Any ⇒ complete(BadRequest, ErrorMessage(s"could not find files ${a.toString}"))
+                case FolderFilesInformation(ffi) ⇒ complete(OK -> ffi)
+                case a: Any ⇒ complete(BadRequest -> ErrorMessage(s"could not find files ${a.toString}"))
               }
             }
           } ~
@@ -286,8 +286,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
               get {
                 logger.info(s"returning all RAW files for experiment: $experiment")
                 onSuccess(getAllRawFiles(experiment)) {
-                  case FolderFilesInformation(ffi) ⇒ complete(OK, ffi)
-                  case a: Any ⇒ complete(BadRequest, ErrorMessage(s"could not find files ${a.toString}"))
+                  case FolderFilesInformation(ffi) ⇒ complete(OK -> ffi)
+                  case a: Any ⇒ complete(BadRequest -> ErrorMessage(s"could not find files ${a.toString}"))
                 }
               }
             }
@@ -299,8 +299,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
               entity(as[AddDesign]) { des ⇒
                 val saved: Future[AddDesignFeedback] = addDesign(des)
                 onSuccess(saved) {
-                  case AddedDesignSuccess ⇒ complete(Created, s"""{"message": "new design added." """)
-                  case FailedAddingDesign(msg) ⇒ complete(BadRequest, s"""{"error" : "$msg" }""")
+                  case AddedDesignSuccess ⇒ complete(Created -> SuccessMessage("new design added."))
+                  case FailedAddingDesign(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
                 }
               }
             }
@@ -313,8 +313,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
               entity(as[AddExpProps]) { props ⇒
                 val saved: Future[AddedPropertiesFeedback] = addExpProperties(AddExpProperties(experiment, props.properties))
                 onSuccess(saved) {
-                  case AddedPropertiesSuccess ⇒ complete(Created, """{"message": "properties added successfully." """)
-                  case adp: FailedAddingProperties ⇒ complete(BadRequest, s"""{"error" : "${adp}" }""")
+                  case AddedPropertiesSuccess ⇒ complete(Created -> SuccessMessage("properties added successfully."))
+                  case adp: FailedAddingProperties ⇒ complete(BadRequest -> adp)
                 }
               }
             }
@@ -324,15 +324,15 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           get {
             logger.info(s"get experiment: = $experiment")
             onSuccess(getExperiment(experiment)) {
-              case NoExperimentFound ⇒ complete(BadRequest, """{"error" : "no experiment found. "} """)
-              case ExperimentFound(exp) ⇒ complete(OK, exp)
+              case NoExperimentFound ⇒ complete(BadRequest -> ErrorMessage("no experiment found. "))
+              case ExperimentFound(exp) ⇒ complete(OK -> exp)
             }
           } ~
             delete {
               logger.info(s"deleting experiment: $experiment")
               onSuccess(deleteExperiment(experiment)) {
-                case ExperimentDeletedSuccess ⇒ complete(OK, """{"message" : "experiment deleted."}""")
-                case ExperimentDeleteFailed(error) ⇒ complete(NotFound, s"""{"error" : "$error"}""")
+                case ExperimentDeletedSuccess ⇒ complete(OK -> SuccessMessage(s"experiment $experiment deleted."))
+                case ExperimentDeleteFailed(error) ⇒ complete(NotFound -> ErrorMessage(error))
               }
             }
         }
@@ -344,8 +344,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           entity(as[AddExperiment]) { exp ⇒
             val saved: Future[AddExperimentResponse] = addNewExperiment(exp)
             onSuccess(saved) {
-              case AddedExperiment(uid) ⇒ complete(Created, s"""{"experiment": $uid", "comment": "new experiment added." """)
-              case FailedAddingExperiment(msg) ⇒ complete(Conflict, s"""{"error" : "$msg" }""")
+              case AddedExperiment(uid) ⇒ complete(Created -> SuccessMessage("new experiment $uid added."))
+              case FailedAddingExperiment(msg) ⇒ complete(Conflict -> ErrorMessage(msg))
             }
           }
         }
@@ -359,15 +359,15 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           s"""GET on /transform_definitions,
                  should return all transform definitions searching for ${search}""")
         onSuccess(findTransfDefs(search)) {
-          case ManyTransfDefs(tdis) ⇒ complete(OK, tdis)
-          case NoTransfDefFound ⇒ complete(OK, """{"results" : "empty"}""")
+          case ManyTransfDefs(tdis) ⇒ complete(OK -> tdis)
+          case NoTransfDefFound ⇒ complete(NotFound -> ErrorMessage("empty"))
         }
     } ~
       get {
         logger.debug("GET on /transform_definitions, should return all transform definitions")
         onSuccess(getAllTransfDefs) {
-          case ManyTransfDefs(tdis) ⇒ complete(OK, tdis)
-          case NoTransfDefFound ⇒ complete(OK, """{"results" : "empty"}""")
+          case ManyTransfDefs(tdis) ⇒ complete(OK -> tdis)
+          case NoTransfDefFound ⇒ complete(NotFound -> ErrorMessage("empty"))
         }
       }
   }
@@ -378,8 +378,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
         get {
           logger.debug(s"get transform definition for uid: = $transform")
           onSuccess(getTransfDef(transform)) {
-            case NoTransfDefFound ⇒ complete(OK, """{"error" : ""} """)
-            case OneTransfDef(tr) ⇒ complete(OK, tr)
+            case NoTransfDefFound ⇒ complete(NotFound -> ErrorMessage("error"))
+            case OneTransfDef(tr) ⇒ complete(OK -> tr)
           }
         }
       }
@@ -395,8 +395,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             drd ⇒
               val saved: Future[RawDataSetResponse] = defineRawData(drd)
               onSuccess(saved) {
-                case RawDataSetAdded ⇒ complete(OK, "raw data added. ")
-                case RawDataSetFailed(msg) ⇒ complete(msg)
+                case RawDataSetAdded ⇒ complete(OK -> SuccessMessage("raw data added. "))
+                case RawDataSetFailed(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
               }
           }
         }
@@ -411,8 +411,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
               drd ⇒
                 val saved: Future[RawDataSetResponse] = defineRawData2(drd)
                 onSuccess(saved) {
-                  case RawDataSetAdded ⇒ complete(OK, "raw data added. ")
-                  case RawDataSetFailed(msg) ⇒ complete(msg)
+                  case RawDataSetAdded ⇒ complete(OK -> SuccessMessage("raw data added. "))
+                  case RawDataSetFailed(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
                 }
             }
           }
@@ -428,8 +428,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           rtf ⇒
             val saved: Future[TransformJobAcceptance] = runTransformFromRaw(rtf)
             onSuccess(saved) {
-              case Ok(t) ⇒ complete(OK, t)
-              case NotOk(msg) ⇒ complete(OK, msg) // todo needs improvment
+              case Ok(t) ⇒ complete(OK -> SuccessMessage(t))
+              case NotOk(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
             }
         }
       }
@@ -441,8 +441,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             rtf ⇒
               val saved: Future[TransformJobAcceptance] = runTransformFromTransform(rtf)
               onSuccess(saved) {
-                case Ok(t) ⇒ complete(OK, t)
-                case NotOk(msg) ⇒ complete(OK, msg) // todo needs improvment
+                case Ok(t) ⇒ complete(OK -> SuccessMessage(t))
+                case NotOk(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
               }
           }
         }
@@ -454,8 +454,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             rtf ⇒
               val saved: Future[TransformJobAcceptance] = runTransformFromRaw(rtf)
               onSuccess(saved) {
-                case Ok(t) ⇒ complete(OK, t)
-                case NotOk(msg) ⇒ complete(OK, msg) // todo needs improvment
+                case Ok(t) ⇒ complete(OK -> SuccessMessage(t))
+                case NotOk(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
               }
           }
         }
@@ -467,8 +467,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             rtf ⇒
               val saved: Future[TransformJobAcceptance] = runTransformFromTransform(rtf)
               onSuccess(saved) {
-                case Ok(t) ⇒ complete(OK, t)
-                case NotOk(msg) ⇒ complete(OK, msg) // todo needs improvment
+                case Ok(t) ⇒ complete(OK -> SuccessMessage(t))
+                case NotOk(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
               }
           }
         }
@@ -480,8 +480,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             rtf ⇒
               val saved: Future[TransformJobAcceptance] = runTransformFromObject(rtf)
               onSuccess(saved) {
-                case Ok(t) ⇒ complete(OK, t)
-                case NotOk(msg) ⇒ complete(OK, msg) // todo needs improvment
+                case Ok(t) ⇒ complete(OK -> SuccessMessage(t))
+                case NotOk(msg) ⇒ complete(OK -> ErrorMessage(msg))
               }
           }
         }
@@ -495,10 +495,10 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
         get {
           logger.debug(s"ask for job status? $workID")
           onSuccess(jobStatus(QueryWorkStatus(workID))) {
-            case WorkLost(uid) ⇒ complete(s"job $uid was lost")
-            case WorkCompleted(t) ⇒ complete(s"job is completed")
-            case WorkInProgress(t) ⇒ complete(s"job is running")
-            case WorkAccepted(t) ⇒ complete("job queued...")
+            case WorkLost(uid) ⇒ complete(OK -> SuccessMessage(s"job $uid was lost"))
+            case WorkCompleted(t) ⇒ complete(OK -> SuccessMessage(s"job is completed"))
+            case WorkInProgress(t) ⇒ complete(OK -> SuccessMessage(s"job is running"))
+            case WorkAccepted(t) ⇒ complete(OK -> SuccessMessage("job queued..."))
           }
         }
       }
@@ -508,8 +508,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
     get {
       logger.debug("ask for all job status...")
       onSuccess(jobsStatus()) {
-        case jfb: AllJobsFeedback ⇒ complete(jfb)
-        case _ ⇒ complete("Failed returning an usefull info.")
+        case jfb: AllJobsFeedback ⇒ complete(OK -> jfb)
+        case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning an usefull info."))
       }
     }
   }

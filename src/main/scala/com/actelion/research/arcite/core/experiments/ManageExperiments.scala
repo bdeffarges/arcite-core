@@ -93,7 +93,7 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
         self ! TakeSnapshot
         requester ! LocalExperiments.safeDeleteExperiment(exp.get)
       } else {
-        requester ! ExperimentDeleteFailed("experiment does not exist. ")
+        requester ! ExperimentDeleteFailed(s"experiment [$digest] does not exist. ")
       }
 
 
