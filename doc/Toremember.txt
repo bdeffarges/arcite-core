@@ -1,0 +1,1 @@
+1. home folder needs to belong to a group to which all arcite user must belong

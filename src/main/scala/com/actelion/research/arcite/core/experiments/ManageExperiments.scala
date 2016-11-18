@@ -145,7 +145,7 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
       }
 
 
-    case galex : GetAllExperimentsWithRequester ⇒
+    case galex: GetAllExperimentsWithRequester ⇒
       log.info(s"asking ManageExperiments for ${galex.max} experiments starting page ${galex.page}... to ${galex.requester}")
 
       val start = galex.page * galex.max
@@ -157,10 +157,10 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
         .map(k ⇒ (experiments.get(k._1), k._2))
         .filter(_._1.isDefined)
         .map(t ⇒ (t._1.get, t._2))
-          .map(t ⇒ ExperimentSummary(t._1.name, t._1.description, t._1.owner,
-            t._1.uid, utils.getDateAsString(t._2.getTime)))
+        .map(t ⇒ ExperimentSummary(t._1.name, t._1.description, t._1.owner,
+          t._1.uid, utils.getDateAsString(t._2.getTime)))
 
-        galex.requester ! AllExperiments(allExps)
+      galex.requester ! AllExperiments(allExps)
 
 
     case TakeSnapshot ⇒
@@ -169,8 +169,15 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
       if (path.toFile.exists()) {
         val pbkup = Paths.get(filePath + "_bkup")
-        if (pbkup.toFile.exists()) Files.delete(pbkup)
-        Files.move(path, pbkup, StandardCopyOption.ATOMIC_MOVE)
+        if (pbkup.toFile.exists()) {
+          try {
+            Files.delete(pbkup)
+            Files.move(path, pbkup, StandardCopyOption.ATOMIC_MOVE)
+          } catch {
+            case e: Exception ⇒
+              logger.error(s"cannot delete file $pbkup or move $path, error: ${e.getMessage}")
+          }
+        }
       }
 
       Files.write(path, strg.getBytes(StandardCharsets.UTF_8), CREATE)
