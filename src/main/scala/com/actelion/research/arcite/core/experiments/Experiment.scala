@@ -6,6 +6,7 @@ import java.nio.file.{Files, Path, Paths}
 import java.util.Date
 
 import com.actelion.research.arcite.core
+import com.actelion.research.arcite.core.eventinfo.{ExpLog, LogType}
 import com.actelion.research.arcite.core.experiments.ExpState.ExpState
 import com.actelion.research.arcite.core.experiments.LogType.LogType
 import com.actelion.research.arcite.core.utils
@@ -184,12 +185,4 @@ object ExpState extends scala.Enumeration {
   val NEW, IMMUTABLE, PUBLISHED, REMOTE, UNKNOWN = Value
 }
 
-object LogType extends scala.Enumeration {
-  type LogType = Value
-  val CREATED, UPDATED, TRANSFORM, UNKNOWN = Value
-}
-
-case class ExpLog(logType: LogType, message: String, date: Date = new Date()) {
-  override def toString: String = s"${utils.getDateAsString(date.getTime)}\t$logType\t$message"
-}
 
