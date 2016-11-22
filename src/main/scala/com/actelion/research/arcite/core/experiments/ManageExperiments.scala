@@ -6,6 +6,7 @@ import java.nio.file._
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.api.ArciteService._
+import com.actelion.research.arcite.core.eventinfo.EventInfoLogging
 import com.actelion.research.arcite.core.experiments.LocalExperiments._
 import com.actelion.research.arcite.core.fileservice.FileServiceActor
 import com.actelion.research.arcite.core.fileservice.FileServiceActor.{config => _, _}
@@ -357,8 +358,10 @@ object ManageExperiments extends ArciteJSONProtocol {
 
     val manExpActor = actSystem.actorOf(Props(classOf[ManageExperiments]), "experiments_manager")
     val defineRawDataAct = actSystem.actorOf(Props(classOf[DefineRawData], manExpActor), "define_raw_data")
+    val eventInfoLoggingAct = actSystem.actorOf(Props(classOf[EventInfoLogging]), "event_logging_info")
 
     logger.info(s"exp manager actor: [$manExpActor]")
     logger.info(s"raw data define: [$defineRawDataAct]")
+    logger.info(s"event info log: [$eventInfoLoggingAct]")
   }
 }

@@ -38,6 +38,8 @@ package object utils {
 
   def getDateAsString(time: Long) = dateDefaultFormatter.format(new Date(time))
 
+  def getDateAsStrg(date: Date) = dateDefaultFormatter.format(date)
+
   def getAsDate(date: String) = dateDefaultFormatter.parse(date)
 
 

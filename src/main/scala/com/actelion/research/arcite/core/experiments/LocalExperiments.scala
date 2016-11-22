@@ -6,6 +6,7 @@ import java.nio.file._
 import com.actelion.research.arcite.core
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.api.ArciteService.{DeleteExperimentFeedback, ExperimentDeleteFailed, ExperimentDeletedSuccess}
+import com.actelion.research.arcite.core.eventinfo.{ExpLog, LogType}
 import com.actelion.research.arcite.core.utils
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
@@ -17,7 +18,6 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
   val EXPERIMENT_DIGEST_FILE_NAME = "digest"
 
   case class LoadExperiment(folder: String)
-
 
   sealed trait SaveExperimentFeedback
 

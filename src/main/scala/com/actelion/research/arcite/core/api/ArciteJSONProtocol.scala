@@ -1,7 +1,9 @@
 package com.actelion.research.arcite.core.api
 
-import com.actelion.research.arcite.core.{FileInformation, FileInformationWithSubFolder}
+import com.actelion.research.arcite.core.{FileInformation, FileInformationWithSubFolder, utils}
 import com.actelion.research.arcite.core.api.ArciteService.{AddedExperiment, FailedAddingProperties, SomeExperiments}
+import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.AddLog
+import com.actelion.research.arcite.core.eventinfo.{ExpLog, LogInfo}
 import com.actelion.research.arcite.core.experiments.ExpState.ExpState
 import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddDesign, AddExpProps, AddExperiment, State}
 import com.actelion.research.arcite.core.experiments._
@@ -14,7 +16,10 @@ import com.actelion.research.arcite.core.transforms._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.{NotOk, Ok}
 import com.actelion.research.arcite.core.transforms.cluster.WorkState.AllJobsFeedback
 import com.actelion.research.arcite.core.utils.{FullName, Owner}
+import com.fasterxml.jackson.module.scala.JsonScalaEnumeration
 import spray.json.{DefaultJsonProtocol, _}
+
+import scala.util.parsing.json.JSONObject
 
 /**
   * arcite-core
@@ -70,6 +75,22 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
 
         case _ => throw new DeserializationException("could not deserialize.")
       }
+    }
+  }
+
+  implicit object LogInfoJsonFormat extends RootJsonFormat[ExpLog] {
+
+    def write(obj: ExpLog):JsValue = {
+      JsObject(
+        "type" -> JsString(obj.logType.toString),
+        "category" -> JsString(obj.logCat.toString),
+        "uid" -> JsString(s"${if (obj.uid.isDefined) obj.uid.get}"),
+        "date" -> JsString(utils.getDateAsStrg(obj.date)),
+        "message" -> JsString(obj.message))
+    }
+
+    def read(json: JsValue): ExpLog = {
+
     }
   }
 
@@ -170,4 +191,6 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val errorMessageJson = jsonFormat1(ErrorMessage)
 
   implicit val failedPropsJson = jsonFormat1(FailedAddingProperties)
+
+
 }

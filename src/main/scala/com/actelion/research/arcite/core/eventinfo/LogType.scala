@@ -36,19 +36,17 @@ object LogType extends scala.Enumeration {
 
 object LogCategory extends scala.Enumeration {
   type LogCategory = Value
-  val SUCCESS, ERROR = Value
+  val SUCCESS, ERROR, UNKNOWN = Value
 }
 
-trait LogInfo
-
-case class ExpLog(logType: LogType, logCategory: LogCategory, message: String,
-                  uid: Option[String] = None, date: Date = new Date()) extends LogInfo {
+case class ExpLog(logType: LogType, logCat: LogCategory, message: String,
+                  date: Date = new Date(), uid: Option[String] = None) {
 
   override def toString: String = {
     val uidStg = if (uid.isDefined) "\t$uid" else ""
 
     s"""${utils.getDateAsString(date.getTime)}
-       |\t$logType\t$logCategory\t$message$uidStg""".stripMargin
+       |\t$logType\t$logCat\t$message$uidStg""".stripMargin
   }
 }
 

@@ -1,8 +1,13 @@
 package com.actelion.research.arcite.core.eventinfo
 
+import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, Path}
+import java.nio.file.StandardOpenOption._
+
 import akka.actor.{Actor, ActorLogging}
-import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.AddLog
-import com.actelion.research.arcite.core.experiments.Experiment
+import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{AddLog, InfoLogs, ReadLogs}
+import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor}
+import com.actelion.research.arcite.core.utils
 
 /**
   * arcite-core
@@ -29,14 +34,71 @@ import com.actelion.research.arcite.core.experiments.Experiment
   */
 class EventInfoLogging extends Actor with ActorLogging {
   override def receive = {
-    case AddLog ⇒ {
+    case al: AddLog ⇒ {
+      val eFV = ExperimentFolderVisitor(al.exp)
+      val fp = eFV.logsFolderPath resolve s"log_${utils.getDateForFolderName()}"
 
+      import spray.json._
+
+      Files.write(fp, al.log.toString.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
+
+      if (eFV.lastUpdateLog.toFile.exists) Files.delete(eFV.lastUpdateLog)
+      Files.createSymbolicLink(eFV.lastUpdateLog, fp.getFileName)
     }
+
+
+    case rl: ReadLogs ⇒ {
+      def readLog(logFile: Path): Option[ExpLog] = {
+        if (logFile.toFile.exists) {
+          Some(parseLog(Files.readAllLines(logFile).get(0)))
+        } else {
+          None
+        }
+      }
+      def parseLog(log: String): ExpLog = {
+        val stg = log.split("\t")
+        if (stg.length > 2) {
+          val d = utils.getAsDate(stg(0))
+          val typ = LogType.withName(stg(1))
+          val cat = LogCategory.withName(stg(2))
+         ExpLog(typ, cat, stg(3), d)
+        } else {
+          ExpLog(LogType.UNKNOWN, LogCategory.UNKNOWN, log)
+        }
+      }
+
+      val eFV = ExperimentFolderVisitor(rl.experiment)
+
+      val latestLogs = InfoLogs(eFV.logsFolderPath.toFile.listFiles()
+        .filter(f ⇒ f.getName.startsWith("log_"))
+        .sortBy(f ⇒ f.lastModified()).takeRight(rl.latest)
+        .map(f ⇒ readLog(f.toPath))
+        .filter(_.isDefined).map(lo ⇒ lo.get).toList.sortBy(_.date))
+
+      sender() ⇒ latestLogs
+    }
+
   }
 }
 
 object EventInfoLogging {
 
-  case class AddLog(exp: Experiment, log: LogInfo)
+  case class AddLog(exp: Experiment, log: ExpLog)
+
+  case class InfoLogs(logs: List[ExpLog])
+
+  case class ReadLogs(experiment: Experiment, latest: Int = 100)
+
+
+
+  def getLatestLog(experiment: Experiment): ExpLog = {
+    val eFV = ExperimentFolderVisitor(experiment)
+
+    if (eFV.lastUpdateLog.toFile.exists) {
+      parseLog(Files.readAllLines(eFV.lastUpdateLog).get(0))
+    } else {
+      ExpLog(LogType.UNKNOWN, LogCategory.UNKNOWN, "unknown", utils.almostTenYearsAgo)
+    }
+  }
 
 }
