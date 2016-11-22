@@ -1,13 +1,16 @@
 package com.actelion.research.arcite.core.rawdata
 
 import java.io.File
-import java.nio.file.{Path, Paths}
+import java.nio.file.{FileSystemException, Path, Paths}
 
-import akka.actor.{Actor, ActorRef, PoisonPill, Props}
+import akka.actor.SupervisorStrategy.{Escalate, Restart}
+import akka.actor.{Actor, ActorRef, OneForOneStrategy, PoisonPill, Props}
 import akka.event.Logging
 
 import scala.collection.mutable
 import scala.util.matching.Regex
+
+import scala.concurrent.duration._
 
 /**
   * Created by deffabe1 on 3/4/16.
@@ -30,6 +33,12 @@ class TransferSelectedRawData(caller: ActorRef, targetRawFolder: String) extends
   import TransferSelectedRawFile._
 
   var counter = 0 //todo right?? depends who owns the actor...
+
+  override val supervisorStrategy =
+    OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
+      case _: FileSystemException     => Restart
+      case _: Exception                => Escalate
+    }
 
   override def receive: Receive = {
 
