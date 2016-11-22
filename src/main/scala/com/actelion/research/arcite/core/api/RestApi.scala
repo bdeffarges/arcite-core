@@ -231,7 +231,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
                         result.status match {
                           case scala.util.Success(s) =>
                             fileUploaded(experiment, fileP, true)
-                            complete(OK -> SuccessMessage("Successfully written ${result.count} bytes"))
+                            complete(OK -> SuccessMessage(s"Successfully written ${result.count} bytes"))
 
                           case Failure(e) =>
                             complete(BadRequest -> ErrorMessage(e.getMessage))
@@ -260,7 +260,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
                           result.status match {
                             case scala.util.Success(s) =>
                               fileUploaded(experiment, fileP, false)
-                              complete(OK -> SuccessMessage("Successfully written ${result.count} bytes"))
+                              complete(OK -> SuccessMessage(s"Successfully written ${result.count} bytes"))
 
                             case Failure(e) =>
                               complete(BadRequest -> ErrorMessage(e.getMessage))
@@ -344,7 +344,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           entity(as[AddExperiment]) { exp ⇒
             val saved: Future[AddExperimentResponse] = addNewExperiment(exp)
             onSuccess(saved) {
-              case AddedExperiment(uid) ⇒ complete(Created -> SuccessMessage("new experiment $uid added."))
+              case addExp: AddedExperiment ⇒ complete(Created -> addExp)
               case FailedAddingExperiment(msg) ⇒ complete(Conflict -> ErrorMessage(msg))
             }
           }
@@ -428,7 +428,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           rtf ⇒
             val saved: Future[TransformJobAcceptance] = runTransformFromRaw(rtf)
             onSuccess(saved) {
-              case Ok(t) ⇒ complete(OK -> SuccessMessage(t))
+              case ok: Ok ⇒ complete(OK -> ok)
               case NotOk(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
             }
         }
@@ -441,7 +441,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             rtf ⇒
               val saved: Future[TransformJobAcceptance] = runTransformFromTransform(rtf)
               onSuccess(saved) {
-                case Ok(t) ⇒ complete(OK -> SuccessMessage(t))
+                case ok: Ok ⇒ complete(OK -> ok)
                 case NotOk(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
               }
           }
@@ -454,7 +454,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             rtf ⇒
               val saved: Future[TransformJobAcceptance] = runTransformFromRaw(rtf)
               onSuccess(saved) {
-                case Ok(t) ⇒ complete(OK -> SuccessMessage(t))
+                case ok: Ok ⇒ complete(OK -> ok)
                 case NotOk(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
               }
           }
@@ -467,7 +467,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             rtf ⇒
               val saved: Future[TransformJobAcceptance] = runTransformFromTransform(rtf)
               onSuccess(saved) {
-                case Ok(t) ⇒ complete(OK -> SuccessMessage(t))
+                case ok: Ok ⇒ complete(OK -> ok)
                 case NotOk(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
               }
           }
@@ -480,7 +480,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             rtf ⇒
               val saved: Future[TransformJobAcceptance] = runTransformFromObject(rtf)
               onSuccess(saved) {
-                case Ok(t) ⇒ complete(OK -> SuccessMessage(t))
+                case ok: Ok ⇒ complete(OK -> ok)
                 case NotOk(msg) ⇒ complete(OK -> ErrorMessage(msg))
               }
           }

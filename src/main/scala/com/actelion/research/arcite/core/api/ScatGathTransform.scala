@@ -62,7 +62,6 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
           requester ! NotOk("could not find experiment for given id.")
       }
 
-
     case mftdm: MsgFromTransfDefsManager ⇒
       mftdm match {
         case otd: OneTransfDef ⇒

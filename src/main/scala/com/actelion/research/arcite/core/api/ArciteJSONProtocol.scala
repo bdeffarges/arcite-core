@@ -1,7 +1,7 @@
 package com.actelion.research.arcite.core.api
 
 import com.actelion.research.arcite.core.{FileInformation, FileInformationWithSubFolder}
-import com.actelion.research.arcite.core.api.ArciteService.{FailedAddingProperties, SomeExperiments}
+import com.actelion.research.arcite.core.api.ArciteService.{AddedExperiment, FailedAddingProperties, SomeExperiments}
 import com.actelion.research.arcite.core.experiments.ExpState.ExpState
 import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddDesign, AddExpProps, AddExperiment, State}
 import com.actelion.research.arcite.core.experiments._
@@ -11,6 +11,7 @@ import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExper
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, ManyTransfDefs, OneTransfDef}
 import com.actelion.research.arcite.core.transforms._
+import com.actelion.research.arcite.core.transforms.cluster.Frontend.{NotOk, Ok}
 import com.actelion.research.arcite.core.transforms.cluster.WorkState.AllJobsFeedback
 import com.actelion.research.arcite.core.utils.{FullName, Owner}
 import spray.json.{DefaultJsonProtocol, _}
@@ -138,7 +139,9 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val foundExperimentsJson = jsonFormat1(FoundExperiments)
   implicit val someExperimentsJson = jsonFormat2(SomeExperiments)
   implicit val addExperimentResponseJson = jsonFormat1(AddExperiment)
+  implicit val addedExpJson = jsonFormat1(AddedExperiment)
   implicit val addDesignJson = jsonFormat2(AddDesign)
+  implicit val okJson = jsonFormat1(Ok)
 
   implicit val fullNameJson = jsonFormat2(FullName)
 
