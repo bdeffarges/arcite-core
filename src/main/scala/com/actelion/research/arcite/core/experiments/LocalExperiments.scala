@@ -21,12 +21,12 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
 
   sealed trait SaveExperimentFeedback
 
-  case class SaveExperimentSuccessful(expLog: ExpLog) extends SaveExperimentFeedback
+  case class SaveExperimentSuccessful(uid: String) extends SaveExperimentFeedback
 
   case class SaveExperimentFailed(error: String) extends SaveExperimentFeedback
 
 
-  def loadAllLocalExperiments(): (Map[String, Experiment], Map[String, ExperimentMetaInformation]) = {
+  def loadAllLocalExperiments(): Map[String, Experiment] = {
 
     logger.debug(s"loading all experiments from local network ${core.dataPath}... ")
 
@@ -39,12 +39,11 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
     *
     * @return
     */
-  private def loadAllExperiments(): (Map[String, Experiment], Map[String, ExperimentMetaInformation]) = {
+  private def loadAllExperiments(): Map[String, Experiment] = {
 
     //todo while going deeper should verify match between structure and name/organization
     // todo when to check digest?
     var map = Map[String, Experiment]()
-    var mapLatestChange = Map[String, ExperimentMetaInformation]()
 
     def deeperUntilMeta(currentFolder: Path) {
       //      logger.debug(s"currentFolder: $currentFolder")
@@ -59,8 +58,6 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
           val expCond = loadExperiment(expFile.toPath)
           map += ((digest, expCond))
 
-          val logInfo = ExperimentFolderVisitor(expCond).getLatestLog()
-          mapLatestChange += ((digest, ExperimentMetaInformation(logInfo)))
         }
       }
       if (currentFolder.toFile.isDirectory)
@@ -69,7 +66,7 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
 
     deeperUntilMeta(core.dataPath)
 
-    (map + (DefaultExperiment.defaultExperiment.uid -> DefaultExperiment.defaultExperiment), mapLatestChange)
+    map + (DefaultExperiment.defaultExperiment.uid -> DefaultExperiment.defaultExperiment)
   }
 
   //todo move to experiment visitor?
@@ -89,8 +86,6 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
 
     val strg = exp.toJson.prettyPrint
 
-    val dig = exp.uid
-
     import StandardOpenOption._
     import java.nio.file.StandardCopyOption._
 
@@ -102,12 +97,9 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
 
       Files.write(fp, strg.getBytes(StandardCharsets.UTF_8), CREATE)
 
-      if (!dp.toFile.exists) Files.write(dp, dig.getBytes(StandardCharsets.UTF_8), CREATE)
+      if (!dp.toFile.exists) Files.write(dp, exp.uid.getBytes(StandardCharsets.UTF_8), CREATE)
 
-      val el = ExpLog(LogType.UPDATED, "experiment saved.")
-      expFVisit.saveLog(el)
-
-      SaveExperimentSuccessful(el)
+      SaveExperimentSuccessful(exp.uid)
     } catch {
       case e: Exception ⇒ SaveExperimentFailed(e.toString)
     }

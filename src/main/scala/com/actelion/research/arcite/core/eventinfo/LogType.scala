@@ -50,3 +50,7 @@ case class ExpLog(logType: LogType, logCat: LogCategory, message: String,
   }
 }
 
+object ExpLog {
+  def apply(logType: LogType, logCat: LogCategory, message: String, uid: Option[String]) =
+    new ExpLog(logType, logCat, message, new Date(), uid)
+}

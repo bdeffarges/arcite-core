@@ -1,9 +1,12 @@
 package com.actelion.research.arcite.core.experiments
 
-import java.nio.file.Paths
+import java.nio.charset.StandardCharsets
+import java.nio.file.StandardOpenOption._
+import java.nio.file.{Files, Path, Paths}
+import java.util.Date
 
 import com.actelion.research.arcite.core
-import com.actelion.research.arcite.core.eventinfo.ExpLog
+import com.actelion.research.arcite.core.eventinfo.{ExpLog, LogType}
 import com.actelion.research.arcite.core.experiments.ExpState.ExpState
 import com.actelion.research.arcite.core.utils
 import com.actelion.research.arcite.core.utils._
@@ -109,15 +112,7 @@ case class ExperimentFolderVisitor(exp: Experiment) {
   }
 
   ensureFolderStructure()
-
 }
-
-/**
-  * To keep meta information with an experiment
-  *
-  * @param lastUpdate
-  */
-case class ExperimentMetaInformation(lastUpdate: ExpLog, logs: List[ExpLog] = List())
 
 /**
   * The different states for an experiment:

@@ -3,7 +3,7 @@ package com.actelion.research.arcite.core.api
 import com.actelion.research.arcite.core.{FileInformation, FileInformationWithSubFolder, utils}
 import com.actelion.research.arcite.core.api.ArciteService.{AddedExperiment, FailedAddingProperties, SomeExperiments}
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.AddLog
-import com.actelion.research.arcite.core.eventinfo.{ExpLog, LogInfo}
+import com.actelion.research.arcite.core.eventinfo.{ExpLog, LogCategory, LogType}
 import com.actelion.research.arcite.core.experiments.ExpState.ExpState
 import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddDesign, AddExpProps, AddExperiment, State}
 import com.actelion.research.arcite.core.experiments._
@@ -90,7 +90,14 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
     }
 
     def read(json: JsValue): ExpLog = {
+      json.asJsObject.getFields("type", "category", "uid", "date", "message") match {
+        case Seq(JsString(logType), JsString(logCat), JsString(uid), JsString(date), JsString(message)) ⇒
+          ExpLog(LogType.withName(logType), LogCategory.withName(logCat),
+            message, utils.getAsDate(date), if (uid.length > 0) Some(uid) else None)
 
+        case _ => throw new DeserializationException("could not deserialize.")
+
+      }
     }
   }
 

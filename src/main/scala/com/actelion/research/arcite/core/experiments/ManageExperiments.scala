@@ -6,7 +6,8 @@ import java.nio.file._
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.api.ArciteService._
-import com.actelion.research.arcite.core.eventinfo.EventInfoLogging
+import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.AddLog
+import com.actelion.research.arcite.core.eventinfo.{EventInfoLogging, ExpLog, LogCategory, LogType}
 import com.actelion.research.arcite.core.experiments.LocalExperiments._
 import com.actelion.research.arcite.core.fileservice.FileServiceActor
 import com.actelion.research.arcite.core.fileservice.FileServiceActor.{config => _, _}
@@ -38,12 +39,7 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
   val fileServiceAct = context.system.actorOf(FileServiceActor.props(), "file_service")
 
-  private val lale = LocalExperiments.loadAllLocalExperiments()
-
-  private var experiments: Map[String, Experiment] = lale._1
-
-  private var metaInfoForExps: Map[String, ExperimentMetaInformation] = lale._2
-
+  private var experiments: Map[String, Experiment] = LocalExperiments.loadAllLocalExperiments()
 
   experiments.values.foreach(exp ⇒ luceneRamSearchAct ! IndexExperiment(exp))
 
@@ -69,7 +65,7 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
         LocalExperiments.saveExperiment(exp) match {
 
           case SaveExperimentSuccessful(expLog) ⇒
-            metaInfoForExps += ((exp.uid, ExperimentMetaInformation(expLog)))
+            eventInfoLoggingAct ! AddLog(exp, ExpLog(LogType.CREATED, LogCategory.SUCCESS, "experiment created. ", Some(exp.uid)))
             requester ! AddedExperiment(exp.uid)
 
           case SaveExperimentFailed(error) ⇒
@@ -89,7 +85,6 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
       if (exp.isDefined) {
         experiments -= digest
-        metaInfoForExps -= digest
         luceneRamSearchAct ! RemoveFromIndex(exp.get)
         self ! TakeSnapshot
         requester ! LocalExperiments.safeDeleteExperiment(exp.get)
@@ -109,7 +104,6 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
         LocalExperiments.saveExperiment(nexp) match {
 
           case SaveExperimentSuccessful(expL) ⇒
-            metaInfoForExps += ((uid, ExperimentMetaInformation(expL)))
             requester ! AddedDesignSuccess
             self ! TakeSnapshot
             luceneRamSearchAct ! IndexExperiment(nexp)
@@ -133,7 +127,6 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
         LocalExperiments.saveExperiment(nex) match {
 
           case SaveExperimentSuccessful(expL) ⇒
-            metaInfoForExps += ((uid, ExperimentMetaInformation(expL)))
             self ! TakeSnapshot
             luceneRamSearchAct ! IndexExperiment(nex)
             requester ! AddedPropertiesSuccess
@@ -152,14 +145,27 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
       val start = galex.page * galex.max
       val end = start + galex.max
 
-      val allExps = metaInfoForExps.map(a ⇒ (a._1, a._2.lastUpdate.date)) //todo refactor
-        .toList.sortBy(_._2).reverse
+      val defExpLog = ExpLog(LogType.UNKNOWN, LogCategory.UNKNOWN, "no latest log. ", utils.almostTenYearsAgo)
+
+
+      def readLastExpLog(exp: Experiment): ExpLog = {
+        val f = ExperimentFolderVisitor(exp).lastUpdateLog
+        if (f.toFile.exists) {
+          try {
+            Files.readAllLines(f).mkString("\n").parseJson.convertTo[ExpLog]
+          } catch {
+            case e: Exception ⇒ defExpLog
+          }
+        } else {
+          defExpLog
+        }
+      }
+
+      val allExps = experiments.values.map(exp ⇒ (exp, readLastExpLog(exp)))
+        .toList.sortBy(_._2.date).reverse
         .slice(start, end)
-        .map(k ⇒ (experiments.get(k._1), k._2))
-        .filter(_._1.isDefined)
-        .map(t ⇒ (t._1.get, t._2))
-        .map(t ⇒ ExperimentSummary(t._1.name, t._1.description, t._1.owner,
-          t._1.uid, utils.getDateAsString(t._2.getTime)))
+        .map(e ⇒ ExperimentSummary(e._1.name, e._1.description, e._1.owner,
+          e._1.uid, utils.getDateAsStrg(e._2.date)))
 
       galex.requester ! AllExperiments(allExps)
 
@@ -193,7 +199,6 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
     case s: SearchForXResultsWithRequester ⇒
       luceneRamSearchAct ! s
-
 
     case FoundExperimentsWithRequester(foundExperiments, requester) ⇒
       log.debug(s"found ${foundExperiments.experiments.size} experiments ")
@@ -268,6 +273,7 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
       } else {
         sender() ! FolderFilesInformation(Set())
       }
+
 
     case gmf: GetMetaFiles ⇒
       logger.info("looking for meta data files list")
@@ -352,14 +358,13 @@ object ManageExperiments extends ArciteJSONProtocol {
   case class FoundTransfDefFullName(fullName: FullName)
 
 
-  def startActorSystemForExperiments() = {
+  val actSystem = ActorSystem("experiments-actor-system", config.getConfig("experiments-manager"))
 
-    val actSystem = ActorSystem("experiments-actor-system", config.getConfig("experiments-manager"))
+  val manExpActor = actSystem.actorOf(Props(classOf[ManageExperiments]), "experiments_manager")
+  val defineRawDataAct = actSystem.actorOf(Props(classOf[DefineRawData], manExpActor), "define_raw_data")
+  val eventInfoLoggingAct = actSystem.actorOf(Props(classOf[EventInfoLogging]), "event_logging_info")
 
-    val manExpActor = actSystem.actorOf(Props(classOf[ManageExperiments]), "experiments_manager")
-    val defineRawDataAct = actSystem.actorOf(Props(classOf[DefineRawData], manExpActor), "define_raw_data")
-    val eventInfoLoggingAct = actSystem.actorOf(Props(classOf[EventInfoLogging]), "event_logging_info")
-
+  def startActorSystemForExperiments():Unit = {
     logger.info(s"exp manager actor: [$manExpActor]")
     logger.info(s"raw data define: [$defineRawDataAct]")
     logger.info(s"event info log: [$eventInfoLoggingAct]")
