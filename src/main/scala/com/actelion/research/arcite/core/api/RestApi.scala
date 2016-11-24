@@ -329,7 +329,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
         path("properties") {
           pathEnd {
             post {
-              logger.info("adding design to experiment.")
+              logger.info("adding properties to experiment.")
               entity(as[AddExpProps]) { props ⇒
                 val saved: Future[AddedPropertiesFeedback] = addExpProperties(AddExpProperties(experiment, props.properties))
                 onSuccess(saved) {

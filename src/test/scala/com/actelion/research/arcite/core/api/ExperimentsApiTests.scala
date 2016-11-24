@@ -9,9 +9,9 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.util.ByteString
 import com.actelion.research.arcite.core.TestHelpers
-import com.actelion.research.arcite.core.api.ArciteService.AllExperiments
-import com.actelion.research.arcite.core.experiments.ExperimentSummary
-import com.actelion.research.arcite.core.experiments.ManageExperiments.AddExperiment
+import com.actelion.research.arcite.core.api.ArciteService.{AddedExperiment, AllExperiments, ExperimentFound}
+import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSummary}
+import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddExpProps, AddExperiment}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import org.scalatest.{AsyncFlatSpec, Matchers}
@@ -43,6 +43,8 @@ import scala.concurrent.Future
   *
   */
 class ExperimentsApiTests extends ApiTests {
+
+  val exp1 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment1)
 
   "Default get " should "return rest interface specification " in {
 
@@ -106,26 +108,6 @@ class ExperimentsApiTests extends ApiTests {
     }
   }
 
-  "Search for experiments with string " should "return exact number of experiments... " in {
-    implicit val executionContext = system.dispatcher
-
-    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
-      Http().outgoingConnection(host, port)
-
-    val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri = "/experiments?search=AMS&max=10")).via(connectionFlow).runWith(Sink.head)
-
-    import spray.json._
-    responseFuture.map { r ⇒
-      assert(r.status == StatusCodes.OK)
-
-      val experiments = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
-        .parseJson.convertTo[AllExperiments].experiments
-
-      assert(experiments.size > 10)
-
-    }
-  }
 
   "Create a new experiment " should " return the uid of the new experiment which we can then delete " in {
 
@@ -135,9 +117,8 @@ class ExperimentsApiTests extends ApiTests {
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)
 
-    val exp1 = AddExperiment(TestHelpers.cloneForFakeExperiment(TestHelpers.experiment1))
 
-    val jsonRequest = ByteString(exp1.toJson.prettyPrint)
+    val jsonRequest = ByteString(AddExperiment(exp1).toJson.prettyPrint)
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
@@ -150,14 +131,105 @@ class ExperimentsApiTests extends ApiTests {
     responseFuture.map { r ⇒
       logger.info(r.toString())
       assert(r.status == StatusCodes.Created)
-
-      //      val experiments = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
-      //        .parseJson.convertTo[AllExperiments].experiments
-      //
-      //      assert(experiments.size > 10)
-
     }
   }
 
 
+  "adding properties" should " change the list of properties of the experiments " in {
+
+    implicit val executionContext = system.dispatcher
+    import spray.json._
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    val jsonRequest = ByteString(AddExpProps(Map(("hello", "mars"), ("bye", "jupiter"))).toJson.prettyPrint)
+
+    val postRequest = HttpRequest(
+      HttpMethods.POST,
+      uri = s"/experiment/${exp1.uid}/properties",
+      entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
+
+    responseFuture.map { r ⇒
+      logger.info(r.toString())
+      assert(r.status == StatusCodes.Created)
+    }
+  }
+
+
+
+  "adding raw files directly " should " copy the given file to the experiment folder " in {
+
+    implicit val executionContext = system.dispatcher
+    import spray.json._
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    val postRequest = HttpRequest(
+      HttpMethods.POST,
+      uri = s"/experiment/${exp1.uid}/file_upload_raw",
+      entity = HttpEntity(MediaTypes.`application/x-www-form-urlencoded`,
+        "fileupload=./for_testing/for_unit_testing/of_paramount_importance.txt"))
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
+
+    responseFuture.map { r ⇒
+      logger.info(r.toString())
+      assert(r.status == StatusCodes.Created)
+    }
+  }
+
+
+  "Retrieving one experiment " should " return detailed information of exp " in {
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(HttpRequest(uri = s"/experiment/${exp1.uid}")).via(connectionFlow).runWith(Sink.head)
+
+    import spray.json._
+    responseFuture.map { r ⇒
+      assert(r.status == StatusCodes.OK)
+
+      val experiment = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+        .parseJson.convertTo[Experiment]
+
+      assert(experiment.name == experiment.name)
+      assert(experiment.description == experiment.description)
+      assert(experiment.properties("hello") == "mars")
+      assert(experiment.properties("bye") == "jupiter")
+    }
+  }
+
+
+  "Delete an experiment " should " move the experiment to the deleted folder " in {
+
+    implicit val executionContext = system.dispatcher
+    import spray.json._
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    val postRequest = HttpRequest(
+      HttpMethods.DELETE,
+      uri = s"/experiment/${exp1.uid}",
+      entity = HttpEntity(MediaTypes.`application/json`, ""))
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
+
+    responseFuture.map { r ⇒
+      logger.info(r.toString())
+      assert(r.status == StatusCodes.OK)
+    }
+  }
 }
+
+
