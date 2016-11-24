@@ -13,6 +13,7 @@ import akka.pattern.ask
 import akka.stream.scaladsl.FileIO
 import akka.util.Timeout
 import com.actelion.research.arcite.core.api.ArciteService._
+import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{InfoLogs, RecentAllLogs}
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.fileservice.FileServiceActor.FolderFilesInformation
 import com.actelion.research.arcite.core.rawdata.DefineRawData._
@@ -139,6 +140,10 @@ trait ArciteServiceApi extends LazyLogging {
     val fileUp = if (meta) MoveMetaFile(experiment, filePath.toString) else MoveRawFile(experiment, filePath.toString)
     arciteService ! fileUp
   }
+
+  def getRecentUpdatesLogs() = {
+    arciteService.ask(RecentAllLogs).mapTo[InfoLogs]
+  }
 }
 
 trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSONProtocol with LazyLogging {
@@ -159,6 +164,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       runTransformRoute ~
       transformFeedbackRoute ~
       allTransformsFeedbackRoute ~
+      allLastUpdates ~
       defaultRoute
   }
 
@@ -167,6 +173,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       complete(OK -> apiSpec.stripMargin)
     }
   }
+
+
 
   def experimentsRoute = path("experiments") {
 
@@ -510,6 +518,16 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       onSuccess(jobsStatus()) {
         case jfb: AllJobsFeedback ⇒ complete(OK -> jfb)
         case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning an usefull info."))
+      }
+    }
+  }
+
+  def allLastUpdates = path("all_last_updates") {
+    get {
+      logger.debug("returns all last updates")
+      onSuccess(getRecentUpdatesLogs()) {
+        case ifl: InfoLogs ⇒ complete(OK -> ifl)
+        case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning list of recent logs."))
       }
     }
   }

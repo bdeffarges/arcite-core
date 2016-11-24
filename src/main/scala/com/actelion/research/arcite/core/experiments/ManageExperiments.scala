@@ -4,9 +4,13 @@ import java.nio.charset.StandardCharsets
 import java.nio.file._
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
+
+import com.typesafe.config.ConfigFactory
+import org.slf4j.LoggerFactory
+
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.api.ArciteService._
-import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.AddLog
+import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{AddLog, BuildRecent}
 import com.actelion.research.arcite.core.eventinfo.{EventInfoLogging, ExpLog, LogCategory, LogType}
 import com.actelion.research.arcite.core.experiments.LocalExperiments._
 import com.actelion.research.arcite.core.fileservice.FileServiceActor
@@ -18,8 +22,6 @@ import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex._
 import com.actelion.research.arcite.core.transforms.TransformDoneInfo
 import com.actelion.research.arcite.core.utils
 import com.actelion.research.arcite.core.utils.{FullName, WriteFeedbackActor}
-import com.typesafe.config.ConfigFactory
-import org.slf4j.LoggerFactory
 
 /**
   * Created by Bernard Deffarges on 06/03/16.
@@ -233,6 +235,10 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
       }
 
 
+    case GetAllExperimentsLastUpdate ⇒
+      sender() ! AllLastUpdatePath(experiments.values.map(ExperimentFolderVisitor(_).lastUpdateLog).toSet)
+
+
     case GetAllTransforms(experiment) ⇒
       val allTransforms = getAllTransforms(experiment)
       sender ! TransformsForExperiment(allTransforms)
@@ -357,6 +363,10 @@ object ManageExperiments extends ArciteJSONProtocol {
 
   case class FoundTransfDefFullName(fullName: FullName)
 
+  case object GetAllExperimentsLastUpdate
+
+  case class AllLastUpdatePath(paths: Set[Path])
+
 
   val actSystem = ActorSystem("experiments-actor-system", config.getConfig("experiments-manager"))
 
@@ -364,7 +374,15 @@ object ManageExperiments extends ArciteJSONProtocol {
   val defineRawDataAct = actSystem.actorOf(Props(classOf[DefineRawData], manExpActor), "define_raw_data")
   val eventInfoLoggingAct = actSystem.actorOf(Props(classOf[EventInfoLogging]), "event_logging_info")
 
-  def startActorSystemForExperiments():Unit = {
+  import scala.concurrent.duration._
+
+  import actSystem.dispatcher
+
+  actSystem.scheduler.schedule(45 seconds, 5 minutes) {
+    eventInfoLoggingAct ! BuildRecent
+  }
+
+  def startActorSystemForExperiments():Unit = {//todo rename, refactor: parent actor for strategy
     logger.info(s"exp manager actor: [$manExpActor]")
     logger.info(s"raw data define: [$defineRawDataAct]")
     logger.info(s"event info log: [$eventInfoLoggingAct]")

@@ -4,11 +4,13 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path}
 import java.nio.file.StandardOpenOption._
 
-import akka.actor.{Actor, ActorLogging}
+import akka.actor.{Actor, ActorLogging, ActorPath}
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging._
+import com.actelion.research.arcite.core.experiments.ManageExperiments.{AllLastUpdatePath, GetAllExperimentsLastUpdate}
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor}
 import com.actelion.research.arcite.core.utils
+import com.typesafe.config.ConfigFactory
 
 /**
   * arcite-core
@@ -37,9 +39,14 @@ class EventInfoLogging extends Actor with ActorLogging with ArciteJSONProtocol {
 
   import spray.json._
 
-  val maxSize = 10 //todo extend
+  val maxSize = 100 //todo extend
 
   var recentLogs = List[ExpLog]()
+
+  val conf = ConfigFactory.load().getConfig("experiments-manager")
+  val actSys = conf.getString("akka.uri")
+  val expManager = context.actorSelection(ActorPath.fromString(s"${actSys}/user/experiments_manager"))
+
 
   override def receive = {
     case al: AddLog ⇒
@@ -75,6 +82,19 @@ class EventInfoLogging extends Actor with ActorLogging with ArciteJSONProtocol {
 
 
     case BuildRecent ⇒
+      log.info("scheduled job: rebuilding recentLogs for all experiments. ")
+      expManager ! GetAllExperimentsLastUpdate
+
+
+    case allPaths: AllLastUpdatePath ⇒
+      recentLogs = (allPaths.paths.map(readLog)
+        .filter(_.isDefined).map(_.get).toList ++ recentLogs)
+        .sortBy(_.date).reverse.take(maxSize)
+      log.info(s"scheduled job: recentLogs updated..., total of ${recentLogs.size} logs.")
+
+
+    case RecentAllLogs ⇒
+      sender() ! InfoLogs(recentLogs)
 
 
     case msg: Any ⇒
@@ -82,9 +102,10 @@ class EventInfoLogging extends Actor with ActorLogging with ArciteJSONProtocol {
 
   }
 
+  import scala.collection.convert.wrapAsScala._
   def readLog(logFile: Path): Option[ExpLog] = {
     if (logFile.toFile.exists) {
-      Some(Files.readAllLines(logFile).get(0).parseJson.convertTo[ExpLog])
+      Some(Files.readAllLines(logFile).toList.mkString.parseJson.convertTo[ExpLog])
     } else {
       None
     }
@@ -108,5 +129,6 @@ object EventInfoLogging {
   case object BuildRecent
 
   case class LatestLog(experiment: Experiment)
+
 
 }

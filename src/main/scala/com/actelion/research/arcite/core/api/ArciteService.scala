@@ -6,6 +6,7 @@ import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, Props}
 import akka.util.Timeout
 import breeze.numerics.exp
 import com.actelion.research.arcite.core.FileInformationWithSubFolder
+import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.RecentAllLogs
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSummary}
 import com.actelion.research.arcite.core.rawdata.DefineRawData.{RawDataSet, RawDataSetRegex, RawDataSetRegexWithRequester, RawDataSetWithRequester}
@@ -128,6 +129,7 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
   val expManSelect = s"${actSys}/user/experiments_manager"
   val rawDSelect = s"${actSys}/user/define_raw_data"
+  val eventInfoSelect = s"${actSys}/user/event_logging_info"
 
   //todo move it to another executor
   val expManager = context.actorSelection(ActorPath.fromString(expManSelect))
@@ -135,6 +137,10 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
   val defineRawDataAct = context.actorSelection(ActorPath.fromString(rawDSelect))
   log.info(s"connect raw [$rawDSelect] actor: $defineRawDataAct")
+
+  val eventInfoAct = context.actorSelection(ActorPath.fromString(eventInfoSelect))
+  log.info(s"connect raw [$eventInfoSelect] actor: $eventInfoAct")
+
 
   import ArciteService._
 
@@ -218,6 +224,9 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
     case ji: QueryJobInfo ⇒
       ManageTransformCluster.getNextFrontEnd() forward ji
 
+
+    case RecentAllLogs ⇒
+      eventInfoAct forward RecentAllLogs
 
     //don't know what to do with this message...
     case msg: Any ⇒ log.error(s"don't know what to do with the passed message [$msg] in ${getClass}")
