@@ -4,9 +4,8 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path}
 import java.nio.file.StandardOpenOption._
 
-import akka.actor.{Actor, ActorLogging, ActorPath}
+import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef}
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
-import com.actelion.research.arcite.core.eventinfo.EventInfoLogging._
 import com.actelion.research.arcite.core.experiments.ManageExperiments.{AllLastUpdatePath, GetAllExperimentsLastUpdate}
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor}
 import com.actelion.research.arcite.core.utils
@@ -37,8 +36,6 @@ import com.typesafe.config.ConfigFactory
   */
 class EventInfoLogging extends Actor with ActorLogging with ArciteJSONProtocol {
 
-  import spray.json._
-
   val maxSize = 100 //todo extend
 
   var recentLogs = List[ExpLog]()
@@ -47,6 +44,8 @@ class EventInfoLogging extends Actor with ActorLogging with ArciteJSONProtocol {
   val actSys = conf.getString("akka.uri")
   val expManager = context.actorSelection(ActorPath.fromString(s"${actSys}/user/experiments_manager"))
 
+  import spray.json._
+  import EventInfoLogging._
 
   override def receive = {
     case al: AddLog ⇒
@@ -61,15 +60,7 @@ class EventInfoLogging extends Actor with ActorLogging with ArciteJSONProtocol {
 
 
     case rl: ReadLogs ⇒
-      val eFV = ExperimentFolderVisitor(rl.experiment)
-
-      val latestLogs = InfoLogs(eFV.logsFolderPath.toFile.listFiles()
-        .filter(f ⇒ f.getName.startsWith("log_"))
-        .sortBy(f ⇒ f.lastModified()).takeRight(rl.latest)
-        .map(f ⇒ readLog(f.toPath))
-        .filter(_.isDefined).map(lo ⇒ lo.get).toList.sortBy(_.date))
-
-      sender() ! latestLogs
+      expManager forward rl
 
 
     case ll: LatestLog ⇒
@@ -102,19 +93,10 @@ class EventInfoLogging extends Actor with ActorLogging with ArciteJSONProtocol {
 
   }
 
-  import scala.collection.convert.wrapAsScala._
-  def readLog(logFile: Path): Option[ExpLog] = {
-    if (logFile.toFile.exists) {
-      Some(Files.readAllLines(logFile).toList.mkString.parseJson.convertTo[ExpLog])
-    } else {
-      None
-    }
-  }
-
 
 }
 
-object EventInfoLogging {
+object EventInfoLogging extends ArciteJSONProtocol {
 
   case class AddLog(exp: Experiment, log: ExpLog)
 
@@ -122,7 +104,7 @@ object EventInfoLogging {
 
   case class InfoLog(log: ExpLog)
 
-  case class ReadLogs(experiment: Experiment, latest: Int = 100)
+  case class ReadLogs(experiment: String, page: Int = 0, max: Int = 100)
 
   case object RecentAllLogs
 
@@ -130,5 +112,14 @@ object EventInfoLogging {
 
   case class LatestLog(experiment: Experiment)
 
+  import scala.collection.convert.wrapAsScala._
+  import spray.json._
 
+  def readLog(logFile: Path): Option[ExpLog] = {
+    if (logFile.toFile.exists) {
+      Some(Files.readAllLines(logFile).toList.mkString.parseJson.convertTo[ExpLog])
+    } else {
+      None
+    }
+  }
 }

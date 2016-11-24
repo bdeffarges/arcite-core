@@ -6,7 +6,7 @@ import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, Props}
 import akka.util.Timeout
 import breeze.numerics.exp
 import com.actelion.research.arcite.core.FileInformationWithSubFolder
-import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.RecentAllLogs
+import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{ReadLogs, RecentAllLogs}
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSummary}
 import com.actelion.research.arcite.core.rawdata.DefineRawData.{RawDataSet, RawDataSetRegex, RawDataSetRegexWithRequester, RawDataSetWithRequester}
@@ -227,6 +227,10 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
     case RecentAllLogs ⇒
       eventInfoAct forward RecentAllLogs
+
+
+    case rl: ReadLogs ⇒
+      eventInfoAct forward rl
 
     //don't know what to do with this message...
     case msg: Any ⇒ log.error(s"don't know what to do with the passed message [$msg] in ${getClass}")

@@ -13,7 +13,7 @@ import akka.pattern.ask
 import akka.stream.scaladsl.FileIO
 import akka.util.Timeout
 import com.actelion.research.arcite.core.api.ArciteService._
-import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{InfoLogs, RecentAllLogs}
+import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{InfoLogs, ReadLogs, RecentAllLogs}
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.fileservice.FileServiceActor.FolderFilesInformation
 import com.actelion.research.arcite.core.rawdata.DefineRawData._
@@ -52,6 +52,11 @@ trait ArciteServiceApi extends LazyLogging {
   def getExperiment(digest: String) = {
     logger.debug(s"asking for experiment with digest= $digest")
     arciteService.ask(GetExperiment(digest)).mapTo[ExperimentFoundFeedback]
+  }
+
+  def getlogsForExperiment(digest: String, page: Int, max: Int) = {
+    logger.debug(s"logs page=$page max=$max for exp= $digest")
+    arciteService.ask(ReadLogs(digest, page, max)).mapTo[InfoLogs]
   }
 
   def deleteExperiment(experiment: String) = {
@@ -173,7 +178,6 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       complete(OK -> apiSpec.stripMargin)
     }
   }
-
 
 
   def experimentsRoute = path("experiments") {
@@ -314,6 +318,14 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             }
           }
         } ~
+      pathPrefix("logs") {
+        parameters('page ? 0, 'max ? 100) { (page, max) ⇒
+          logger.debug(s"get logs for experiment [${experiment}] pages= $page items= $max")
+          onSuccess(getlogsForExperiment(experiment, page, max)) { exps ⇒
+            complete(OK -> exps)
+          }
+        }
+      }~
         path("properties") {
           pathEnd {
             post {

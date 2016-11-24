@@ -4,13 +4,11 @@ import java.nio.charset.StandardCharsets
 import java.nio.file._
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
-
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
-
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.api.ArciteService._
-import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{AddLog, BuildRecent}
+import com.actelion.research.arcite.core.eventinfo.EventInfoLogging._
 import com.actelion.research.arcite.core.eventinfo.{EventInfoLogging, ExpLog, LogCategory, LogType}
 import com.actelion.research.arcite.core.experiments.LocalExperiments._
 import com.actelion.research.arcite.core.fileservice.FileServiceActor
@@ -290,6 +288,20 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
       } else {
         sender() ! FolderFilesInformation(Set())
       }
+
+
+    case readLogs: ReadLogs ⇒
+      val eFV = ExperimentFolderVisitor(experiments(readLogs.experiment))
+
+      import EventInfoLogging._
+      val latestLogs = InfoLogs(eFV.logsFolderPath.toFile.listFiles()
+        .filter(f ⇒ f.getName.startsWith("log_"))
+        .map(f ⇒ readLog(f.toPath))
+        .filter(_.isDefined).map(_.get)
+        .sortBy(_.date).slice(readLogs.page * readLogs.max,
+        (readLogs.page + 1) * readLogs.max).toList)
+
+      sender() ! latestLogs
 
 
     case any: Any ⇒ log.debug(s"don't know what to do with this message $any")
