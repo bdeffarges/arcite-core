@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
-import org.scalatest.{AsyncFlatSpec, Matchers}
+import org.scalatest.{AsyncFlatSpec, BeforeAndAfter, Matchers}
 
 /**
   * arcite-core
@@ -37,6 +37,16 @@ class ApiTests extends AsyncFlatSpec with Matchers with ArciteJSONProtocol with 
   val host = config.getString("http.host")
   val port = config.getInt("http.port")
 
-  implicit val system = ActorSystem()
-  implicit val materializer = ActorMaterializer()
+  implicit var system: ActorSystem = null
+  implicit var materializer: ActorMaterializer = null
+
+  override def withFixture(test: NoArgAsyncTest) = {
+    system = ActorSystem()
+    materializer = ActorMaterializer()
+    complete {
+      super.withFixture(test) // Invoke the test function
+    } lastly {
+      system.terminate()
+    }
+  }
 }

@@ -1,20 +1,17 @@
 package com.actelion.research.arcite.core.api
 
-import java.util.UUID
+import java.io.File
+import java.nio.file.Paths
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model._
-import akka.stream.ActorMaterializer
+import akka.http.scaladsl.marshalling.Marshal
+import akka.http.scaladsl.model.{RequestEntity, _}
 import akka.stream.scaladsl._
 import akka.util.ByteString
 import com.actelion.research.arcite.core.TestHelpers
-import com.actelion.research.arcite.core.api.ArciteService.{AddedExperiment, AllExperiments, ExperimentFound}
-import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSummary}
+import com.actelion.research.arcite.core.api.ArciteService.AllExperiments
+import com.actelion.research.arcite.core.experiments.Experiment
 import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddExpProps, AddExperiment}
-import com.typesafe.config.ConfigFactory
-import com.typesafe.scalalogging.LazyLogging
-import org.scalatest.{AsyncFlatSpec, Matchers}
 
 import scala.concurrent.Future
 
@@ -42,72 +39,9 @@ import scala.concurrent.Future
   * Created by Bernard Deffarges on 2016/11/10.
   *
   */
-class ExperimentsApiTests extends ApiTests {
+class FilesUploadApiTests extends ApiTests {
 
   val exp1 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment1)
-
-  "Default get " should "return rest interface specification " in {
-
-    implicit val executionContext = system.dispatcher
-
-    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
-      Http().outgoingConnection(host, port)
-
-    val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri = "/")).via(connectionFlow).runWith(Sink.head)
-
-    responseFuture.map { r ⇒
-      assert(r.status == StatusCodes.OK)
-      assert(r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8") == refApi)
-    }
-  }
-
-  "All Experiments without argument " should "return many experiments... " in {
-    implicit val executionContext = system.dispatcher
-
-    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
-      Http().outgoingConnection(host, port)
-
-    val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri = "/experiments")).via(connectionFlow).runWith(Sink.head)
-
-    import spray.json._
-    responseFuture.map { r ⇒
-      assert(r.status == StatusCodes.OK)
-
-      val experiments = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
-        .parseJson.convertTo[AllExperiments].experiments
-
-      assert(experiments.size > 10)
-
-      assert(experiments.exists(exp ⇒ exp.name.contains("AMS")))
-
-    }
-  }
-
-  "Paging through experiments " should "return exact number of experiments... " in {
-    implicit val executionContext = system.dispatcher
-
-    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
-      Http().outgoingConnection(host, port)
-
-    val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri = "/experiments?page=1&max=10")).via(connectionFlow).runWith(Sink.head)
-
-    import spray.json._
-    responseFuture.map { r ⇒
-      assert(r.status == StatusCodes.OK)
-
-      val experiments = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
-        .parseJson.convertTo[AllExperiments].experiments
-
-      assert(experiments.size == 10)
-
-      assert(experiments.exists(exp ⇒ exp.name.contains("AMS")))
-
-    }
-  }
-
 
   "Create a new experiment " should " return the uid of the new experiment which we can then delete " in {
 
@@ -134,29 +68,43 @@ class ExperimentsApiTests extends ApiTests {
     }
   }
 
-
-  "adding properties" should " change the list of properties of the experiments " in {
+  "adding raw files directly " should " copy the given file to the experiment folder " in {
 
     implicit val executionContext = system.dispatcher
-    import spray.json._
 
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)
 
-    val jsonRequest = ByteString(AddExpProps(Map(("hello", "mars"), ("bye", "jupiter"))).toJson.prettyPrint)
+    def createEntity(file: File): Future[RequestEntity] = {
+      require(file.exists())
+      val formData =
+        Multipart.FormData(
+          Source.single(
+            Multipart.FormData.BodyPart(
+              "test",
+              HttpEntity(MediaTypes.`application/octet-stream`, file.length(),
+                FileIO.fromPath(file.toPath, chunkSize = 100000)), // the chunk size here is currently critical for performance
+              Map("filename" -> file.getName))))
 
-    val postRequest = HttpRequest(
-      HttpMethods.POST,
-      uri = s"/experiment/${exp1.uid}/properties",
-      entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
+      Marshal(formData).to[RequestEntity]
+    }
 
-    val responseFuture: Future[HttpResponse] =
-      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
+    def createRequest(target: Uri, file: File): Future[HttpRequest] =
+      for {
+        e ← createEntity(file)
+      } yield HttpRequest(HttpMethods.POST, uri = target, entity = e)
 
-    responseFuture.map { r ⇒
-      logger.info(r.toString())
+
+    val req = createRequest(s"/experiment/${exp1.uid}/file_upload/meta",
+      new File("./for_testing/for_unit_testing/of_paramount_importance.txt"))
+
+    val res: Future[HttpResponse] = req.flatMap(r ⇒ Source.single(r).via(connectionFlow).runWith(Sink.head))
+
+    res.map { r ⇒
       assert(r.status == StatusCodes.Created)
     }
+
+    Future(Assertion())
   }
 
 
@@ -178,8 +126,6 @@ class ExperimentsApiTests extends ApiTests {
 
       assert(experiment.name == experiment.name)
       assert(experiment.description == experiment.description)
-      assert(experiment.properties("hello") == "mars")
-      assert(experiment.properties("bye") == "jupiter")
     }
   }
 
@@ -187,7 +133,6 @@ class ExperimentsApiTests extends ApiTests {
   "Delete an experiment " should " move the experiment to the deleted folder " in {
 
     implicit val executionContext = system.dispatcher
-    import spray.json._
 
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)

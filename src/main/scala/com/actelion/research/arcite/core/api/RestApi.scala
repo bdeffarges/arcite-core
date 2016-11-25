@@ -224,7 +224,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           }
         }
       } ~
-        pathPrefix("file_upload") {
+        pathPrefix("file_upload") { // todo could also do it this way https://github.com/knoldus/akka-http-file-upload.git
           path("meta") {
             post {
               extractRequestContext {
@@ -243,7 +243,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
                         result.status match {
                           case scala.util.Success(s) =>
                             fileUploaded(experiment, fileP, true)
-                            complete(OK -> SuccessMessage(s"Successfully written ${result.count} bytes"))
+                            complete(Created -> SuccessMessage(s"Successfully written ${result.count} bytes"))
 
                           case Failure(e) =>
                             complete(BadRequest -> ErrorMessage(e.getMessage))
@@ -272,7 +272,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
                           result.status match {
                             case scala.util.Success(s) =>
                               fileUploaded(experiment, fileP, false)
-                              complete(OK -> SuccessMessage(s"Successfully written ${result.count} bytes"))
+                              complete(Created -> SuccessMessage(s"Successfully written ${result.count} bytes"))
 
                             case Failure(e) =>
                               complete(BadRequest -> ErrorMessage(e.getMessage))
