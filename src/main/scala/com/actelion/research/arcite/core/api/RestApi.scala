@@ -224,16 +224,17 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           }
         }
       } ~
-        pathPrefix("file_upload") { // todo could also do it this way https://github.com/knoldus/akka-http-file-upload.git
+        pathPrefix("file_upload") {
+          // todo could also do it this way https://github.com/knoldus/akka-http-file-upload.git
           path("meta") {
             post {
               extractRequestContext {
                 ctx => {
                   implicit val materializer = ctx.materializer
                   implicit val ec = ctx.executionContext
-
                   fileUpload("fileupload") {
                     case (fileInfo, fileStream) =>
+                      logger.info(s"uploading meta file: $fileInfo")
                       val tempp = Paths.get("/tmp", UUID.randomUUID().toString)
                       tempp.toFile.mkdirs()
                       val fileP = tempp resolve fileInfo.fileName
@@ -263,6 +264,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
 
                     fileUpload("fileupload") {
                       case (fileInfo, fileStream) =>
+                        logger.info(s"uploading raw file: $fileInfo")
                         val tempp = Paths.get("/tmp", UUID.randomUUID().toString)
                         tempp.toFile.mkdirs()
                         val fileP = tempp resolve fileInfo.fileName
@@ -318,14 +320,14 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             }
           }
         } ~
-      pathPrefix("logs") {
-        parameters('page ? 0, 'max ? 100) { (page, max) ⇒
-          logger.debug(s"get logs for experiment [${experiment}] pages= $page items= $max")
-          onSuccess(getlogsForExperiment(experiment, page, max)) { exps ⇒
-            complete(OK -> exps)
+        pathPrefix("logs") {
+          parameters('page ? 0, 'max ? 100) { (page, max) ⇒
+            logger.debug(s"get logs for experiment [${experiment}] pages= $page items= $max")
+            onSuccess(getlogsForExperiment(experiment, page, max)) { exps ⇒
+              complete(OK -> exps)
+            }
           }
-        }
-      }~
+        } ~
         path("properties") {
           pathEnd {
             post {

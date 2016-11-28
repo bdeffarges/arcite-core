@@ -75,36 +75,24 @@ class FilesUploadApiTests extends ApiTests {
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)
 
-    def createEntity(file: File): Future[RequestEntity] = {
+    def createEntity(file: File): RequestEntity = {
       require(file.exists())
-      val formData =
-        Multipart.FormData(
-          Source.single(
-            Multipart.FormData.BodyPart(
-              "test",
-              HttpEntity(MediaTypes.`application/octet-stream`, file.length(),
-                FileIO.fromPath(file.toPath, chunkSize = 100000)), // the chunk size here is currently critical for performance
-              Map("filename" -> file.getName))))
+      val formData = Multipart.FormData.fromPath("fileupload",
+            ContentTypes.`application/octet-stream`, file.toPath, 100000) // the chunk size here is currently critical for performance
 
-      Marshal(formData).to[RequestEntity]
+      formData.toEntity()
     }
 
-    def createRequest(target: Uri, file: File): Future[HttpRequest] =
-      for {
-        e ← createEntity(file)
-      } yield HttpRequest(HttpMethods.POST, uri = target, entity = e)
-
+    def createRequest(target: Uri, file: File): HttpRequest = HttpRequest(HttpMethods.POST, uri = target, entity = createEntity(file))
 
     val req = createRequest(s"/experiment/${exp1.uid}/file_upload/meta",
       new File("./for_testing/for_unit_testing/of_paramount_importance.txt"))
 
-    val res: Future[HttpResponse] = req.flatMap(r ⇒ Source.single(r).via(connectionFlow).runWith(Sink.head))
+    val res: Future[HttpResponse] = Source.single(req).via(connectionFlow).runWith(Sink.head)
 
     res.map { r ⇒
       assert(r.status == StatusCodes.Created)
     }
-
-    Future(Assertion())
   }
 
 
