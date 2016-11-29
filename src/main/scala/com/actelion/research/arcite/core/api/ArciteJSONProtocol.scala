@@ -70,14 +70,14 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
           TransformDefinitionIdentity(FullName(organization, name), shortName,
             TransformDescription(descSummary, descConsumes, descProduces))
 
-        case _ => throw new DeserializationException("could not deserialize.")
+        case _ => throw DeserializationException("could not deserialize.")
       }
     }
   }
 
   implicit object expLogJsonFormat extends RootJsonFormat[ExpLog] {
 
-    def write(obj: ExpLog):JsValue = {
+    def write(obj: ExpLog): JsValue = {
       JsObject(
         "type" -> JsString(obj.logType.toString),
         "category" -> JsString(obj.logCat.toString),
@@ -92,7 +92,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
           ExpLog(LogType.withName(logType), LogCategory.withName(logCat),
             message, utils.getAsDate(date), if (uid.length > 0) Some(uid) else None)
 
-        case _ => throw new DeserializationException("could not deserialize.")
+        case _ => throw DeserializationException("could not deserialize.")
 
       }
     }
@@ -110,15 +110,53 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
       case JsString("REMOTE") ⇒ ExpState.REMOTE
       case _ ⇒ ExpState.UNKNOWN
 
-//      case _ ⇒ deserializationError("Experiment state expected")
+      //      case _ ⇒ deserializationError("Experiment state expected")
     }
   }
+
 
   implicit val ownerJson = jsonFormat2(Owner)
   implicit val conditionJson = jsonFormat3(Condition)
   implicit val conditionForSampleJson = jsonFormat1(ConditionsForSample)
   implicit val experimentalDesignJson = jsonFormat2(ExperimentalDesign)
-  implicit val experimentJson = jsonFormat6(Experiment) // todo expand for default NEW state
+
+  implicit object ExperimentJSonFormat extends RootJsonFormat[Experiment] {
+    override def read(json: JsValue): Experiment = {
+      json.asJsObject.getFields("name", "description", "owner", "state", "design", "properties") match {
+        case Seq(JsString(name), JsString(description), owner, state, design, properties) ⇒
+          Experiment(name, description, owner.convertTo[Owner], state.convertTo[ExpState],
+            design.convertTo[ExperimentalDesign], properties.convertTo[Map[String, String]])
+
+        case Seq(JsString(name), JsString(description), owner, design, properties) ⇒
+          Experiment(name, description, owner.convertTo[Owner], ExpState.NEW,
+            design.convertTo[ExperimentalDesign], properties.convertTo[Map[String, String]])
+
+        case Seq(JsString(name), JsString(description), owner, design) ⇒
+          Experiment(name, description, owner.convertTo[Owner], ExpState.NEW,
+            design.convertTo[ExperimentalDesign], Map[String, String]())
+
+        case Seq(JsString(name), JsString(description), owner, properties) ⇒
+          Experiment(name, description, owner.convertTo[Owner], ExpState.NEW,
+            ExperimentalDesign(), properties.convertTo[Map[String, String]])
+
+        case Seq(JsString(name), JsString(description), owner) ⇒
+          Experiment(name, description, owner.convertTo[Owner], ExpState.NEW,
+            ExperimentalDesign(), Map[String, String]())
+      }
+    }
+
+    override def write(exp: Experiment): JsValue = {
+      JsObject(
+        "name" -> JsString(exp.name),
+        "description" -> JsString(exp.description),
+        "owner" -> exp.owner.toJson,
+        "state" -> exp.state.toJson,
+        "design" -> exp.design.toJson,
+        "properties" -> exp.properties.toJson
+      )
+    }
+  }
+
   implicit val experimentSummaryJson = jsonFormat5(ExperimentSummary)
 
   implicit val stateJSon = jsonFormat1(State)
@@ -133,11 +171,11 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
 
 
       case tsc: TransformSourceFromObject ⇒
-        JsObject("exp_" -> experimentJson.write(tsc.experiment))
+        JsObject("exp_" -> ExperimentJSonFormat.write(tsc.experiment))
 
 
       case tsc: TransformSourceFromRaw ⇒
-        JsObject("test" -> experimentJson.write(tsc.experiment))
+        JsObject("test" -> ExperimentJSonFormat.write(tsc.experiment))
 
       //      case tsc: TransformSourceRegex ⇒
       //        JsObject("type" -> JsString(tsc.getClass.getSimpleName))
@@ -192,8 +230,8 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val fileInfoWithSubFolderJsonFormat = jsonFormat2(FileInformationWithSubFolder)
   implicit val folderFileJsonFormat = jsonFormat1(FolderFilesInformation)
 
-  implicit val expCreatedJson= jsonFormat2(ExperimentCreated)
-  implicit val successMessageJson= jsonFormat1(SuccessMessage)
+  implicit val expCreatedJson = jsonFormat2(ExperimentCreated)
+  implicit val successMessageJson = jsonFormat1(SuccessMessage)
   implicit val errorMessageJson = jsonFormat1(ErrorMessage)
 
   implicit val failedPropsJson = jsonFormat1(FailedAddingProperties)
