@@ -4,15 +4,13 @@ import java.nio.charset.StandardCharsets
 import java.nio.file._
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
-import com.typesafe.config.ConfigFactory
-import org.slf4j.LoggerFactory
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.api.ArciteService._
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging._
 import com.actelion.research.arcite.core.eventinfo.{EventInfoLogging, ExpLog, LogCategory, LogType}
 import com.actelion.research.arcite.core.experiments.LocalExperiments._
 import com.actelion.research.arcite.core.fileservice.FileServiceActor
-import com.actelion.research.arcite.core.fileservice.FileServiceActor.{config => _, _}
+import com.actelion.research.arcite.core.fileservice.FileServiceActor.{config => _, getClass => _, _}
 import com.actelion.research.arcite.core.rawdata.DefineRawData
 import com.actelion.research.arcite.core.rawdata.DefineRawData.{GetExperimentForRawDataSet, RawDataSetFailed, RawDataSetWithRequesterAndExperiment}
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex
@@ -20,6 +18,8 @@ import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex._
 import com.actelion.research.arcite.core.transforms.TransformDoneInfo
 import com.actelion.research.arcite.core.utils
 import com.actelion.research.arcite.core.utils.{FullName, WriteFeedbackActor}
+import com.typesafe.config.ConfigFactory
+import org.slf4j.LoggerFactory
 
 /**
   * Created by Bernard Deffarges on 06/03/16.
@@ -43,9 +43,11 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
   experiments.values.foreach(exp ⇒ luceneRamSearchAct ! IndexExperiment(exp))
 
-  import scala.collection.convert.wrapAsScala._
   import StandardOpenOption._
+
   import spray.json._
+
+  import scala.collection.convert.wrapAsScala._
 
   if (path.toFile.exists()) {
     val st = Files.readAllLines(path).toList.mkString.parseJson.convertTo[State]
@@ -386,9 +388,9 @@ object ManageExperiments extends ArciteJSONProtocol {
   val defineRawDataAct = actSystem.actorOf(Props(classOf[DefineRawData], manExpActor), "define_raw_data")
   val eventInfoLoggingAct = actSystem.actorOf(Props(classOf[EventInfoLogging]), "event_logging_info")
 
-  import scala.concurrent.duration._
-
   import actSystem.dispatcher
+
+  import scala.concurrent.duration._
 
   actSystem.scheduler.schedule(45 seconds, 5 minutes) {
     eventInfoLoggingAct ! BuildRecent

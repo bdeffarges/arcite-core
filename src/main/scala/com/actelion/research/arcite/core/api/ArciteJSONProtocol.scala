@@ -1,8 +1,7 @@
 package com.actelion.research.arcite.core.api
 
-import com.actelion.research.arcite.core.{FileInformation, FileInformationWithSubFolder, utils}
 import com.actelion.research.arcite.core.api.ArciteService.{AddedExperiment, FailedAddingProperties, SomeExperiments}
-import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{AddLog, InfoLogs}
+import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.InfoLogs
 import com.actelion.research.arcite.core.eventinfo.{ExpLog, LogCategory, LogType}
 import com.actelion.research.arcite.core.experiments.ExpState.ExpState
 import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddDesign, AddExpProps, AddExperiment, State}
@@ -13,13 +12,11 @@ import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExper
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, ManyTransfDefs, OneTransfDef}
 import com.actelion.research.arcite.core.transforms._
-import com.actelion.research.arcite.core.transforms.cluster.Frontend.{NotOk, Ok}
+import com.actelion.research.arcite.core.transforms.cluster.Frontend.Ok
 import com.actelion.research.arcite.core.transforms.cluster.WorkState.AllJobsFeedback
 import com.actelion.research.arcite.core.utils.{FullName, Owner}
-import com.fasterxml.jackson.module.scala.JsonScalaEnumeration
+import com.actelion.research.arcite.core.{FileInformation, FileInformationWithSubFolder, utils}
 import spray.json.{DefaultJsonProtocol, _}
-
-import scala.util.parsing.json.JSONObject
 
 /**
   * arcite-core
@@ -121,7 +118,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val conditionJson = jsonFormat3(Condition)
   implicit val conditionForSampleJson = jsonFormat1(ConditionsForSample)
   implicit val experimentalDesignJson = jsonFormat2(ExperimentalDesign)
-  implicit val experimentJson = jsonFormat6(Experiment)
+  implicit val experimentJson = jsonFormat6(Experiment) // todo expand for default NEW state
   implicit val experimentSummaryJson = jsonFormat5(ExperimentSummary)
 
   implicit val stateJSon = jsonFormat1(State)

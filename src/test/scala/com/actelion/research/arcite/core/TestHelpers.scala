@@ -38,6 +38,6 @@ object TestHelpers {
   val experiment2 = Experiment("flying to Neptune", "Flying to Neptune is better...", owner1, design = expDesign2)
 
   def cloneForFakeExperiment(exp: Experiment): Experiment =
-    exp.copy(name = s"${exp.name}${UUID.randomUUID().toString}")
+    exp.copy(name = s"${exp.name}--${UUID.randomUUID().toString}")
 
 }
