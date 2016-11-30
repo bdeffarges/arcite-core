@@ -64,7 +64,14 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
     def read(value: JsValue) = {
       // todo actually read should not be necessary
       value.asJsObject.getFields("organization", "name", "short_name", "description_summary",
-        "description_consumes", "description_produces", "digest") match {
+        "description_consumes", "description_produces",
+        "digest", "depends_on_name", "depends_on_description") match {
+        case Seq(JsString(organization), JsString(name), JsString(shortName),
+        JsString(descSummary), JsString(descConsumes),
+        JsString(descProduces), JsString(deponName), JsString(deponOrga)) =>
+          TransformDefinitionIdentity(FullName(organization, name), shortName,
+            TransformDescription(descSummary, descConsumes, descProduces), Some(FullName(deponOrga, deponName)))
+
         case Seq(JsString(organization), JsString(name), JsString(shortName),
         JsString(descSummary), JsString(descConsumes), JsString(descProduces)) =>
           TransformDefinitionIdentity(FullName(organization, name), shortName,

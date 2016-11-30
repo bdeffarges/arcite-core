@@ -33,7 +33,7 @@ import com.actelion.research.arcite.core.transforms.cluster.ManageTransformClust
   * Created by Bernard Deffarges on 2016/09/23.
   *
   */
-class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends Actor with ActorLogging {
+class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends Actor with ActorLogging { //todo get expManager actor from path
 
   private var readyForTransform = ReadyForTransform(None, None)
 
@@ -61,6 +61,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
         case _ ⇒
           requester ! NotOk("could not find experiment for given id.")
       }
+
 
     case mftdm: MsgFromTransfDefsManager ⇒
       mftdm match {
@@ -93,6 +94,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
             log.error(error)
             requester ! NotOk(error)
           }
+
 
         case _ ⇒
           requester ! NotOk("could not find ONE transform definition for given id.")

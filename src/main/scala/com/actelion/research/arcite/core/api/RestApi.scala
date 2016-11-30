@@ -151,7 +151,7 @@ trait ArciteServiceApi extends LazyLogging {
   }
 
   def getApplicationLogs() = {
-    arciteService.ask(ArciteLogs).mapTo[InfoLogs]
+//    arciteService.ask(ArciteLogs).mapTo[InfoLogs]
   }
 }
 
@@ -507,7 +507,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
               val saved: Future[TransformJobAcceptance] = runTransformFromObject(rtf)
               onSuccess(saved) {
                 case ok: Ok ⇒ complete(OK -> ok)
-                case NotOk(msg) ⇒ complete(OK -> ErrorMessage(msg))
+                case NotOk(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
               }
           }
         }

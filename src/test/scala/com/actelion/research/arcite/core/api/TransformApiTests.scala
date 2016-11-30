@@ -5,9 +5,11 @@ import akka.http.scaladsl.model._
 import akka.stream.scaladsl._
 import akka.util.ByteString
 import com.actelion.research.arcite.core.TestHelpers
-import com.actelion.research.arcite.core.api.ArciteService.AllExperiments
 import com.actelion.research.arcite.core.experiments.Experiment
 import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddExpProps, AddExperiment}
+import com.actelion.research.arcite.core.transforms.RunTransform.RunTransformOnObject
+import com.actelion.research.arcite.core.transforms.cluster.workers.WorkExecUpperCase.ToUpperCase
+import com.actelion.research.arcite.core.transforms.{TransformDefinition, TransformDefinitionIdentity}
 
 import scala.concurrent.Future
 
@@ -39,6 +41,10 @@ class TransformApiTests extends ApiTests {
 
   val exp1 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment1)
 
+  var transfDef: Option[TransformDefinitionIdentity] = None
+
+  var transJobID: Option[String] = None
+
   "Get all transform definitions " should "return all possible transforms " in {
 
     implicit val executionContext = system.dispatcher
@@ -49,155 +55,140 @@ class TransformApiTests extends ApiTests {
     val responseFuture: Future[HttpResponse] =
       Source.single(HttpRequest(uri = "/transform_definitions")).via(connectionFlow).runWith(Sink.head)
 
-        import spray.json._
+    import spray.json._
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
 
+      val transfDefs = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+        .parseJson.convertTo[Set[TransformDefinitionIdentity]]
+
+      assert(transfDefs.size > 1)
     }
   }
 
-//  "All Experiments without argument " should "return many experiments... " in {
-//    implicit val executionContext = system.dispatcher
-//
-//    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
-//      Http().outgoingConnection(host, port)
-//
-//    val responseFuture: Future[HttpResponse] =
-//      Source.single(HttpRequest(uri = "/experiments")).via(connectionFlow).runWith(Sink.head)
-//
-//    import spray.json._
-//    responseFuture.map { r ⇒
-//      assert(r.status == StatusCodes.OK)
-//
-//      val experiments = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
-//        .parseJson.convertTo[AllExperiments].experiments
-//
-//      assert(experiments.size > 10)
-//
-//      assert(experiments.exists(exp ⇒ exp.name.contains("AMS")))
-//
-//    }
-//  }
-//
-//  "Paging through experiments " should "return exact number of experiments... " in {
-//    implicit val executionContext = system.dispatcher
-//
-//    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
-//      Http().outgoingConnection(host, port)
-//
-//    val responseFuture: Future[HttpResponse] =
-//      Source.single(HttpRequest(uri = "/experiments?page=1&max=10")).via(connectionFlow).runWith(Sink.head)
-//
-//    import spray.json._
-//    responseFuture.map { r ⇒
-//      assert(r.status == StatusCodes.OK)
-//
-//      val experiments = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
-//        .parseJson.convertTo[AllExperiments].experiments
-//
-//      assert(experiments.size == 10)
-//
-//      assert(experiments.exists(exp ⇒ exp.name.contains("AMS")))
-//
-//    }
-//  }
-//
-//
-//  "Create a new experiment " should " return the uid of the new experiment which we can then delete " in {
-//
-//    implicit val executionContext = system.dispatcher
-//    import spray.json._
-//
-//    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
-//      Http().outgoingConnection(host, port)
-//
-//
-//    val jsonRequest = ByteString(AddExperiment(exp1).toJson.prettyPrint)
-//
-//    val postRequest = HttpRequest(
-//      HttpMethods.POST,
-//      uri = "/experiment",
-//      entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
-//
-//    val responseFuture: Future[HttpResponse] =
-//      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
-//
-//    responseFuture.map { r ⇒
-//      logger.info(r.toString())
-//      assert(r.status == StatusCodes.Created)
-//    }
-//  }
-//
-//
-//  "adding properties" should " change the list of properties of the experiments " in {
-//
-//    implicit val executionContext = system.dispatcher
-//    import spray.json._
-//
-//    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
-//      Http().outgoingConnection(host, port)
-//
-//    val jsonRequest = ByteString(AddExpProps(Map(("hello", "mars"), ("bye", "jupiter"))).toJson.prettyPrint)
-//
-//    val postRequest = HttpRequest(
-//      HttpMethods.POST,
-//      uri = s"/experiment/${exp1.uid}/properties",
-//      entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
-//
-//    val responseFuture: Future[HttpResponse] =
-//      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
-//
-//    responseFuture.map { r ⇒
-//      logger.info(r.toString())
-//      assert(r.status == StatusCodes.Created)
-//    }
-//  }
-//
-//
-//  "Retrieving one experiment " should " return detailed information of exp " in {
-//    implicit val executionContext = system.dispatcher
-//
-//    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
-//      Http().outgoingConnection(host, port)
-//
-//    val responseFuture: Future[HttpResponse] =
-//      Source.single(HttpRequest(uri = s"/experiment/${exp1.uid}")).via(connectionFlow).runWith(Sink.head)
-//
-//    import spray.json._
-//    responseFuture.map { r ⇒
-//      assert(r.status == StatusCodes.OK)
-//
-//      val experiment = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
-//        .parseJson.convertTo[Experiment]
-//
-//      assert(experiment.name == experiment.name)
-//      assert(experiment.description == experiment.description)
-//      assert(experiment.properties("hello") == "mars")
-//      assert(experiment.properties("bye") == "jupiter")
-//    }
-//  }
-//
-//
-//  "Delete an experiment " should " move the experiment to the deleted folder " in {
-//
-//    implicit val executionContext = system.dispatcher
-//
-//    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
-//      Http().outgoingConnection(host, port)
-//
-//    val postRequest = HttpRequest(
-//      HttpMethods.DELETE,
-//      uri = s"/experiment/${exp1.uid}",
-//      entity = HttpEntity(MediaTypes.`application/json`, ""))
-//
-//    val responseFuture: Future[HttpResponse] =
-//      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
-//
-//    responseFuture.map { r ⇒
-//      logger.info(r.toString())
-//      assert(r.status == StatusCodes.OK)
-//    }
-//  }
+  "Get upper case transform definitions " should " return one transform definition " in {
+
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(HttpRequest(uri = "/transform_definitions?search=uppercase")).via(connectionFlow).runWith(Sink.head)
+
+    import spray.json._
+    responseFuture.map { r ⇒
+      assert(r.status == StatusCodes.OK)
+
+      val transfDefs = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+        .parseJson.convertTo[Set[TransformDefinitionIdentity]]
+
+      assert(transfDefs.size == 1)
+
+      transfDef = Some(transfDefs.toSeq.head)
+
+      assert(transfDef.get.shortName == "to-uppercase")
+    }
+  }
+
+  "Create a new experiment " should " return the uid of the new experiment which we can then delete " in {
+
+    implicit val executionContext = system.dispatcher
+    import spray.json._
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+
+    val jsonRequest = ByteString(AddExperiment(exp1).toJson.prettyPrint)
+
+    val postRequest = HttpRequest(
+      HttpMethods.POST,
+      uri = "/experiment",
+      entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
+
+    responseFuture.map { r ⇒
+      logger.info(r.toString())
+      assert(r.status == StatusCodes.Created)
+    }
+  }
+
+  "Retrieving one experiment " should " return detailed information of exp " in {
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(HttpRequest(uri = s"/experiment/${exp1.uid}")).via(connectionFlow).runWith(Sink.head)
+
+    import spray.json._
+    responseFuture.map { r ⇒
+      assert(r.status == StatusCodes.OK)
+
+      val experiment = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+        .parseJson.convertTo[Experiment]
+
+      assert(experiment.name == experiment.name)
+      assert(experiment.description == experiment.description)
+    }
+  }
+
+  "start upper case transform on experiment " should " return the transform job uid " in {
+
+    implicit val executionContext = system.dispatcher
+
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    import spray.json._
+    implicit val toUpperJson = jsonFormat1(ToUpperCase)
+    val transf1 = RunTransformOnObject(exp1.uid, transfDef.get.digestUID, ToUpperCase("transform me to upper case").toJson)
+
+    val jsonRequest = ByteString(transf1.toJson.prettyPrint)
+
+    val postRequest = HttpRequest(
+      HttpMethods.POST,
+      uri = "/run_transform",
+      entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
+
+    responseFuture.map { r ⇒
+      logger.info(r.toString())
+      assert(r.status == StatusCodes.OK)
+      val result = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+
+      assert(result.nonEmpty)
+    }
+  }
+
+
+  "Delete an experiment " should " move the experiment to the deleted folder " in {
+
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    val postRequest = HttpRequest(
+      HttpMethods.DELETE,
+      uri = s"/experiment/${exp1.uid}",
+      entity = HttpEntity(MediaTypes.`application/json`, ""))
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
+
+    responseFuture.map { r ⇒
+      logger.info(r.toString())
+      assert(r.status == StatusCodes.OK)
+    }
+  }
 }
 
 

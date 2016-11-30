@@ -19,7 +19,7 @@ class WorkExecUpperCase extends Actor with ActorLogging {
       log.info(s"transformDef: ${t.transfDefName} defLight=$transfDefId")
       require(t.transfDefName == transfDefId.fullName)
       log.info("starting work but will wait for fake...")
-      Thread.sleep(10000)
+      Thread.sleep(1000)
       t.source match {
         case tfo: TransformSourceFromObject ⇒
           import spray.json.DefaultJsonProtocol._
