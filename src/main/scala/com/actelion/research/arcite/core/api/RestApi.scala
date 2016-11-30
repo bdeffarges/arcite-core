@@ -149,6 +149,10 @@ trait ArciteServiceApi extends LazyLogging {
   def getRecentUpdatesLogs() = {
     arciteService.ask(RecentAllLogs).mapTo[InfoLogs]
   }
+
+  def getApplicationLogs() = {
+    arciteService.ask(ArciteLogs).mapTo[InfoLogs]
+  }
 }
 
 trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSONProtocol with LazyLogging {
@@ -539,6 +543,16 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
   def allLastUpdates = path("all_last_updates") {
     get {
       logger.debug("returns all last updates")
+      onSuccess(getRecentUpdatesLogs()) {
+        case ifl: InfoLogs ⇒ complete(OK -> ifl)
+        case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning list of recent logs."))
+      }
+    }
+  }
+
+  def getAppLogs = path("application_logs") {
+    get {
+      logger.debug("returns all application logs")
       onSuccess(getRecentUpdatesLogs()) {
         case ifl: InfoLogs ⇒ complete(OK -> ifl)
         case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning list of recent logs."))
