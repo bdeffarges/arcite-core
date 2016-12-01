@@ -5,6 +5,8 @@ import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
+import akka.http.scaladsl.model.headers.{Allow, RawHeader}
+import akka.http.scaladsl.server.{MethodRejection, RejectionHandler}
 import akka.stream.ActorMaterializer
 import com.actelion.research.arcite.core.experiments.ManageExperiments
 import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
@@ -33,6 +35,9 @@ object Main extends App {
 
   implicit val ec = system.dispatcher
 
+  import akka.http.scaladsl.model.StatusCodes._
+  import akka.http.scaladsl.server.Directives._
+
   import scala.concurrent.duration.{Duration, FiniteDuration}
   val t = config.getString("akka.http.server.request-timeout")
   val d = Duration(t)
@@ -41,6 +46,22 @@ object Main extends App {
   val api = new RestApi(system, requestTimeout).routes
 
   implicit val materializer = ActorMaterializer()
+
+  val corsHeaders = List(RawHeader("Access-Control-Allow-Origin", "*"),
+    RawHeader("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS, DELETE"),
+    RawHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization"))
+
+  implicit def rejectionHandler =
+    RejectionHandler.newBuilder().handleAll[MethodRejection] { rejections =>
+      val methods = rejections map (_.supported)
+      lazy val names = methods map (_.name) mkString ", "
+      respondWithHeaders(Allow(methods) +: corsHeaders) {
+        options {
+          complete(s"Supported methods : $names.")
+        } ~
+          complete(MethodNotAllowed, s"HTTP method not allowed, supported methods: $names!")
+      }
+    }.result()
 
   val bindingFuture: Future[ServerBinding] =
     Http().bindAndHandle(api, host, port)
