@@ -17,7 +17,7 @@ import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex._
 import com.actelion.research.arcite.core.transforms.TransformDoneInfo
 import com.actelion.research.arcite.core.utils
-import com.actelion.research.arcite.core.utils.{FullName, WriteFeedbackActor}
+import com.actelion.research.arcite.core.utils.{FullName, Owner, WriteFeedbackActor}
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 
@@ -61,7 +61,7 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
 
     case AddExperimentWithRequester(exp, requester) ⇒
-      if (experiments.get(exp.uid).isEmpty) {
+      if (!experiments.contains(exp.uid)) {
         experiments += ((exp.uid, exp))
 
         LocalExperiments.saveExperiment(exp) match {
@@ -79,6 +79,34 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
         self ! TakeSnapshot
       } else {
         requester ! FailedAddingExperiment(s"same experiment ${exp.owner.organization}/${exp.name} already exists. ")
+      }
+
+
+    case CloneExperimentWithRequester(cexp, requester) ⇒
+      val origExp = experiments.get(cexp.originExp)
+      if (origExp.isEmpty) {
+        requester ! FailedAddingExperiment(s"could not find original experiment ")
+      } else {
+        val newExp = origExp.get.copy(name = cexp.cloneExpProps.name,
+          description = cexp.cloneExpProps.description, owner = cexp.cloneExpProps.owner, state = ExpState.NEW)
+
+        experiments += ((newExp.uid, newExp))
+
+        LocalExperiments.saveExperiment(newExp) match {
+
+          case SaveExperimentSuccessful(expLog) ⇒
+            // linking all data, ...
+
+            eventInfoLoggingAct ! AddLog(newExp, ExpLog(LogType.CREATED, LogCategory.SUCCESS, "clone experiment created. ", Some(newExp.uid)))
+            requester ! AddedExperiment(newExp.uid)
+
+          case SaveExperimentFailed(error) ⇒
+            requester ! FailedAddingExperiment(error)
+        }
+
+        luceneRamSearchAct ! IndexExperiment(newExp)
+
+        self ! TakeSnapshot
       }
 
 
@@ -369,6 +397,13 @@ object ManageExperiments extends ArciteJSONProtocol {
   case class AddExperiment(experiment: Experiment)
 
   case class AddExperimentWithRequester(experiment: Experiment, requester: ActorRef)
+
+
+  case class CloneExperimentNewProps(name: String, description: String, owner: Owner)
+
+  case class CloneExperiment(originExp: String, cloneExpProps: CloneExperimentNewProps)
+
+  case class CloneExperimentWithRequester(cloneExperiment: CloneExperiment, requester: ActorRef)
 
 
   case class AddDesign(experiment: String, design: ExperimentalDesign)

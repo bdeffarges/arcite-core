@@ -14,8 +14,8 @@ import com.actelion.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, 
 import com.actelion.research.arcite.core.transforms._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.Ok
 import com.actelion.research.arcite.core.transforms.cluster.WorkState.AllJobsFeedback
-import com.actelion.research.arcite.core.utils.{FullName, Owner}
-import com.actelion.research.arcite.core.{FileInformation, FileInformationWithSubFolder, utils}
+import com.actelion.research.arcite.core.utils
+import com.actelion.research.arcite.core.utils.{FileInformation, FileInformationWithSubFolder, FullName, Owner}
 import spray.json.{DefaultJsonProtocol, _}
 
 /**

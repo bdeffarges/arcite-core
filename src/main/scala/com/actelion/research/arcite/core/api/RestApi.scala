@@ -70,7 +70,11 @@ trait ArciteServiceApi extends LazyLogging {
   }
 
   def addNewExperiment(addExp: AddExperiment) = {
-    arciteService.ask(AddExperiment(addExp.experiment)).mapTo[AddExperimentResponse]
+    arciteService.ask(addExp).mapTo[AddExperimentResponse]
+  }
+
+  def cloneExperiment(originalExp: String, cloneExperiment: CloneExperimentNewProps) = {
+    arciteService.ask(CloneExperiment(originalExp, cloneExperiment)).mapTo[AddExperimentResponse]
   }
 
   def addDesign(addDesign: AddDesign) = {
@@ -346,6 +350,20 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             }
           }
         } ~
+//        path("clone") {
+//          pathEnd {
+//            post {
+//              logger.info("cloning experiment. ")
+//              entity(as[CloneExperimentNewProps]) { exp ⇒
+//                val saved: Future[AddExperimentResponse] = addNewExperiment(exp)
+//            onSuccess(saved) {
+//              case addExp: AddedExperiment ⇒ complete(Created -> addExp)
+//              case FailedAddingExperiment(msg) ⇒ complete(Conflict -> ErrorMessage(msg))
+//                }
+//              }
+//            }
+//          }
+//        } ~
         pathEnd {
           get {
             logger.info(s"get experiment: = $experiment")

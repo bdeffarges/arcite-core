@@ -10,7 +10,7 @@ import com.actelion.research.arcite.core.eventinfo.{ExpLog, LogType}
 import com.actelion.research.arcite.core.experiments.ExpState.ExpState
 import com.actelion.research.arcite.core.utils
 import com.actelion.research.arcite.core.utils._
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
 
 
 /**
@@ -48,59 +48,59 @@ case class ExperimentSummary(name: String, description: String, owner: Owner, ui
 
 case class ExperimentFolderVisitor(exp: Experiment) {
 
-  val config = ConfigFactory.load()
+  val config: Config = ConfigFactory.load()
 
   val defaultMetaFileName = "meta.json" // the default file that describes the content of a folder
 
-  val name = exp.name
+  val name: String = exp.name
 
   // relative paths
-  val folderName = name.replaceAll("\\s", "_")
+  val folderName: String = name.replaceAll("\\s", "_")
 
-  val owner = exp.owner
+  val owner: Owner = exp.owner
 
   //todo maybe we can get rid of the relative paths
-  val owfs = owner.asFileStructure
-  val relParentPath = Paths.get(owfs)
-  val relFolderPath = Paths.get(owfs, folderName)
-  val relMetaFolderPath = Paths.get(owfs, folderName, "meta")
-  val relUserMetaFolderPath = Paths.get(owfs, folderName, "user_meta")
-  val relRawFolderPath = Paths.get(owfs, folderName, "raw")
-  val relUserRawFolderPath = Paths.get(owfs, folderName, "raw", "uploaded_files")
-  val relTransformFolderPath = Paths.get(owfs, folderName, "transforms")
-  val relPublishedFolderPath = Paths.get(owfs, folderName, "published")
+  val owfs: String = owner.asFileStructure
+  val relParentPath: Path = Paths.get(owfs)
+  val relFolderPath: Path = Paths.get(owfs, folderName)
+  val relMetaFolderPath: Path = Paths.get(owfs, folderName, "meta")
+  val relUserMetaFolderPath: Path = Paths.get(owfs, folderName, "user_meta")
+  val relRawFolderPath: Path = Paths.get(owfs, folderName, "raw")
+  val relUserRawFolderPath: Path = Paths.get(owfs, folderName, "raw", "uploaded_files")
+  val relTransformFolderPath: Path = Paths.get(owfs, folderName, "transforms")
+  val relPublishedFolderPath: Path = Paths.get(owfs, folderName, "published")
 
-  val arcitH = core.dataPath
+  val arcitH: Path = core.dataPath
 
-  val description = exp.description
+  val description: String = exp.description
 
-  val properties = exp.properties
+  val properties: Map[String, String] = exp.properties
 
-  val parentFolderPath = arcitH resolve relParentPath
+  val parentFolderPath: Path = arcitH resolve relParentPath
 
-  val expFolderPath = arcitH resolve relFolderPath
+  val expFolderPath: Path = arcitH resolve relFolderPath
 
-  val rawFolderPath = arcitH resolve relRawFolderPath
+  val rawFolderPath: Path = arcitH resolve relRawFolderPath
 
-  val userRawFolderPath = arcitH resolve relUserRawFolderPath
+  val userRawFolderPath: Path = arcitH resolve relUserRawFolderPath
 
-  val metaFolderPath = arcitH resolve relMetaFolderPath
+  val metaFolderPath: Path = arcitH resolve relMetaFolderPath
 
-  val logsFolderPath = expFolderPath resolve "logs"
+  val logsFolderPath: Path = expFolderPath resolve "logs"
 
-  val userMetaFolderPath = arcitH resolve relUserMetaFolderPath
+  val userMetaFolderPath: Path = arcitH resolve relUserMetaFolderPath
 
-  val transformFolderPath = arcitH resolve relTransformFolderPath
+  val transformFolderPath: Path = arcitH resolve relTransformFolderPath
 
-  val publishedFolderPath = arcitH resolve relPublishedFolderPath
+  val publishedFolderPath: Path = arcitH resolve relPublishedFolderPath
 
-  val experimentFilePath = metaFolderPath resolve LocalExperiments.EXPERIMENT_FILE_NAME
+  val experimentFilePath: Path = metaFolderPath resolve LocalExperiments.EXPERIMENT_FILE_NAME
 
-  val digestFilePath = metaFolderPath resolve LocalExperiments.EXPERIMENT_DIGEST_FILE_NAME
+  val digestFilePath: Path = metaFolderPath resolve LocalExperiments.EXPERIMENT_DIGEST_FILE_NAME
 
-  val lastUpdateLog = logsFolderPath resolve "last_update"
+  val lastUpdateLog: Path = logsFolderPath resolve "last_update"
 
-  val immutableStateFile = metaFolderPath resolve ".immutable"
+  val immutableStateFile: Path = metaFolderPath resolve ".immutable"
 
 
   def ensureFolderStructure(): Unit = {
@@ -117,6 +117,11 @@ case class ExperimentFolderVisitor(exp: Experiment) {
   ensureFolderStructure()
 
   def isImmutableExperiment(): Boolean = immutableStateFile.toFile.exists()
+
+  def linkTo(otherExp: Experiment): Unit = {
+    val visitor = ExperimentFolderVisitor(otherExp)
+
+  }
 }
 
 /**

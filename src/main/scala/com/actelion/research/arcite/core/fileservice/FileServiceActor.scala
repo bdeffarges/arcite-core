@@ -4,8 +4,8 @@ import java.nio.file.Path
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.actelion.research.arcite.core
-import com.actelion.research.arcite.core.{FileInformation, FileInformationWithSubFolder, FileVisitor}
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor}
+import com.actelion.research.arcite.core.utils.{FileInformation, FileInformationWithSubFolder, FileVisitor}
 import com.typesafe.config.{Config, ConfigFactory}
 
 /**

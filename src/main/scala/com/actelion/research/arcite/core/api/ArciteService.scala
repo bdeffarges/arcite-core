@@ -5,7 +5,6 @@ import java.nio.file.Path
 import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, Props}
 import akka.util.Timeout
 import breeze.numerics.exp
-import com.actelion.research.arcite.core.FileInformationWithSubFolder
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{ReadLogs, RecentAllLogs}
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSummary}
@@ -16,6 +15,7 @@ import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.{AllJobsStatus, QueryJobInfo, QueryWorkStatus}
 import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
+import com.actelion.research.arcite.core.utils.FileInformationWithSubFolder
 import com.typesafe.config.ConfigFactory
 
 /**
@@ -159,6 +159,10 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
     case AddExperiment(exp) ⇒
       expManager ! AddExperimentWithRequester(exp, sender())
+
+
+    case ce: CloneExperiment ⇒
+      expManager ! CloneExperimentWithRequester(ce, sender())
 
 
     case DeleteExperiment(exp) ⇒

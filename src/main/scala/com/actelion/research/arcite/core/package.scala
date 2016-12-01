@@ -3,6 +3,7 @@ package com.actelion.research.arcite
 import java.io.File
 import java.nio.file.Paths
 
+import com.actelion.research.arcite.core.utils.{FileInformationWithSubFolder, FileVisitor}
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 

@@ -1,4 +1,4 @@
-package com.actelion.research.arcite.core
+package com.actelion.research.arcite.core.utils
 
 import java.io.File
 
