@@ -115,7 +115,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
       case JsString("IMMUTABLE") ⇒ ExpState.IMMUTABLE
       case JsString("PUBLISHED") ⇒ ExpState.PUBLISHED
       case JsString("REMOTE") ⇒ ExpState.REMOTE
-      case _ ⇒ ExpState.UNKNOWN
+      case _ ⇒ ExpState.NEW
 
       //      case _ ⇒ deserializationError("Experiment state expected")
     }

@@ -85,13 +85,15 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
     case DeleteExperimentWithRequester(digest, requester) ⇒
       val exp = experiments.get(digest)
 
-      if (exp.isDefined) {
+      if (exp.isEmpty) {
+        requester ! ExperimentDeleteFailed(s"experiment [$digest] does not exist.")
+      } else if (exp.get.state.eq(ExpState.NEW) && !ExperimentFolderVisitor(exp.get).isImmutableExperiment()) {
         experiments -= digest
         luceneRamSearchAct ! RemoveFromIndex(exp.get)
         self ! TakeSnapshot
         requester ! LocalExperiments.safeDeleteExperiment(exp.get)
       } else {
-        requester ! ExperimentDeleteFailed(s"experiment [$digest] does not exist. ")
+        requester ! ExperimentDeleteFailed(s"experiment [$digest] can not be deleted, it's immutable. ")
       }
 
 
@@ -306,6 +308,25 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
       sender() ! latestLogs
 
 
+    case makeImmutable: MakeImmutable ⇒
+      val exper = experiments.get(makeImmutable.experiment)
+      if (exper.isDefined) {
+        val exp = exper.get
+        LocalExperiments.saveExperiment(exp) match {
+
+          case SaveExperimentSuccessful(expLog) ⇒
+            eventInfoLoggingAct ! AddLog(exp, ExpLog(LogType.UPDATED, LogCategory.SUCCESS, "experiment is immutable.", Some(exp.uid)))
+
+          case SaveExperimentFailed(error) ⇒
+            eventInfoLoggingAct ! AddLog(exp, ExpLog(LogType.UPDATED, LogCategory.ERROR, "experiment is immutable failed.", Some(exp.uid)))
+        }
+
+        experiments += ((exper.get.uid, exper.get.copy(state = ExpState.IMMUTABLE)))
+        Files.write(ExperimentFolderVisitor(exper.get).immutableStateFile,
+          "IMMUTABLE".getBytes(StandardCharsets.UTF_8), CREATE)
+      }
+
+
     case any: Any ⇒ log.debug(s"don't know what to do with this message $any")
   }
 
@@ -361,8 +382,6 @@ object ManageExperiments extends ArciteJSONProtocol {
 
   case class AddExpPropertiesWithRequester(addProps: AddExpProperties, requester: ActorRef)
 
-  case class SaveLocalExperiment(experiment: Experiment)
-
   case class Experiments(exps: Set[Experiment])
 
   case object TakeSnapshot
@@ -381,6 +400,8 @@ object ManageExperiments extends ArciteJSONProtocol {
 
   case class AllLastUpdatePath(paths: Set[Path])
 
+  case class MakeImmutable(experiment: String)
+
 
   val actSystem = ActorSystem("experiments-actor-system", config.getConfig("experiments-manager"))
 
@@ -396,7 +417,8 @@ object ManageExperiments extends ArciteJSONProtocol {
     eventInfoLoggingAct ! BuildRecent
   }
 
-  def startActorSystemForExperiments():Unit = {//todo rename, refactor: parent actor for strategy
+  def startActorSystemForExperiments(): Unit = {
+    //todo rename, refactor: parent actor for strategy
     logger.info(s"exp manager actor: [$manExpActor]")
     logger.info(s"raw data define: [$defineRawDataAct]")
     logger.info(s"event info log: [$eventInfoLoggingAct]")

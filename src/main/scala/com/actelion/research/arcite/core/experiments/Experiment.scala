@@ -100,6 +100,9 @@ case class ExperimentFolderVisitor(exp: Experiment) {
 
   val lastUpdateLog = logsFolderPath resolve "last_update"
 
+  val immutableStateFile = metaFolderPath resolve ".immutable"
+
+
   def ensureFolderStructure(): Unit = {
     expFolderPath.toFile.mkdirs()
     rawFolderPath.toFile.mkdir()
@@ -112,6 +115,8 @@ case class ExperimentFolderVisitor(exp: Experiment) {
   }
 
   ensureFolderStructure()
+
+  def isImmutableExperiment(): Boolean = immutableStateFile.toFile.exists()
 }
 
 /**
@@ -131,7 +136,7 @@ case class ExperimentFolderVisitor(exp: Experiment) {
   */
 object ExpState extends scala.Enumeration {
   type ExpState = Value
-  val NEW, IMMUTABLE, PUBLISHED, REMOTE, UNKNOWN = Value
+  val NEW, IMMUTABLE, PUBLISHED, REMOTE = Value
 }
 
 

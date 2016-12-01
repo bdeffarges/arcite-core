@@ -358,7 +358,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
               logger.info(s"deleting experiment: $experiment")
               onSuccess(deleteExperiment(experiment)) {
                 case ExperimentDeletedSuccess ⇒ complete(OK -> SuccessMessage(s"experiment $experiment deleted."))
-                case ExperimentDeleteFailed(error) ⇒ complete(NotFound -> ErrorMessage(error))
+                case ExperimentDeleteFailed(error) ⇒ complete(Locked -> ErrorMessage(error))
               }
             }
         }

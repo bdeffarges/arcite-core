@@ -145,6 +145,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
 
 
 object ScatGathTransform {
+
   def props(reqRef: ActorRef, expManag: ActorSelection) = Props(classOf[ScatGathTransform], reqRef, expManag)
 
   case class ReadyForTransform(expFound: Option[ExperimentFound], transfDef: Option[TransformDefinitionIdentity])

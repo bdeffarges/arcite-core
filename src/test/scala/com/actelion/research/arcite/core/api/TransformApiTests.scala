@@ -169,7 +169,7 @@ class TransformApiTests extends ApiTests {
   }
 
 
-  "Delete an experiment " should " move the experiment to the deleted folder " in {
+  "Delete an experiment " should " NOT move the experiment to the deleted folder because it's immutable now!" in {
 
     implicit val executionContext = system.dispatcher
 
