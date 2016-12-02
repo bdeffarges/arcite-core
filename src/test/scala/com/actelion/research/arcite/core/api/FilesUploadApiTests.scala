@@ -156,6 +156,28 @@ class FilesUploadApiTests extends ApiTests {
     }
   }
 
+  "retrieve meta data from exp " should " return meta data of original exp " in {
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(HttpRequest(uri = s"/experiment/${exp1.uid}/files/meta")).via(connectionFlow).runWith(Sink.head)
+
+    import spray.json._
+    responseFuture.map { r ⇒
+      assert(r.status == StatusCodes.OK)
+
+      val foldInf: Set[FileInformationWithSubFolder] = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+        .parseJson.convertTo[Set[FileInformationWithSubFolder]]
+
+      assert(foldInf.toList.head.fileInformation.name == "of_paramount_importance.txt")
+    }
+
+  }
+
+
   "retrieve meta data from cloned exp " should " return the same meta data (as it is a symlink) as the original exp " in {
     implicit val executionContext = system.dispatcher
 
@@ -233,6 +255,27 @@ class FilesUploadApiTests extends ApiTests {
     val postRequest = HttpRequest(
       HttpMethods.DELETE,
       uri = s"/experiment/${exp1.uid}",
+      entity = HttpEntity(MediaTypes.`application/json`, ""))
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
+
+    responseFuture.map { r ⇒
+      logger.info(r.toString())
+      assert(r.status == StatusCodes.OK)
+    }
+  }
+
+  "Delete cloned experiment " should " move the experiment to the deleted folder " in {
+
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    val postRequest = HttpRequest(
+      HttpMethods.DELETE,
+      uri = s"/experiment/${clonedExp.get}",
       entity = HttpEntity(MediaTypes.`application/json`, ""))
 
     val responseFuture: Future[HttpResponse] =
