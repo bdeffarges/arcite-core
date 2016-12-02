@@ -88,5 +88,8 @@ class TestFoldersHelers extends FlatSpec with Matchers with LazyLogging {
     assert(Files.readAllLines(pt6 resolve "dewd.txt").get(0) == txt)
     assert(Files.readAllLines(pt7 resolve "aqqc.txt").get(0) == txt)
     assert(Files.readAllLines(pt8 resolve "dgb.txt").get(0) == txt)
+
+    FoldersHelpers.deleteRecursively(tf)
+    FoldersHelpers.deleteRecursively(of)
   }
 }

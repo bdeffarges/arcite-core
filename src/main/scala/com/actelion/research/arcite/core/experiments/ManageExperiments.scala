@@ -6,18 +6,18 @@ import java.nio.file._
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.api.ArciteService._
-import com.actelion.research.arcite.core.eventinfo.EventInfoLogging._
+import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{AddLog, BuildRecent, ReadLogs}
 import com.actelion.research.arcite.core.eventinfo.{EventInfoLogging, ExpLog, LogCategory, LogType}
-import com.actelion.research.arcite.core.experiments.LocalExperiments._
+import com.actelion.research.arcite.core.experiments.LocalExperiments.{LoadExperiment, SaveExperimentFailed, SaveExperimentSuccessful}
 import com.actelion.research.arcite.core.fileservice.FileServiceActor
-import com.actelion.research.arcite.core.fileservice.FileServiceActor.{config => _, getClass => _, _}
+import com.actelion.research.arcite.core.fileservice.FileServiceActor.{getClass => _, _}
 import com.actelion.research.arcite.core.rawdata.DefineRawData
 import com.actelion.research.arcite.core.rawdata.DefineRawData.{GetExperimentForRawDataSet, RawDataSetFailed, RawDataSetWithRequesterAndExperiment}
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex
-import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex._
+import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperimentsWithRequester, IndexExperiment, RemoveFromIndex, SearchForXResultsWithRequester}
 import com.actelion.research.arcite.core.transforms.TransformDoneInfo
 import com.actelion.research.arcite.core.utils
-import com.actelion.research.arcite.core.utils.{FullName, Owner, WriteFeedbackActor}
+import com.actelion.research.arcite.core.utils.{FoldersHelpers, FullName, Owner, WriteFeedbackActor}
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 
@@ -96,8 +96,15 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
           case SaveExperimentSuccessful(expLog) ⇒
             // linking all data, ...
+            val orVis = ExperimentFolderVisitor(origExp.get)
+            val tgrVis = ExperimentFolderVisitor(newExp)
 
-            eventInfoLoggingAct ! AddLog(newExp, ExpLog(LogType.CREATED, LogCategory.SUCCESS, "clone experiment created. ", Some(newExp.uid)))
+            FoldersHelpers.deepLinking(orVis.rawFolderPath, tgrVis.rawFolderPath)
+            FoldersHelpers.deepLinking(orVis.userMetaFolderPath, tgrVis.userMetaFolderPath)
+
+            eventInfoLoggingAct ! AddLog(newExp, ExpLog(LogType.CREATED, LogCategory.SUCCESS,
+              s"cloned experiment [${origExp.get.uid}] ", Some(newExp.uid)))
+
             requester ! AddedExperiment(newExp.uid)
 
           case SaveExperimentFailed(error) ⇒
@@ -243,7 +250,7 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
       log.debug(s"retrieving experiment with digest: $digest")
       val exp = experiments.get(digest)
       if (exp.isDefined) {
-        val ex = loadExperiment(ExperimentFolderVisitor(exp.get).experimentFilePath)
+        val ex = LocalExperiments.loadExperiment(ExperimentFolderVisitor(exp.get).experimentFilePath)
         requester ! ExperimentFound(ex)
       } else {
         requester ! NoExperimentFound
@@ -343,10 +350,12 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
         LocalExperiments.saveExperiment(exp) match {
 
           case SaveExperimentSuccessful(expLog) ⇒
-            eventInfoLoggingAct ! AddLog(exp, ExpLog(LogType.UPDATED, LogCategory.SUCCESS, "experiment is immutable.", Some(exp.uid)))
+            eventInfoLoggingAct ! AddLog(exp, ExpLog(LogType.UPDATED,
+              LogCategory.SUCCESS, "experiment is immutable.", Some(exp.uid)))
 
           case SaveExperimentFailed(error) ⇒
-            eventInfoLoggingAct ! AddLog(exp, ExpLog(LogType.UPDATED, LogCategory.ERROR, "experiment is immutable failed.", Some(exp.uid)))
+            eventInfoLoggingAct ! AddLog(exp, ExpLog(LogType.UPDATED,
+              LogCategory.ERROR, "experiment is immutable failed.", Some(exp.uid)))
         }
 
         experiments += ((exper.get.uid, exper.get.copy(state = ExpState.IMMUTABLE)))
@@ -387,7 +396,7 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 }
 
 
-object ManageExperiments extends ArciteJSONProtocol {
+object ManageExperiments {
 
   val logger = LoggerFactory.getLogger(getClass)
 

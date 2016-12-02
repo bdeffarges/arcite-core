@@ -4,7 +4,7 @@ import com.actelion.research.arcite.core.api.ArciteService.{AddedExperiment, Fai
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.InfoLogs
 import com.actelion.research.arcite.core.eventinfo.{ExpLog, LogCategory, LogType}
 import com.actelion.research.arcite.core.experiments.ExpState.ExpState
-import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddDesign, AddExpProps, AddExperiment, State}
+import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.experiments._
 import com.actelion.research.arcite.core.fileservice.FileServiceActor.FolderFilesInformation
 import com.actelion.research.arcite.core.rawdata.DefineRawData.{RawDataSet, RawDataSetRegex}
@@ -211,6 +211,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val foundExperimentsJson = jsonFormat1(FoundExperiments)
   implicit val someExperimentsJson = jsonFormat2(SomeExperiments)
   implicit val addExperimentResponseJson = jsonFormat1(AddExperiment)
+  implicit val cloneExperimentNewPropsJson = jsonFormat3(CloneExperimentNewProps)
   implicit val addedExpJson = jsonFormat1(AddedExperiment)
   implicit val addDesignJson = jsonFormat2(AddDesign)
   implicit val okJson = jsonFormat1(Ok)

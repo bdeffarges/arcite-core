@@ -1,7 +1,7 @@
 package com.actelion.research.arcite.core.utils
 
 import java.io.File
-import java.nio.file.Files
+import java.nio.file.{FileSystemException, Files, Path}
 
 /**
   * arcite-core
@@ -28,6 +28,10 @@ import java.nio.file.Files
   */
 object FoldersHelpers {
 
+  def deepLinking(originFolder: Path, targetFolder: Path): DeepLinkingFeedback = {
+    deepLinking(originFolder.toFile, targetFolder.toFile)
+  }
+
   def deepLinking(originFolder: File, targetFolder: File): DeepLinkingFeedback = {
 
     try {
@@ -45,6 +49,12 @@ object FoldersHelpers {
     }
 
     LinkingSuccess
+  }
+
+  def deleteRecursively(file: File): Unit = {
+    if (file.isDirectory) file.listFiles.foreach(deleteRecursively)
+
+    Files.delete(file.toPath)
   }
 
   sealed trait DeepLinkingFeedback
