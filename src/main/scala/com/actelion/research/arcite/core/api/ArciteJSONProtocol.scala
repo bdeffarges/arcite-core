@@ -242,6 +242,8 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val successMessageJson = jsonFormat1(SuccessMessage)
   implicit val errorMessageJson = jsonFormat1(ErrorMessage)
 
+  implicit val expUIDJson = jsonFormat1(ExperimentUID)
+
   implicit val failedPropsJson = jsonFormat1(FailedAddingProperties)
 
 

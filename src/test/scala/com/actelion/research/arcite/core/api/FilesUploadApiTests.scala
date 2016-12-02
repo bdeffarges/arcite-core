@@ -2,6 +2,7 @@ package com.actelion.research.arcite.core.api
 
 import java.io.File
 import java.nio.file.Paths
+import java.util.UUID
 
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshalling.Marshal
@@ -10,8 +11,10 @@ import akka.stream.scaladsl._
 import akka.util.ByteString
 import com.actelion.research.arcite.core.TestHelpers
 import com.actelion.research.arcite.core.api.ArciteService.AllExperiments
-import com.actelion.research.arcite.core.experiments.Experiment
-import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddExpProps, AddExperiment}
+import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentUID}
+import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddExpProps, AddExperiment, CloneExperimentNewProps}
+import com.actelion.research.arcite.core.fileservice.FileServiceActor.FolderFilesInformation
+import com.actelion.research.arcite.core.utils.FileInformationWithSubFolder
 
 import scala.concurrent.Future
 
@@ -42,8 +45,9 @@ import scala.concurrent.Future
 class FilesUploadApiTests extends ApiTests {
 
   val exp1 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment1)
+  var clonedExp: Option[String] = None
 
-  "Create a new experiment " should " return the uid of the new experiment which we can then delete " in {
+  "Create a new experiment " should " return the uid of the new experiment " in {
 
     implicit val executionContext = system.dispatcher
     import spray.json._
@@ -68,7 +72,7 @@ class FilesUploadApiTests extends ApiTests {
     }
   }
 
-  "adding raw files directly " should " copy the given file to the experiment folder " in {
+  "adding meta files directly " should " copy the given file to the experiment folder " in {
 
     implicit val executionContext = system.dispatcher
 
@@ -78,7 +82,7 @@ class FilesUploadApiTests extends ApiTests {
     def createEntity(file: File): RequestEntity = {
       require(file.exists())
       val formData = Multipart.FormData.fromPath("fileupload",
-            ContentTypes.`application/octet-stream`, file.toPath, 100000) // the chunk size here is currently critical for performance
+        ContentTypes.`application/octet-stream`, file.toPath, 100000) // the chunk size here is currently critical for performance
 
       formData.toEntity()
     }
@@ -95,6 +99,84 @@ class FilesUploadApiTests extends ApiTests {
     }
   }
 
+  "adding raw files directly " should " copy the given file to the experiment folder " in {
+
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    def createEntity(file: File): RequestEntity = {
+      require(file.exists())
+      val formData = Multipart.FormData.fromPath("fileupload",
+        ContentTypes.`application/octet-stream`, file.toPath, 100000) // the chunk size here is currently critical for performance
+
+      formData.toEntity()
+    }
+
+    def createRequest(target: Uri, file: File): HttpRequest = HttpRequest(HttpMethods.POST, uri = target, entity = createEntity(file))
+
+    val req = createRequest(s"/experiment/${exp1.uid}/file_upload/raw",
+      new File("./for_testing/for_unit_testing/raw_data_measurements.tsv"))
+
+    val res: Future[HttpResponse] = Source.single(req).via(connectionFlow).runWith(Sink.head)
+
+    res.map { r ⇒
+      assert(r.status == StatusCodes.Created)
+    }
+  }
+
+  "Clone an experiment " should " return the uid of the new experiment " in {
+
+    implicit val executionContext = system.dispatcher
+    import spray.json._
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    val jsonRequest = ByteString(CloneExperimentNewProps(s"cloned-${UUID.randomUUID().toString}",
+      "com.actelion.research.test.cloned", TestHelpers.owner3).toJson.prettyPrint)
+
+    val postRequest = HttpRequest(
+      HttpMethods.POST,
+      uri = s"/experiment/${exp1.uid}/clone",
+      entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
+
+    responseFuture.map { r ⇒
+      logger.info(r.toString())
+      assert(r.status == StatusCodes.Created)
+
+      clonedExp = Some(r.entity.asInstanceOf[HttpEntity.Strict]
+        .data.decodeString("UTF-8").parseJson.convertTo[ExperimentUID].uid)
+
+      assert(clonedExp.isDefined)
+    }
+  }
+
+  "retrieve meta data from cloned exp " should " return the same meta data (as it is a symlink) as the original exp " in {
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(HttpRequest(uri = s"/experiment/${clonedExp.get}/files/meta")).via(connectionFlow).runWith(Sink.head)
+
+    import spray.json._
+    responseFuture.map { r ⇒
+      assert(r.status == StatusCodes.OK)
+
+      val foldInf: Set[FileInformationWithSubFolder] = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+        .parseJson.convertTo[Set[FileInformationWithSubFolder]]
+
+      assert(foldInf.toList.head.fileInformation.name == "of_paramount_importance.txt")
+    }
+
+  }
+
 
   "Retrieving one experiment " should " return detailed information of exp " in {
     implicit val executionContext = system.dispatcher
@@ -104,6 +186,29 @@ class FilesUploadApiTests extends ApiTests {
 
     val responseFuture: Future[HttpResponse] =
       Source.single(HttpRequest(uri = s"/experiment/${exp1.uid}")).via(connectionFlow).runWith(Sink.head)
+
+    import spray.json._
+    responseFuture.map { r ⇒
+      assert(r.status == StatusCodes.OK)
+
+      val experiment = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+        .parseJson.convertTo[Experiment]
+
+      assert(experiment.name == experiment.name)
+      assert(experiment.description == experiment.description)
+    }
+  }
+
+  "Retrieving experiment " should " return detailed information of cloned exp " in {
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    assert(clonedExp.isDefined)
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(HttpRequest(uri = s"/experiment/${clonedExp.get}")).via(connectionFlow).runWith(Sink.head)
 
     import spray.json._
     responseFuture.map { r ⇒

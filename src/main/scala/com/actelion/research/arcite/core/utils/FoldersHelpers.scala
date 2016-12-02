@@ -36,7 +36,10 @@ object FoldersHelpers {
 
     try {
       originFolder.listFiles().filter(_.isFile)
-        .foreach(f ⇒ Files.createSymbolicLink(targetFolder.toPath resolve f.getName, f.getAbsoluteFile.toPath))
+        .foreach { f ⇒
+          val relat = targetFolder.toPath.relativize(f.toPath)
+          Files.createSymbolicLink(targetFolder.toPath resolve f.getName, relat)
+        }
 
       originFolder.listFiles().filter(_.isDirectory)
         .foreach { f ⇒

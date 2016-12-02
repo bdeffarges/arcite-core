@@ -145,3 +145,6 @@ object ExpState extends scala.Enumeration {
 }
 
 
+case class ExperimentUID(uid: String) // for api feedback
+
+

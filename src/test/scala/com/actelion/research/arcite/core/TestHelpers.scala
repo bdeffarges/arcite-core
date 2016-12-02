@@ -13,9 +13,11 @@ object TestHelpers {
   val organization = "com.actelion.research.bioinfo.mock"
   val person1 = "B. Deffarges"
   val person2 = "B. Renault"
+  val person3 = "M. Best Scientist of Planet"
 
   val owner1 = Owner(organization, person1)
   val owner2 = Owner(organization, person2)
+  val owner3 = Owner(organization, person3)
 
   val cond1 = Condition("hw", "helloworld", "greetings")
   val cond2 = Condition("he", "helloearth", "greetings")

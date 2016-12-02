@@ -135,32 +135,6 @@ class ExperimentsApiTests extends ApiTests {
   }
 
 
-  "Clone an experiment " should " return the uid of the new experiment which is a clone of the passed on " in {
-
-    implicit val executionContext = system.dispatcher
-    import spray.json._
-
-    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
-      Http().outgoingConnection(host, port)
-
-
-    val jsonRequest = ByteString(AddExperiment(exp1).toJson.prettyPrint)
-
-    val postRequest = HttpRequest(
-      HttpMethods.POST,
-      uri = "/experiment",
-      entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
-
-    val responseFuture: Future[HttpResponse] =
-      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
-
-    responseFuture.map { r ⇒
-      logger.info(r.toString())
-      assert(r.status == StatusCodes.Created)
-    }
-  }
-
-
   "adding properties" should " change the list of properties of the experiments " in {
 
     implicit val executionContext = system.dispatcher

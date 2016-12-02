@@ -186,7 +186,7 @@ class TransformApiTests extends ApiTests {
 
     responseFuture.map { r ⇒
       logger.info(r.toString())
-      assert(r.status == StatusCodes.OK)
+      assert(r.status == StatusCodes.Locked) // the experiment cannot be deleted anymore
     }
   }
 }
