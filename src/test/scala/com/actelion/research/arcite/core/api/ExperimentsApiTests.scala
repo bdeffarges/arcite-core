@@ -92,7 +92,7 @@ class ExperimentsApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri = "/experiments?page=1&max=10")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri = "/experiments?page=0&max=50")).via(connectionFlow).runWith(Sink.head)
 
     import spray.json._
     responseFuture.map { r ⇒
@@ -101,7 +101,7 @@ class ExperimentsApiTests extends ApiTests {
       val experiments = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
         .parseJson.convertTo[AllExperiments].experiments
 
-      assert(experiments.size == 10)
+      assert(experiments.size > 30)
 
       assert(experiments.exists(exp ⇒ exp.name.contains("AMS")))
 
