@@ -8,7 +8,7 @@ import com.actelion.research.arcite.core.TestHelpers
 import com.actelion.research.arcite.core.experiments.Experiment
 import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddExpProps, AddExperiment}
 import com.actelion.research.arcite.core.transforms.RunTransform.RunTransformOnObject
-import com.actelion.research.arcite.core.transforms.cluster.workers.WorkExecUpperCase.ToUpperCase
+import com.actelion.research.arcite.core.transforms.cluster.workers.fortest.WorkExecUpperCase.ToUpperCase
 import com.actelion.research.arcite.core.transforms.{TransformDefinition, TransformDefinitionIdentity}
 
 import scala.concurrent.Future
