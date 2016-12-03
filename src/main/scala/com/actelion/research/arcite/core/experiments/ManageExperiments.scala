@@ -49,11 +49,6 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
   import scala.collection.convert.wrapAsScala._
 
-  if (path.toFile.exists()) {
-    val st = Files.readAllLines(path).toList.mkString.parseJson.convertTo[State]
-    experiments ++= st.experiments.map(e ⇒ (e.uid, e)).toMap
-  }
-
   override def receive = {
 
     case AddExperiment(exp) ⇒
@@ -76,7 +71,6 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
         luceneRamSearchAct ! IndexExperiment(exp)
 
-        self ! TakeSnapshot
       } else {
         requester ! FailedAddingExperiment(s"same experiment ${exp.owner.organization}/${exp.name} already exists. ")
       }
@@ -113,7 +107,6 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
         luceneRamSearchAct ! IndexExperiment(newExp)
 
-        self ! TakeSnapshot
       }
 
 
@@ -125,7 +118,6 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
       } else if (exp.get.state.eq(ExpState.NEW) && !ExperimentFolderVisitor(exp.get).isImmutableExperiment()) {
         experiments -= digest
         luceneRamSearchAct ! RemoveFromIndex(exp.get)
-        self ! TakeSnapshot
         requester ! LocalExperiments.safeDeleteExperiment(exp.get)
       } else {
         requester ! ExperimentDeleteFailed(s"experiment [$digest] can not be deleted, it's immutable. ")
@@ -144,7 +136,6 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
           case SaveExperimentSuccessful(expL) ⇒
             requester ! AddedDesignSuccess
-            self ! TakeSnapshot
             luceneRamSearchAct ! IndexExperiment(nexp)
 
           case SaveExperimentFailed(error) ⇒
@@ -166,7 +157,6 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
         LocalExperiments.saveExperiment(nex) match {
 
           case SaveExperimentSuccessful(expL) ⇒
-            self ! TakeSnapshot
             luceneRamSearchAct ! IndexExperiment(nex)
             requester ! AddedPropertiesSuccess
 
@@ -207,28 +197,6 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
           e._1.uid, utils.getDateAsStrg(e._2.date)))
 
       galex.requester ! AllExperiments(allExps)
-
-
-    case TakeSnapshot ⇒
-      val savedExps = experiments.values.filter(e ⇒ e.state == ExpState.REMOTE || e.state == ExpState.NEW).toSet
-      val strg = State(savedExps).toJson.prettyPrint
-
-      if (path.toFile.exists()) {
-        val pbkup = Paths.get(filePath + "_bkup")
-        if (pbkup.toFile.exists()) {
-          try {
-            Files.delete(pbkup)
-            Files.move(path, pbkup, StandardCopyOption.ATOMIC_MOVE)
-          } catch {
-            case e: Exception ⇒
-              logger.error(s"cannot delete file $pbkup or move $path, error: ${e.getMessage}")
-          }
-        }
-      }
-
-      Files.write(path, strg.getBytes(StandardCharsets.UTF_8), CREATE)
-
-      sender() ! SnapshotTaken
 
 
     case LoadExperiment(folder: String) ⇒
@@ -427,10 +395,6 @@ object ManageExperiments {
   case class AddExpPropertiesWithRequester(addProps: AddExpProperties, requester: ActorRef)
 
   case class Experiments(exps: Set[Experiment])
-
-  case object TakeSnapshot
-
-  case object SnapshotTaken
 
   case class GetAllTransforms(experiment: String)
 
