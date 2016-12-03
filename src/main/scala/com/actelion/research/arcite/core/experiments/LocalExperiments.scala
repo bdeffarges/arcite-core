@@ -55,7 +55,7 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
             .toList.mkString("\n")
 
           val expCond = loadExperiment(expFile.toPath)
-          map += ((digest, expCond))
+          if (expCond.isDefined) map += ((digest, expCond.get))
 
         }
       }
@@ -68,13 +68,17 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
     map + (DefaultExperiment.defaultExperiment.uid -> DefaultExperiment.defaultExperiment)
   }
 
-  //todo move to experiment visitor?
-  def loadExperiment(path: Path): Experiment = {
+  def loadExperiment(path: Path): Option[Experiment] = {
     import spray.json._
-
     import scala.collection.convert.wrapAsScala._
     logger.debug(s"loading experiment for ${path}")
-    Files.readAllLines(path).toList.mkString("\n").parseJson.convertTo[Experiment]
+
+    try {
+      val exp: Experiment = Files.readAllLines(path).toList.mkString("\n").parseJson.convertTo[Experiment]
+      Some(exp)
+    } catch {
+      case e: Exception ⇒ None //todo will propagate the exception as information
+    }
   }
 
   def saveExperiment(exp: Experiment): SaveExperimentFeedback = {

@@ -36,8 +36,8 @@ class TransferSelectedRawData(caller: ActorRef, targetRawFolder: String) extends
 
   override val supervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
-      case _: FileSystemException     => Restart
-      case _: Exception                => Escalate
+      case _: FileSystemException     ⇒  Restart
+      case _: Exception               ⇒  Escalate
     }
 
   override def receive: Receive = {

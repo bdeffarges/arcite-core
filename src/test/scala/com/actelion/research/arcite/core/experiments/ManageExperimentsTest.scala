@@ -7,6 +7,7 @@ import akka.actor.{ActorSystem, Props}
 import akka.testkit.{TestKit, TestProbe}
 import com.actelion.research.arcite.core.TestHelpers._
 import com.actelion.research.arcite.core.api.ArciteService.AddedExperiment
+import com.actelion.research.arcite.core.eventinfo.EventInfoLogging
 import com.actelion.research.arcite.core.experiments.LocalExperiments.{LoadExperiment, SaveExperimentSuccessful}
 import com.actelion.research.arcite.core.experiments.ManageExperiments.AddExperiment
 import com.typesafe.config.ConfigFactory
@@ -25,6 +26,9 @@ class ManageExperimentsTest extends TestKit(ActorSystem("Experiments"))
 
   val pathToArciteHome = config.getString("arcite.home") + File.separator
 
+  val eventInfoLoggingAct = system.actorOf(Props(classOf[EventInfoLogging]), "event_logging_info")
+
+
   override def afterAll() {
     system.terminate()
   }
@@ -34,7 +38,7 @@ class ManageExperimentsTest extends TestKit(ActorSystem("Experiments"))
 
       val endProbe = TestProbe()
 
-      val actorRef = system.actorOf(Props(new ManageExperiments))
+      val actorRef = system.actorOf(Props(classOf[ManageExperiments], eventInfoLoggingAct))
 
       actorRef ! AddExperiment(experiment1)
 
@@ -47,7 +51,7 @@ class ManageExperimentsTest extends TestKit(ActorSystem("Experiments"))
 
       val endProbe = TestProbe()
 
-      val actorRef = system.actorOf(Props(new ManageExperiments))
+      val actorRef = system.actorOf(Props(classOf[ManageExperiments], eventInfoLoggingAct))
 
       actorRef ! AddExperiment(experiment2)
 
@@ -55,7 +59,7 @@ class ManageExperimentsTest extends TestKit(ActorSystem("Experiments"))
 
       actorRef ! LoadExperiment(s"${ExperimentFolderVisitor(experiment2).metaFolderPath}/experiment")
 
-      endProbe.expectMsgAnyOf(FiniteDuration(10, TimeUnit.SECONDS), experiment2)
+      endProbe.expectMsgAnyOf(FiniteDuration(10, TimeUnit.SECONDS), Some(experiment2))
     }
   }
 
@@ -64,7 +68,7 @@ class ManageExperimentsTest extends TestKit(ActorSystem("Experiments"))
 
       val endProbe = TestProbe()
 
-      val actorRef = system.actorOf(Props(new ManageExperiments))
+      val actorRef = system.actorOf(Props(classOf[ManageExperiments], eventInfoLoggingAct))
 
       actorRef ! AddExperiment(experiment1)
 

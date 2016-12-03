@@ -1,21 +1,16 @@
 package com.actelion.research.arcite.core.api
 
-import java.nio.file.Path
-
 import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, Props}
 import akka.util.Timeout
-import breeze.numerics.exp
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{ReadLogs, RecentAllLogs}
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSummary}
 import com.actelion.research.arcite.core.rawdata.DefineRawData.{RawDataSet, RawDataSetRegex, RawDataSetRegexWithRequester, RawDataSetWithRequester}
-import com.actelion.research.arcite.core.rawdata._
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{SearchForXResults, SearchForXResultsWithRequester}
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.{AllJobsStatus, QueryJobInfo, QueryWorkStatus}
 import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
-import com.actelion.research.arcite.core.utils.FileInformationWithSubFolder
 import com.typesafe.config.ConfigFactory
 
 /**
@@ -25,6 +20,8 @@ object ArciteService {
   def props(implicit timeout: Timeout) = Props(classOf[ArciteService], timeout)
 
   def name = "arcite-services"
+
+  case class GeneralFailure(info: String)
 
   //for agilent files, todo move somewhere else as it's specific to a platform
   case object CreateAgilentRawMatrix
@@ -127,9 +124,9 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
   val conf = ConfigFactory.load().getConfig("experiments-manager")
   val actSys = conf.getString("akka.uri")
 
-  val expManSelect = s"${actSys}/user/experiments_manager"
-  val rawDSelect = s"${actSys}/user/define_raw_data"
-  val eventInfoSelect = s"${actSys}/user/event_logging_info"
+  val expManSelect =        s"${actSys}/user/exp_actors_manager/experiments_manager"
+  val rawDSelect =          s"${actSys}/user/exp_actors_manager/define_raw_data"
+  val eventInfoSelect =     s"${actSys}/user/exp_actors_manager/event_logging_info"
 
   //todo move it to another executor
   val expManager = context.actorSelection(ActorPath.fromString(expManSelect))
@@ -139,7 +136,7 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
   log.info(s"connect raw [$rawDSelect] actor: $defineRawDataAct")
 
   val eventInfoAct = context.actorSelection(ActorPath.fromString(eventInfoSelect))
-  log.info(s"connect raw [$eventInfoSelect] actor: $eventInfoAct")
+  log.info(s"connect event info actor [$eventInfoSelect] actor: $eventInfoAct")
 
 
   import ArciteService._

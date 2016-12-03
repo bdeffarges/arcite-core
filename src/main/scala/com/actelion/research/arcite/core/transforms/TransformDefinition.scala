@@ -1,6 +1,6 @@
 package com.actelion.research.arcite.core.transforms
 
-import java.nio.file.{Path, Paths}
+import java.nio.file.Path
 import java.util.UUID
 
 import akka.actor.Props

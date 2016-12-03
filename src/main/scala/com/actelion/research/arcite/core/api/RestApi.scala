@@ -563,6 +563,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       logger.debug("returns all last updates")
       onSuccess(getRecentUpdatesLogs()) {
         case ifl: InfoLogs ⇒ complete(OK -> ifl)
+        case gf: GeneralFailure ⇒ complete(BadRequest -> ErrorMessage(s"Failed returning list of recent logs, error was: ${gf.info}"))
         case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning list of recent logs."))
       }
     }

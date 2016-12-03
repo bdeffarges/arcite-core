@@ -3,12 +3,14 @@ package com.actelion.research.arcite.core.experiments
 import java.nio.charset.StandardCharsets
 import java.nio.file._
 
-import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
+import akka.actor.SupervisorStrategy.Restart
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, OneForOneStrategy, Props}
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.api.ArciteService._
-import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{AddLog, BuildRecent, ReadLogs}
+import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{AddLog, BuildRecent, InfoLogs, ReadLogs}
 import com.actelion.research.arcite.core.eventinfo.{EventInfoLogging, ExpLog, LogCategory, LogType}
 import com.actelion.research.arcite.core.experiments.LocalExperiments.{LoadExperiment, SaveExperimentFailed, SaveExperimentSuccessful}
+import com.actelion.research.arcite.core.experiments.ManageExperimentActors.StartExperimentsServiceActors
 import com.actelion.research.arcite.core.fileservice.FileServiceActor
 import com.actelion.research.arcite.core.fileservice.FileServiceActor.{getClass => _, _}
 import com.actelion.research.arcite.core.rawdata.DefineRawData
@@ -25,7 +27,7 @@ import org.slf4j.LoggerFactory
   * Created by Bernard Deffarges on 06/03/16.
   */
 
-class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging {
+class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with ArciteJSONProtocol with ActorLogging {
 
   import ManageExperiments._
 
@@ -35,13 +37,13 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
   val path = Paths.get(filePath)
 
-  val luceneRamSearchAct = context.system.actorOf(Props(classOf[ArciteLuceneRamIndex]))
-
   val fileServiceAct = context.system.actorOf(FileServiceActor.props(), "file_service")
+
+  val luceneRAMSearchAct = context.system.actorOf(Props(classOf[ArciteLuceneRamIndex]), "experiments_lucene_index")
 
   private var experiments: Map[String, Experiment] = LocalExperiments.loadAllLocalExperiments()
 
-  experiments.values.foreach(exp ⇒ luceneRamSearchAct ! IndexExperiment(exp))
+  experiments.values.foreach(exp ⇒ luceneRAMSearchAct ! IndexExperiment(exp))
 
   import StandardOpenOption._
 
@@ -69,7 +71,7 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
             requester ! FailedAddingExperiment(error)
         }
 
-        luceneRamSearchAct ! IndexExperiment(exp)
+        luceneRAMSearchAct ! IndexExperiment(exp)
 
       } else {
         requester ! FailedAddingExperiment(s"same experiment ${exp.owner.organization}/${exp.name} already exists. ")
@@ -105,7 +107,7 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
             requester ! FailedAddingExperiment(error)
         }
 
-        luceneRamSearchAct ! IndexExperiment(newExp)
+        luceneRAMSearchAct ! IndexExperiment(newExp)
 
       }
 
@@ -117,7 +119,7 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
         requester ! ExperimentDeleteFailed(s"experiment [$digest] does not exist.")
       } else if (exp.get.state.eq(ExpState.NEW) && !ExperimentFolderVisitor(exp.get).isImmutableExperiment()) {
         experiments -= digest
-        luceneRamSearchAct ! RemoveFromIndex(exp.get)
+        luceneRAMSearchAct ! RemoveFromIndex(exp.get)
         requester ! LocalExperiments.safeDeleteExperiment(exp.get)
       } else {
         requester ! ExperimentDeleteFailed(s"experiment [$digest] can not be deleted, it's immutable. ")
@@ -136,7 +138,7 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
           case SaveExperimentSuccessful(expL) ⇒
             requester ! AddedDesignSuccess
-            luceneRamSearchAct ! IndexExperiment(nexp)
+            luceneRAMSearchAct ! IndexExperiment(nexp)
 
           case SaveExperimentFailed(error) ⇒
             requester ! FailedAddingDesign(error)
@@ -157,7 +159,7 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
         LocalExperiments.saveExperiment(nex) match {
 
           case SaveExperimentSuccessful(expL) ⇒
-            luceneRamSearchAct ! IndexExperiment(nex)
+            luceneRAMSearchAct ! IndexExperiment(nex)
             requester ! AddedPropertiesSuccess
 
           case SaveExperimentFailed(error) ⇒
@@ -205,7 +207,7 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
 
     case s: SearchForXResultsWithRequester ⇒
-      luceneRamSearchAct ! s
+      luceneRAMSearchAct ! s
 
     case FoundExperimentsWithRequester(foundExperiments, requester) ⇒
       log.debug(s"found ${foundExperiments.experiments.size} experiments ")
@@ -219,7 +221,8 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
       val exp = experiments.get(digest)
       if (exp.isDefined) {
         val ex = LocalExperiments.loadExperiment(ExperimentFolderVisitor(exp.get).experimentFilePath)
-        requester ! ExperimentFound(ex)
+        if (ex.isDefined) requester ! ExperimentFound(ex.get)
+        else requester ! NoExperimentFound
       } else {
         requester ! NoExperimentFound
       }
@@ -298,18 +301,22 @@ class ManageExperiments extends Actor with ArciteJSONProtocol with ActorLogging 
 
 
     case readLogs: ReadLogs ⇒
-      val eFV = ExperimentFolderVisitor(experiments(readLogs.experiment))
+      val exp = experiments.get(readLogs.experiment)
+      if (exp.isEmpty) {
+        sender()  ! InfoLogs(List())
+      } else {
+        val eFV = ExperimentFolderVisitor(exp.get)
 
-      import EventInfoLogging._
-      val latestLogs = InfoLogs(eFV.logsFolderPath.toFile.listFiles()
-        .filter(f ⇒ f.getName.startsWith("log_"))
-        .map(f ⇒ readLog(f.toPath))
-        .filter(_.isDefined).map(_.get)
-        .sortBy(_.date).slice(readLogs.page * readLogs.max,
-        (readLogs.page + 1) * readLogs.max).toList)
+        import EventInfoLogging._ //todo should catch / raise exceptions
+        val latestLogs = InfoLogs(eFV.logsFolderPath.toFile.listFiles()
+          .filter(f ⇒ f.getName.startsWith("log_"))
+          .map(f ⇒ readLog(f.toPath))
+          .filter(_.isDefined).map(_.get)
+          .sortBy(_.date).slice(readLogs.page * readLogs.max,
+          (readLogs.page + 1) * readLogs.max).toList)
 
-      sender() ! latestLogs
-
+        sender() ! latestLogs
+      }
 
     case makeImmutable: MakeImmutable ⇒
       val exper = experiments.get(makeImmutable.experiment)
@@ -410,25 +417,47 @@ object ManageExperiments {
 
   case class MakeImmutable(experiment: String)
 
+}
 
-  val actSystem = ActorSystem("experiments-actor-system", config.getConfig("experiments-manager"))
-
-  val manExpActor = actSystem.actorOf(Props(classOf[ManageExperiments]), "experiments_manager")
-  val defineRawDataAct = actSystem.actorOf(Props(classOf[DefineRawData], manExpActor), "define_raw_data")
-  val eventInfoLoggingAct = actSystem.actorOf(Props(classOf[EventInfoLogging]), "event_logging_info")
-
-  import actSystem.dispatcher
+class ManageExperimentActors extends Actor with ActorLogging {
 
   import scala.concurrent.duration._
 
-  actSystem.scheduler.schedule(45 seconds, 5 minutes) {
-    eventInfoLoggingAct ! BuildRecent
+  override val supervisorStrategy =
+    OneForOneStrategy(maxNrOfRetries = 50, withinTimeRange = 1 minute) {
+      case _: FileSystemException ⇒ Restart // todo in both case should log
+      case _: Exception ⇒ Restart // todo should eventually escalate
+    }
+
+  override def receive: Receive = {
+
+    case StartExperimentsServiceActors ⇒
+      val eventInfoLoggingAct = context.actorOf(Props(classOf[EventInfoLogging]), "event_logging_info")
+      val manExpActor = context.actorOf(Props(classOf[ManageExperiments], eventInfoLoggingAct), "experiments_manager")
+      val defineRawDataAct = context.actorOf(Props(classOf[DefineRawData], manExpActor), "define_raw_data")
+      log.info(s"event info log: [$eventInfoLoggingAct]")
+      log.info(s"exp manager actor: [$manExpActor]")
+      log.info(s"raw data define: [$defineRawDataAct]")
+
+      import context.dispatcher
+
+      import scala.concurrent.duration._
+
+      context.system.scheduler.schedule(45 seconds, 5 minutes) {
+        eventInfoLoggingAct ! BuildRecent
+      }
   }
 
   def startActorSystemForExperiments(): Unit = {
-    //todo rename, refactor: parent actor for strategy
-    logger.info(s"exp manager actor: [$manExpActor]")
-    logger.info(s"raw data define: [$defineRawDataAct]")
-    logger.info(s"event info log: [$eventInfoLoggingAct]")
   }
+}
+
+object ManageExperimentActors {
+  val actSystem = ActorSystem("experiments-actor-system", config.getConfig("experiments-manager"))
+
+  val topActor = actSystem.actorOf(Props(classOf[ManageExperimentActors]), "exp_actors_manager")
+
+  case object StartExperimentsServiceActors
+
+  def startExperimentActorSystem(): Unit = topActor ! StartExperimentsServiceActors
 }

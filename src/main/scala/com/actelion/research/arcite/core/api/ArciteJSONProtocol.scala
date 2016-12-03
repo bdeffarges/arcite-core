@@ -1,6 +1,6 @@
 package com.actelion.research.arcite.core.api
 
-import com.actelion.research.arcite.core.api.ArciteService.{AddedExperiment, FailedAddingProperties, SomeExperiments}
+import com.actelion.research.arcite.core.api.ArciteService.{AddedExperiment, FailedAddingProperties, GeneralFailure, SomeExperiments}
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.InfoLogs
 import com.actelion.research.arcite.core.eventinfo.{ExpLog, LogCategory, LogType}
 import com.actelion.research.arcite.core.experiments.ExpState.ExpState
@@ -122,6 +122,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   }
 
 
+  implicit val generalFailureJson = jsonFormat1(GeneralFailure)
   implicit val ownerJson = jsonFormat2(Owner)
   implicit val conditionJson = jsonFormat3(Condition)
   implicit val conditionForSampleJson = jsonFormat1(ConditionsForSample)

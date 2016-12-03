@@ -1,10 +1,10 @@
 package com.actelion.research.arcite.core.eventinfo
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Path}
 import java.nio.file.StandardOpenOption._
+import java.nio.file.{Files, Path}
 
-import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef}
+import akka.actor.{Actor, ActorLogging, ActorPath}
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.experiments.ManageExperiments.{AllLastUpdatePath, GetAllExperimentsLastUpdate}
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor}
@@ -42,10 +42,10 @@ class EventInfoLogging extends Actor with ActorLogging with ArciteJSONProtocol {
 
   val conf = ConfigFactory.load().getConfig("experiments-manager")
   val actSys = conf.getString("akka.uri")
-  val expManager = context.actorSelection(ActorPath.fromString(s"${actSys}/user/experiments_manager"))
+  val expManager = context.actorSelection(ActorPath.fromString(s"${actSys}/user/exp_actors_manager/experiments_manager"))
 
-  import spray.json._
   import EventInfoLogging._
+  import spray.json._
 
   override def receive = {
     case al: AddLog ⇒
@@ -112,8 +112,9 @@ object EventInfoLogging extends ArciteJSONProtocol {
 
   case class LatestLog(experiment: Experiment)
 
-  import scala.collection.convert.wrapAsScala._
   import spray.json._
+
+  import scala.collection.convert.wrapAsScala._
 
   def readLog(logFile: Path): Option[ExpLog] = {
     if (logFile.toFile.exists) {

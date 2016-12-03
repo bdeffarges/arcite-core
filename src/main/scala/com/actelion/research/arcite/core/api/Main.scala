@@ -8,7 +8,7 @@ import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.headers.{Allow, RawHeader}
 import akka.http.scaladsl.server.{MethodRejection, RejectionHandler}
 import akka.stream.ActorMaterializer
-import com.actelion.research.arcite.core.experiments.ManageExperiments
+import com.actelion.research.arcite.core.experiments.ManageExperimentActors
 import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
 import com.typesafe.config.ConfigFactory
 
@@ -24,7 +24,7 @@ object Main extends App {
 
   ManageTransformCluster.defaultTransformClusterStartFromConf()
 
-  ManageExperiments.startActorSystemForExperiments()
+  ManageExperimentActors.startExperimentActorSystem()
 
   val config = ConfigFactory.load()
 
