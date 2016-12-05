@@ -39,6 +39,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
   ClusterClientReceptionist(context.system).registerService(self)
 
+  val feedbackActor = context.actorOf(WriteFeedbackActor.props())
 
   // persistenceId must include cluster role to support multiple masters
   override def persistenceId: String = Cluster(context.system).selfRoles.find(_.startsWith("backend-")) match {
@@ -106,7 +107,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
     case wid: MasterWorkerProtocol.WorkerIsDone =>
       // write transform feedback report
-      context.actorOf(WriteFeedbackActor.props) ! WriteFeedback(wid)
+      feedbackActor ! WriteFeedback(wid)
 
       // idempotent
       if (workState.isDone(wid.transf.uid)) {

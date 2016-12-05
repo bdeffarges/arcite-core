@@ -2,7 +2,7 @@ package com.actelion.research.arcite.core.api
 
 import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, Props}
 import akka.util.Timeout
-import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{ReadLogs, RecentAllLogs}
+import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{MostRecentLogs, ReadLogs, RecentAllLastUpdates}
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSummary}
 import com.actelion.research.arcite.core.rawdata.DefineRawData.{RawDataSet, RawDataSetRegex, RawDataSetRegexWithRequester, RawDataSetWithRequester}
@@ -227,8 +227,12 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
       ManageTransformCluster.getNextFrontEnd() forward ji
 
 
-    case RecentAllLogs ⇒
-      eventInfoAct forward RecentAllLogs
+    case RecentAllLastUpdates ⇒
+      eventInfoAct forward RecentAllLastUpdates
+
+
+    case MostRecentLogs ⇒
+      eventInfoAct forward MostRecentLogs
 
 
     case rl: ReadLogs ⇒

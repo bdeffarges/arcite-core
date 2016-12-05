@@ -12,7 +12,9 @@ import org.slf4j.LoggerFactory
   */
 /**
   * Created by bernitu on 20/11/16.
-  */package object core {
+  */
+
+package object core {
 
   val config = ConfigFactory.load
 

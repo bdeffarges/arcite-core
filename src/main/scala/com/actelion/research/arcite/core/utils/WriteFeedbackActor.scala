@@ -4,11 +4,13 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.StandardOpenOption._
 import java.nio.file.{Files, Paths}
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.{Actor, ActorLogging, ActorPath, Props}
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
+import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.AddLog
+import com.actelion.research.arcite.core.eventinfo.{ExpLog, LogCategory, LogType}
 import com.actelion.research.arcite.core.transforms._
 import com.actelion.research.arcite.core.transforms.cluster.MasterWorkerProtocol.{WorkerFailed, WorkerIsDone, WorkerSuccess}
-import com.actelion.research.arcite.core.utils.WriteFeedbackActor.WriteFeedback
+import com.typesafe.config.ConfigFactory
 
 /**
   * arcite-core
@@ -37,6 +39,11 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
 
   import WriteFeedbackActor._
 
+  val conf = ConfigFactory.load().getConfig("experiments-manager")
+  val actSys = conf.getString("akka.uri")
+  val eventInfoSelect =     s"${actSys}/user/exp_actors_manager/event_logging_info"
+  val eventInfoAct = context.actorSelection(ActorPath.fromString(eventInfoSelect))
+
   override def receive: Receive = {
     case WriteFeedback(wid) ⇒
     log.info(s"writing feedback for [${wid.transf.uid}]")
@@ -58,23 +65,40 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
           TransformDoneSource(exp,JSON, None, None, None)
       }
 
-      val status: (String, String) = wid match {
-        case ws: WorkerSuccess ⇒
-          (SUCCESS, "")
-        case wf: WorkerFailed ⇒
-          (FAILED, wf.result.error)
-      }
-
       val digest = GetDigest.getFolderContentDigest(transfFolder.toFile)
-
       val params = Option(wid.transf.parameters)
-      val fb = TransformDoneInfo(wid.transf.uid, wid.transf.transfDefName, fs, params,
-                                 status._1, wid.result.feedback, Option(status._2), wid.startTime)
 
       import spray.json._
       import DefaultJsonProtocol._
 
-      Files.write(Paths.get(transfFolder.toString, FILE_NAME), fb.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
+      wid match {
+        case ws: WorkerSuccess ⇒
+          val fb = TransformDoneSuccess(wid.transf.uid, wid.transf.transfDefName, fs, params,
+            ws.result.feedback, ws.result.artifacts, wid.startTime)
+
+          Files.write(Paths.get(transfFolder.toString, FILE_NAME),
+            fb.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
+
+          Files.write(transfFolder resolve ".success", "SUCCESS".getBytes(StandardCharsets.UTF_8), CREATE_NEW)
+
+          eventInfoAct ! AddLog(wid.transf.source.experiment,
+            ExpLog(LogType.TRANSFORM, LogCategory.SUCCESS,
+              s"transform [${wid.transf.transfDefName.name}] successfully completed", Some(wid.transf.uid)))
+
+
+        case wf: WorkerFailed ⇒
+          val fb = TransformDoneFailed(wid.transf.uid, wid.transf.transfDefName, fs, params,
+            wf.result.feedback, wf.result.errors, wid.startTime)
+
+          Files.write(Paths.get(transfFolder.toString, FILE_NAME),
+            fb.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
+
+          Files.write(transfFolder resolve ".failed", "FAILED".getBytes(StandardCharsets.UTF_8), CREATE_NEW)
+
+          eventInfoAct ! AddLog(wid.transf.source.experiment,
+            ExpLog(LogType.TRANSFORM, LogCategory.ERROR,
+              s"transform [${wid.transf.transfDefName.name}] failed", Some(wid.transf.uid)))
+      }
   }
 }
 

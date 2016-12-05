@@ -13,7 +13,7 @@ import akka.pattern.ask
 import akka.stream.scaladsl.FileIO
 import akka.util.Timeout
 import com.actelion.research.arcite.core.api.ArciteService._
-import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{InfoLogs, ReadLogs, RecentAllLogs}
+import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{InfoLogs, MostRecentLogs, ReadLogs, RecentAllLastUpdates}
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.fileservice.FileServiceActor.FolderFilesInformation
 import com.actelion.research.arcite.core.rawdata.DefineRawData._
@@ -150,8 +150,12 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService ! fileUp
   }
 
-  def getRecentUpdatesLogs() = {
-    arciteService.ask(RecentAllLogs).mapTo[InfoLogs]
+  def getRecentLastUpdatesLogs() = {
+    arciteService.ask(RecentAllLastUpdates).mapTo[InfoLogs]
+  }
+
+  def getAllExperimentsRecentLogs() = {
+    arciteService.ask(MostRecentLogs).mapTo[InfoLogs]
   }
 
   def getApplicationLogs() = {
@@ -178,6 +182,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       transformFeedbackRoute ~
       allTransformsFeedbackRoute ~
       allLastUpdates ~
+      allExperimentsRecentLogs ~
+      appLogs ~
       defaultRoute
   }
 
@@ -560,8 +566,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
 
   def allLastUpdates = path("all_last_updates") {
     get {
-      logger.debug("returns all last updates")
-      onSuccess(getRecentUpdatesLogs()) {
+      logger.debug("returns all last updates across the experiments")
+      onSuccess(getRecentLastUpdatesLogs()) {
         case ifl: InfoLogs ⇒ complete(OK -> ifl)
         case gf: GeneralFailure ⇒ complete(BadRequest -> ErrorMessage(s"Failed returning list of recent logs, error was: ${gf.info}"))
         case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning list of recent logs."))
@@ -569,10 +575,21 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
     }
   }
 
-  def getAppLogs = path("application_logs") {
+  def allExperimentsRecentLogs = path("recent_logs") {
+    get {
+      logger.debug("returns all most recent logs even though they come from different experiments")
+      onSuccess(getAllExperimentsRecentLogs()) {
+        case ifl: InfoLogs ⇒ complete(OK -> ifl)
+        case gf: GeneralFailure ⇒ complete(BadRequest -> ErrorMessage(s"Failed returning list of recent logs, error was: ${gf.info}"))
+        case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning list of recent logs."))
+      }
+    }
+  }
+
+  def appLogs = path("application_logs") {
     get {
       logger.debug("returns all application logs")
-      onSuccess(getRecentUpdatesLogs()) {
+      onSuccess(getRecentLastUpdatesLogs()) {
         case ifl: InfoLogs ⇒ complete(OK -> ifl)
         case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning list of recent logs."))
       }

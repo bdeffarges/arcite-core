@@ -86,7 +86,14 @@ case class TransformHelper(transform: Transform) {
 case class TransformDoneSource(experiment: String, kindOfSource: String, fromTransform: Option[String],
                                excludes: Option[Set[String]], excludesRegex: Option[Set[String]])
 
-case class TransformDoneInfo(transform: String, transformDefinition: FullName, source: TransformDoneSource,
-                             parameters: Option[JsValue], status: String, feedback: String, errors: Option[String],
-                             startTime: String, endTime: String = utils.getCurrentDateAsString())
+
+case class TransformDoneSuccess(transform: String, transformDefinition: FullName, source: TransformDoneSource,
+                                parameters: Option[JsValue], feedback: List[String],
+                                artifacts: List[String], startTime: String,
+                                endTime: String = utils.getCurrentDateAsString(), status: String = "SUCCESS")
+
+case class TransformDoneFailed(transform: String, transformDefinition: FullName, source: TransformDoneSource,
+                               parameters: Option[JsValue], feedback: List[String],
+                               errors: List[String], startTime: String,
+                               endTime: String = utils.getCurrentDateAsString(), status: String = "FAILED")
 

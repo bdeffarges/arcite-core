@@ -6,7 +6,7 @@ import java.nio.file.{Files, Path}
 
 import akka.actor.{Actor, ActorLogging, ActorPath}
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
-import com.actelion.research.arcite.core.experiments.ManageExperiments.{AllLastUpdatePath, GetAllExperimentsLastUpdate}
+import com.actelion.research.arcite.core.experiments.ManageExperiments.{AllExperimentLogsPath, AllLastUpdatePath, GetAllExperimentsLastUpdate, GetAllExperimentsMostRecentLogs}
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor}
 import com.actelion.research.arcite.core.utils
 import com.typesafe.config.ConfigFactory
@@ -38,11 +38,14 @@ class EventInfoLogging extends Actor with ActorLogging with ArciteJSONProtocol {
 
   val maxSize = 100 //todo extend
 
-  var recentLogs = List[ExpLog]()
+  var lastUpdatesLogs = List[ExpLog]()
+  var mostRecentLogs = List[ExpLog]()
 
   val conf = ConfigFactory.load().getConfig("experiments-manager")
   val actSys = conf.getString("akka.uri")
-  val expManager = context.actorSelection(ActorPath.fromString(s"${actSys}/user/exp_actors_manager/experiments_manager"))
+
+  val expManager = context
+    .actorSelection(ActorPath.fromString(s"${actSys}/user/exp_actors_manager/experiments_manager"))
 
   import EventInfoLogging._
   import spray.json._
@@ -52,7 +55,8 @@ class EventInfoLogging extends Actor with ActorLogging with ArciteJSONProtocol {
       val eFV = ExperimentFolderVisitor(al.exp)
       val fp = eFV.logsFolderPath resolve s"log_${utils.getDateForFolderName()}"
 
-      recentLogs = al.log +: recentLogs.take(maxSize)
+      lastUpdatesLogs = al.log +: lastUpdatesLogs.take(maxSize)
+
       Files.write(fp, al.log.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
 
       if (eFV.lastUpdateLog.toFile.exists) Files.delete(eFV.lastUpdateLog)
@@ -68,33 +72,42 @@ class EventInfoLogging extends Actor with ActorLogging with ArciteJSONProtocol {
       sender() ! readLog(eFV)
 
 
-    case RecentAllLogs ⇒
-      sender() ! InfoLogs(recentLogs)
-
-
-    case BuildRecent ⇒
+    case BuildRecentLastUpdate ⇒
       log.info("scheduled job: rebuilding recentLogs for all experiments. ")
       expManager ! GetAllExperimentsLastUpdate
 
 
     case allPaths: AllLastUpdatePath ⇒
-      recentLogs = (allPaths.paths.map(readLog)
-        .filter(_.isDefined).map(_.get).toList ++ recentLogs)
+      lastUpdatesLogs = (allPaths.paths.map(readLog)
+        .filter(_.isDefined).map(_.get).toList ++ lastUpdatesLogs)
         .sortBy(_.date).reverse.take(maxSize)
-      log.info(s"scheduled job: recentLogs updated..., total of ${recentLogs.size} logs.")
+      log.info(s"scheduled job: last updates logs updated..., total of ${lastUpdatesLogs.size} logs.")
 
 
-    case RecentAllLogs ⇒
-      sender() ! InfoLogs(recentLogs)
+    case allPaths: AllExperimentLogsPath ⇒
+      mostRecentLogs = allPaths.paths.toList.map(p ⇒ (p, p.toFile.lastModified()))
+        .sortBy(_._2).reverse.take(maxSize).map(_._1).map(readLog).filter(_.isDefined).map(_.get)
+
+      log.info(s"scheduled job: recentLogs updated..., total of ${mostRecentLogs.size} logs.")
+
+
+    case RecentAllLastUpdates ⇒
+      sender() ! InfoLogs(lastUpdatesLogs)
+
+
+    case BuildRecentLogs ⇒
+      expManager ! GetAllExperimentsMostRecentLogs
+
+
+    case MostRecentLogs ⇒
+      sender() ! InfoLogs(mostRecentLogs)
 
 
     case msg: Any ⇒
       log.error(s"don't know what to do with message $msg")
-
   }
-
-
 }
+
 
 object EventInfoLogging extends ArciteJSONProtocol {
 
@@ -106,9 +119,13 @@ object EventInfoLogging extends ArciteJSONProtocol {
 
   case class ReadLogs(experiment: String, page: Int = 0, max: Int = 100)
 
-  case object RecentAllLogs
+  case object RecentAllLastUpdates
 
-  case object BuildRecent
+  case object BuildRecentLastUpdate
+
+  case object MostRecentLogs
+
+  case object BuildRecentLogs
 
   case class LatestLog(experiment: Experiment)
 
@@ -123,4 +140,5 @@ object EventInfoLogging extends ArciteJSONProtocol {
       None
     }
   }
+
 }

@@ -7,7 +7,7 @@ import akka.actor.SupervisorStrategy.Restart
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, OneForOneStrategy, Props}
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.api.ArciteService._
-import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{AddLog, BuildRecent, InfoLogs, ReadLogs}
+import com.actelion.research.arcite.core.eventinfo.EventInfoLogging._
 import com.actelion.research.arcite.core.eventinfo.{EventInfoLogging, ExpLog, LogCategory, LogType}
 import com.actelion.research.arcite.core.experiments.LocalExperiments.{LoadExperiment, SaveExperimentFailed, SaveExperimentSuccessful}
 import com.actelion.research.arcite.core.experiments.ManageExperimentActors.StartExperimentsServiceActors
@@ -17,7 +17,7 @@ import com.actelion.research.arcite.core.rawdata.DefineRawData
 import com.actelion.research.arcite.core.rawdata.DefineRawData.{GetExperimentForRawDataSet, RawDataSetFailed, RawDataSetWithRequesterAndExperiment}
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperimentsWithRequester, IndexExperiment, RemoveFromIndex, SearchForXResultsWithRequester}
-import com.actelion.research.arcite.core.transforms.TransformDoneInfo
+import com.actelion.research.arcite.core.transforms.TransformDoneSuccess
 import com.actelion.research.arcite.core.utils
 import com.actelion.research.arcite.core.utils.{FoldersHelpers, FullName, Owner, WriteFeedbackActor}
 import com.typesafe.config.ConfigFactory
@@ -209,6 +209,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
     case s: SearchForXResultsWithRequester ⇒
       luceneRAMSearchAct ! s
 
+
     case FoundExperimentsWithRequester(foundExperiments, requester) ⇒
       log.debug(s"found ${foundExperiments.experiments.size} experiments ")
       val resp = foundExperiments.experiments.map(f ⇒ experiments(f.digest))
@@ -245,6 +246,13 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
 
     case GetAllExperimentsLastUpdate ⇒
       sender() ! AllLastUpdatePath(experiments.values.map(ExperimentFolderVisitor(_).lastUpdateLog).toSet)
+
+
+    case GetAllExperimentsMostRecentLogs ⇒
+      val logs = experiments.values
+        .flatMap(ExperimentFolderVisitor(_).logsFolderPath.toFile.listFiles()
+          .filter(_.getName.startsWith("log_"))).map(_.toPath)
+      sender() ! AllExperimentLogsPath(logs.toSet)
 
 
     case GetAllTransforms(experiment) ⇒
@@ -318,6 +326,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
         sender() ! latestLogs
       }
 
+
     case makeImmutable: MakeImmutable ⇒
       val exper = experiments.get(makeImmutable.experiment)
       if (exper.isDefined) {
@@ -342,7 +351,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
     case any: Any ⇒ log.debug(s"don't know what to do with this message $any")
   }
 
-  def getAllTransforms(experiment: String): Set[TransformDoneInfo] = {
+  def getAllTransforms(experiment: String): Set[TransformDoneSuccess] = {
     val exp = experiments(experiment)
 
     val transfF = ExperimentFolderVisitor(exp).transformFolderPath
@@ -352,7 +361,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
     transfF.toFile.listFiles().filter(_.isDirectory)
       .map(d ⇒ Paths.get(d.getAbsolutePath, WriteFeedbackActor.FILE_NAME))
       .filter(p ⇒ p.toFile.exists())
-      .map(p ⇒ Files.readAllLines(p).toList.mkString("\n").parseJson.convertTo[TransformDoneInfo]).toSet
+      .map(p ⇒ Files.readAllLines(p).toList.mkString("\n").parseJson.convertTo[TransformDoneSuccess]).toSet
   }
 
   def getTransfDefFromExpAndTransf(experiment: String, transform: String): FoundTransfDefFullName = {
@@ -364,7 +373,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
 
     //todo check whether it exists...
     val f = Paths.get(ef.toString, transform, WriteFeedbackActor.FILE_NAME)
-    val tdi = Files.readAllLines(f).toList.mkString("\n").parseJson.convertTo[TransformDoneInfo]
+    val tdi = Files.readAllLines(f).toList.mkString("\n").parseJson.convertTo[TransformDoneSuccess]
 
     FoundTransfDefFullName(tdi.transformDefinition)
   }
@@ -405,7 +414,7 @@ object ManageExperiments {
 
   case class GetAllTransforms(experiment: String)
 
-  case class TransformsForExperiment(transforms: Set[TransformDoneInfo])
+  case class TransformsForExperiment(transforms: Set[TransformDoneSuccess])
 
   case class GetTransfDefFromExpAndTransf(experiment: String, transform: String)
 
@@ -414,6 +423,10 @@ object ManageExperiments {
   case object GetAllExperimentsLastUpdate
 
   case class AllLastUpdatePath(paths: Set[Path])
+
+  case object GetAllExperimentsMostRecentLogs
+
+  case class AllExperimentLogsPath(paths: Set[Path])
 
   case class MakeImmutable(experiment: String)
 
@@ -443,8 +456,9 @@ class ManageExperimentActors extends Actor with ActorLogging {
 
       import scala.concurrent.duration._
 
-      context.system.scheduler.schedule(45 seconds, 5 minutes) {
-        eventInfoLoggingAct ! BuildRecent
+      context.system.scheduler.schedule(45 seconds, 10 minutes) {
+        eventInfoLoggingAct ! BuildRecentLastUpdate
+        eventInfoLoggingAct ! BuildRecentLogs
       }
   }
 
