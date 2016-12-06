@@ -17,7 +17,7 @@ import com.actelion.research.arcite.core.rawdata.DefineRawData
 import com.actelion.research.arcite.core.rawdata.DefineRawData.{GetExperimentForRawDataSet, RawDataSetFailed, RawDataSetWithRequesterAndExperiment}
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperimentsWithRequester, IndexExperiment, RemoveFromIndex, SearchForXResultsWithRequester}
-import com.actelion.research.arcite.core.transforms.TransformDoneSuccess
+import com.actelion.research.arcite.core.transforms.TransformCompletionFeedback
 import com.actelion.research.arcite.core.utils
 import com.actelion.research.arcite.core.utils.{FoldersHelpers, FullName, Owner, WriteFeedbackActor}
 import com.typesafe.config.ConfigFactory
@@ -330,7 +330,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
     case makeImmutable: MakeImmutable ⇒
       val exper = experiments.get(makeImmutable.experiment)
       if (exper.isDefined) {
-        val exp = exper.get
+        val exp = exper.get.copy(state = ExpState.IMMUTABLE)
         LocalExperiments.saveExperiment(exp) match {
 
           case SaveExperimentSuccessful(expLog) ⇒
@@ -342,7 +342,8 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
               LogCategory.ERROR, "experiment is immutable failed.", Some(exp.uid)))
         }
 
-        experiments += ((exper.get.uid, exper.get.copy(state = ExpState.IMMUTABLE)))
+        experiments += ((exp.uid, exp))
+
         Files.write(ExperimentFolderVisitor(exper.get).immutableStateFile,
           "IMMUTABLE".getBytes(StandardCharsets.UTF_8), CREATE)
       }
@@ -351,7 +352,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
     case any: Any ⇒ log.debug(s"don't know what to do with this message $any")
   }
 
-  def getAllTransforms(experiment: String): Set[TransformDoneSuccess] = {
+  def getAllTransforms(experiment: String): Set[TransformCompletionFeedback] = {
     val exp = experiments(experiment)
 
     val transfF = ExperimentFolderVisitor(exp).transformFolderPath
@@ -361,7 +362,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
     transfF.toFile.listFiles().filter(_.isDirectory)
       .map(d ⇒ Paths.get(d.getAbsolutePath, WriteFeedbackActor.FILE_NAME))
       .filter(p ⇒ p.toFile.exists())
-      .map(p ⇒ Files.readAllLines(p).toList.mkString("\n").parseJson.convertTo[TransformDoneSuccess]).toSet
+      .map(p ⇒ Files.readAllLines(p).toList.mkString("\n").parseJson.convertTo[TransformCompletionFeedback]).toSet
   }
 
   def getTransfDefFromExpAndTransf(experiment: String, transform: String): FoundTransfDefFullName = {
@@ -373,7 +374,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
 
     //todo check whether it exists...
     val f = Paths.get(ef.toString, transform, WriteFeedbackActor.FILE_NAME)
-    val tdi = Files.readAllLines(f).toList.mkString("\n").parseJson.convertTo[TransformDoneSuccess]
+    val tdi = Files.readAllLines(f).toList.mkString("\n").parseJson.convertTo[TransformCompletionFeedback]
 
     FoundTransfDefFullName(tdi.transformDefinition)
   }
@@ -414,7 +415,7 @@ object ManageExperiments {
 
   case class GetAllTransforms(experiment: String)
 
-  case class TransformsForExperiment(transforms: Set[TransformDoneSuccess])
+  case class TransformsForExperiment(transforms: Set[TransformCompletionFeedback])
 
   case class GetTransfDefFromExpAndTransf(experiment: String, transform: String)
 

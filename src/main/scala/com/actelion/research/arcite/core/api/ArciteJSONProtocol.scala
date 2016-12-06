@@ -11,6 +11,7 @@ import com.actelion.research.arcite.core.rawdata.DefineRawData.{RawDataSet, RawD
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments}
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, ManyTransfDefs, OneTransfDef}
+import com.actelion.research.arcite.core.transforms.TransformCompletionStatus.TransformCompletionStatus
 import com.actelion.research.arcite.core.transforms._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.Ok
 import com.actelion.research.arcite.core.transforms.cluster.WorkState.AllJobsFeedback
@@ -118,6 +119,18 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
       case _ ⇒ ExpState.NEW
 
       //      case _ ⇒ deserializationError("Experiment state expected")
+    }
+  }
+
+
+  implicit object TransformStatusJsonFormat extends RootJsonFormat[TransformCompletionStatus] {
+    def write(c: TransformCompletionStatus) = JsString(c.toString)
+
+    def read(value: JsValue) = value match {
+      case JsString("SUCCESS") ⇒ TransformCompletionStatus.SUCCESS
+      case JsString("COMPLETED_WITH_WARNINGS") ⇒ TransformCompletionStatus.COMPLETED_WITH_WARNINGS
+      case JsString("FAILED") ⇒ TransformCompletionStatus.FAILED
+      case _ ⇒ deserializationError("Transform status expected ")
     }
   }
 
@@ -231,8 +244,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val getAllJobsFeedbackJson = jsonFormat3(AllJobsFeedback)
 
   implicit val feedbackSourceJsonFormat = jsonFormat5(TransformDoneSource)
-  implicit val feedbackSuccessJsonFormat = jsonFormat9(TransformDoneSuccess)
-  implicit val feedbackFailedJsonFormat = jsonFormat9(TransformDoneFailed)
+  implicit val transformfeedbackJsonFormat = jsonFormat10(TransformCompletionFeedback)
 
   implicit val addPropertiesJSonFormat = jsonFormat1(AddExpProps)
 

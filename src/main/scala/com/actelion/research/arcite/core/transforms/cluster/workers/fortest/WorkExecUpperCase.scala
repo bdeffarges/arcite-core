@@ -29,7 +29,7 @@ class WorkExecUpperCase extends Actor with ActorLogging {
           val upperCased = toBeTransformed.stgToUpperCase.toUpperCase()
           val p = Paths.get(TransformHelper(t).getTransformFolder().toString, "uppercase.txt")
           Files.write(p, upperCased.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
-          sender() ! WorkSuccessFull("to upper case completed" :: Nil, p.getFileName.toString :: Nil)
+          sender() ! WorkSuccessFull("to upper case completed", p.getFileName.toString :: Nil)
       }
 
     case GetTransfDefId(wi) ⇒

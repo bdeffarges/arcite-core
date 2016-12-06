@@ -69,7 +69,7 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
 
     case excp: Exception =>
       currentTransform foreach { transf ⇒
-        val wf = WorkFailed("worker failed":: Nil, excp.toString :: Nil)
+        val wf = WorkFailed("worker failed", excp.toString)
         sendToMaster(WorkerFailed(workerId, transf, wf, utils.getDateAsString(time)))
       }
       context.become(idle)
@@ -157,12 +157,12 @@ object TransformWorker {
 
 
   sealed trait WorkCompletionStatus {
-    def feedback:  List[String]
+    def feedback:  String
   }
 
-  case class WorkSuccessFull(feedback: List[String] = Nil, artifacts: List[String] = Nil) extends WorkCompletionStatus
+  case class WorkSuccessFull(feedback: String = "", artifacts: List[String] = Nil) extends WorkCompletionStatus
 
-  case class WorkFailed(feedback: List[String] = Nil, errors:  List[String] = Nil) extends WorkCompletionStatus
+  case class WorkFailed(feedback: String = "", errors:  String = "") extends WorkCompletionStatus
 
 }
 

@@ -11,7 +11,7 @@ import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.experiments.ManageExperiments.FoundTransfDefFullName
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor, ManageExperiments}
 import com.actelion.research.arcite.core.rawdata.TransferSelectedRawData.TransferFilesToFolder
-import com.actelion.research.arcite.core.transforms.TransformDoneSuccess
+import com.actelion.research.arcite.core.transforms.TransformCompletionFeedback
 import com.actelion.research.arcite.core.utils.WriteFeedbackActor
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging

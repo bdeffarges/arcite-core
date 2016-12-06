@@ -15,7 +15,7 @@ class WorkExecProd extends Actor with ActorLogging {
       val n2 = n * n
       val result = s"workexecutor= $n * $n = $n2"
       Thread.sleep(java.util.concurrent.ThreadLocalRandom.current().nextInt(30000))
-      sender() ! WorkSuccessFull(result :: Nil)
+      sender() ! WorkSuccessFull(result)
 
     case GetTransfDefId(wi) ⇒
       log.debug(s"asking worker type for $wi")

@@ -5,6 +5,7 @@ import java.util.UUID
 
 import akka.actor.Props
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor}
+import com.actelion.research.arcite.core.transforms.TransformCompletionStatus.TransformCompletionStatus
 import com.actelion.research.arcite.core.utils
 import com.actelion.research.arcite.core.utils.{FullName, GetDigest}
 import spray.json.JsValue
@@ -87,13 +88,12 @@ case class TransformDoneSource(experiment: String, kindOfSource: String, fromTra
                                excludes: Option[Set[String]], excludesRegex: Option[Set[String]])
 
 
-case class TransformDoneSuccess(transform: String, transformDefinition: FullName, source: TransformDoneSource,
-                                parameters: Option[JsValue], feedback: List[String],
-                                artifacts: List[String], startTime: String,
-                                endTime: String = utils.getCurrentDateAsString(), status: String = "SUCCESS")
+case class TransformCompletionFeedback(transform: String, transformDefinition: FullName, source: TransformDoneSource,
+                                       parameters: Option[JsValue], status: TransformCompletionStatus,
+                                       artifacts: List[String], feedback: String, errors: String,
+                                       startTime: String, endTime: String = utils.getCurrentDateAsString())
 
-case class TransformDoneFailed(transform: String, transformDefinition: FullName, source: TransformDoneSource,
-                               parameters: Option[JsValue], feedback: List[String],
-                               errors: List[String], startTime: String,
-                               endTime: String = utils.getCurrentDateAsString(), status: String = "FAILED")
-
+object TransformCompletionStatus extends scala.Enumeration {
+  type TransformCompletionStatus = Value
+  val SUCCESS, FAILED, COMPLETED_WITH_WARNINGS = Value
+}

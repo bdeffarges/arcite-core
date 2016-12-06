@@ -41,12 +41,12 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
 
   val conf = ConfigFactory.load().getConfig("experiments-manager")
   val actSys = conf.getString("akka.uri")
-  val eventInfoSelect =     s"${actSys}/user/exp_actors_manager/event_logging_info"
+  val eventInfoSelect = s"${actSys}/user/exp_actors_manager/event_logging_info"
   val eventInfoAct = context.actorSelection(ActorPath.fromString(eventInfoSelect))
 
   override def receive: Receive = {
     case WriteFeedback(wid) ⇒
-    log.info(s"writing feedback for [${wid.transf.uid}]")
+      log.info(s"writing feedback for [${wid.transf.uid}]")
 
       val transfFolder = TransformHelper(wid.transf).getTransformFolder()
 
@@ -54,15 +54,15 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
 
       val fs: TransformDoneSource = wid.transf.source match {
         case tsr: TransformSourceFromRaw ⇒
-          TransformDoneSource(exp,RAW, None, None, None)
+          TransformDoneSource(exp, RAW, None, None, None)
         case tsr: TransformSourceFromRawWithExclusion ⇒
-          TransformDoneSource(exp,RAW,None,  Some(tsr.excludes), Some(tsr.excludesRegex))
+          TransformDoneSource(exp, RAW, None, Some(tsr.excludes), Some(tsr.excludesRegex))
         case tst: TransformSourceFromTransform ⇒
-          TransformDoneSource(exp,TRANSFORM, Some(tst.srcTransformID), None, None)
+          TransformDoneSource(exp, TRANSFORM, Some(tst.srcTransformID), None, None)
         case tst: TransformSourceFromTransformWithExclusion ⇒
-          TransformDoneSource(exp,TRANSFORM, Some(tst.srcTransformUID), Some(tst.excludes), Some(tst.excludesRegex))
+          TransformDoneSource(exp, TRANSFORM, Some(tst.srcTransformUID), Some(tst.excludes), Some(tst.excludesRegex))
         case tob: TransformSourceFromObject ⇒
-          TransformDoneSource(exp,JSON, None, None, None)
+          TransformDoneSource(exp, JSON, None, None, None)
       }
 
       val digest = GetDigest.getFolderContentDigest(transfFolder.toFile)
@@ -73,8 +73,9 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
 
       wid match {
         case ws: WorkerSuccess ⇒
-          val fb = TransformDoneSuccess(wid.transf.uid, wid.transf.transfDefName, fs, params,
-            ws.result.feedback, ws.result.artifacts, wid.startTime)
+          val fb = TransformCompletionFeedback(wid.transf.uid, wid.transf.transfDefName, fs, params,
+            TransformCompletionStatus.SUCCESS, ws.result.artifacts,
+            ws.result.feedback, "", wid.startTime)
 
           Files.write(Paths.get(transfFolder.toString, FILE_NAME),
             fb.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
@@ -87,7 +88,8 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
 
 
         case wf: WorkerFailed ⇒
-          val fb = TransformDoneFailed(wid.transf.uid, wid.transf.transfDefName, fs, params,
+          val fb = TransformCompletionFeedback(wid.transf.uid, wid.transf.transfDefName, fs, params,
+            TransformCompletionStatus.SUCCESS, List(),
             wf.result.feedback, wf.result.errors, wid.startTime)
 
           Files.write(Paths.get(transfFolder.toString, FILE_NAME),
