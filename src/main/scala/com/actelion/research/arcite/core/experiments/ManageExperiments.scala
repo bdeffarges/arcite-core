@@ -1,10 +1,12 @@
 package com.actelion.research.arcite.core.experiments
 
+import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file._
 
 import akka.actor.SupervisorStrategy.Restart
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, OneForOneStrategy, Props}
+import com.actelion.research.arcite.core
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.api.ArciteService._
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging._
@@ -255,9 +257,13 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       sender() ! AllExperimentLogsPath(logs.toSet)
 
 
-    case GetAllTransforms(experiment) ⇒
-      val allTransforms = getAllTransforms(experiment)
+    case GetTransforms(experiment) ⇒
+      val allTransforms = getTransforms(experiment)
       sender ! TransformsForExperiment(allTransforms)
+
+
+    case GetAllTransforms ⇒
+      sender ! ManyTransforms(getAllTransforms)
 
 
     case GetTransfDefFromExpAndTransf(experiment, transform) ⇒
@@ -311,11 +317,12 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
     case readLogs: ReadLogs ⇒
       val exp = experiments.get(readLogs.experiment)
       if (exp.isEmpty) {
-        sender()  ! InfoLogs(List())
+        sender() ! InfoLogs(List())
       } else {
         val eFV = ExperimentFolderVisitor(exp.get)
 
-        import EventInfoLogging._ //todo should catch / raise exceptions
+        import EventInfoLogging._
+        //todo should catch / raise exceptions
         val latestLogs = InfoLogs(eFV.logsFolderPath.toFile.listFiles()
           .filter(f ⇒ f.getName.startsWith("log_"))
           .map(f ⇒ readLog(f.toPath))
@@ -352,17 +359,38 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
     case any: Any ⇒ log.debug(s"don't know what to do with this message $any")
   }
 
-  def getAllTransforms(experiment: String): Set[TransformCompletionFeedback] = {
+  private def getTransforms(experiment: String): Set[TransformCompletionFeedback] = {
     val exp = experiments(experiment)
 
     val transfF = ExperimentFolderVisitor(exp).transformFolderPath
 
-    import spray.json._
 
     transfF.toFile.listFiles().filter(_.isDirectory)
       .map(d ⇒ Paths.get(d.getAbsolutePath, WriteFeedbackActor.FILE_NAME))
       .filter(p ⇒ p.toFile.exists())
       .map(p ⇒ Files.readAllLines(p).toList.mkString("\n").parseJson.convertTo[TransformCompletionFeedback]).toSet
+  }
+
+  private def getAllTransforms: Set[TransformCompletionFeedback] = {
+    //Todo refactor to pick up only most recent ones... and paging...
+    //todo exception handling
+
+
+    def convertToTransfComFeed(file: File): Option[TransformCompletionFeedback] = {
+      import spray.json._
+      try {
+        Some(Files.readAllLines(file.toPath).mkString(" ").parseJson.convertTo[TransformCompletionFeedback])
+      } catch {
+        case e: Exception ⇒
+          logger.error(s"exception while casting file to TransformCompletionFeedback file: $file exception: $e")
+          None
+      }
+    }
+
+    experiments.values.map(ExperimentFolderVisitor(_).transformFolderPath)
+      .flatMap(_.toFile.listFiles()).filter(_.isDirectory)
+      .flatMap(_.listFiles()).filter(_.getName == WriteFeedbackActor.FILE_NAME)
+      .map(convertToTransfComFeed).filter(_.isDefined).map(_.get).toSet
   }
 
   def getTransfDefFromExpAndTransf(experiment: String, transform: String): FoundTransfDefFullName = {
@@ -413,9 +441,13 @@ object ManageExperiments {
 
   case class Experiments(exps: Set[Experiment])
 
-  case class GetAllTransforms(experiment: String)
+  case class GetTransforms(experiment: String)
+
+  case object GetAllTransforms
 
   case class TransformsForExperiment(transforms: Set[TransformCompletionFeedback])
+
+  case class ManyTransforms(transforms: Set[TransformCompletionFeedback])
 
   case class GetTransfDefFromExpAndTransf(experiment: String, transform: String)
 
@@ -463,8 +495,6 @@ class ManageExperimentActors extends Actor with ActorLogging {
       }
   }
 
-  def startActorSystemForExperiments(): Unit = {
-  }
 }
 
 object ManageExperimentActors {

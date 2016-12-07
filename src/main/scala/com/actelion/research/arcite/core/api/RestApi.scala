@@ -133,8 +133,12 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(runTransform).mapTo[TransformJobAcceptance]
   }
 
-  def allTransformsForExperiment(exp: String) = {
-    arciteService.ask(GetAllTransforms(exp)).mapTo[TransformsForExperiment]
+  def getAllTransformsForExperiment(exp: String) = {
+    arciteService.ask(GetTransforms(exp)).mapTo[TransformsForExperiment]
+  }
+
+  def getAllTransforms() = {
+    arciteService.ask(GetAllTransforms).mapTo[ManyTransforms]
   }
 
   def jobStatus(qws: QueryWorkStatus) = {
@@ -159,7 +163,7 @@ trait ArciteServiceApi extends LazyLogging {
   }
 
   def getApplicationLogs() = {
-//    arciteService.ask(ArciteLogs).mapTo[InfoLogs]
+    //    arciteService.ask(ArciteLogs).mapTo[InfoLogs]
   }
 }
 
@@ -183,6 +187,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       allTransformsFeedbackRoute ~
       allLastUpdates ~
       allExperimentsRecentLogs ~
+      allTransforms ~
       appLogs ~
       defaultRoute
   }
@@ -233,7 +238,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       path("transforms") {
         get {
           logger.info(s"get all transforms for experiment: = $experiment")
-          onSuccess(allTransformsForExperiment(experiment)) {
+          onSuccess(getAllTransformsForExperiment(experiment)) {
             case TransformsForExperiment(tdis) ⇒ complete(OK -> tdis)
           }
         }
@@ -362,9 +367,9 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
               logger.info("cloning experiment. ")
               entity(as[CloneExperimentNewProps]) { exp ⇒
                 val saved: Future[AddExperimentResponse] = cloneExperiment(experiment, exp)
-            onSuccess(saved) {
-              case addExp: AddedExperiment ⇒ complete(Created -> addExp)
-              case FailedAddingExperiment(msg) ⇒ complete(Conflict -> ErrorMessage(msg))
+                onSuccess(saved) {
+                  case addExp: AddedExperiment ⇒ complete(Created -> addExp)
+                  case FailedAddingExperiment(msg) ⇒ complete(Conflict -> ErrorMessage(msg))
                 }
               }
             }
@@ -569,7 +574,6 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       logger.debug("returns all last updates across the experiments")
       onSuccess(getRecentLastUpdatesLogs()) {
         case ifl: InfoLogs ⇒ complete(OK -> ifl)
-        case gf: GeneralFailure ⇒ complete(BadRequest -> ErrorMessage(s"Failed returning list of recent logs, error was: ${gf.info}"))
         case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning list of recent logs."))
       }
     }
@@ -580,7 +584,6 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       logger.debug("returns all most recent logs even though they come from different experiments")
       onSuccess(getAllExperimentsRecentLogs()) {
         case ifl: InfoLogs ⇒ complete(OK -> ifl)
-        case gf: GeneralFailure ⇒ complete(BadRequest -> ErrorMessage(s"Failed returning list of recent logs, error was: ${gf.info}"))
         case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning list of recent logs."))
       }
     }
@@ -592,6 +595,16 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       onSuccess(getRecentLastUpdatesLogs()) {
         case ifl: InfoLogs ⇒ complete(OK -> ifl)
         case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning list of recent logs."))
+      }
+    }
+  }
+
+  def allTransforms = path("all_transforms") {
+    get {
+      logger.info("get all transforms for all experiments ")
+      onSuccess(getAllTransforms()) {
+        case ManyTransforms(tdis) ⇒ complete(OK -> tdis)
+        case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning all transforms."))
       }
     }
   }

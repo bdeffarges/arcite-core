@@ -3,7 +3,7 @@ package com.actelion.research.arcite.core.api
 import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, Props}
 import akka.util.Timeout
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{MostRecentLogs, ReadLogs, RecentAllLastUpdates}
-import com.actelion.research.arcite.core.experiments.ManageExperiments._
+import com.actelion.research.arcite.core.experiments.ManageExperiments.{GetAllTransforms, _}
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSummary}
 import com.actelion.research.arcite.core.rawdata.DefineRawData.{RawDataSet, RawDataSetRegex, RawDataSetRegexWithRequester, RawDataSetWithRequester}
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{SearchForXResults, SearchForXResultsWithRequester}
@@ -174,8 +174,12 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
       expManager ! AddExpPropertiesWithRequester(p, sender())
 
 
-    case gat: GetAllTransforms ⇒
+    case gat: GetTransforms ⇒
       expManager forward gat
+
+
+    case GetAllTransforms ⇒
+      expManager forward GetAllTransforms
 
 
     case fileUp : MoveUploadedFile ⇒
