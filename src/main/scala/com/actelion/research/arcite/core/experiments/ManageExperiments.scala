@@ -40,7 +40,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
   private val path = Paths.get(filePath)
 
   val actSys = config.getConfig("experiments-manager").getString("akka.uri")
-  val fileServiceActPath = s"${actSys}/user/exp_actors_manager/event_logging_info"
+  val fileServiceActPath = s"${actSys}/user/exp_actors_manager/file_service"
 
   private val fileServiceAct = context.actorSelection(ActorPath.fromString(fileServiceActPath))
   log.info(s"connect file service actor [$fileServiceActPath] actor: $fileServiceAct")
