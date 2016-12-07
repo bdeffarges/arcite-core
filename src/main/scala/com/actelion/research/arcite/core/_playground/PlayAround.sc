@@ -1,9 +1,22 @@
+//import java.io.File
+//import java.nio.file.{Path, Paths}
+//
+//import akka.http.javadsl.model.StatusCode
+//import akka.http.scaladsl.marshalling.ToResponseMarshallable
+//import akka.http.scaladsl.server.StandardRoute
 import java.io.File
-import java.nio.file.{Path, Paths}
 
-import akka.http.javadsl.model.StatusCode
-import akka.http.scaladsl.marshalling.ToResponseMarshallable
-import akka.http.scaladsl.server.StandardRoute
+import com.typesafe.config.ConfigFactory
+
+val config = ConfigFactory.parseFile(new File("/home/deffabe1/development/computbio/arc/arcite-core/src/main/resources/ubuntu_desktop.conf"))
+  .getConfig("arcite")
+
+import scala.collection.JavaConverters._
+val l = config.getObjectList("mounts").asScala
+val ess = l.flatMap(co ⇒ co.entrySet().asScala).map(es ⇒ (es.getKey, es.getValue.unwrapped.toString))
+ess.foreach(println)
+
+
 //import akka.http.scaladsl.server.StandardRoute
 //import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.FoundExperiment
 
@@ -116,3 +129,5 @@ import akka.http.scaladsl.server.StandardRoute
 //def a(m: ⇒ ToResponseMarshallable): StandardRoute =  StandardRoute(_.complete(m))
 //
 //a("AAAA")
+
+

@@ -5,7 +5,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.file._
 
 import akka.actor.SupervisorStrategy.Restart
-import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, OneForOneStrategy, Props}
+import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSystem, OneForOneStrategy, Props}
 import com.actelion.research.arcite.core
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.api.ArciteService._
@@ -33,15 +33,19 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
 
   import ManageExperiments._
 
-  val config = ConfigFactory.load()
+  private val config = ConfigFactory.load()
 
-  val filePath = config.getString("arcite.snapshot")
+  private val filePath = config.getString("arcite.snapshot")
 
-  val path = Paths.get(filePath)
+  private val path = Paths.get(filePath)
 
-  val fileServiceAct = context.system.actorOf(FileServiceActor.props(), "file_service")
+  val actSys = config.getConfig("experiments-manager").getString("akka.uri")
+  val fileServiceActPath = s"${actSys}/user/exp_actors_manager/event_logging_info"
 
-  val luceneRAMSearchAct = context.system.actorOf(Props(classOf[ArciteLuceneRamIndex]), "experiments_lucene_index")
+  private val fileServiceAct = context.actorSelection(ActorPath.fromString(fileServiceActPath))
+  log.info(s"connect file service actor [$fileServiceActPath] actor: $fileServiceAct")
+
+  private val luceneRAMSearchAct = context.system.actorOf(Props(classOf[ArciteLuceneRamIndex]), "experiments_lucene_index")
 
   private var experiments: Map[String, Experiment] = LocalExperiments.loadAllLocalExperiments()
 
@@ -462,14 +466,13 @@ object ManageExperiments {
   case class AllExperimentLogsPath(paths: Set[Path])
 
   case class MakeImmutable(experiment: String)
-
 }
 
 class ManageExperimentActors extends Actor with ActorLogging {
 
   import scala.concurrent.duration._
 
-  override val supervisorStrategy =
+  override val supervisorStrategy: OneForOneStrategy =
     OneForOneStrategy(maxNrOfRetries = 50, withinTimeRange = 1 minute) {
       case _: FileSystemException ⇒ Restart // todo in both case should log
       case _: Exception ⇒ Restart // todo should eventually escalate
@@ -481,9 +484,12 @@ class ManageExperimentActors extends Actor with ActorLogging {
       val eventInfoLoggingAct = context.actorOf(Props(classOf[EventInfoLogging]), "event_logging_info")
       val manExpActor = context.actorOf(Props(classOf[ManageExperiments], eventInfoLoggingAct), "experiments_manager")
       val defineRawDataAct = context.actorOf(Props(classOf[DefineRawData], manExpActor), "define_raw_data")
+      val fileServiceAct = context.actorOf(FileServiceActor.props(), "file_service")
+
       log.info(s"event info log: [$eventInfoLoggingAct]")
       log.info(s"exp manager actor: [$manExpActor]")
       log.info(s"raw data define: [$defineRawDataAct]")
+      log.info(s"file service actor: [$fileServiceAct]")
 
       import context.dispatcher
 
@@ -498,6 +504,8 @@ class ManageExperimentActors extends Actor with ActorLogging {
 }
 
 object ManageExperimentActors {
+  private val config = ConfigFactory.load()
+
   val actSystem = ActorSystem("experiments-actor-system", config.getConfig("experiments-manager"))
 
   val topActor = actSystem.actorOf(Props(classOf[ManageExperimentActors]), "exp_actors_manager")

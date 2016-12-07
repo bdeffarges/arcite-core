@@ -78,6 +78,7 @@ libraryDependencies ++= {
   "com.typesafe.akka" %% "akka-http-spray-json" % "3.0.0-RC1",
     "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
     "com.typesafe.scala-logging" %% "scala-logging" % "3.1.0",
+    "com.iheart" %% "ficus" % "1.4.0",
     "org.apache.spark" %% "spark-core" % sparkVersion,
     "org.apache.spark" %% "spark-graphx" % sparkVersion,
     "org.apache.spark" %% "spark-mllib" % sparkVersion,

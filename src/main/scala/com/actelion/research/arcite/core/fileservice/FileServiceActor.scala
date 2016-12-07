@@ -1,5 +1,6 @@
 package com.actelion.research.arcite.core.fileservice
 
+import java.io.File
 import java.nio.file.Path
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
@@ -37,20 +38,18 @@ import com.typesafe.config.{Config, ConfigFactory}
   * -to map a source mount as raw data source.
   *
   */
-class FileServiceActor(config: Config) extends Actor with ActorLogging {
+class FileServiceActor(mounts: Option[Map[String, Path]]) extends Actor with ActorLogging {
 
   import FileServiceActor._
 
-  var sourceFolders = Map[String, Path]()
+  private var sourceFolders = Map[String, Path]() ++ mounts.getOrElse(Map())
 
-  override def receive = {
+  override def receive: Receive = {
     case SetSourceFolder(name, path) ⇒
       sourceFolders += ((name, path))
 
-
     case GetSourceFolders ⇒
       sender() ! SourceFoldersAsString(sourceFolders.map(sf ⇒ (sf._1, sf._2.toString)))
-
 
     case GetFiles(rootFileLoc, subFolder) ⇒
       rootFileLoc match {
@@ -91,9 +90,9 @@ class FileServiceActor(config: Config) extends Actor with ActorLogging {
       val ev = ExperimentFolderVisitor(fromExp.fromExp.experiment)
 
       val path = fromExp.fromExp match {
-        case r : FromRawFolder ⇒
+        case r: FromRawFolder ⇒
           ev.userRawFolderPath
-        case r : FromMetaFolder ⇒
+        case r: FromMetaFolder ⇒
           ev.userMetaFolderPath
       }
       val result = core.getFilesInformation(path.toFile)
@@ -106,9 +105,19 @@ class FileServiceActor(config: Config) extends Actor with ActorLogging {
 }
 
 object FileServiceActor {
-  val config = ConfigFactory.load
+  private val config = ConfigFactory.load
 
-  def props(): Props = Props(classOf[FileServiceActor], config)
+  import scala.collection.JavaConverters._
+
+  lazy val mounts: Option[Map[String, Path]] = {
+    if (config.hasPath("arcite.mounts")) {
+      Some(config.getObjectList("arcite.mounts").asScala
+        .flatMap(co ⇒ co.entrySet().asScala)
+        .map(es ⇒ (es.getKey, new File(es.getValue.unwrapped.toString).toPath)).toMap)
+    } else None
+  }
+
+  def props(): Props = Props(classOf[FileServiceActor], mounts)
 
   sealed trait RootFileLocations
 
@@ -122,15 +131,13 @@ object FileServiceActor {
 
   case class FromSourceFolder(name: String) extends RootFileLocations
 
-
   case class SetSourceFolder(name: String, fullPath: Path)
-
 
   case object GetSourceFolders
 
-
   case class SourceFoldersAsString(sourceFolders: Map[String, String])
 
+  case class SourceInformation(name: String, description: String, path: Path)
 
   case class GetFiles(rootLocation: RootFileLocations, subFolder: List[String] = List())
 

@@ -30,7 +30,7 @@ case class TransformDescription(summary: String, consumes: String, produces: Str
   * @param fullName
   * @param description
   */
-case class TransformDefinitionIdentity(fullName: FullName, shortName: String,
+case class TransformDefinitionIdentity(fullName: FullName, shortName: String, // todo version
                                        description: TransformDescription, dependsOn: Option[FullName] = None) {
   lazy val digestUID = GetDigest.getDigest(s"$fullName $description")
 }

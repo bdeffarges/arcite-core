@@ -15,7 +15,7 @@ import akka.util.Timeout
 import com.actelion.research.arcite.core.api.ArciteService._
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{InfoLogs, MostRecentLogs, ReadLogs, RecentAllLastUpdates}
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
-import com.actelion.research.arcite.core.fileservice.FileServiceActor.FolderFilesInformation
+import com.actelion.research.arcite.core.fileservice.FileServiceActor.{FolderFilesInformation, GetSourceFolders, SourceFoldersAsString}
 import com.actelion.research.arcite.core.rawdata.DefineRawData._
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
@@ -165,10 +165,14 @@ trait ArciteServiceApi extends LazyLogging {
   def getApplicationLogs() = {
     //    arciteService.ask(ArciteLogs).mapTo[InfoLogs]
   }
+
+  def getDataSources() = {
+    arciteService.ask(GetSourceFolders).mapTo[SourceFoldersAsString]
+  }
 }
 
 trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSONProtocol with LazyLogging {
-
+//todo refactor routes into different files by category
   import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 
   //todo try cors again with lomigmegard/akka-http-cors
@@ -188,6 +192,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       allLastUpdates ~
       allExperimentsRecentLogs ~
       allTransforms ~
+      dataSources ~
       appLogs ~
       defaultRoute
   }
@@ -595,6 +600,16 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       onSuccess(getRecentLastUpdatesLogs()) {
         case ifl: InfoLogs ⇒ complete(OK -> ifl)
         case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning list of recent logs."))
+      }
+    }
+  }
+
+  def dataSources = path("data_sources") {
+    get {
+      logger.debug("returns all data sources ")
+      onSuccess(getDataSources()) {
+        case sf: SourceFoldersAsString ⇒ complete(OK -> sf)
+        case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning list of source folders."))
       }
     }
   }

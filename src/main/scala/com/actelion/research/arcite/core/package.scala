@@ -7,26 +7,29 @@ import com.actelion.research.arcite.core.utils.{FileInformationWithSubFolder, Fi
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 
-/**
-  * Created by deffabe1 on 7/12/16.
-  */
-/**
-  * Created by bernitu on 20/11/16.
-  */
-
 package object core {
 
   val config = ConfigFactory.load
 
   val logger = LoggerFactory.getLogger(getClass)
 
-  val archivePath = Paths.get(config.getString("arcite.home"), "_archives")
+  val home = Paths.get(config.getString("arcite.home"))
+
+  val archivePath = home resolve "_archives"
+
   if (!archivePath.toFile.exists) archivePath.toFile.mkdirs()
 
-  val dataPath = Paths.get(config.getString("arcite.home"), "experiments")
+  val dataPath = home resolve "experiments"
+
   if (!dataPath.toFile.exists) dataPath.toFile.mkdirs()
+
+  val logsPath = home resolve "logs"
+
+  if (!logsPath.toFile.exists) logsPath.toFile.mkdir()
+
   logger.debug(s"data Path: $dataPath")
   logger.debug(s"archive path: $archivePath")
+  logger.debug(s"logs path: $logsPath")
 
   def allRegexFilesInFolderAndSubfolder(folder: String, regex: String, includeSubfolder: Boolean): Map[File, String] = {
     val reg = regex.r
