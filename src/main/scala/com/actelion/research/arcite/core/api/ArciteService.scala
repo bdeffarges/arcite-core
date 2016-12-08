@@ -6,7 +6,7 @@ import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{MostRecentL
 import com.actelion.research.arcite.core.experiments.ManageExperiments.{GetAllTransforms, _}
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSummary}
 import com.actelion.research.arcite.core.fileservice.FileServiceActor.GetSourceFolders
-import com.actelion.research.arcite.core.rawdata.DefineRawData.{RawDataSet, RawDataSetRegex, RawDataSetRegexWithRequester, RawDataSetWithRequester}
+import com.actelion.research.arcite.core.rawdata.DefineRawData._
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{SearchForXResults, SearchForXResultsWithRequester}
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
@@ -200,8 +200,13 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
       defineRawDataAct ! RawDataSetWithRequester(rds, sender())
 
 
+    case rds: SourceRawDataSet ⇒
+      defineRawDataAct ! SourceRawDataSetWithRequester(rds, sender())
+
+
     case rds: RawDataSetRegex ⇒
       defineRawDataAct ! RawDataSetRegexWithRequester(rds, sender())
+
 
     case GetAllTransfDefs ⇒
       ManageTransformCluster.getNextFrontEnd() forward GetAllTransfDefs

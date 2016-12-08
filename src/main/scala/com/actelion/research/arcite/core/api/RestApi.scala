@@ -4,7 +4,6 @@ import java.nio.file.{Path, Paths}
 import java.util.UUID
 
 import akka.actor.{ActorRef, ActorSystem}
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse}
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives._
@@ -86,6 +85,10 @@ trait ArciteServiceApi extends LazyLogging {
   }
 
   def defineRawData(rawData: RawDataSet) = {
+    arciteService.ask(rawData).mapTo[RawDataSetResponse]
+  }
+
+  def defineRawDataFromSource(rawData: SourceRawDataSet) = {
     arciteService.ask(rawData).mapTo[RawDataSetResponse]
   }
 
@@ -454,6 +457,21 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           entity(as[RawDataSet]) {
             drd ⇒
               val saved: Future[RawDataSetResponse] = defineRawData(drd)
+              onSuccess(saved) {
+                case RawDataSetAdded ⇒ complete(OK -> SuccessMessage("raw data added. "))
+                case RawDataSetFailed(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
+              }
+          }
+        }
+      }
+    } ~
+      path("from_source") {
+      pathEnd {
+        post {
+          logger.debug(s"adding raw data (files from mounted source)...")
+          entity(as[SourceRawDataSet]) {
+            drd ⇒
+              val saved: Future[RawDataSetResponse] = defineRawDataFromSource(drd)
               onSuccess(saved) {
                 case RawDataSetAdded ⇒ complete(OK -> SuccessMessage("raw data added. "))
                 case RawDataSetFailed(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))

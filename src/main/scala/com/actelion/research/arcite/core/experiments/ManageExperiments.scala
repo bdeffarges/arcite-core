@@ -12,11 +12,11 @@ import com.actelion.research.arcite.core.api.ArciteService._
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging._
 import com.actelion.research.arcite.core.eventinfo.{EventInfoLogging, ExpLog, LogCategory, LogType}
 import com.actelion.research.arcite.core.experiments.LocalExperiments.{LoadExperiment, SaveExperimentFailed, SaveExperimentSuccessful}
-import com.actelion.research.arcite.core.experiments.ManageExperimentActors.StartExperimentsServiceActors
+import com.actelion.research.arcite.core.experiments.ExperimentActorsManager.StartExperimentsServiceActors
 import com.actelion.research.arcite.core.fileservice.FileServiceActor
 import com.actelion.research.arcite.core.fileservice.FileServiceActor.{getClass => _, _}
 import com.actelion.research.arcite.core.rawdata.DefineRawData
-import com.actelion.research.arcite.core.rawdata.DefineRawData.{GetExperimentForRawDataSet, RawDataSetFailed, RawDataSetWithRequesterAndExperiment}
+import com.actelion.research.arcite.core.rawdata.DefineRawData._
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperimentsWithRequester, IndexExperiment, RemoveFromIndex, SearchForXResultsWithRequester}
 import com.actelion.research.arcite.core.transforms.TransformCompletionFeedback
@@ -236,7 +236,14 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
 
 
     case GetExperiment(digest) ⇒
-      self forward GetExperimentWithRequester(digest, sender())
+      val exp = experiments.get(digest)
+      if (exp.isDefined) {
+        val ex = LocalExperiments.loadExperiment(ExperimentFolderVisitor(exp.get).experimentFilePath)
+        if (ex.isDefined) sender() ! ExperimentFound(ex.get)
+        else sender() ! NoExperimentFound
+      } else {
+        sender() ! NoExperimentFound
+      }
 
 
     case rdsw: GetExperimentForRawDataSet ⇒
@@ -466,9 +473,10 @@ object ManageExperiments {
   case class AllExperimentLogsPath(paths: Set[Path])
 
   case class MakeImmutable(experiment: String)
+
 }
 
-class ManageExperimentActors extends Actor with ActorLogging {
+class ExperimentActorsManager extends Actor with ActorLogging {
 
   import scala.concurrent.duration._
 
@@ -482,9 +490,9 @@ class ManageExperimentActors extends Actor with ActorLogging {
 
     case StartExperimentsServiceActors ⇒
       val eventInfoLoggingAct = context.actorOf(Props(classOf[EventInfoLogging]), "event_logging_info")
+      val fileServiceAct = context.actorOf(FileServiceActor.props(), "file_service")
       val manExpActor = context.actorOf(Props(classOf[ManageExperiments], eventInfoLoggingAct), "experiments_manager")
       val defineRawDataAct = context.actorOf(Props(classOf[DefineRawData], manExpActor), "define_raw_data")
-      val fileServiceAct = context.actorOf(FileServiceActor.props(), "file_service")
 
       log.info(s"event info log: [$eventInfoLoggingAct]")
       log.info(s"exp manager actor: [$manExpActor]")
@@ -503,12 +511,12 @@ class ManageExperimentActors extends Actor with ActorLogging {
 
 }
 
-object ManageExperimentActors {
+object ExperimentActorsManager {
   private val config = ConfigFactory.load()
 
   val actSystem = ActorSystem("experiments-actor-system", config.getConfig("experiments-manager"))
 
-  val topActor = actSystem.actorOf(Props(classOf[ManageExperimentActors]), "exp_actors_manager")
+  val topActor = actSystem.actorOf(Props(classOf[ExperimentActorsManager]), "exp_actors_manager")
 
   case object StartExperimentsServiceActors
 

@@ -7,7 +7,7 @@ import com.actelion.research.arcite.core.experiments.ExpState.ExpState
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.experiments._
 import com.actelion.research.arcite.core.fileservice.FileServiceActor.{FolderFilesInformation, SourceFoldersAsString}
-import com.actelion.research.arcite.core.rawdata.DefineRawData.{RawDataSet, RawDataSetRegex}
+import com.actelion.research.arcite.core.rawdata.DefineRawData.{RawDataSet, RawDataSetRegex, SourceRawDataSet, SourceRawDataSetWithRegex}
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments}
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, ManyTransfDefs, OneTransfDef}
@@ -210,6 +210,24 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
       TransformSourceFromObject(DefaultExperiment.defaultExperiment)
     }
   }
+
+
+  implicit object SourceRawDataSetJsonFormat extends RootJsonFormat[SourceRawDataSet] {
+
+    override def write(obj: SourceRawDataSet): JsValue = {
+      JsObject(
+        "" -> JsString(obj.experiment),
+        "" -> JsString(obj.source),
+        "" -> JsString(obj.regex),
+        "" ->
+      )
+    }
+
+    override def read(json: JsValue): SourceRawDataSet = {
+
+    }
+  }
+
 
   implicit val rdsJson = jsonFormat3(RawDataSet)
   implicit val rdsrJson = jsonFormat5(RawDataSetRegex)

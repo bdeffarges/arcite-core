@@ -4,12 +4,11 @@ import java.io.File
 import java.nio.file.{FileSystemException, Path, Paths}
 
 import akka.actor.SupervisorStrategy.{Escalate, Restart}
-import akka.actor.{Actor, ActorRef, OneForOneStrategy, PoisonPill, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, OneForOneStrategy, PoisonPill, Props}
 import akka.event.Logging
 
 import scala.collection.mutable
 import scala.util.matching.Regex
-
 import scala.concurrent.duration._
 
 /**
@@ -26,18 +25,17 @@ import scala.concurrent.duration._
   * own raw data folder.
   *
   */
-class TransferSelectedRawData(caller: ActorRef, targetRawFolder: String) extends Actor {
-  val log = Logging(context.system, this)
+class TransferSelectedRawData(caller: ActorRef, targetRawFolder: String) extends Actor with ActorLogging {
 
   import TransferSelectedRawData._
   import TransferSelectedRawFile._
 
-  var counter = 0 //todo right?? depends who owns the actor...
+  var counter = 0
 
   override val supervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
-      case _: FileSystemException     ⇒  Restart
-      case _: Exception               ⇒  Escalate
+      case _: FileSystemException ⇒ Restart
+      case _: Exception ⇒ Escalate
     }
 
   override def receive: Receive = {
@@ -46,6 +44,7 @@ class TransferSelectedRawData(caller: ActorRef, targetRawFolder: String) extends
       counter = files.size
       files.keys.map(f ⇒ (f, context.actorOf(Props[TransferSelectedRawFile])))
         .foreach(x ⇒ x._2 ! TransferFile(x._1, files(x._1)))
+
 
     case TransferFolder(folder, regex, subfolder) ⇒
 
@@ -66,18 +65,41 @@ class TransferSelectedRawData(caller: ActorRef, targetRawFolder: String) extends
 
       buildFileMap(folder, "")
 
-//      log.debug(s"fileMap: \n $fileMap")
+      //      log.debug(s"fileMap: \n $fileMap")
 
       self ! TransferFiles(fileMap.toMap)
+
 
     case TransferFilesToFolder(files, target) ⇒
       files.map(f ⇒
         (f._1, Paths.get(target, f._2).toString, context.actorOf(Props[TransferSelectedRawFile])))
         .foreach(x ⇒ x._3 ! TransferFile(x._1.getAbsolutePath, x._2))
 
-    case FileTransferred ⇒ //todo and?
+
+    case FileTransferred ⇒
+      counter -= 1
+      if (counter == 0) caller ! FileTransferredSuccessfully
 
 
+    case TransferFilesFromSourceToFolder(source, files, regex) ⇒
+      var fileMap = Map[String, String]()
+
+      def buildFileMap(file: String, folderPrefix: String): Unit = {
+        val f = (source resolve file).toFile
+        if (f.isFile && regex.findFirstIn(f.getName).isDefined) {
+          fileMap += ((f.toString, s"$targetRawFolder$folderPrefix${File.separator}$file"))
+        } else if (f.isDirectory) {
+          f.listFiles.foreach(f ⇒ buildFileMap(f.getName, s"$folderPrefix${File.separator}${f.getParentFile.getName}"))
+        }
+      }
+
+      files.foreach(f ⇒ buildFileMap(f, ""))
+
+      self ! TransferFiles(fileMap)
+
+
+    case _: Any ⇒
+      log.error("did not know what to do with recieved message...")
   }
 }
 
@@ -89,6 +111,11 @@ object TransferSelectedRawData {
 
   case class TransferFilesToFolder(files: Map[File, String], target: String)
 
+  case class TransferFilesFromSourceToFolder(source: Path, files: List[String], regex: Regex)
+
+  case object FileTransferredSuccessfully
+
+  case class FileTransferredFailed(error: String)
 }
 
 
@@ -120,7 +147,7 @@ class TransferSelectedRawFile extends Actor {
 
 object TransferSelectedRawFile {
 
-  case class TransferFile(source: String, target: String) // todo file type instead of string
+  case class TransferFile(source: String, target: String)
 
   case object FileTransferred
 

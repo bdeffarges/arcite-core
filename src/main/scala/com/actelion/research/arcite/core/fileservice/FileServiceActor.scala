@@ -8,7 +8,7 @@ import com.actelion.research.arcite.core
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor}
 import com.actelion.research.arcite.core.fileservice.FileServiceActor.SourceInformation
 import com.actelion.research.arcite.core.utils.{FileInformation, FileInformationWithSubFolder, FileVisitor}
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.ConfigFactory
 
 /**
   * arcite-core
@@ -49,9 +49,11 @@ class FileServiceActor(mounts: Option[Map[String, SourceInformation]]) extends A
     case sInfo: SourceInformation ⇒
       sourceFolders += ((sInfo.name, sInfo))
 
+
     case GetSourceFolders ⇒
       sender() ! SourceFoldersAsString(
         sourceFolders.values.map(si ⇒ (si.name, s"${si.description} (${si.path.toString})")).toMap)
+
 
     case GetFiles(rootFileLoc, subFolder) ⇒
       rootFileLoc match {
@@ -87,6 +89,7 @@ class FileServiceActor(mounts: Option[Map[String, SourceInformation]]) extends A
         }
       }
 
+
     case GetAllFilesWithRequester(fromExp, requester) ⇒
 
       val ev = ExperimentFolderVisitor(fromExp.fromExp.experiment)
@@ -101,10 +104,16 @@ class FileServiceActor(mounts: Option[Map[String, SourceInformation]]) extends A
       requester ! FolderFilesInformation(result)
 
 
+    case GetSourceFolder(source) ⇒
+      val s = sourceFolders.get(source)
+      if (s.isDefined) sender() ! s.get else sender() ! NothingFound
+
+
     case msg: Any ⇒
       log.error("Cannot process message. ")
   }
 }
+
 
 object FileServiceActor {
   private val config = ConfigFactory.load
@@ -118,9 +127,6 @@ object FileServiceActor {
           new File(v.getString("path")).toPath))).toMap)
     } else None
   }
-
-//  val ess = l.map(v ⇒ SourceInformation(v.getString("name"), v.getString("description"),
-//    new File(v.getString("path")).toPath))
 
   def props(): Props = Props(classOf[FileServiceActor], mounts)
 
@@ -142,9 +148,13 @@ object FileServiceActor {
 
   case class SourceFoldersAsString(sourceFolders: Map[String, String])
 
+  case class GetSourceFolder(name: String)
+
   case class SourceInformation(name: String, description: String, path: Path) {
     override def toString: String = s"$name, $description (${path.toString})"
   }
+
+  case object NothingFound
 
   case class GetFiles(rootLocation: RootFileLocations, subFolder: List[String] = List())
 

@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.{HttpEntity, HttpRequest, HttpResponse, StatusCo
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.InfoLogs
 import com.actelion.research.arcite.core.experiments.ManageExperiments.ManyTransforms
+import com.actelion.research.arcite.core.fileservice.FileServiceActor.SourceFoldersAsString
 import com.actelion.research.arcite.core.transforms.TransformCompletionFeedback
 
 import scala.concurrent.Future
@@ -76,6 +77,28 @@ class GetInfoTests extends ApiTests {
         .parseJson.convertTo[Set[TransformCompletionFeedback]]
 
       assert(transformInfos.size > 1)
+    }
+  }
+
+  "get data sources " should " return the different data sources (mounted drives)..." in {
+
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(HttpRequest(uri = "/data_sources")).via(connectionFlow).runWith(Sink.head)
+
+    import spray.json._
+
+    responseFuture.map { r ⇒
+      assert(r.status == StatusCodes.OK)
+
+      val dataSources = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+        .parseJson.convertTo[SourceFoldersAsString]
+
+      assert(dataSources.sourceFolders.size > 1)
     }
   }
 }
