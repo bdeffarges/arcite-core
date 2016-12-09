@@ -110,9 +110,11 @@ object ArciteService {
   case class MoveRawFile(experiment: String, filePath: String) extends MoveUploadedFile
 
 
-  case class GetRawFiles(experiment: String)
+  case class InfoAboutRawFiles(experiment: String)
 
-  case class GetMetaFiles(experiment: String)
+  case class InfoAboutMetaFiles(experiment: String)
+
+  case class InfoAboutAllFiles(experiment: String)
 
 }
 
@@ -188,12 +190,16 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
       expManager forward fileUp
 
 
-    case gmf: GetMetaFiles ⇒
-      expManager forward gmf
+    case iamf: InfoAboutMetaFiles ⇒
+      expManager forward iamf
 
 
-    case grf: GetRawFiles ⇒
-      expManager forward grf
+    case iarf: InfoAboutRawFiles ⇒
+      expManager forward iarf
+
+
+    case iaaf: InfoAboutAllFiles ⇒
+      expManager forward iaaf
 
 
     case rds: RawDataSet ⇒

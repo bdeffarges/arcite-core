@@ -1,7 +1,7 @@
 package com.actelion.research.arcite
 
 import java.io.File
-import java.nio.file.Paths
+import java.nio.file.{Path, Paths}
 
 import com.actelion.research.arcite.core.utils.{FileInformationWithSubFolder, FileVisitor}
 import com.typesafe.config.ConfigFactory
@@ -103,6 +103,10 @@ package object core {
     }
   }
 
+
+  def getFilesInformation(subFolder: Path): Set[FileInformationWithSubFolder] = {
+    getFilesInformation(subFolder.toFile)
+  }
 
   def getFilesInformation(subFolder: File): Set[FileInformationWithSubFolder] = {
 

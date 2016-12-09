@@ -6,7 +6,7 @@ import com.actelion.research.arcite.core.eventinfo.{ExpLog, LogCategory, LogType
 import com.actelion.research.arcite.core.experiments.ExpState.ExpState
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.experiments._
-import com.actelion.research.arcite.core.fileservice.FileServiceActor.{FolderFilesInformation, SourceFoldersAsString}
+import com.actelion.research.arcite.core.fileservice.FileServiceActor.{AllFilesInformation, FolderFilesInformation, SourceFoldersAsString}
 import com.actelion.research.arcite.core.rawdata.DefineRawData.{RawDataSet, RawDataSetRegex, SourceRawDataSet}
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments}
 import com.actelion.research.arcite.core.transforms.RunTransform._
@@ -281,6 +281,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
 
   implicit val fileInfoJsonFormat = jsonFormat2(FileInformation)
   implicit val fileInfoWithSubFolderJsonFormat = jsonFormat2(FileInformationWithSubFolder)
+  implicit val allFilesInfoJsonFormat = jsonFormat3(AllFilesInformation)
   implicit val folderFileJsonFormat = jsonFormat1(FolderFilesInformation)
 
   implicit val expCreatedJson = jsonFormat2(ExperimentCreated)

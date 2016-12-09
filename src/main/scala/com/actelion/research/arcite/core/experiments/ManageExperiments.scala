@@ -303,7 +303,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
     case addProps: AddExpPropertiesWithRequester ⇒ //todo implement
 
 
-    case grf: GetRawFiles ⇒
+    case grf: InfoAboutRawFiles ⇒
       logger.info("looking for raw data files list")
       val actRef = sender()
       val exp = experiments.get(grf.experiment)
@@ -314,12 +314,23 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       }
 
 
-    case gmf: GetMetaFiles ⇒
+    case gmf: InfoAboutMetaFiles ⇒
       logger.info("looking for meta data files list")
       val exp = experiments.get(gmf.experiment)
       val actRef = sender()
       if (exp.isDefined) {
         fileServiceAct ! GetAllFilesWithRequester(GetAllFiles(FromMetaFolder(exp.get)), actRef)
+      } else {
+        sender() ! FolderFilesInformation(Set())
+      }
+
+
+      case gmf: InfoAboutAllFiles ⇒
+      logger.info("looking for all files list")
+      val exp = experiments.get(gmf.experiment)
+      val actRef = sender()
+      if (exp.isDefined) {
+        fileServiceAct ! GetAllFilesWithRequester(GetAllFiles(FromAllFolders(exp.get)), actRef)
       } else {
         sender() ! FolderFilesInformation(Set())
       }

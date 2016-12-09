@@ -14,7 +14,7 @@ import akka.util.Timeout
 import com.actelion.research.arcite.core.api.ArciteService._
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{InfoLogs, MostRecentLogs, ReadLogs, RecentAllLastUpdates}
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
-import com.actelion.research.arcite.core.fileservice.FileServiceActor.{FolderFilesInformation, GetSourceFolders, SourceFoldersAsString}
+import com.actelion.research.arcite.core.fileservice.FileServiceActor.{AllFilesInformation, FolderFilesInformation, GetSourceFolders, SourceFoldersAsString}
 import com.actelion.research.arcite.core.rawdata.DefineRawData._
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
@@ -109,11 +109,15 @@ trait ArciteServiceApi extends LazyLogging {
   }
 
   def getAllRawFiles(digest: String) = {
-    arciteService.ask(GetRawFiles(digest)).mapTo[FolderFilesInformation]
+    arciteService.ask(InfoAboutRawFiles(digest)).mapTo[FolderFilesInformation]
+  }
+
+  def getAllFiles(digest: String) = {
+    arciteService.ask(InfoAboutAllFiles(digest)).mapTo[AllFilesInformation]
   }
 
   def getAllMetaFiles(digest: String) = {
-    arciteService.ask(GetMetaFiles(digest)).mapTo[FolderFilesInformation]
+    arciteService.ask(InfoAboutMetaFiles(digest)).mapTo[FolderFilesInformation]
   }
 
   def runTransformFromRaw(runTransform: RunTransformOnRawData) = {
@@ -325,13 +329,22 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           } ~
             path("raw") {
               get {
-                logger.info(s"returning all RAW files for experiment: $experiment")
+                logger.info(s"returning all user uploaded RAW files for experiment: $experiment")
                 onSuccess(getAllRawFiles(experiment)) {
                   case FolderFilesInformation(ffi) ⇒ complete(OK -> ffi)
                   case a: Any ⇒ complete(BadRequest -> ErrorMessage(s"could not find files ${a.toString}"))
                 }
               }
+            } ~
+          pathEnd {
+            get {
+              logger.info(s"returning all files for experiment: $experiment")
+              onSuccess(getAllFiles(experiment)) {
+                case afi : AllFilesInformation ⇒ complete(OK -> afi)
+                case a: Any ⇒ complete(BadRequest -> ErrorMessage(s"could not find files ${a.toString}"))
+              }
             }
+          }
         } ~
         pathPrefix("design") {
           pathEnd {

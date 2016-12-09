@@ -94,14 +94,16 @@ class FileServiceActor(mounts: Option[Map[String, SourceInformation]]) extends A
 
       val ev = ExperimentFolderVisitor(fromExp.fromExp.experiment)
 
-      val path = fromExp.fromExp match {
-        case r: FromRawFolder ⇒
-          ev.userRawFolderPath
-        case r: FromMetaFolder ⇒
-          ev.userMetaFolderPath
+      fromExp.fromExp match {
+        case FromRawFolder(_) ⇒
+          requester ! FolderFilesInformation(core.getFilesInformation(ev.userRawFolderPath))
+        case FromMetaFolder(_) ⇒
+          requester ! FolderFilesInformation(core.getFilesInformation(ev.userMetaFolderPath))
+        case FromAllFolders(_) ⇒
+          requester ! AllFilesInformation(rawFiles = core.getFilesInformation(ev.rawFolderPath),
+            userRawFiles = core.getFilesInformation(ev.userRawFolderPath),
+            metaFiles = core.getFilesInformation(ev.userMetaFolderPath))
       }
-      val result = core.getFilesInformation(path.toFile)
-      requester ! FolderFilesInformation(result)
 
 
     case GetSourceFolder(source) ⇒
@@ -123,7 +125,7 @@ object FileServiceActor {
   lazy val mounts: Option[Map[String, SourceInformation]] = {
     if (config.hasPath("arcite.mounts")) {
       Some(config.getConfigList("arcite.mounts").asScala
-          .map(v ⇒ (v.getString("name"), SourceInformation(v.getString("name"), v.getString("description"),
+        .map(v ⇒ (v.getString("name"), SourceInformation(v.getString("name"), v.getString("description"),
           new File(v.getString("path")).toPath))).toMap)
     } else None
   }
@@ -140,11 +142,15 @@ object FileServiceActor {
 
   case class FromMetaFolder(experiment: Experiment) extends FromExperiment
 
+  case class FromAllFolders(experiment: Experiment) extends FromExperiment
+
   case class FromSourceFolder(name: String) extends RootFileLocations
 
   case class SetSourceFolder(sourceInformation: SourceInformation)
 
-  case object GetSourceFolders //todo maybe should only return those for which the mount is active and working
+  case object GetSourceFolders
+
+  //todo maybe should only return those for which the mount is active and working
 
   case class SourceFoldersAsString(sourceFolders: Map[String, String])
 
@@ -165,5 +171,9 @@ object FileServiceActor {
   case class GetAllFilesWithRequester(getAllFiles: GetAllFiles, requester: ActorRef)
 
   case class FolderFilesInformation(files: Set[FileInformationWithSubFolder])
+
+  case class AllFilesInformation(rawFiles: Set[FileInformationWithSubFolder],
+                                 userRawFiles: Set[FileInformationWithSubFolder],
+                                 metaFiles: Set[FileInformationWithSubFolder])
 
 }
