@@ -6,13 +6,12 @@ import java.nio.file._
 
 import akka.actor.SupervisorStrategy.Restart
 import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSystem, OneForOneStrategy, Props}
-import com.actelion.research.arcite.core
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.api.ArciteService._
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging._
 import com.actelion.research.arcite.core.eventinfo.{EventInfoLogging, ExpLog, LogCategory, LogType}
-import com.actelion.research.arcite.core.experiments.LocalExperiments.{LoadExperiment, SaveExperimentFailed, SaveExperimentSuccessful}
 import com.actelion.research.arcite.core.experiments.ExperimentActorsManager.StartExperimentsServiceActors
+import com.actelion.research.arcite.core.experiments.LocalExperiments.{LoadExperiment, SaveExperimentFailed, SaveExperimentSuccessful}
 import com.actelion.research.arcite.core.fileservice.FileServiceActor
 import com.actelion.research.arcite.core.fileservice.FileServiceActor.{getClass => _, _}
 import com.actelion.research.arcite.core.rawdata.DefineRawData
@@ -265,6 +264,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       val logs = experiments.values
         .flatMap(ExperimentFolderVisitor(_).logsFolderPath.toFile.listFiles()
           .filter(_.getName.startsWith("log_"))).map(_.toPath)
+
       sender() ! AllExperimentLogsPath(logs.toSet)
 
 

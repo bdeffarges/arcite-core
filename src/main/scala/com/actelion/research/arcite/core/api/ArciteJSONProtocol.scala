@@ -234,7 +234,9 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
         case Seq(JsString(experiment), JsString(source), filesAndFolders) ⇒
           SourceRawDataSet(experiment, source, filesAndFolders.convertTo[List[String]])
 
-        case _ => throw DeserializationException("could not deserialize.")
+        case _ => throw DeserializationException(
+          """could not deserialize, expected {experiment : String,
+            | source : String, filesAndFolders : String, (optional) regex : String""".stripMargin)
       }
     }
   }

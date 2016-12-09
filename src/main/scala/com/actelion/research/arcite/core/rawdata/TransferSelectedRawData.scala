@@ -8,10 +8,9 @@ import akka.actor.{Actor, ActorLogging, ActorRef, OneForOneStrategy, PoisonPill,
 import akka.event.Logging
 import com.typesafe.scalalogging.LazyLogging
 
-import scala.collection.immutable.TreeMap
 import scala.collection.mutable
-import scala.util.matching.Regex
 import scala.concurrent.duration._
+import scala.util.matching.Regex
 
 /**
   * Created by deffabe1 on 3/4/16.
@@ -90,7 +89,6 @@ class TransferSelectedRawData(caller: ActorRef, targetRawFolder: Path) extends A
 
       def buildFileMap(file: Path, folderPrefix: Path): Unit = {
 
-
         val f = source resolve folderPrefix resolve file
         val fi = f.toFile
         log.debug(s"folderPrefix=[$folderPrefix] fileFolder=[$file] full path=[$f]")
@@ -109,7 +107,7 @@ class TransferSelectedRawData(caller: ActorRef, targetRawFolder: Path) extends A
 
 
     case _: Any ⇒
-      log.error("did not know what to do with recieved message...")
+      log.error("#&w I don't know what to do with received message...")
   }
 }
 
@@ -131,43 +129,16 @@ object TransferSelectedRawData extends LazyLogging {
 
   case class FileTransferredFailed(error: String) extends FileTransferFeedback
 
-
-  def buildFileTransferMap(source: Path, files: List[Path], target: Path, regex: Regex) = {
-//
-//    var fileMap = Map[Path, Path]()
-//
-//    def buildFileMap(file: Path, folderPrefix: List[String]): Map[Path, List[String]] = {
-//
-//      val f = source resolve folderPrefix.mkString(File.separator) resolve file
-//      val fi = f.toFile
-//      logger.debug(s"folderPrefix=[$folderPrefix] fileFolder=[$file] full path=[$f]")
-//
-//      if (fi.isFile && regex.findFirstIn(fi.getName).isDefined) {
-//        (f -> folderPrefix)
-//      } else if (fi.isDirectory) {
-//        fi.listFiles.foreach(ff ⇒ buildFileMap(ff.toPath.getFileName, folderPrefix resolve file))
-//      }
-//    }
-//
-//    files.foreach(f ⇒ buildFileMap(Paths.get(f), Paths.get("")))
-//
-//    logger.debug(s"${fileMap.size} files will be transferred. ")
-  }
-
-  def getCommonPath(files: List[Path]): Path = {
-    var tree = HashTree[String]()
-    files.map(p ⇒ p.)
-  }
 }
 
 
 class TransferSelectedRawFile extends Actor {
   val logger = Logging(context.system, this)
 
-  import TransferSelectedRawFile._
-  import java.nio.file.StandardCopyOption.REPLACE_EXISTING
   import java.nio.file.Files.copy
-  import java.nio.file.Paths.get
+  import java.nio.file.StandardCopyOption.REPLACE_EXISTING
+
+  import TransferSelectedRawFile._
 
   override def receive = {
     case TransferFile(source, target) ⇒

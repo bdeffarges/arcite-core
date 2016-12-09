@@ -4,23 +4,20 @@ import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths, StandardOpenOption}
 
-import akka.actor.Actor.Receive
 import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, PoisonPill, Props}
 import akka.event.Logging
 import com.actelion.research.arcite.core
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.api.ArciteService.{ExperimentFound, ExperimentFoundFeedback, GetExperiment}
-import com.actelion.research.arcite.core.experiments.ManageExperiments.FoundTransfDefFullName
-import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor, ManageExperiments}
+import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.AddLog
+import com.actelion.research.arcite.core.eventinfo.{ExpLog, LogCategory, LogType}
+import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor}
 import com.actelion.research.arcite.core.fileservice.FileServiceActor.{GetSourceFolder, NothingFound, SourceInformation}
 import com.actelion.research.arcite.core.rawdata.DefineRawData.{RawDataSetFailed, RawDataSetInProgress, SourceRawDataSet}
 import com.actelion.research.arcite.core.rawdata.SourceRawDataSetActor.{StartDataTransfer, TransferSourceData}
 import com.actelion.research.arcite.core.rawdata.TransferSelectedRawData._
-import com.actelion.research.arcite.core.transforms.TransformCompletionFeedback
-import com.actelion.research.arcite.core.utils.WriteFeedbackActor
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
-import spray.json.DefaultJsonProtocol
 
 /**
   * Created by deffabe1 on 5/12/16.
@@ -52,10 +49,13 @@ class DefineRawData(expActor: ActorRef) extends Actor with ActorLogging {
       // transfer file if required
       if (rdse.rdsr.rds.transferFiles) {
         val target = ExperimentFolderVisitor(exp).rawFolderPath
-        val transferActor = context.actorOf(Props(new TransferSelectedRawData(self, target)))
+        val transferActor = context.actorOf(Props(classOf[TransferSelectedRawData],self, target))
         val filesMap = rdse.rdsr.rds.filesAndTarget.map(f ⇒ (new File(f._1), f._2))
+
         transferActor ! TransferFilesToFolder(filesMap, target)
+
         rdse.rdsr.requester ! RawDataSetAdded //todo hopefully it works, nor exception nor error nor counter yet !!
+
       } else {
         rdse.rdsr.requester ! response
       }
@@ -173,8 +173,10 @@ object DefineRawData extends ArciteJSONProtocol with LazyLogging {
 class SourceRawDataSetActor(actSys: String, requester: ActorRef) extends Actor with ActorLogging {
   private val fileServiceActPath = s"${actSys}/user/exp_actors_manager/file_service"
   private val expManSelect = s"${actSys}/user/exp_actors_manager/experiments_manager"
+  private val eventInfoSelect = s"${actSys}/user/exp_actors_manager/event_logging_info"
   private val fileServiceAct = context.actorSelection(ActorPath.fromString(fileServiceActPath))
   private val expManager = context.actorSelection(ActorPath.fromString(expManSelect))
+  private val eventInfoAct = context.actorSelection(ActorPath.fromString(eventInfoSelect))
 
   private var experiment: Option[Experiment] = None
   private var source: Option[SourceInformation] = None
@@ -221,8 +223,9 @@ class SourceRawDataSetActor(actSys: String, requester: ActorRef) extends Actor w
 
 
     case FileTransferredSuccessfully ⇒
-      requester ! FileTransferredSuccessfully
-      log.debug("transfer completed successfully. ")
+      requester ! FileTransferredSuccessfully //todo most likely won't be able to reach it
+      log.debug("@#1 transfer completed successfully. ")
+      eventInfoAct ! AddLog(experiment.get, ExpLog(LogType.UPDATED, LogCategory.SUCCESS, s"Raw data copied. [${rawDataSet}]"))
       self ! PoisonPill
 
 

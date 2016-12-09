@@ -144,7 +144,7 @@ object FileServiceActor {
 
   case class SetSourceFolder(sourceInformation: SourceInformation)
 
-  case object GetSourceFolders
+  case object GetSourceFolders //todo maybe should only return those for which the mount is active and working
 
   case class SourceFoldersAsString(sourceFolders: Map[String, String])
 
