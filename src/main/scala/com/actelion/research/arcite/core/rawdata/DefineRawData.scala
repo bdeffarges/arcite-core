@@ -2,7 +2,7 @@ package com.actelion.research.arcite.core.rawdata
 
 import java.io.File
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Path, Paths, StandardOpenOption}
+import java.nio.file.{Files, Path, StandardOpenOption}
 
 import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, PoisonPill, Props}
 import akka.event.Logging
@@ -135,19 +135,11 @@ object DefineRawData extends ArciteJSONProtocol with LazyLogging {
     Files.write(path, strg.getBytes(StandardCharsets.UTF_8), CREATE)
   }
 
-  def getMetaRawPath(exp: Experiment): Path = {
-    val visit = ExperimentFolderVisitor(exp)
-
-    Paths.get(visit.rawFolderPath.toString, visit.defaultMetaFileName)
-  }
-
+  //todo really needed ?
   def defineRawData(exp: Experiment, rds: RawDataSet): RawDataSetResponse = {
     logger.debug(s"new raw data files : $rds")
 
-    val visit = ExperimentFolderVisitor(exp)
-    if (!visit.rawFolderPath.toFile.exists()) visit.rawFolderPath.toFile.mkdirs()
-
-    val targetFile = getMetaRawPath(exp)
+    val targetFile = ExperimentFolderVisitor(exp).rawFolderPath resolve ExperimentFolderVisitor.metaFileInPublicFolder
 
     import spray.json._
 
@@ -228,13 +220,10 @@ class SourceRawDataSetActor(actSys: String, requester: ActorRef) extends Actor w
       eventInfoAct ! AddLog(experiment.get, ExpLog(LogType.UPDATED, LogCategory.SUCCESS, s"Raw data copied. [${rawDataSet}]"))
       self ! PoisonPill
 
-
     case f: FileTransferredFailed ⇒
       requester ! RawDataSetFailed(s"file transfer failed ${f.error}")
 
   }
-
-
 }
 
 object SourceRawDataSetActor {

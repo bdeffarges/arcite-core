@@ -106,7 +106,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
     }
   }
 
-  implicit val logInfoJson = jsonFormat1(InfoLogs)
+  implicit val logInfoJson: RootJsonFormat[InfoLogs] = jsonFormat1(InfoLogs)
 
   implicit object ExpStateJsonFormat extends RootJsonFormat[ExpState] {
     def write(c: ExpState) = JsString(c.toString)
@@ -135,11 +135,33 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   }
 
 
-  implicit val generalFailureJson = jsonFormat1(GeneralFailure)
-  implicit val ownerJson = jsonFormat2(Owner)
-  implicit val conditionJson = jsonFormat3(Condition)
-  implicit val conditionForSampleJson = jsonFormat1(ConditionsForSample)
-  implicit val experimentalDesignJson = jsonFormat2(ExperimentalDesign)
+  implicit val generalFailureJson: RootJsonFormat[GeneralFailure] = jsonFormat1(GeneralFailure)
+
+  implicit object OwnerJsonFormat extends RootJsonFormat[Owner] {
+
+    override def write(owner: Owner): JsValue = {
+      JsObject(
+        "organization" -> JsString(owner.organization),
+        "person" -> JsString(owner.person)
+      )
+    }
+
+    override def read(json: JsValue): Owner = {
+      json.asJsObject.getFields("organization", "person") match {
+        case Seq(JsString(organization), JsString(person)) ⇒
+          Owner(organization, person)
+
+        case _ => throw DeserializationException(
+          """could not deserialize to Owner, expected {organization : String,
+            | person : String""".stripMargin)
+      }
+    }
+  }
+
+
+  implicit val conditionJson: RootJsonFormat[Condition] = jsonFormat3(Condition)
+  implicit val conditionForSampleJson: RootJsonFormat[ConditionsForSample] = jsonFormat1(ConditionsForSample)
+  implicit val experimentalDesignJson: RootJsonFormat[ExperimentalDesign] = jsonFormat2(ExperimentalDesign)
 
   implicit object ExperimentJSonFormat extends RootJsonFormat[Experiment] {
     override def read(json: JsValue): Experiment = {
@@ -180,9 +202,9 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
     }
   }
 
-  implicit val experimentSummaryJson = jsonFormat5(ExperimentSummary)
+  implicit val experimentSummaryJson: RootJsonFormat[ExperimentSummary] = jsonFormat5(ExperimentSummary)
 
-  implicit val stateJSon = jsonFormat1(State)
+  implicit val stateJSon: RootJsonFormat[State] = jsonFormat1(State)
 
   implicit object TransformSourceJsonFormat extends RootJsonFormat[TransformSource] {
 
@@ -242,56 +264,79 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   }
 
 
-  implicit val rdsJson = jsonFormat3(RawDataSet)
-  implicit val rdsrJson = jsonFormat5(RawDataSetRegex)
+  implicit val rdsJson: RootJsonFormat[RawDataSet] = jsonFormat3(RawDataSet)
+  implicit val rdsrJson: RootJsonFormat[RawDataSetRegex] = jsonFormat5(RawDataSetRegex)
 
-  implicit val manyTransformersJson = jsonFormat1(ManyTransfDefs)
-  implicit val oneTransformersJson = jsonFormat1(OneTransfDef)
+  implicit val manyTransformersJson: RootJsonFormat[ManyTransfDefs] = jsonFormat1(ManyTransfDefs)
+  implicit val oneTransformersJson: RootJsonFormat[OneTransfDef] = jsonFormat1(OneTransfDef)
 
-  implicit val searchExperimentsJson = jsonFormat2(ArciteService.SearchExperiments)
-  implicit val allExperimentsJson = jsonFormat1(ArciteService.AllExperiments)
-  implicit val getExperimentJson = jsonFormat1(ArciteService.GetExperiment)
+  implicit val searchExperimentsJson: RootJsonFormat[ArciteService.SearchExperiments] = jsonFormat2(ArciteService.SearchExperiments)
+  implicit val allExperimentsJson: RootJsonFormat[ArciteService.AllExperiments] = jsonFormat1(ArciteService.AllExperiments)
+  implicit val getExperimentJson: RootJsonFormat[ArciteService.GetExperiment] = jsonFormat1(ArciteService.GetExperiment)
 
-  implicit val foundExperimentJson = jsonFormat3(FoundExperiment)
-  implicit val foundExperimentsJson = jsonFormat1(FoundExperiments)
-  implicit val someExperimentsJson = jsonFormat2(SomeExperiments)
-  implicit val addExperimentResponseJson = jsonFormat1(AddExperiment)
-  implicit val cloneExperimentNewPropsJson = jsonFormat3(CloneExperimentNewProps)
-  implicit val addedExpJson = jsonFormat1(AddedExperiment)
-  implicit val addDesignJson = jsonFormat2(AddDesign)
-  implicit val okJson = jsonFormat1(Ok)
+  implicit val foundExperimentJson: RootJsonFormat[FoundExperiment] = jsonFormat3(FoundExperiment)
+  implicit val foundExperimentsJson: RootJsonFormat[FoundExperiments] = jsonFormat1(FoundExperiments)
+  implicit val someExperimentsJson: RootJsonFormat[SomeExperiments] = jsonFormat2(SomeExperiments)
+  implicit val addExperimentResponseJson: RootJsonFormat[AddExperiment] = jsonFormat1(AddExperiment)
+  implicit val cloneExperimentNewPropsJson: RootJsonFormat[CloneExperimentNewProps] = jsonFormat3(CloneExperimentNewProps)
+  implicit val addedExpJson: RootJsonFormat[AddedExperiment] = jsonFormat1(AddedExperiment)
+  implicit val addDesignJson: RootJsonFormat[AddDesign] = jsonFormat2(AddDesign)
+  implicit val okJson: RootJsonFormat[Ok] = jsonFormat1(Ok)
 
-  implicit val fullNameJson = jsonFormat2(FullName)
+  implicit object FullNameJsonFormat extends RootJsonFormat[FullName] {
 
-  implicit val getTransformerJson = jsonFormat1(GetTransfDef)
+    override def write(fn: FullName): JsValue = {
+      JsObject(
+        "organization" -> JsString(fn.organization),
+        "name" -> JsString(fn.name),
+        "version" -> JsString(fn.version)
+      )
+    }
 
-  implicit val runTransformOnObjectJson = jsonFormat3(RunTransformOnObject)
-  implicit val runTransformOnRawDataJson = jsonFormat3(RunTransformOnRawData)
-  implicit val runTransformOnRawDataWithExclusionsJson = jsonFormat5(RunTransformOnRawDataWithExclusion)
-  implicit val runTransformFromTransformJson = jsonFormat4(RunTransformOnTransform)
-  implicit val runTransformFromTransformWExclusionsJson = jsonFormat6(RunTransformOnTransformWithExclusion)
+    override def read(json: JsValue): FullName = {
+      json.asJsObject.getFields("organization", "name", "version") match {
+        case Seq(JsString(organization), JsString(name), JsString(version)) ⇒
+          FullName(organization, name, version)
 
-  implicit val transformJSon = jsonFormat4(Transform)
-  implicit val getAllJobsFeedbackJson = jsonFormat3(AllJobsFeedback)
+        case Seq(JsString(organization), JsString(name)) ⇒
+          FullName(organization, name)
 
-  implicit val feedbackSourceJsonFormat = jsonFormat5(TransformDoneSource)
-  implicit val transformfeedbackJsonFormat = jsonFormat10(TransformCompletionFeedback)
+        case _ => throw DeserializationException(
+          """could not deserialize to FullName, expected {organization : String,
+            | name : String, (optional, defaults to 1.0.0) version : String""".stripMargin)
+      }
+    }
+  }
 
-  implicit val addPropertiesJSonFormat = jsonFormat1(AddExpProps)
+  implicit val getTransformerJson: RootJsonFormat[GetTransfDef] = jsonFormat1(GetTransfDef)
 
-  implicit val fileInfoJsonFormat = jsonFormat2(FileInformation)
-  implicit val fileInfoWithSubFolderJsonFormat = jsonFormat2(FileInformationWithSubFolder)
-  implicit val allFilesInfoJsonFormat = jsonFormat3(AllFilesInformation)
-  implicit val folderFileJsonFormat = jsonFormat1(FolderFilesInformation)
+  implicit val runTransformOnObjectJson: RootJsonFormat[RunTransformOnObject] = jsonFormat3(RunTransformOnObject)
+  implicit val runTransformOnRawDataJson: RootJsonFormat[RunTransformOnRawData] = jsonFormat3(RunTransformOnRawData)
+  implicit val runTransformOnRawDataWithExclusionsJson: RootJsonFormat[RunTransformOnRawDataWithExclusion] = jsonFormat5(RunTransformOnRawDataWithExclusion)
+  implicit val runTransformFromTransformJson: RootJsonFormat[RunTransformOnTransform] = jsonFormat4(RunTransformOnTransform)
+  implicit val runTransformFromTransformWExclusionsJson: RootJsonFormat[RunTransformOnTransformWithExclusion] = jsonFormat6(RunTransformOnTransformWithExclusion)
 
-  implicit val expCreatedJson = jsonFormat2(ExperimentCreated)
-  implicit val successMessageJson = jsonFormat1(SuccessMessage)
-  implicit val errorMessageJson = jsonFormat1(ErrorMessage)
+  implicit val transformJSon: RootJsonFormat[Transform] = jsonFormat4(Transform)
+  implicit val getAllJobsFeedbackJson: RootJsonFormat[AllJobsFeedback] = jsonFormat3(AllJobsFeedback)
 
-  implicit val expUIDJson = jsonFormat1(ExperimentUID)
+  implicit val feedbackSourceJsonFormat: RootJsonFormat[TransformDoneSource] = jsonFormat5(TransformDoneSource)
+  implicit val transformfeedbackJsonFormat: RootJsonFormat[TransformCompletionFeedback] = jsonFormat10(TransformCompletionFeedback)
 
-  implicit val failedPropsJson = jsonFormat1(FailedAddingProperties)
+  implicit val addPropertiesJSonFormat: RootJsonFormat[AddExpProps] = jsonFormat1(AddExpProps)
 
-  implicit val sourceFolderJson = jsonFormat1(SourceFoldersAsString)
+  implicit val fileInfoJsonFormat: RootJsonFormat[FileInformation] = jsonFormat2(FileInformation)
+  implicit val fileInfoWithSubFolderJsonFormat: RootJsonFormat[FileInformationWithSubFolder] = jsonFormat2(FileInformationWithSubFolder)
+  implicit val allFilesInfoJsonFormat: RootJsonFormat[AllFilesInformation] = jsonFormat3(AllFilesInformation)
+  implicit val folderFileJsonFormat: RootJsonFormat[FolderFilesInformation] = jsonFormat1(FolderFilesInformation)
+
+  implicit val expCreatedJson: RootJsonFormat[ExperimentCreated] = jsonFormat2(ExperimentCreated)
+  implicit val successMessageJson: RootJsonFormat[SuccessMessage] = jsonFormat1(SuccessMessage)
+  implicit val errorMessageJson: RootJsonFormat[ErrorMessage] = jsonFormat1(ErrorMessage)
+
+  implicit val expUIDJson: RootJsonFormat[ExperimentUID] = jsonFormat1(ExperimentUID)
+
+  implicit val failedPropsJson: RootJsonFormat[FailedAddingProperties] = jsonFormat1(FailedAddingProperties)
+
+  implicit val sourceFolderJson: RootJsonFormat[SourceFoldersAsString] = jsonFormat1(SourceFoldersAsString)
 
 }

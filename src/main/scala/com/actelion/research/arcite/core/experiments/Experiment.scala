@@ -1,12 +1,8 @@
 package com.actelion.research.arcite.core.experiments
 
-import java.nio.charset.StandardCharsets
-import java.nio.file.StandardOpenOption._
-import java.nio.file.{Files, Path, Paths}
-import java.util.Date
+import java.nio.file.{Path, Paths}
 
 import com.actelion.research.arcite.core
-import com.actelion.research.arcite.core.eventinfo.{ExpLog, LogType}
 import com.actelion.research.arcite.core.experiments.ExpState.ExpState
 import com.actelion.research.arcite.core.utils
 import com.actelion.research.arcite.core.utils._
@@ -49,8 +45,6 @@ case class ExperimentSummary(name: String, description: String, owner: Owner, ui
 case class ExperimentFolderVisitor(exp: Experiment) {
 
   val config: Config = ConfigFactory.load()
-
-  val defaultMetaFileName = "meta.json" // the default file that describes the content of a folder
 
   val name: String = exp.name
 
@@ -122,6 +116,11 @@ case class ExperimentFolderVisitor(exp: Experiment) {
     val visitor = ExperimentFolderVisitor(otherExp)
 
   }
+}
+
+object ExperimentFolderVisitor {
+  val defaultMetaFileName = "meta.json"
+  val metaFileInPublicFolder = "@rcit8@@_meta.json"
 }
 
 /**
