@@ -1,5 +1,6 @@
 package com.actelion.research.arcite.core.rawdata
 
+import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorSystem, Props}
@@ -30,7 +31,7 @@ class TransferSelectedRawDataTest extends TestKit(ActorSystem("AgilentArraySyste
       val config = ConfigFactory.load()
 
       val folder = s"${config.getString("microarrays")}raw_data/AMS0089"
-      val target = s"${config.getString("arcite.home")}AMS0089/raw_data"
+      val target = Paths.get(s"${config.getString("arcite.home")}AMS0089/raw_data")
       val actorRef = system.actorOf(Props(new TransferSelectedRawData(endProbe.ref, target)))
 
       actorRef ! TransferFolder(folder, """.*_(\d{10,15}+).*_(\d_\d)\.txt""".r, true)

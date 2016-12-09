@@ -7,7 +7,7 @@ import com.actelion.research.arcite.core.experiments.ExpState.ExpState
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.experiments._
 import com.actelion.research.arcite.core.fileservice.FileServiceActor.{FolderFilesInformation, SourceFoldersAsString}
-import com.actelion.research.arcite.core.rawdata.DefineRawData.{RawDataSet, RawDataSetRegex, SourceRawDataSet, SourceRawDataSetWithRegex}
+import com.actelion.research.arcite.core.rawdata.DefineRawData.{RawDataSet, RawDataSetRegex, SourceRawDataSet}
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments}
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, ManyTransfDefs, OneTransfDef}
@@ -163,6 +163,8 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
         case Seq(JsString(name), JsString(description), owner) ⇒
           Experiment(name, description, owner.convertTo[Owner], ExpState.NEW,
             ExperimentalDesign(), Map[String, String]())
+
+        case _ => throw DeserializationException("could not deserialize.")
       }
     }
 
@@ -204,6 +206,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
       //      case tsc: TransformAsSource4Transform ⇒
       //        JsObject("type" -> JsString(tsc.getClass.getSimpleName))
 
+      case _ => throw DeserializationException("could not deserialize.")
     }
 
     def read(value: JsValue) = {
@@ -216,15 +219,23 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
 
     override def write(obj: SourceRawDataSet): JsValue = {
       JsObject(
-        "" -> JsString(obj.experiment),
-        "" -> JsString(obj.source),
-        "" -> JsString(obj.regex),
-        "" ->
+        "experiment" -> JsString(obj.experiment),
+        "source" -> JsString(obj.source),
+        "regex" -> JsString(obj.regex),
+        "filesAndFolders" -> obj.filesAndFolders.toJson
       )
     }
 
     override def read(json: JsValue): SourceRawDataSet = {
+      json.asJsObject.getFields("experiment", "source", "filesAndFolders", "regex") match {
+        case Seq(JsString(experiment), JsString(source), filesAndFolders, JsString(regex)) ⇒
+          SourceRawDataSet(experiment, source, filesAndFolders.convertTo[List[String]], regex)
 
+        case Seq(JsString(experiment), JsString(source), filesAndFolders) ⇒
+          SourceRawDataSet(experiment, source, filesAndFolders.convertTo[List[String]])
+
+        case _ => throw DeserializationException("could not deserialize.")
+      }
     }
   }
 

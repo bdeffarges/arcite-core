@@ -4,20 +4,25 @@
 //import akka.http.javadsl.model.StatusCode
 //import akka.http.scaladsl.marshalling.ToResponseMarshallable
 //import akka.http.scaladsl.server.StandardRoute
-import java.io.File
 
-import com.actelion.research.arcite.core.fileservice.FileServiceActor.SourceInformation
-import com.typesafe.config.ConfigFactory
+".*".r.findFirstIn("hello")
 
-val config = ConfigFactory.parseFile(new File("/home/deffabe1/development/computbio/arc/arcite-core/src/main/resources/ubuntu_desktop.conf"))
-  .getConfig("arcite")
 
-import scala.collection.JavaConverters._
-val l = config.getConfigList("mounts").asScala
-val ess = l.map(v ⇒ SourceInformation(v.getString("name"), v.getString("description"),
-    new File(v.getString("path")).toPath))
 
-ess.foreach(println)
+//import java.io.File
+//
+//import com.actelion.research.arcite.core.fileservice.FileServiceActor.SourceInformation
+//import com.typesafe.config.ConfigFactory
+//
+//val config = ConfigFactory.parseFile(new File("/home/deffabe1/development/computbio/arc/arcite-core/src/main/resources/ubuntu_desktop.conf"))
+//  .getConfig("arcite")
+//
+//import scala.collection.JavaConverters._
+//val l = config.getConfigList("mounts").asScala
+//val ess = l.map(v ⇒ SourceInformation(v.getString("name"), v.getString("description"),
+//    new File(v.getString("path")).toPath))
+//
+//ess.foreach(println)
 
 
 //import akka.http.scaladsl.server.StandardRoute

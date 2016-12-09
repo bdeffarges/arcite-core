@@ -13,9 +13,9 @@ import com.actelion.research.arcite.core.api.ArciteService.{ExperimentFound, Exp
 import com.actelion.research.arcite.core.experiments.ManageExperiments.FoundTransfDefFullName
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor, ManageExperiments}
 import com.actelion.research.arcite.core.fileservice.FileServiceActor.{GetSourceFolder, NothingFound, SourceInformation}
-import com.actelion.research.arcite.core.rawdata.DefineRawData.{RawDataSetFailed, SourceRawDataSet}
+import com.actelion.research.arcite.core.rawdata.DefineRawData.{RawDataSetFailed, RawDataSetInProgress, SourceRawDataSet}
 import com.actelion.research.arcite.core.rawdata.SourceRawDataSetActor.{StartDataTransfer, TransferSourceData}
-import com.actelion.research.arcite.core.rawdata.TransferSelectedRawData.{FileTransferredFailed, FileTransferredSuccessfully, TransferFilesFromSourceToFolder, TransferFilesToFolder}
+import com.actelion.research.arcite.core.rawdata.TransferSelectedRawData._
 import com.actelion.research.arcite.core.transforms.TransformCompletionFeedback
 import com.actelion.research.arcite.core.utils.WriteFeedbackActor
 import com.typesafe.config.ConfigFactory
@@ -51,7 +51,7 @@ class DefineRawData(expActor: ActorRef) extends Actor with ActorLogging {
 
       // transfer file if required
       if (rdse.rdsr.rds.transferFiles) {
-        val target = ExperimentFolderVisitor(exp).rawFolderPath.toString
+        val target = ExperimentFolderVisitor(exp).rawFolderPath
         val transferActor = context.actorOf(Props(new TransferSelectedRawData(self, target)))
         val filesMap = rdse.rdsr.rds.filesAndTarget.map(f ⇒ (new File(f._1), f._2))
         transferActor ! TransferFilesToFolder(filesMap, target)
@@ -113,7 +113,10 @@ object DefineRawData extends ArciteJSONProtocol with LazyLogging {
 
   case object RawDataSetAdded extends RawDataSetResponse
 
+  case object RawDataSetInProgress extends RawDataSetResponse //todo giving real progress in %
+
   case class RawDataSetFailed(error: String) extends RawDataSetResponse
+
 
 
   import StandardOpenOption._
@@ -179,9 +182,11 @@ class SourceRawDataSetActor(actSys: String, requester: ActorRef) extends Actor w
 
   override def receive: Receive = {
     case TransferSourceData(src) ⇒
+      log.debug(s"%4* transferring data from source... $src")
       rawDataSet = Some(src)
       fileServiceAct ! GetSourceFolder(src.source)
       expManager ! GetExperiment(src.experiment)
+
 
     case eff: ExperimentFoundFeedback ⇒
       eff match {
@@ -207,8 +212,9 @@ class SourceRawDataSetActor(actSys: String, requester: ActorRef) extends Actor w
 
     case StartDataTransfer ⇒
       if (source.isDefined && experiment.isDefined) {
-        val target = ExperimentFolderVisitor(experiment.get).rawFolderPath.toString
-        val transferActor = context.actorOf(Props(new TransferSelectedRawData(self, target)))
+        requester ! RawDataSetInProgress
+        val target = ExperimentFolderVisitor(experiment.get).rawFolderPath
+        val transferActor = context.actorOf(Props(classOf[TransferSelectedRawData], self, target))
         transferActor ! TransferFilesFromSourceToFolder(source.get.path,
           rawDataSet.get.filesAndFolders, rawDataSet.get.regex.r)
       }
@@ -216,9 +222,12 @@ class SourceRawDataSetActor(actSys: String, requester: ActorRef) extends Actor w
 
     case FileTransferredSuccessfully ⇒
       requester ! FileTransferredSuccessfully
+      log.debug("transfer completed successfully. ")
+      self ! PoisonPill
+
 
     case f: FileTransferredFailed ⇒
-      requester ! f
+      requester ! RawDataSetFailed(s"file transfer failed ${f.error}")
 
   }
 

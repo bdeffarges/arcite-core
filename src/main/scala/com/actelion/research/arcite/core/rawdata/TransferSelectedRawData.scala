@@ -6,7 +6,9 @@ import java.nio.file.{FileSystemException, Path, Paths}
 import akka.actor.SupervisorStrategy.{Escalate, Restart}
 import akka.actor.{Actor, ActorLogging, ActorRef, OneForOneStrategy, PoisonPill, Props}
 import akka.event.Logging
+import com.typesafe.scalalogging.LazyLogging
 
+import scala.collection.immutable.TreeMap
 import scala.collection.mutable
 import scala.util.matching.Regex
 import scala.concurrent.duration._
@@ -25,7 +27,7 @@ import scala.concurrent.duration._
   * own raw data folder.
   *
   */
-class TransferSelectedRawData(caller: ActorRef, targetRawFolder: String) extends Actor with ActorLogging {
+class TransferSelectedRawData(caller: ActorRef, targetRawFolder: Path) extends Actor with ActorLogging {
 
   import TransferSelectedRawData._
   import TransferSelectedRawFile._
@@ -48,14 +50,14 @@ class TransferSelectedRawData(caller: ActorRef, targetRawFolder: String) extends
 
     case TransferFolder(folder, regex, subfolder) ⇒
 
-      var fileMap = mutable.Map[String, String]()
+      var fileMap = mutable.Map[Path, Path]()
 
       def buildFileMap(folder: String, folderPrefix: String): Unit = {
         val files = new File(folder).listFiles.filter(_.isFile)
           .filter(f ⇒ regex.findFirstIn(f.getName).isDefined)
 
-        fileMap ++= files.map(f ⇒ (f, s"$targetRawFolder${File.separator}$folderPrefix${f.getName}"))
-          .map(a ⇒ (a._1.getPath, a._2))
+        fileMap ++= files.map(f ⇒ (f, targetRawFolder resolve folderPrefix resolve f.getName))
+          .map(a ⇒ (a._1.toPath, a._2))
 
         if (subfolder) {
           new File(folder).listFiles().filter(_.isDirectory)
@@ -72,8 +74,8 @@ class TransferSelectedRawData(caller: ActorRef, targetRawFolder: String) extends
 
     case TransferFilesToFolder(files, target) ⇒
       files.map(f ⇒
-        (f._1, Paths.get(target, f._2).toString, context.actorOf(Props[TransferSelectedRawFile])))
-        .foreach(x ⇒ x._3 ! TransferFile(x._1.getAbsolutePath, x._2))
+        (f._1, target resolve f._2, context.actorOf(Props[TransferSelectedRawFile])))
+        .foreach(x ⇒ x._3 ! TransferFile(x._1.toPath, x._2))
 
 
     case FileTransferred ⇒
@@ -82,18 +84,26 @@ class TransferSelectedRawData(caller: ActorRef, targetRawFolder: String) extends
 
 
     case TransferFilesFromSourceToFolder(source, files, regex) ⇒
-      var fileMap = Map[String, String]()
+      log.debug("transferring data from a (usually mounted) source")
 
-      def buildFileMap(file: String, folderPrefix: String): Unit = {
-        val f = (source resolve file).toFile
-        if (f.isFile && regex.findFirstIn(f.getName).isDefined) {
-          fileMap += ((f.toString, s"$targetRawFolder$folderPrefix${File.separator}$file"))
-        } else if (f.isDirectory) {
-          f.listFiles.foreach(f ⇒ buildFileMap(f.getName, s"$folderPrefix${File.separator}${f.getParentFile.getName}"))
+      var fileMap = Map[Path, Path]()
+
+      def buildFileMap(file: Path, folderPrefix: Path): Unit = {
+
+
+        val f = source resolve folderPrefix resolve file
+        val fi = f.toFile
+        log.debug(s"folderPrefix=[$folderPrefix] fileFolder=[$file] full path=[$f]")
+        if (fi.isFile && regex.findFirstIn(fi.getName).isDefined) {
+          fileMap += ((f, targetRawFolder resolve folderPrefix resolve file.getFileName))
+        } else if (fi.isDirectory) {
+          fi.listFiles.foreach(ff ⇒ buildFileMap(ff.toPath.getFileName, folderPrefix resolve file))
         }
       }
 
-      files.foreach(f ⇒ buildFileMap(f, ""))
+      files.foreach(f ⇒ buildFileMap(Paths.get(f), Paths.get("")))
+
+      log.debug(s"${fileMap.size} files will be transferred. ")
 
       self ! TransferFiles(fileMap)
 
@@ -103,19 +113,51 @@ class TransferSelectedRawData(caller: ActorRef, targetRawFolder: String) extends
   }
 }
 
-object TransferSelectedRawData {
+object TransferSelectedRawData extends LazyLogging {
 
-  case class TransferFiles(files: Map[String, String])
+  case class TransferFiles(files: Map[Path, Path])
 
   case class TransferFolder(folder: String, regex: Regex, includeSubFolder: Boolean)
 
-  case class TransferFilesToFolder(files: Map[File, String], target: String)
+  case class TransferFilesToFolder(files: Map[File, String], target: Path)
 
   case class TransferFilesFromSourceToFolder(source: Path, files: List[String], regex: Regex)
 
-  case object FileTransferredSuccessfully
+  trait FileTransferFeedback
 
-  case class FileTransferredFailed(error: String)
+  case object FileTransferredSuccessfully extends FileTransferFeedback
+
+  case object FileTransferInProgress extends FileTransferFeedback
+
+  case class FileTransferredFailed(error: String) extends FileTransferFeedback
+
+
+  def buildFileTransferMap(source: Path, files: List[Path], target: Path, regex: Regex) = {
+//
+//    var fileMap = Map[Path, Path]()
+//
+//    def buildFileMap(file: Path, folderPrefix: List[String]): Map[Path, List[String]] = {
+//
+//      val f = source resolve folderPrefix.mkString(File.separator) resolve file
+//      val fi = f.toFile
+//      logger.debug(s"folderPrefix=[$folderPrefix] fileFolder=[$file] full path=[$f]")
+//
+//      if (fi.isFile && regex.findFirstIn(fi.getName).isDefined) {
+//        (f -> folderPrefix)
+//      } else if (fi.isDirectory) {
+//        fi.listFiles.foreach(ff ⇒ buildFileMap(ff.toPath.getFileName, folderPrefix resolve file))
+//      }
+//    }
+//
+//    files.foreach(f ⇒ buildFileMap(Paths.get(f), Paths.get("")))
+//
+//    logger.debug(s"${fileMap.size} files will be transferred. ")
+  }
+
+  def getCommonPath(files: List[Path]): Path = {
+    var tree = HashTree[String]()
+    files.map(p ⇒ p.)
+  }
 }
 
 
@@ -129,11 +171,9 @@ class TransferSelectedRawFile extends Actor {
 
   override def receive = {
     case TransferFile(source, target) ⇒
-      logger.debug(s"transfering $source TO $target")
+      logger.debug(s"&3% transferring $source TO $target")
 
-      implicit def toPath(filename: String): Path = get(filename)
-
-      val parFolder = new File(target).getParentFile
+      val parFolder = target.toFile.getParentFile
       if (!parFolder.isDirectory) parFolder.mkdirs()
 
       copy(source, target, REPLACE_EXISTING)
@@ -147,7 +187,7 @@ class TransferSelectedRawFile extends Actor {
 
 object TransferSelectedRawFile {
 
-  case class TransferFile(source: String, target: String)
+  case class TransferFile(source: Path, target: Path)
 
   case object FileTransferred
 
