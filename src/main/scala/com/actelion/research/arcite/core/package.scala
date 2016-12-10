@@ -9,21 +9,21 @@ import org.slf4j.LoggerFactory
 
 package object core {
 
-  val config = ConfigFactory.load
+  private val config = ConfigFactory.load
 
-  val logger = LoggerFactory.getLogger(getClass)
+  private val logger = LoggerFactory.getLogger(getClass)
 
-  val home = Paths.get(config.getString("arcite.home"))
+  val home: Path = Paths.get(config.getString("arcite.home"))
 
-  val archivePath = home resolve "_archives"
+  val archivePath: Path = home resolve "_archives"
 
   if (!archivePath.toFile.exists) archivePath.toFile.mkdirs()
 
-  val dataPath = home resolve "experiments"
+  val dataPath: Path = home resolve "experiments"
 
   if (!dataPath.toFile.exists) dataPath.toFile.mkdirs()
 
-  val logsPath = home resolve "logs"
+  val logsPath: Path = home resolve "logs"
 
   if (!logsPath.toFile.exists) logsPath.toFile.mkdir()
 

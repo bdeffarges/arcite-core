@@ -38,14 +38,14 @@ class EventInfoLogging extends Actor with ActorLogging with ArciteJSONProtocol {
 
   val maxSize = 100 //todo extend
 
-  var lastUpdatesLogs = List[ExpLog]()
-  var mostRecentLogs = List[ExpLog]()
+  private var lastUpdatesLogs = List[ExpLog]()
+  private var mostRecentLogs = List[ExpLog]()
 
-  val conf = ConfigFactory.load().getConfig("experiments-manager")
-  val actSys = conf.getString("akka.uri")
+  private val conf = ConfigFactory.load().getConfig("experiments-manager")
+  private val actSys = conf.getString("akka.uri")
 
-  val expManager = context
-    .actorSelection(ActorPath.fromString(s"${actSys}/user/exp_actors_manager/experiments_manager"))
+  private val expManager =
+    context.actorSelection(ActorPath.fromString(s"${actSys}/user/exp_actors_manager/experiments_manager"))
 
   import EventInfoLogging._
   import spray.json._

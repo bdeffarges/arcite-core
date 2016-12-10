@@ -36,7 +36,7 @@ object LogType extends scala.Enumeration {
 
 object LogCategory extends scala.Enumeration {
   type LogCategory = Value
-  val SUCCESS, ERROR, UNKNOWN = Value
+  val SUCCESS, WARNING, ERROR, UNKNOWN = Value
 }
 
 case class ExpLog(logType: LogType, logCat: LogCategory, message: String,
@@ -54,3 +54,6 @@ object ExpLog {
   def apply(logType: LogType, logCat: LogCategory, message: String, uid: Option[String]) =
     new ExpLog(logType, logCat, message, new Date(), uid)
 }
+
+// todo could add keywords, domain, etc.
+case class ArciteAppLog(category: LogCategory, message: String, date: Date = new Date())

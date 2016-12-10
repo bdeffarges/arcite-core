@@ -1,3 +1,4 @@
+import scala.collection.immutable.Queue
 //import java.io.File
 //import java.nio.file.{Path, Paths}
 //
@@ -5,7 +6,18 @@
 //import akka.http.scaladsl.marshalling.ToResponseMarshallable
 //import akka.http.scaladsl.server.StandardRoute
 
-".*".r.findFirstIn("hello")
+//".*".r.findFirstIn("hello")
+
+val a = Queue("a", "b", "c", "d", "e", "g", "h")
+val b = a enqueue "f"
+println(b dequeue)
+println(b drop 3)
+println(b dropRight  2)
+println(a splitAt 3)
+println(a take 6)
+println(a takeRight 6)
+
+
 
 
 

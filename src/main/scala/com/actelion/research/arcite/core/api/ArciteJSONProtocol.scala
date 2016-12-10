@@ -2,7 +2,7 @@ package com.actelion.research.arcite.core.api
 
 import com.actelion.research.arcite.core.api.ArciteService.{AddedExperiment, FailedAddingProperties, GeneralFailure, SomeExperiments}
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.InfoLogs
-import com.actelion.research.arcite.core.eventinfo.{ExpLog, LogCategory, LogType}
+import com.actelion.research.arcite.core.eventinfo.{ArciteAppLog, ExpLog, LogCategory, LogType}
 import com.actelion.research.arcite.core.experiments.ExpState.ExpState
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.experiments._
@@ -83,6 +83,8 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
     }
   }
 
+
+
   implicit object expLogJsonFormat extends RootJsonFormat[ExpLog] {
 
     def write(obj: ExpLog): JsValue = {
@@ -107,6 +109,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   }
 
   implicit val logInfoJson: RootJsonFormat[InfoLogs] = jsonFormat1(InfoLogs)
+  implicit val appLogJson: RootJsonFormat[ArciteAppLog] = jsonFormat3(ArciteAppLog)
 
   implicit object ExpStateJsonFormat extends RootJsonFormat[ExpState] {
     def write(c: ExpState) = JsString(c.toString)

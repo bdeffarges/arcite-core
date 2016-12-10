@@ -668,6 +668,7 @@ class RestApi(system: ActorSystem, timeout: Timeout) extends RestRoutes {
 
   def createArciteApi = system.actorOf(ArciteService.props, ArciteService.name)
 
+
 }
 
 // Api Misc Messages

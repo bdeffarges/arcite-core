@@ -43,6 +43,9 @@ object Main extends App {
   val d = Duration(t)
   val requestTimeout = FiniteDuration(d.length, d.unit)
 
+  // create the top service actor (for children actor like the logging actor, many others sit under the Exp. Manager)
+  private val arciteAppService = system.actorOf(AppServiceActorsManager.props(), "arcite_app_service")
+
   val api = new RestApi(system, requestTimeout).routes
 
   implicit val materializer = ActorMaterializer()
