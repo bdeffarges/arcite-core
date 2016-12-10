@@ -332,7 +332,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       if (exp.isDefined) {
         fileServiceAct ! GetAllFilesWithRequester(GetAllFiles(FromAllFolders(exp.get)), actRef)
       } else {
-        sender() ! FolderFilesInformation(Set())
+        sender() ! AllFilesInformation()
       }
 
 

@@ -172,8 +172,7 @@ object FileServiceActor {
 
   case class FolderFilesInformation(files: Set[FileInformationWithSubFolder])
 
-  case class AllFilesInformation(rawFiles: Set[FileInformationWithSubFolder],
-                                 userRawFiles: Set[FileInformationWithSubFolder],
-                                 metaFiles: Set[FileInformationWithSubFolder])
-
+  case class AllFilesInformation(rawFiles: Set[FileInformationWithSubFolder] = Set(),
+                                 userRawFiles: Set[FileInformationWithSubFolder] = Set(),
+                                 metaFiles: Set[FileInformationWithSubFolder] = Set())
 }
