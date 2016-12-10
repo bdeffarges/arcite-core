@@ -325,7 +325,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       }
 
 
-      case gmf: InfoAboutAllFiles ⇒
+    case gmf: InfoAboutAllFiles ⇒
       logger.info("looking for all files list")
       val exp = experiments.get(gmf.experiment)
       val actRef = sender()

@@ -69,7 +69,6 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
       val params = Option(wid.transf.parameters)
 
       import spray.json._
-      import DefaultJsonProtocol._
 
       wid match {
         case ws: WorkerSuccess ⇒
@@ -105,7 +104,7 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
 }
 
 object WriteFeedbackActor {
-  val FILE_NAME = "transform_output.json"
+  val FILE_NAME = "@rcit8@@_transform_output.json"
   val SUCCESS = "SUCCESS"
   val FAILED = "FAILED"
   val RAW = "RAW"

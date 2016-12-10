@@ -56,13 +56,13 @@ case class ExperimentFolderVisitor(exp: Experiment) {
   //todo maybe we can get rid of the relative paths
   val owfs: String = owner.asFileStructure
   val relParentPath: Path = Paths.get(owfs)
-  val relFolderPath: Path = Paths.get(owfs, folderName)
-  val relMetaFolderPath: Path = Paths.get(owfs, folderName, "meta")
-  val relUserMetaFolderPath: Path = Paths.get(owfs, folderName, "user_meta")
-  val relRawFolderPath: Path = Paths.get(owfs, folderName, "raw")
-  val relUserRawFolderPath: Path = Paths.get(owfs, folderName, "raw", "uploaded_files")
-  val relTransformFolderPath: Path = Paths.get(owfs, folderName, "transforms")
-  val relPublishedFolderPath: Path = Paths.get(owfs, folderName, "published")
+  val relFolderPath: Path = relParentPath resolve folderName
+  val relMetaFolderPath: Path = relFolderPath resolve "meta"
+  val relUserMetaFolderPath: Path = relFolderPath resolve "user_meta"
+  val relRawFolderPath: Path = relFolderPath resolve "raw"
+  val relUserRawFolderPath: Path = relFolderPath resolve "user_raw"
+  val relTransformFolderPath: Path = relFolderPath resolve "transforms"
+  val relPublishedFolderPath: Path = relFolderPath resolve "published"
 
   val arcitH: Path = core.dataPath
 
@@ -80,8 +80,6 @@ case class ExperimentFolderVisitor(exp: Experiment) {
 
   val metaFolderPath: Path = arcitH resolve relMetaFolderPath
 
-  val logsFolderPath: Path = expFolderPath resolve "logs"
-
   val userMetaFolderPath: Path = arcitH resolve relUserMetaFolderPath
 
   val transformFolderPath: Path = arcitH resolve relTransformFolderPath
@@ -91,6 +89,8 @@ case class ExperimentFolderVisitor(exp: Experiment) {
   val experimentFilePath: Path = metaFolderPath resolve LocalExperiments.EXPERIMENT_FILE_NAME
 
   val digestFilePath: Path = metaFolderPath resolve LocalExperiments.EXPERIMENT_DIGEST_FILE_NAME
+
+  val logsFolderPath: Path = expFolderPath resolve "logs"
 
   val lastUpdateLog: Path = logsFolderPath resolve "last_update"
 
@@ -144,6 +144,8 @@ object ExpState extends scala.Enumeration {
 }
 
 
-case class ExperimentUID(uid: String) // for api feedback
+case class ExperimentUID(uid: String)
+
+// for api feedback
 
 
