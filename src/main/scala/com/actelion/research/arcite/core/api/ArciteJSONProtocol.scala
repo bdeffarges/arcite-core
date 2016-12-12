@@ -1,7 +1,10 @@
 package com.actelion.research.arcite.core.api
 
+import java.util.Date
+
 import com.actelion.research.arcite.core.api.ArciteService.{AddedExperiment, FailedAddingProperties, GeneralFailure, SomeExperiments}
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.InfoLogs
+import com.actelion.research.arcite.core.eventinfo.LogCategory.LogCategory
 import com.actelion.research.arcite.core.eventinfo.{ArciteAppLog, ExpLog, LogCategory, LogType}
 import com.actelion.research.arcite.core.experiments.ExpState.ExpState
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
@@ -46,6 +49,14 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
 
   val noDependsOn = FullName("none", "none")
 
+  implicit object DateJsonFormat extends RootJsonFormat[Date] {
+
+    override def read(json: JsValue): Date =  utils.getAsDate(json.toString())
+
+    override def write(date: Date): JsValue = JsString(utils.getDateAsStrg(date))
+  }
+
+
   implicit object TransformDefinitionIdentityJsonFormat extends RootJsonFormat[TransformDefinitionIdentity] {
 
     def write(tdi: TransformDefinitionIdentity) = {
@@ -84,7 +95,6 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   }
 
 
-
   implicit object expLogJsonFormat extends RootJsonFormat[ExpLog] {
 
     def write(obj: ExpLog): JsValue = {
@@ -108,7 +118,14 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
     }
   }
 
+  implicit object LogCatJsonFormat extends RootJsonFormat[LogCategory] {
+    def write(c: LogCategory) = JsString(c.toString)
+
+    def read(value: JsValue) = LogCategory.withName(value.toString())
+  }
+
   implicit val logInfoJson: RootJsonFormat[InfoLogs] = jsonFormat1(InfoLogs)
+
   implicit val appLogJson: RootJsonFormat[ArciteAppLog] = jsonFormat3(ArciteAppLog)
 
   implicit object ExpStateJsonFormat extends RootJsonFormat[ExpState] {
@@ -166,6 +183,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val conditionForSampleJson: RootJsonFormat[ConditionsForSample] = jsonFormat1(ConditionsForSample)
   implicit val experimentalDesignJson: RootJsonFormat[ExperimentalDesign] = jsonFormat2(ExperimentalDesign)
 
+
   implicit object ExperimentJSonFormat extends RootJsonFormat[Experiment] {
     override def read(json: JsValue): Experiment = {
       json.asJsObject.getFields("name", "description", "owner", "state", "design", "properties") match {
@@ -205,9 +223,12 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
     }
   }
 
+
   implicit val experimentSummaryJson: RootJsonFormat[ExperimentSummary] = jsonFormat5(ExperimentSummary)
 
+
   implicit val stateJSon: RootJsonFormat[State] = jsonFormat1(State)
+
 
   implicit object TransformSourceJsonFormat extends RootJsonFormat[TransformSource] {
 
@@ -286,6 +307,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val addDesignJson: RootJsonFormat[AddDesign] = jsonFormat2(AddDesign)
   implicit val okJson: RootJsonFormat[Ok] = jsonFormat1(Ok)
 
+
   implicit object FullNameJsonFormat extends RootJsonFormat[FullName] {
 
     override def write(fn: FullName): JsValue = {
@@ -310,6 +332,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
       }
     }
   }
+
 
   implicit val getTransformerJson: RootJsonFormat[GetTransfDef] = jsonFormat1(GetTransfDef)
 

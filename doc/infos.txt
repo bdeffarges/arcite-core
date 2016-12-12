@@ -1,3 +1,17 @@
 to publish to local docker, use:
 
 sbt docker:publishLocal
+
+
+to publish locally:
+
+sbt publishLocal
+
+
+to publish to mvn:
+
+sbt publish
+
+
+
+

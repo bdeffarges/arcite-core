@@ -6,6 +6,7 @@ import java.nio.file.StandardOpenOption.CREATE_NEW
 
 import akka.actor.{Actor, ActorLogging, Props}
 import com.actelion.research.arcite.core
+import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.utils
 
 import scala.collection.immutable.Queue
@@ -47,7 +48,7 @@ class ArciteAppLogs extends Actor with ActorLogging {
   }
 }
 
-object ArciteAppLogs {
+object ArciteAppLogs extends ArciteJSONProtocol {
   val maxQueueSizeToSave = 50
   val maxQueueSizeToSKeepForShow = 1000
 

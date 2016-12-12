@@ -5,7 +5,7 @@ organization := "com.actelion.research.arcite"
 
 name := "arcite-core"
 
-version := "1.0.0-SNAPSHOT"
+version := "1.1.0-SNAPSHOT"
 
 scalaVersion := "2.11.8"
 
@@ -75,7 +75,7 @@ libraryDependencies ++= {
     "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
     "com.typesafe.akka" %% "akka-http" % "3.0.0-RC1", // core, test, etc. should come as well as dependencies
     "com.typesafe.akka" %% "akka-http-testkit" % "3.0.0-RC1",
-  "com.typesafe.akka" %% "akka-http-spray-json" % "3.0.0-RC1",
+    "com.typesafe.akka" %% "akka-http-spray-json" % "3.0.0-RC1",
     "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
     "com.typesafe.scala-logging" %% "scala-logging" % "3.1.0",
     "com.iheart" %% "ficus" % "1.4.0",

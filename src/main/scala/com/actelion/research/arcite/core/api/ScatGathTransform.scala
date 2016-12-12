@@ -119,6 +119,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
     case PrepareTransform ⇒
       val td = readyForTransform.transfDef.get
       val exp = readyForTransform.expFound.get.exp
+      log.debug(s"preparing for transform: [$readyForTransform")
 
       procWTransf.get match {
         case RunTransformOnObject(_, _, params) ⇒
