@@ -29,7 +29,9 @@ class AppServiceActorsManager extends Actor with ActorLogging {
       case _: Exception ⇒ Restart
     }
 
-  override def receive: Receive = ???
+  override def receive: Receive = {
+    case _ : Any ⇒ log.error("***$ does not know what to do with the received message...")
+  }
 }
 
 object AppServiceActorsManager {

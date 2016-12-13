@@ -175,6 +175,28 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       }
 
 
+    case RemoveExpPropertiesWithRequester(rmProps, requester) ⇒
+      val uid = rmProps.exp
+
+      val exp = experiments.get(uid)
+      if (exp.isDefined) {
+        val ex = exp.get
+        val nex = ex.copy(properties = ex.properties -- rmProps.properties)
+        experiments += ((uid, nex))
+        LocalExperiments.saveExperiment(nex) match {
+
+          case SaveExperimentSuccessful(expL) ⇒
+            luceneRAMSearchAct ! IndexExperiment(nex)
+            requester ! RemovePropertiesSuccess
+
+          case SaveExperimentFailed(error) ⇒
+            requester ! FailedRemovingProperties(error)
+        }
+      } else {
+        requester ! FailedRemovingProperties("Experiment does not exist")
+      }
+
+
     case galex: GetAllExperimentsWithRequester ⇒
       log.info(s"asking ManageExperiments for ${galex.max} experiments starting page ${galex.page}... to ${galex.requester}")
 
@@ -457,9 +479,15 @@ object ManageExperiments {
 
   case class AddExpProps(properties: Map[String, String])
 
+  case class RmExpProps(properties: List[String])
+
   case class AddExpProperties(exp: String, properties: Map[String, String])
 
   case class AddExpPropertiesWithRequester(addProps: AddExpProperties, requester: ActorRef)
+
+  case class RemoveExpProperties(exp: String, properties: List[String])
+
+  case class RemoveExpPropertiesWithRequester(addProps: RemoveExpProperties, requester: ActorRef)
 
   case class Experiments(exps: Set[Experiment])
 

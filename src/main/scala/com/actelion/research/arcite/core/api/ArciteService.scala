@@ -79,6 +79,13 @@ object ArciteService {
   case class FailedAddingProperties(error: String) extends AddedPropertiesFeedback
 
 
+  sealed trait RemovePropertiesFeedback
+
+  case object RemovePropertiesSuccess extends RemovePropertiesFeedback
+
+  case class FailedRemovingProperties(error: String) extends RemovePropertiesFeedback
+
+
   sealed trait ExperimentFoundFeedback
 
   case class ExperimentFound(exp: Experiment) extends ExperimentFoundFeedback
@@ -176,6 +183,10 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
     case p: AddExpProperties ⇒
       expManager ! AddExpPropertiesWithRequester(p, sender())
+
+
+    case p: RemoveExpProperties ⇒
+      expManager ! RemoveExpPropertiesWithRequester(p, sender())
 
 
     case gat: GetTransforms ⇒

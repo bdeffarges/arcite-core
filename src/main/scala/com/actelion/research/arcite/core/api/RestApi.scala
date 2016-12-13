@@ -84,6 +84,10 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(newProps).mapTo[AddedPropertiesFeedback]
   }
 
+  def removeProperties(toRemove: RemoveExpProperties) = {
+    arciteService.ask(toRemove).mapTo[RemovePropertiesFeedback]
+  }
+
   def defineRawData(rawData: RawDataSet) = {
     arciteService.ask(rawData).mapTo[RawDataSetResponse]
   }
@@ -377,6 +381,16 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
                 onSuccess(saved) {
                   case AddedPropertiesSuccess ⇒ complete(Created -> SuccessMessage("properties added successfully."))
                   case adp: FailedAddingProperties ⇒ complete(BadRequest -> adp)
+                }
+              }
+            } ~
+            delete {
+              logger.info("deleting properties from experiment.")
+              entity(as[RmExpProps]) { props ⇒
+                val saved: Future[RemovePropertiesFeedback] = removeProperties(RemoveExpProperties(experiment, props.properties))
+                onSuccess(saved) {
+                  case RemovePropertiesSuccess ⇒ complete(OK -> SuccessMessage("properties removed successfully."))
+                  case adp: FailedRemovingProperties ⇒ complete(BadRequest -> adp)
                 }
               }
             }

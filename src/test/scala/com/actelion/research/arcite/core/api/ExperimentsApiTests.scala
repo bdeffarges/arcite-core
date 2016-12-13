@@ -11,7 +11,7 @@ import akka.util.ByteString
 import com.actelion.research.arcite.core.TestHelpers
 import com.actelion.research.arcite.core.api.ArciteService.{AddedExperiment, AllExperiments, ExperimentFound}
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSummary}
-import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddExpProps, AddExperiment}
+import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddExpProps, AddExperiment, RmExpProps}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import org.scalatest.{AsyncFlatSpec, Matchers}
@@ -143,7 +143,8 @@ class ExperimentsApiTests extends ApiTests {
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)
 
-    val jsonRequest = ByteString(AddExpProps(Map(("hello", "mars"), ("bye", "jupiter"))).toJson.prettyPrint)
+    val jsonRequest = ByteString(AddExpProps(Map(("hello", "mars"), ("bye", "jupiter"),
+      ("eeew", "neptune"), ("asdfsda", "333ddd"), ("adad", "llkid"))).toJson.prettyPrint)
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
@@ -156,6 +157,30 @@ class ExperimentsApiTests extends ApiTests {
     responseFuture.map { r ⇒
       logger.info(r.toString())
       assert(r.status == StatusCodes.Created)
+    }
+  }
+
+  "removing  properties" should " reduce the list of properties of the experiments " in {
+
+    implicit val executionContext = system.dispatcher
+    import spray.json._
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    val jsonRequest = ByteString(RmExpProps(List("eeew", "asdfsda", "adad")).toJson.prettyPrint)
+
+    val postRequest = HttpRequest(
+      HttpMethods.DELETE,
+      uri = s"/experiment/${exp1.uid}/properties",
+      entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
+
+    responseFuture.map { r ⇒
+      logger.info(r.toString())
+      assert(r.status == StatusCodes.OK)
     }
   }
 

@@ -67,7 +67,8 @@ object ArciteAppLogs extends ArciteJSONProtocol {
   case object FlushLogs
 
   /**
-    * once in a while, old logs should be compiled, cleaned up and old ones maybe removed
+    * once in a while, old logs should be compiled & cleaned up
+    * oldest ones could eventually be removed
     */
   case object CleanUpLogs
 

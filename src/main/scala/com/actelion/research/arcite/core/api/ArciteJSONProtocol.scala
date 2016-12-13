@@ -2,7 +2,7 @@ package com.actelion.research.arcite.core.api
 
 import java.util.Date
 
-import com.actelion.research.arcite.core.api.ArciteService.{AddedExperiment, FailedAddingProperties, GeneralFailure, SomeExperiments}
+import com.actelion.research.arcite.core.api.ArciteService._
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.InfoLogs
 import com.actelion.research.arcite.core.eventinfo.LogCategory.LogCategory
 import com.actelion.research.arcite.core.eventinfo.{ArciteAppLog, ExpLog, LogCategory, LogType}
@@ -350,6 +350,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val transformfeedbackJsonFormat: RootJsonFormat[TransformCompletionFeedback] = jsonFormat10(TransformCompletionFeedback)
 
   implicit val addPropertiesJSonFormat: RootJsonFormat[AddExpProps] = jsonFormat1(AddExpProps)
+  implicit val rmPropertiesJSonFormat: RootJsonFormat[RmExpProps] = jsonFormat1(RmExpProps)
 
   implicit val fileInfoJsonFormat: RootJsonFormat[FileInformation] = jsonFormat2(FileInformation)
   implicit val fileInfoWithSubFolderJsonFormat: RootJsonFormat[FileInformationWithSubFolder] = jsonFormat2(FileInformationWithSubFolder)
@@ -362,7 +363,8 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
 
   implicit val expUIDJson: RootJsonFormat[ExperimentUID] = jsonFormat1(ExperimentUID)
 
-  implicit val failedPropsJson: RootJsonFormat[FailedAddingProperties] = jsonFormat1(FailedAddingProperties)
+  implicit val failedAddPropsJson: RootJsonFormat[FailedAddingProperties] = jsonFormat1(FailedAddingProperties)
+  implicit val failedRmPropsJson: RootJsonFormat[FailedRemovingProperties] = jsonFormat1(FailedRemovingProperties)
 
   implicit val sourceFolderJson: RootJsonFormat[SourceFoldersAsString] = jsonFormat1(SourceFoldersAsString)
 
