@@ -486,7 +486,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             drd ⇒
               val saved: Future[RawDataSetResponse] = defineRawDataFromSource(drd)
               onSuccess(saved) {
-                case RawDataSetAdded ⇒ complete(OK -> SuccessMessage("raw data added. "))
+                case RawDataSetAdded ⇒ complete(Created -> SuccessMessage("raw data added. "))
                 case RawDataSetInProgress ⇒ complete(OK -> SuccessMessage("raw data transfer started..."))
                 case RawDataSetFailed(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
               }

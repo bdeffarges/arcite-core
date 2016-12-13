@@ -85,14 +85,14 @@ class ExperimentsApiTests extends ApiTests {
     }
   }
 
-  "Paging through experiments " should "return exact number of experiments... " in {
+  "searching for 'AMS' and paging through experiments " should "return at least a couple of experiments... " in {
     implicit val executionContext = system.dispatcher
 
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri = "/experiments?page=0&max=50")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri = "/experiments?page=0&max=200")).via(connectionFlow).runWith(Sink.head)
 
     import spray.json._
     responseFuture.map { r ⇒

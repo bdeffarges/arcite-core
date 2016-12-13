@@ -23,4 +23,4 @@ package com.actelion.research.arcite.core.helpers
   * Created by Bernard Deffarges on 2016/12/12.
   *
   */
-case class Position(row: Int, col: Int)
+case class Position(row: Int, col: Int) //todo not clear where it should be

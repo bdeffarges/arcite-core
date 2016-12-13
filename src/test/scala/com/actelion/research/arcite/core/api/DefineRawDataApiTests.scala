@@ -91,7 +91,7 @@ class DefineRawDataApiTests extends ApiTests {
     val res: Future[HttpResponse] = Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
 
     res.map { r ⇒
-      assert(r.status == StatusCodes.Created)
+      assert(r.status == StatusCodes.Created || r.status == StatusCodes.OK)
     }
   }
 

@@ -215,6 +215,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
       JsObject(
         "name" -> JsString(exp.name),
         "description" -> JsString(exp.description),
+        "uid" -> JsString(exp.uid),
         "owner" -> exp.owner.toJson,
         "state" -> exp.state.toJson,
         "design" -> exp.design.toJson,

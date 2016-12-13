@@ -21,7 +21,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 case class Experiment(name: String, description: String, owner: Owner, state: ExpState = ExpState.NEW,
                       design: ExperimentalDesign = ExperimentalDesign(), properties: Map[String, String] = Map()) {
 
-  def uid = GetDigest.getDigest(s"${owner.organization}$name")
+  lazy val uid = GetDigest.getDigest(s"${owner.organization}$name")
 }
 
 object DefaultExperiment {
