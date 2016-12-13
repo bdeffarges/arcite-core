@@ -20,7 +20,7 @@ import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperimentsWithRequester, IndexExperiment, RemoveFromIndex, SearchForXResultsWithRequester}
 import com.actelion.research.arcite.core.transforms.TransformCompletionFeedback
 import com.actelion.research.arcite.core.utils
-import com.actelion.research.arcite.core.utils.{FoldersHelpers, FullName, Owner, WriteFeedbackActor}
+import com.actelion.research.arcite.core.utils._
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 
@@ -322,7 +322,24 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       }
 
 
-    case addProps: AddExpPropertiesWithRequester ⇒ //todo implement
+    case rf: RemoveFile ⇒
+      val exp = experiments.get(rf.exp)
+      if (exp.isDefined) {
+        val v = ExperimentFolderVisitor(exp.get)
+        val path = rf match {
+          case RemoveUploadedRawFile(_, f) ⇒ v.userRawFolderPath resolve f
+          case RemoveUploadedMetaFile(_, f) ⇒ v.userMetaFolderPath resolve f
+        }
+        try {
+          Files.delete(path)
+          sender() ! RemoveFileSuccess
+        } catch {
+          case ex: Exception ⇒
+            sender() ! FailedRemovingFile(s"could not remove file because $ex")
+        }
+      } else {
+        sender() ! FailedRemovingFile(s"[$exp] does not exist. ")
+      }
 
 
     case grf: InfoAboutRawFiles ⇒

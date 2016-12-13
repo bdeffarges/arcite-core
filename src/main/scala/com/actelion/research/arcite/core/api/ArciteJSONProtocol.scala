@@ -19,7 +19,7 @@ import com.actelion.research.arcite.core.transforms._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.Ok
 import com.actelion.research.arcite.core.transforms.cluster.WorkState.AllJobsFeedback
 import com.actelion.research.arcite.core.utils
-import com.actelion.research.arcite.core.utils.{FileInformation, FileInformationWithSubFolder, FullName, Owner}
+import com.actelion.research.arcite.core.utils._
 import spray.json.{DefaultJsonProtocol, _}
 
 /**
@@ -334,6 +334,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
     }
   }
 
+  implicit val rmFileJson: RootJsonFormat[RmFile] = jsonFormat1(RmFile)
 
   implicit val getTransformerJson: RootJsonFormat[GetTransfDef] = jsonFormat1(GetTransfDef)
 
@@ -367,5 +368,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val failedRmPropsJson: RootJsonFormat[FailedRemovingProperties] = jsonFormat1(FailedRemovingProperties)
 
   implicit val sourceFolderJson: RootJsonFormat[SourceFoldersAsString] = jsonFormat1(SourceFoldersAsString)
+
+
 
 }

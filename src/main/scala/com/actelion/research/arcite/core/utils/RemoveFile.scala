@@ -1,4 +1,4 @@
-package com.actelion.research.arcite.core.helpers
+package com.actelion.research.arcite.core.utils
 
 /**
   * arcite-core
@@ -20,7 +20,22 @@ package com.actelion.research.arcite.core.helpers
   * You should have received a copy of the GNU General Public License
   * along with this program.  If not, see <http://www.gnu.org/licenses/>.
   *
-  * Created by Bernard Deffarges on 2016/12/12.
+  * Created by Bernard Deffarges on 2016/12/13.
   *
   */
-case class Position(row: Int, col: Int) //todo not clear where it should be
+
+sealed trait RemoveFile {
+  def exp: String
+  def fileName: String
+}
+
+case class RemoveUploadedRawFile(exp: String, fileName: String) extends RemoveFile
+case class RemoveUploadedMetaFile(exp: String, fileName: String) extends RemoveFile
+
+case class RmFile(fileName: String)
+
+sealed trait RemoveFileFeedback
+
+case object RemoveFileSuccess extends RemoveFileFeedback
+
+case class FailedRemovingFile(error: String) extends RemoveFileFeedback

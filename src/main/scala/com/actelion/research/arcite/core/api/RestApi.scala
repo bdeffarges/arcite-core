@@ -21,6 +21,7 @@ import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.{NotOk, _}
 import com.actelion.research.arcite.core.transforms.cluster.WorkState._
+import com.actelion.research.arcite.core.utils._
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 
@@ -87,6 +88,10 @@ trait ArciteServiceApi extends LazyLogging {
 
   def removeProperties(toRemove: RemoveExpProperties) = {
     arciteService.ask(toRemove).mapTo[RemovePropertiesFeedback]
+  }
+
+  def removeUploadedFile(toRemove: RemoveFile) = {
+    arciteService.ask(toRemove).mapTo[RemoveFileFeedback]
   }
 
   def defineRawData(rawData: RawDataSet) = {
@@ -175,7 +180,7 @@ trait ArciteServiceApi extends LazyLogging {
   }
 
   def getApplicationLogs() = {
-        arciteService.ask(GetAppLogs).mapTo[InfoLogs]
+    arciteService.ask(GetAppLogs).mapTo[InfoLogs]
   }
 
   def getDataSources() = {
@@ -184,7 +189,7 @@ trait ArciteServiceApi extends LazyLogging {
 }
 
 trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSONProtocol with LazyLogging {
-//todo refactor routes into different files by category
+  //todo refactor routes into different files by category
   import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 
   //todo try cors again with lomigmegard/akka-http-cors
@@ -289,7 +294,17 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
                   }
                 }
               }
-            }
+            } ~
+              delete {
+                logger.info("deleting uploaded meta data file. ")
+                entity(as[RmFile]) { rmf ⇒
+                  val saved: Future[RemoveFileFeedback] = removeUploadedFile(RemoveUploadedMetaFile(experiment, rmf.fileName))
+                  onSuccess(saved) {
+                    case RemoveFileSuccess ⇒ complete(OK -> SuccessMessage(s"meta file [${rmf.fileName}] removed successfully."))
+                    case adp: FailedRemovingFile ⇒ complete(BadRequest -> ErrorMessage(adp.error))
+                  }
+                }
+              }
           } ~
             pathPrefix("raw") {
               post {
@@ -319,7 +334,17 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
                     }
                   }
                 }
-              }
+              } ~
+                delete {
+                  logger.info("deleting uploaded raw data file. ")
+                  entity(as[RmFile]) { rmf ⇒
+                    val saved: Future[RemoveFileFeedback] = removeUploadedFile(RemoveUploadedRawFile(experiment, rmf.fileName))
+                    onSuccess(saved) {
+                      case RemoveFileSuccess ⇒ complete(OK -> SuccessMessage(s"raw file [${rmf.fileName}] removed successfully."))
+                      case adp: FailedRemovingFile ⇒ complete(BadRequest -> ErrorMessage(adp.error))
+                    }
+                  }
+                }
             }
         } ~
         pathPrefix("files") {
@@ -341,15 +366,15 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
                 }
               }
             } ~
-          pathEnd {
-            get {
-              logger.info(s"returning all files for experiment: $experiment")
-              onSuccess(getAllFiles(experiment)) {
-                case afi : AllFilesInformation ⇒ complete(OK -> afi)
-                case a: Any ⇒ complete(BadRequest -> ErrorMessage(s"could not find files ${a.toString}"))
+            pathEnd {
+              get {
+                logger.info(s"returning all files for experiment: $experiment")
+                onSuccess(getAllFiles(experiment)) {
+                  case afi: AllFilesInformation ⇒ complete(OK -> afi)
+                  case a: Any ⇒ complete(BadRequest -> ErrorMessage(s"could not find files ${a.toString}"))
+                }
               }
             }
-          }
         } ~
         pathPrefix("design") {
           pathEnd {
@@ -385,16 +410,16 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
                 }
               }
             } ~
-            delete {
-              logger.info("deleting properties from experiment.")
-              entity(as[RmExpProps]) { props ⇒
-                val saved: Future[RemovePropertiesFeedback] = removeProperties(RemoveExpProperties(experiment, props.properties))
-                onSuccess(saved) {
-                  case RemovePropertiesSuccess ⇒ complete(OK -> SuccessMessage("properties removed successfully."))
-                  case adp: FailedRemovingProperties ⇒ complete(BadRequest -> adp)
+              delete {
+                logger.info("deleting properties from experiment.")
+                entity(as[RmExpProps]) { props ⇒
+                  val saved: Future[RemovePropertiesFeedback] = removeProperties(RemoveExpProperties(experiment, props.properties))
+                  onSuccess(saved) {
+                    case RemovePropertiesSuccess ⇒ complete(OK -> SuccessMessage("properties removed successfully."))
+                    case adp: FailedRemovingProperties ⇒ complete(BadRequest -> adp)
+                  }
                 }
               }
-            }
           }
         } ~
         path("clone") {
@@ -494,21 +519,21 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       }
     } ~
       path("from_source") {
-      pathEnd {
-        post {
-          logger.debug(s"adding raw data (files from mounted source)...")
-          entity(as[SourceRawDataSet]) {
-            drd ⇒
-              val saved: Future[RawDataSetResponse] = defineRawDataFromSource(drd)
-              onSuccess(saved) {
-                case RawDataSetAdded ⇒ complete(Created -> SuccessMessage("raw data added. "))
-                case RawDataSetInProgress ⇒ complete(OK -> SuccessMessage("raw data transfer started..."))
-                case RawDataSetFailed(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
-              }
+        pathEnd {
+          post {
+            logger.debug(s"adding raw data (files from mounted source)...")
+            entity(as[SourceRawDataSet]) {
+              drd ⇒
+                val saved: Future[RawDataSetResponse] = defineRawDataFromSource(drd)
+                onSuccess(saved) {
+                  case RawDataSetAdded ⇒ complete(Created -> SuccessMessage("raw data added. "))
+                  case RawDataSetInProgress ⇒ complete(OK -> SuccessMessage("raw data transfer started..."))
+                  case RawDataSetFailed(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
+                }
+            }
           }
         }
-      }
-    } ~
+      } ~
       path("folder") {
         pathEnd {
 

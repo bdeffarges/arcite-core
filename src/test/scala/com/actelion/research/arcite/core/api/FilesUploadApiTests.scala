@@ -6,7 +6,7 @@ import java.util.UUID
 
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshalling.Marshal
-import akka.http.scaladsl.model.{RequestEntity, _}
+import akka.http.scaladsl.model.{HttpEntity, RequestEntity, _}
 import akka.stream.scaladsl._
 import akka.util.ByteString
 import com.actelion.research.arcite.core.TestHelpers
@@ -14,7 +14,8 @@ import com.actelion.research.arcite.core.api.ArciteService.AllExperiments
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentUID}
 import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddExpProps, AddExperiment, CloneExperimentNewProps}
 import com.actelion.research.arcite.core.fileservice.FileServiceActor.FolderFilesInformation
-import com.actelion.research.arcite.core.utils.FileInformationWithSubFolder
+import com.actelion.research.arcite.core.utils.{FileInformationWithSubFolder, RmFile}
+import spray.json._
 
 import scala.concurrent.Future
 
@@ -50,7 +51,7 @@ class FilesUploadApiTests extends ApiTests {
   "Create a new experiment " should " return the uid of the new experiment " in {
 
     implicit val executionContext = system.dispatcher
-    import spray.json._
+
 
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)
@@ -129,7 +130,7 @@ class FilesUploadApiTests extends ApiTests {
   "Clone an experiment " should " return the uid of the new experiment " in {
 
     implicit val executionContext = system.dispatcher
-    import spray.json._
+
 
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)
@@ -165,7 +166,7 @@ class FilesUploadApiTests extends ApiTests {
     val responseFuture: Future[HttpResponse] =
       Source.single(HttpRequest(uri = s"/experiment/${exp1.uid}/files/meta")).via(connectionFlow).runWith(Sink.head)
 
-    import spray.json._
+
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
 
@@ -187,7 +188,7 @@ class FilesUploadApiTests extends ApiTests {
     val responseFuture: Future[HttpResponse] =
       Source.single(HttpRequest(uri = s"/experiment/${clonedExp.get}/files/meta")).via(connectionFlow).runWith(Sink.head)
 
-    import spray.json._
+
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
 
@@ -200,6 +201,54 @@ class FilesUploadApiTests extends ApiTests {
   }
 
 
+  "now we can delete the uploaded file, that " should " work. " in {
+
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    val jsonRequest = ByteString(RmFile("of_paramount_importance.txt").toJson.prettyPrint)
+
+    val postRequest = HttpRequest(
+      HttpMethods.DELETE,
+      uri = s"/experiment/${exp1.uid}/file_upload/meta",
+      entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
+
+    responseFuture.map { r ⇒
+      logger.info(r.toString())
+      assert(r.status == StatusCodes.OK)
+    }
+  }
+
+
+  "now we can delete the uploaded file from the cloned experiment, that " should " work. " in {
+
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    val jsonRequest = ByteString(RmFile("of_paramount_importance.txt").toJson.prettyPrint)
+
+    val postRequest = HttpRequest(
+      HttpMethods.DELETE,
+      uri = s"/experiment/${clonedExp.get}/file_upload/meta",
+      entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
+
+    responseFuture.map { r ⇒
+      logger.info(r.toString())
+      assert(r.status == StatusCodes.OK)
+    }
+  }
+
+
   "Retrieving one experiment " should " return detailed information of exp " in {
     implicit val executionContext = system.dispatcher
 
@@ -209,7 +258,7 @@ class FilesUploadApiTests extends ApiTests {
     val responseFuture: Future[HttpResponse] =
       Source.single(HttpRequest(uri = s"/experiment/${exp1.uid}")).via(connectionFlow).runWith(Sink.head)
 
-    import spray.json._
+
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
 
@@ -220,6 +269,7 @@ class FilesUploadApiTests extends ApiTests {
       assert(experiment.description == experiment.description)
     }
   }
+
 
   "Retrieving experiment " should " return detailed information of cloned exp " in {
     implicit val executionContext = system.dispatcher
@@ -232,7 +282,7 @@ class FilesUploadApiTests extends ApiTests {
     val responseFuture: Future[HttpResponse] =
       Source.single(HttpRequest(uri = s"/experiment/${clonedExp.get}")).via(connectionFlow).runWith(Sink.head)
 
-    import spray.json._
+
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
 
