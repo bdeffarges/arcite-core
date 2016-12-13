@@ -8,15 +8,36 @@ import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.headers.{Allow, RawHeader}
 import akka.http.scaladsl.server.{MethodRejection, RejectionHandler}
 import akka.stream.ActorMaterializer
+import com.actelion.research.arcite.core.eventinfo.{ArciteAppLog, LogCategory}
+import com.actelion.research.arcite.core.eventinfo.ArciteAppLogs.AddLog
 import com.actelion.research.arcite.core.experiments.ExperimentActorsManager
 import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.Future
 
-
 /**
-  * Created by deffabe1 on 2/29/16.
+  * arcite-core
+  *
+  * Copyright (C) 2016 Actelion Pharmaceuticals Ltd.
+  * Gewerbestrasse 16
+  * CH-4123 Allschwil, Switzerland.
+  *
+  * This program is free software: you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+  * the Free Software Foundation, either version 3 of the License, or
+  * (at your option) any later version.
+  *
+  * This program is distributed in the hope that it will be useful,
+  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  * GNU General Public License for more details.
+  *
+  * You should have received a copy of the GNU General Public License
+  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  *
+  * Created by Bernard Deffarges on 2016/11/22.
+  *
   */
 object Main extends App {
   println(args.mkString(" ; "))
@@ -72,10 +93,14 @@ object Main extends App {
   val log = Logging(system.eventStream, "arcite...")
 
   bindingFuture.map { serverBinding ⇒
+    arciteAppService ! AddLog(ArciteAppLog(LogCategory.INFO,
+      s"application started successfully, listening on port ${serverBinding.localAddress}"))
     log.info(s"RestApi bound to ${serverBinding.localAddress} ")
   }.onFailure {
     case ex: Exception ⇒
       log.error(ex, s"Failed to bind to $host:$port")
+      arciteAppService ! AddLog(ArciteAppLog(LogCategory.ERROR,
+        s"could not start ARCITE. ${ex}"))
       system.terminate()
   }
 }

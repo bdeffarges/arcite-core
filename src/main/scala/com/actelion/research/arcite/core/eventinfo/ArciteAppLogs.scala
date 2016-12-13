@@ -12,8 +12,26 @@ import com.actelion.research.arcite.core.utils
 import scala.collection.immutable.Queue
 
 /**
-  * Created by bernitu on 10/12/16.
+  * arcite-core
   *
+  * Copyright (C) 2016 Actelion Pharmaceuticals Ltd.
+  * Gewerbestrasse 16
+  * CH-4123 Allschwil, Switzerland.
+  *
+  * This program is free software: you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+  * the Free Software Foundation, either version 3 of the License, or
+  * (at your option) any later version.
+  *
+  * This program is distributed in the hope that it will be useful,
+  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  * GNU General Public License for more details.
+  *
+  * You should have received a copy of the GNU General Public License
+  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  *
+  * Created by Bernard Deffarges on 2016/11/22.
   *
   */
 class ArciteAppLogs extends Actor with ActorLogging {
@@ -37,11 +55,16 @@ class ArciteAppLogs extends Actor with ActorLogging {
       if (logsToSave.nonEmpty) saveLogs(logsToSave.toList)
       logsToSave = Queue()
 
-    case GetLogs(page, max) ⇒
+    case GetAppLogs(page, max) ⇒
       // todo implement, first take those available, then load files
+      if ((max * (page +1)) >= logsToShow.size) {
+        // todo to be implemented...
+      } else {
+        sender() ! AppLogs(logsToShow.slice(page * max, (page + 1) * max - 1).toList)
+      }
 
     case CleanUpLogs ⇒
-
+      // todo should combine old logs into one file for a time frame...
 
     case _ : Any ⇒
       log.error("#_&@ I don' know what to do with the given message. ")
@@ -75,7 +98,7 @@ object ArciteAppLogs extends ArciteJSONProtocol {
   /**
     * get logs from most recent to less
     */
-  case class GetLogs(page: Int, max: Int)
+  case class GetAppLogs(page: Int = 0, max: Int = 200)
 
   /**
     * Returned logs

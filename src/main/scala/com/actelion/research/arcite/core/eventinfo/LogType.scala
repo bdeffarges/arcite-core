@@ -36,7 +36,7 @@ object LogType extends scala.Enumeration {
 
 object LogCategory extends scala.Enumeration {
   type LogCategory = Value
-  val SUCCESS, WARNING, ERROR, UNKNOWN = Value
+  val SUCCESS, WARNING, ERROR, INFO, UNKNOWN = Value
 }
 
 case class ExpLog(logType: LogType, logCat: LogCategory, message: String,

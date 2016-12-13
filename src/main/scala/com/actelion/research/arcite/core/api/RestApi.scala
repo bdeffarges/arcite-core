@@ -12,6 +12,7 @@ import akka.pattern.ask
 import akka.stream.scaladsl.FileIO
 import akka.util.Timeout
 import com.actelion.research.arcite.core.api.ArciteService._
+import com.actelion.research.arcite.core.eventinfo.ArciteAppLogs.GetAppLogs
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{InfoLogs, MostRecentLogs, ReadLogs, RecentAllLastUpdates}
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.fileservice.FileServiceActor.{AllFilesInformation, FolderFilesInformation, GetSourceFolders, SourceFoldersAsString}
@@ -174,7 +175,7 @@ trait ArciteServiceApi extends LazyLogging {
   }
 
   def getApplicationLogs() = {
-    //    arciteService.ask(ArciteLogs).mapTo[InfoLogs]
+        arciteService.ask(GetAppLogs).mapTo[InfoLogs]
   }
 
   def getDataSources() = {
