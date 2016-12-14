@@ -1,5 +1,7 @@
 package com.actelion.research.arcite.core.transftree
 
+import akka.actor.{Actor, ActorLogging, Props}
+
 /**
   *
   * arcite-core
@@ -31,7 +33,7 @@ package com.actelion.research.arcite.core.transftree
   * Thus a tree of transforms is a set of transform chains.
   * It starts with a root transform which is the first transform to be processed.
   * Then comes the next transforms in the tree, it can be one or multiple on different
-  * branhces.
+  * branches.
   * The user can decide to start anywhere in the tree as long as the input for the
   * transform in the given node in the tree is provided (as it's not root anymore,
   * it will usually be the result of another transform or maybe another execution
@@ -40,6 +42,13 @@ package com.actelion.research.arcite.core.transftree
   * the definition and the execution of tree of transforms as describe herein.
   *
   */
-class TreeOfTransforms {
+class TreeOfTransforms extends Actor with ActorLogging {
 
+  var treeOfTransforms: Map[String, TreeOfTransforms] = Map()
+
+  override def receive: Receive = ???
+}
+
+object TreeOfTransforms {
+  def props(): Props = Props(classOf[TreeOfTransforms])
 }

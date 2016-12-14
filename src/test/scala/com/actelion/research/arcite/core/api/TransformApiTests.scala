@@ -41,7 +41,8 @@ class TransformApiTests extends ApiTests {
 
   val exp1 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment1)
 
-  var transfDef: Option[TransformDefinitionIdentity] = None
+  var transfDef1: Option[TransformDefinitionIdentity] = None
+  var transfDef2: Option[TransformDefinitionIdentity] = None
 
   var transJobID: Option[String] = None
 
@@ -85,9 +86,34 @@ class TransformApiTests extends ApiTests {
 
       assert(transfDefs.size == 1)
 
-      transfDef = Some(transfDefs.toSeq.head)
+      transfDef1 = Some(transfDefs.toSeq.head)
 
-      assert(transfDef.get.shortName == "to-uppercase")
+      assert(transfDef1.get.shortName == "to-uppercase")
+    }
+  }
+
+  "Get lower case transform definitions " should " return one transform definition " in {
+
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(HttpRequest(uri = "/transform_definitions?search=lowercase")).via(connectionFlow).runWith(Sink.head)
+
+    import spray.json._
+    responseFuture.map { r ⇒
+      assert(r.status == StatusCodes.OK)
+
+      val transfDefs = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+        .parseJson.convertTo[Set[TransformDefinitionIdentity]]
+
+      assert(transfDefs.size == 1)
+
+      transfDef2 = Some(transfDefs.toSeq.head)
+
+      assert(transfDef2.get.shortName == "to-lowercase")
     }
   }
 
@@ -147,7 +173,39 @@ class TransformApiTests extends ApiTests {
 
     import spray.json._
     implicit val toUpperJson = jsonFormat1(ToUpperCase)
-    val transf1 = RunTransformOnObject(exp1.uid, transfDef.get.digestUID, ToUpperCase("transform me to upper case").toJson)
+    val transf1 = RunTransformOnObject(exp1.uid, transfDef1.get.digestUID, ToUpperCase("transform me to upper case").toJson)
+
+    val jsonRequest = ByteString(transf1.toJson.prettyPrint)
+
+    val postRequest = HttpRequest(
+      HttpMethods.POST,
+      uri = "/run_transform",
+      entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
+
+    responseFuture.map { r ⇒
+      logger.info(r.toString())
+      assert(r.status == StatusCodes.OK)
+      val result = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+
+      assert(result.nonEmpty)
+    }
+  }
+
+
+  "start lower case transform on experiment " should " return the transform job uid " in {
+
+    implicit val executionContext = system.dispatcher
+
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    import spray.json._
+    implicit val toUpperJson = jsonFormat1(ToUpperCase)
+    val transf1 = RunTransformOnObject(exp1.uid, transfDef1.get.digestUID, ToUpperCase("transform me to lower case").toJson)
 
     val jsonRequest = ByteString(transf1.toJson.prettyPrint)
 

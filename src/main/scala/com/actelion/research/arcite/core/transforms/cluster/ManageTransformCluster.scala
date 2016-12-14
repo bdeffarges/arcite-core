@@ -11,7 +11,7 @@ import akka.japi.Util._
 import akka.persistence.journal.leveldb.{SharedLeveldbJournal, SharedLeveldbStore}
 import akka.util.Timeout
 import com.actelion.research.arcite.core.transforms.TransformDefinition
-import com.actelion.research.arcite.core.transforms.cluster.workers.fortest.{WorkExecDuplicateText, WorkExecUpperCase}
+import com.actelion.research.arcite.core.transforms.cluster.workers.fortest.{WorkExecDuplicateText, WorkExecLowerCase, WorkExecProd, WorkExecUpperCase}
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 
@@ -153,6 +153,10 @@ object ManageTransformCluster {
   def startUpperCaseWorkersForTests(): Unit = {
     ManageTransformCluster.addWorker(WorkExecUpperCase.definition)
     ManageTransformCluster.addWorker(WorkExecUpperCase.definition)
+    ManageTransformCluster.addWorker(WorkExecLowerCase.definition)
+    ManageTransformCluster.addWorker(WorkExecLowerCase.definition)
+    ManageTransformCluster.addWorker(WorkExecProd.definition)
+    ManageTransformCluster.addWorker(WorkExecProd.definition)
     ManageTransformCluster.addWorker(WorkExecDuplicateText.definition)
     ManageTransformCluster.addWorker(WorkExecDuplicateText.definition)
   }
