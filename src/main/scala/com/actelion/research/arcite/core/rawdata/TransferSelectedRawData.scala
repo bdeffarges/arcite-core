@@ -8,7 +8,6 @@ import akka.actor.{Actor, ActorLogging, ActorRef, OneForOneStrategy, PoisonPill,
 import akka.event.Logging
 import com.typesafe.scalalogging.LazyLogging
 
-import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.util.matching.Regex
 
@@ -48,27 +47,9 @@ class TransferSelectedRawData(caller: ActorRef, targetRawFolder: Path) extends A
 
 
     case TransferFolder(folder, regex, subfolder) ⇒
-
-      var fileMap = mutable.Map[Path, Path]()
-
-      def buildFileMap(folder: String, folderPrefix: String): Unit = {
-        val files = new File(folder).listFiles.filter(_.isFile)
-          .filter(f ⇒ regex.findFirstIn(f.getName).isDefined)
-
-        fileMap ++= files.map(f ⇒ (f, targetRawFolder resolve folderPrefix resolve f.getName))
-          .map(a ⇒ (a._1.toPath, a._2))
-
-        if (subfolder) {
-          new File(folder).listFiles().filter(_.isDirectory)
-            .foreach(fo ⇒ buildFileMap(fo.getPath, folderPrefix + fo.getName + File.separator))
-        }
-      }
-
-      buildFileMap(folder, "")
-
-      //      log.debug(s"fileMap: \n $fileMap")
-
-      self ! TransferFiles(fileMap.toMap)
+      log.debug(s"transferring folder [$folder] with regex [$regex] and subfolder [$subfolder] to [$targetRawFolder]")
+      val map = buildTransferFolderMap(folder, regex, subfolder, targetRawFolder)
+      self ! TransferFiles(map)
 
 
     case TransferFilesToFolder(files, target) ⇒
@@ -84,34 +65,19 @@ class TransferSelectedRawData(caller: ActorRef, targetRawFolder: Path) extends A
 
     case TransferFilesFromSourceToFolder(source, files, regex) ⇒
       log.debug("transferring data from a (usually mounted) source")
-
-      var fileMap = Map[Path, Path]()
-
-      def buildFileMap(file: Path, folderPrefix: Path): Unit = {
-
-        val f = source resolve folderPrefix resolve file
-        val fi = f.toFile
-        log.debug(s"folderPrefix=[$folderPrefix] fileFolder=[$file] full path=[$f]")
-        if (fi.isFile && regex.findFirstIn(fi.getName).isDefined) {
-          fileMap += ((f, targetRawFolder resolve folderPrefix resolve file.getFileName))
-        } else if (fi.isDirectory) {
-          fi.listFiles.foreach(ff ⇒ buildFileMap(ff.toPath.getFileName, folderPrefix resolve file))
-        }
-      }
-
-      files.foreach(f ⇒ buildFileMap(Paths.get(f), Paths.get("")))
-
-      log.debug(s"${fileMap.size} files will be transferred. ")
-
+      val fileMap = buildTransferFromSourceFileMap(source, files, regex, targetRawFolder)
       self ! TransferFiles(fileMap)
 
 
     case _: Any ⇒
       log.error("#&w I don't know what to do with received message...")
+      // todo inform caller...
   }
 }
 
 object TransferSelectedRawData extends LazyLogging {
+
+  def props(caller: ActorRef, targetPath: Path) = Props(classOf[TransferSelectedRawData], caller, targetPath)
 
   case class TransferFiles(files: Map[Path, Path])
 
@@ -129,6 +95,53 @@ object TransferSelectedRawData extends LazyLogging {
 
   case class FileTransferredFailed(error: String) extends FileTransferFeedback
 
+  def buildTransferFromSourceFileMap(source: Path, files: List[String],
+                                     regex: Regex, targetFolder: Path): Map[Path, Path] = {
+
+    var fileMap = Map[Path, Path]()
+
+    def buildFileMap(file: Path, folderPrefix: Path): Unit = {
+
+      val f = source resolve folderPrefix resolve file
+      val fi = f.toFile
+      logger.debug(s"folderPrefix=[$folderPrefix] fileFolder=[$file] full path=[$f]")
+      if (fi.isFile && regex.findFirstIn(fi.getName).isDefined) {
+        logger.debug(s"selected file: ${fi.getName}")
+        fileMap += ((f, targetFolder resolve folderPrefix resolve file.getFileName))
+      } else if (fi.isDirectory) {
+        fi.listFiles.foreach(ff ⇒ buildFileMap(ff.toPath.getFileName, folderPrefix resolve file))
+      }
+    }
+
+    files.foreach(f ⇒ buildFileMap(Paths.get(f), Paths.get("")))
+
+    logger.debug(s"${fileMap.size} files will be transferred. ")
+
+    fileMap
+  }
+
+  def buildTransferFolderMap(folder: String, regex: Regex, includeSubFolder: Boolean,
+                             targetFolder: Path): Map[Path, Path] = {
+
+    var fileMap = Map[Path, Path]()
+
+    def buildFileMap(folder: String, folderPrefix: String): Unit = {
+      val files = new File(folder).listFiles.filter(_.isFile)
+        .filter(f ⇒ regex.findFirstIn(f.getName).isDefined)
+
+      fileMap ++= files.map(f ⇒ (f, targetFolder resolve folderPrefix resolve f.getName))
+        .map(a ⇒ (a._1.toPath, a._2))
+
+      if (includeSubFolder) {
+        new File(folder).listFiles().filter(_.isDirectory)
+          .foreach(fo ⇒ buildFileMap(fo.getPath, folderPrefix + fo.getName + File.separator))
+      }
+    }
+
+    buildFileMap(folder, "")
+
+    fileMap
+  }
 }
 
 
