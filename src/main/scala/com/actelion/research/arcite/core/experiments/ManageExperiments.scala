@@ -481,7 +481,7 @@ object ManageExperiments {
 
   case class AddExperimentWithRequester(experiment: Experiment, requester: ActorRef)
 
-
+  //todo enable cloning with our without copying raw/meta data
   case class CloneExperimentNewProps(name: String, description: String, owner: Owner)
 
   case class CloneExperiment(originExp: String, cloneExpProps: CloneExperimentNewProps)
