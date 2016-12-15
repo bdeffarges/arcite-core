@@ -173,7 +173,8 @@ class TransformApiTests extends ApiTests {
 
     import spray.json._
     implicit val toUpperJson = jsonFormat1(ToUpperCase)
-    val transf1 = RunTransformOnObject(exp1.uid, transfDef1.get.digestUID, ToUpperCase("transform me to upper case").toJson)
+    val transf1 = RunTransformOnObject(exp1.uid, transfDef1.get.digestUID,
+      Some(ToUpperCase("transform me to upper case").toJson))
 
     val jsonRequest = ByteString(transf1.toJson.prettyPrint)
 
@@ -205,7 +206,8 @@ class TransformApiTests extends ApiTests {
 
     import spray.json._
     implicit val toUpperJson = jsonFormat1(ToUpperCase)
-    val transf1 = RunTransformOnObject(exp1.uid, transfDef1.get.digestUID, ToUpperCase("transform me to lower case").toJson)
+    val transf1 = RunTransformOnObject(exp1.uid, transfDef1.get.digestUID,
+      Some(ToUpperCase("transform me to lower case").toJson))
 
     val jsonRequest = ByteString(transf1.toJson.prettyPrint)
 

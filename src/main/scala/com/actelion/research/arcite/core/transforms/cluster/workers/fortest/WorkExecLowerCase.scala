@@ -51,7 +51,7 @@ class WorkExecLowerCase extends Actor with ActorLogging {
           import spray.json.DefaultJsonProtocol._
           implicit val toLowerCaseJson = jsonFormat1(ToLowerCase)
           log.info("waited enough time, doing the work now...")
-          val toBeTransformed = t.parameters.convertTo[ToLowerCase]
+          val toBeTransformed = t.parameters.get.convertTo[ToLowerCase]
           val lowerCased = toBeTransformed.stgToLowerCase.toLowerCase()
           val p = Paths.get(TransformHelper(t).getTransformFolder().toString, "lowercase.txt")
           Files.write(p, lowerCased.getBytes(StandardCharsets.UTF_8), CREATE_NEW)

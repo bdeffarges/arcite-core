@@ -25,7 +25,7 @@ class WorkExecUpperCase extends Actor with ActorLogging {
           import spray.json.DefaultJsonProtocol._
           implicit val toUpperCaseJson = jsonFormat1(ToUpperCase)
           log.info("waited enough time, doing the work now...")
-          val toBeTransformed = t.parameters.convertTo[ToUpperCase]
+          val toBeTransformed = t.parameters.get.convertTo[ToUpperCase]
           val upperCased = toBeTransformed.stgToUpperCase.toUpperCase()
           val p = Paths.get(TransformHelper(t).getTransformFolder().toString, "uppercase.txt")
           Files.write(p, upperCased.getBytes(StandardCharsets.UTF_8), CREATE_NEW)

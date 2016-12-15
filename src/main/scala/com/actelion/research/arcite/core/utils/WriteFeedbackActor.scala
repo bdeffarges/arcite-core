@@ -66,7 +66,7 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
       }
 
       val digest = GetDigest.getFolderContentDigest(transfFolder.toFile)
-      val params = Option(wid.transf.parameters)
+      val params = wid.transf.parameters
 
       import spray.json._
 

@@ -75,7 +75,7 @@ case class TransformSourceFromObject(experiment: Experiment) extends TransformSo
   * @param parameters , we keep it as a JsValue so the real transformer can decide at run time what to do with the parameters
   * @param uid
   */
-case class Transform(transfDefName: FullName, source: TransformSource, parameters: JsValue,
+case class Transform(transfDefName: FullName, source: TransformSource, parameters: Option[JsValue],
                      uid: String = UUID.randomUUID().toString)
 
 
@@ -83,6 +83,7 @@ case class TransformHelper(transform: Transform) {
   def getTransformFolder(): Path =
     ExperimentFolderVisitor(transform.source.experiment).transformFolderPath resolve transform.uid
 }
+
 
 case class TransformDoneSource(experiment: String, kindOfSource: String, fromTransform: Option[String],
                                excludes: Option[Set[String]], excludesRegex: Option[Set[String]])

@@ -33,18 +33,18 @@ object RunTransform {
 
     def transformDefinition: String
 
-    def parameters: JsValue
+    def parameters: Option[JsValue]
   }
 
 
   sealed trait TransfOnRaw extends ProceedWithTransform
 
   case class RunTransformOnRawData(experiment: String, transformDefinition: String,
-                                   parameters: JsValue) extends TransfOnRaw
+                                   parameters: Option[JsValue]) extends TransfOnRaw
 
   case class RunTransformOnRawDataWithExclusion(experiment: String, transformDefinition: String,
                                                 excludes: Set[String] = Set(), excludesRegex: Set[String] = Set(),
-                                                parameters: JsValue) extends TransfOnRaw
+                                                parameters: Option[JsValue]) extends TransfOnRaw
 
 
   sealed trait ProcTransfFromTransf extends ProceedWithTransform {
@@ -52,15 +52,15 @@ object RunTransform {
   }
 
   case class RunTransformOnTransform(experiment: String, transformDefinition: String, transformOrigin: String,
-                                     parameters: JsValue) extends ProcTransfFromTransf
+                                     parameters: Option[JsValue]) extends ProcTransfFromTransf
 
   case class RunTransformOnTransformWithExclusion(experiment: String, transformDefinition: String,
                                                   transformOrigin: String, excludes: Set[String] = Set(),
                                                   excludesRegex: Set[String] = Set(),
-                                                  parameters: JsValue) extends ProcTransfFromTransf
+                                                  parameters: Option[JsValue]) extends ProcTransfFromTransf
 
 
   case class RunTransformOnObject(experiment: String, transformDefinition: String,
-                                  parameters: JsValue) extends ProceedWithTransform
+                                  parameters: Option[JsValue]) extends ProceedWithTransform
 
 }
