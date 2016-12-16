@@ -5,6 +5,7 @@ import java.nio.file.StandardOpenOption._
 import java.nio.file.{Files, Paths}
 
 import akka.actor.{Actor, ActorLogging, ActorPath, Props}
+import com.actelion.research.arcite.core
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.AddLog
 import com.actelion.research.arcite.core.eventinfo.{ExpLog, LogCategory, LogType}
@@ -104,7 +105,7 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
 }
 
 object WriteFeedbackActor {
-  val FILE_NAME = "@rcit8@@_transform_output.json"
+  val FILE_NAME = s"${core.arciteFilePrefix}transform_output.json"
   val SUCCESS = "SUCCESS"
   val FAILED = "FAILED"
   val RAW = "RAW"

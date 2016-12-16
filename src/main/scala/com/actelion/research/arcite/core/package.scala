@@ -31,6 +31,13 @@ package object core {
   logger.debug(s"archive path: $archivePath")
   logger.debug(s"logs path: $logsPath")
 
+  // because of Docker and absolute paths vs mounted directory.
+  // So we can always substitute this folder at later stage.
+  lazy val homeFolderAsVariable = "${arcite.home.experiments}"
+
+  //to avoid as much as possible file collision, we prefix internal arcite files with a strange prefix
+  val arciteFilePrefix = "##@ArCiTe8@@$__"
+
   def allRegexFilesInFolderAndSubfolder(folder: String, regex: String, includeSubfolder: Boolean): Map[File, String] = {
     val reg = regex.r
 
