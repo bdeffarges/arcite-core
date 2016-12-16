@@ -156,8 +156,7 @@ object ArciteLuceneRamIndex {
 
   case class ReturnExperiment(exp: Experiment)
 
-  //todo for testing so far
-
+  //todo only for testing?
   case class FoundExperiments(experiments: List[FoundExperiment])
 
   case class FoundExperimentsWithRequester(foundExperiments: FoundExperiments, requester: ActorRef)

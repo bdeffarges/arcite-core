@@ -1,5 +1,6 @@
 package com.actelion.research.arcite.core.transforms
 
+import java.io.File
 import java.nio.file.Path
 import java.util.UUID
 
@@ -80,8 +81,14 @@ case class Transform(transfDefName: FullName, source: TransformSource, parameter
 
 
 case class TransformHelper(transform: Transform) {
-  def getTransformFolder(): Path =
-    ExperimentFolderVisitor(transform.source.experiment).transformFolderPath resolve transform.uid
+  lazy val experimentFolderVisitor = ExperimentFolderVisitor(transform.source.experiment)
+
+  def getTransformFolder(): Path = experimentFolderVisitor.transformFolderPath resolve transform.uid
+
+  def getRawUserFiles(): Set[Path] = experimentFolderVisitor.userRawFolderPath.toFile.listFiles().toSet.map(_.toPath)
+
+  def getMetaUserFiles(): Set[Path] = experimentFolderVisitor.userMetaFolderPath.toFile.listFiles().toSet.map(_.toPath)
+
 }
 
 
