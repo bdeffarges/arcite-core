@@ -37,6 +37,13 @@ package object core {
 
   //to avoid as much as possible file collision, we prefix internal arcite files with a strange prefix
   val arciteFilePrefix = "##@ArCiTe8@@$__"
+  val successFile = ".success"
+  val failedFile = ".failed"
+
+  // could be later on in config
+  import scala.concurrent.duration._
+  val timeToRetryCheckingPreviousTransform = 1 minutes
+
 
   def allRegexFilesInFolderAndSubfolder(folder: String, regex: String, includeSubfolder: Boolean): Map[File, String] = {
     val reg = regex.r

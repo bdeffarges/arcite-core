@@ -6,6 +6,7 @@ import java.nio.file._
 
 import akka.actor.SupervisorStrategy.Restart
 import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSystem, OneForOneStrategy, Props}
+import com.actelion.research.arcite.core
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.api.ArciteService._
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging._
@@ -23,6 +24,7 @@ import com.actelion.research.arcite.core.utils
 import com.actelion.research.arcite.core.utils._
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
+
 /**
   * arcite-core
   *
@@ -344,6 +346,10 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       sender() ! transDef
 
 
+    case GetTransfCompletionFromExpAndTransf(experiment, transform) ⇒
+      sender() ! isSuccessfulTransform(experiment, transform)
+
+
     case mf: MoveUploadedFile ⇒
       import StandardCopyOption._
       log.debug("move uploaded file to right place. ")
@@ -507,6 +513,18 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
 
     FoundTransfDefFullName(tdi.transformDefinition)
   }
+
+  def isSuccessfulTransform(experiment: String, transform: String): TransformOutcome = {
+
+    val exp = experiments(experiment)
+    val transfP = ExperimentFolderVisitor(exp).transformFolderPath
+
+    val files = transfP.toFile.listFiles()
+
+    if (files.exists(_.getName == core.successFile)) SuccessTransform
+    else if (files.exists(_.getName == core.failedFile)) FailedTransform
+    else NotYetCompletedTransform
+  }
 }
 
 
@@ -562,7 +580,17 @@ object ManageExperiments {
 
   case class GetTransfDefFromExpAndTransf(experiment: String, transform: String)
 
+  case class GetTransfCompletionFromExpAndTransf(experiment: String, transform: String)
+
   case class FoundTransfDefFullName(fullName: FullName)
+
+  sealed trait TransformOutcome
+
+  case object SuccessTransform extends TransformOutcome
+
+  case object NotYetCompletedTransform extends TransformOutcome
+
+  case object FailedTransform extends TransformOutcome
 
   case object GetAllExperimentsLastUpdate
 

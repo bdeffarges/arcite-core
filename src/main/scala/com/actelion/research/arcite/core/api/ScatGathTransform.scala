@@ -1,14 +1,19 @@
 package com.actelion.research.arcite.core.api
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSelection, Props}
+import akka.stream.FlowMonitorState.Failed
+import com.actelion.research.arcite.core
 import com.actelion.research.arcite.core.api.ArciteService.{ExperimentFound, ExperimentFoundFeedback, GetExperiment}
-import com.actelion.research.arcite.core.api.ScatGathTransform.{PrepareTransform, ReadyForTransform}
-import com.actelion.research.arcite.core.experiments.ManageExperiments.{FoundTransfDefFullName, GetTransfDefFromExpAndTransf}
+import com.actelion.research.arcite.core.api.ScatGathTransform.PrepareTransform
+import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, MsgFromTransfDefsManager, OneTransfDef}
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.NotOk
 import com.actelion.research.arcite.core.transforms._
 import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
+
+import scala.concurrent.duration._
+
 
 /**
   * arcite-core
@@ -33,13 +38,20 @@ import com.actelion.research.arcite.core.transforms.cluster.ManageTransformClust
   * Created by Bernard Deffarges on 2016/09/23.
   *
   */
-class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends Actor with ActorLogging { //todo get expManager actor from path
+class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends Actor with ActorLogging {
+  //todo get expManager actor from path
 
-  private var readyForTransform = ReadyForTransform(None, None)
+  private var expFound: Option[ExperimentFound] = None
+
+  private var transfDef: Option[TransformDefinitionIdentity] = None
 
   private var procWTransf: Option[ProceedWithTransform] = None
 
   private var dependsOnIsFine = false
+
+  private var time = core.timeToRetryCheckingPreviousTransform
+
+  import context._
 
   override def receive = {
 
@@ -49,14 +61,12 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
 
       expManager ! GetExperiment(pwt.experiment)
 
-      ManageTransformCluster.getNextFrontEnd() ! GetTransfDef(pwt.transformDefinition)
-
 
     case efr: ExperimentFoundFeedback ⇒
       efr match {
         case ef: ExperimentFound ⇒
-          readyForTransform = readyForTransform.copy(expFound = Some(ef))
-          if (dependsOnIsFine && readyForTransform.transfDef.isDefined) self ! PrepareTransform
+          expFound = Some(ef)
+          ManageTransformCluster.getNextFrontEnd() ! GetTransfDef(procWTransf.get.transformDefinition)
 
         case _ ⇒
           requester ! NotOk("could not find experiment for given id.")
@@ -67,11 +77,12 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
       mftdm match {
         case otd: OneTransfDef ⇒
           if (otd.transfDefId.digestUID == procWTransf.get.transformDefinition) {
-            readyForTransform = readyForTransform.copy(transfDef = Some(otd.transfDefId))
+            transfDef = Some(otd.transfDefId)
             if (otd.transfDefId.dependsOn.isDefined) {
               procWTransf.get match {
                 case ptft: ProcTransfFromTransf ⇒
-                  expManager ! GetTransfDefFromExpAndTransf(ptft.experiment, ptft.transformOrigin)
+                  context.become(waitForDependingTransformToComplete)
+                  expManager ! GetTransfCompletionFromExpAndTransf(ptft.experiment, ptft.transformOrigin)
 
                 case _ ⇒
                   val error =
@@ -81,16 +92,14 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
               }
             } else {
               dependsOnIsFine = true
-              if (readyForTransform.expFound.isDefined) {
-                log.info(s"preparing transform, no dependency to previous transform")
-                self ! PrepareTransform
-              }
+              log.info(s"preparing transform, no dependency to previous transform")
+              self ! PrepareTransform
             }
 
           } else {
             val error =
               s"""transforms uid don't seem to match [${otd.transfDefId.digestUID}] vs
-                  |[${procWTransf.get.transformDefinition}]""".stripMargin
+                 |[${procWTransf.get.transformDefinition}]""".stripMargin
             log.error(error)
             requester ! NotOk(error)
           }
@@ -101,25 +110,10 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
       }
 
 
-    case FoundTransfDefFullName(fullName) ⇒
-      //todo before actual transform, what about a transform precheck (are all the properties, infos, etc. available ?
-      if (readyForTransform.transfDef.get.dependsOn.isDefined &&
-        readyForTransform.transfDef.get.dependsOn.get == fullName) {
-        dependsOnIsFine = true
-        if (readyForTransform.expFound.isDefined) self ! PrepareTransform
-      } else {
-        val error =
-          s"""expected transform origin [${readyForTransform.transfDef.get.fullName}]
-              | does not seem to match provided transform origin [${fullName}]...""".stripMargin
-        log.error(error)
-        requester ! NotOk(error)
-      }
-
-
     case PrepareTransform ⇒
-      val td = readyForTransform.transfDef.get
-      val exp = readyForTransform.expFound.get.exp
-      log.debug(s"preparing for transform: [$readyForTransform")
+      val td = transfDef.get
+      val exp = expFound.get.exp
+      log.debug(s"preparing for transform...")
 
       procWTransf.get match {
         case RunTransformOnObject(_, _, params) ⇒
@@ -139,8 +133,47 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
       }
 
 
+    case FoundTransfDefFullName(fullName) ⇒
+      //todo before actual transform, what about a transform precheck (are all the properties, infos, etc. available ?
+      if (transfDef.get.dependsOn.isDefined &&
+        transfDef.get.dependsOn.get == fullName) {
+        dependsOnIsFine = true
+        if (expFound.isDefined) self ! PrepareTransform
+      } else {
+        val error =
+          s"""expected transform origin [${transfDef.get.fullName}]
+             | does not seem to match provided transform origin [${fullName}]...""".stripMargin
+        log.error(error)
+        requester ! NotOk(error)
+      }
+
+
     case msg: Any ⇒
       requester ! msg
+  }
+
+
+  def waitForDependingTransformToComplete: Receive = {
+
+    case SuccessTransform ⇒
+      context.unbecome()
+      procWTransf.get match {
+        case ptft: ProcTransfFromTransf ⇒
+          expManager ! GetTransfDefFromExpAndTransf(ptft.experiment, ptft.transformOrigin)
+      }
+
+    case NotYetCompletedTransform ⇒
+      log.info("depending ")
+      context.system.scheduler.scheduleOnce(time) {
+        procWTransf.get match {
+          case ptft: ProcTransfFromTransf ⇒
+            time = time + core.timeToRetryCheckingPreviousTransform
+            expManager ! GetTransfCompletionFromExpAndTransf(ptft.experiment, ptft.transformOrigin)
+        }
+      }
+
+    case FailedTransform ⇒
+      requester ! NotOk("Depending transform apparently failed.")
   }
 }
 
@@ -149,7 +182,7 @@ object ScatGathTransform {
 
   def props(reqRef: ActorRef, expManag: ActorSelection) = Props(classOf[ScatGathTransform], reqRef, expManag)
 
-  case class ReadyForTransform(expFound: Option[ExperimentFound], transfDef: Option[TransformDefinitionIdentity])
+  //  case class ReadyForTransform(expFound: Option[ExperimentFound], transfDef: Option[TransformDefinitionIdentity])
 
   sealed trait TransformResponse
 

@@ -80,7 +80,7 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
           Files.write(Paths.get(transfFolder.toString, FILE_NAME),
             fb.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
 
-          Files.write(transfFolder resolve ".success", "SUCCESS".getBytes(StandardCharsets.UTF_8), CREATE_NEW)
+          Files.write(transfFolder resolve core.successFile, "SUCCESS".getBytes(StandardCharsets.UTF_8), CREATE_NEW)
 
           eventInfoAct ! AddLog(wid.transf.source.experiment,
             ExpLog(LogType.TRANSFORM, LogCategory.SUCCESS,
