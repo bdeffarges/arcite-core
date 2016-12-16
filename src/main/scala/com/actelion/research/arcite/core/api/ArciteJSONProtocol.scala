@@ -46,6 +46,7 @@ import spray.json.{DefaultJsonProtocol, _}
   *
   */
 trait ArciteJSONProtocol extends DefaultJsonProtocol {
+//todo split up JSON marshalling by domain (like the routes)
 
   val noDependsOn = FullName("none", "none")
 
@@ -352,6 +353,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
 
   implicit val addPropertiesJSonFormat: RootJsonFormat[AddExpProps] = jsonFormat1(AddExpProps)
   implicit val rmPropertiesJSonFormat: RootJsonFormat[RmExpProps] = jsonFormat1(RmExpProps)
+  implicit val newDescriptionJSonFormat: RootJsonFormat[ChangeDescription] = jsonFormat1(ChangeDescription)
 
   implicit val fileInfoJsonFormat: RootJsonFormat[FileInformation] = jsonFormat2(FileInformation)
   implicit val fileInfoWithSubFolderJsonFormat: RootJsonFormat[FileInformationWithSubFolder] = jsonFormat2(FileInformationWithSubFolder)

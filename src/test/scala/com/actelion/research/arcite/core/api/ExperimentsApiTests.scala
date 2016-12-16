@@ -11,10 +11,11 @@ import akka.util.ByteString
 import com.actelion.research.arcite.core.TestHelpers
 import com.actelion.research.arcite.core.api.ArciteService.{AddedExperiment, AllExperiments, ExperimentFound}
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSummary}
-import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddExpProps, AddExperiment, RmExpProps}
+import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddExpProps, AddExperiment, ChangeDescription, RmExpProps}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import org.scalatest.{AsyncFlatSpec, Matchers}
+import spray.json._
 
 import scala.concurrent.Future
 
@@ -71,7 +72,6 @@ class ExperimentsApiTests extends ApiTests {
     val responseFuture: Future[HttpResponse] =
       Source.single(HttpRequest(uri = "/experiments")).via(connectionFlow).runWith(Sink.head)
 
-    import spray.json._
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
 
@@ -94,7 +94,6 @@ class ExperimentsApiTests extends ApiTests {
     val responseFuture: Future[HttpResponse] =
       Source.single(HttpRequest(uri = "/experiments?page=0&max=200")).via(connectionFlow).runWith(Sink.head)
 
-    import spray.json._
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
 
@@ -112,7 +111,6 @@ class ExperimentsApiTests extends ApiTests {
   "Create a new experiment " should " return the uid of the new experiment which we can then delete " in {
 
     implicit val executionContext = system.dispatcher
-    import spray.json._
 
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)
@@ -138,7 +136,6 @@ class ExperimentsApiTests extends ApiTests {
   "adding properties" should " change the list of properties of the experiments " in {
 
     implicit val executionContext = system.dispatcher
-    import spray.json._
 
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)
@@ -163,7 +160,6 @@ class ExperimentsApiTests extends ApiTests {
   "removing  properties" should " reduce the list of properties of the experiments " in {
 
     implicit val executionContext = system.dispatcher
-    import spray.json._
 
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)
@@ -194,17 +190,62 @@ class ExperimentsApiTests extends ApiTests {
     val responseFuture: Future[HttpResponse] =
       Source.single(HttpRequest(uri = s"/experiment/${exp1.uid}")).via(connectionFlow).runWith(Sink.head)
 
-    import spray.json._
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
 
       val experiment = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
         .parseJson.convertTo[Experiment]
 
-      assert(experiment.name == experiment.name)
-      assert(experiment.description == experiment.description)
+      assert(experiment.name == exp1.name)
+      assert(experiment.description == exp1.description)
       assert(experiment.properties("hello") == "mars")
       assert(experiment.properties("bye") == "jupiter")
+    }
+  }
+
+
+  "uploading new description " should " replace description of given experiment " in {
+
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    val jsonRequest = ByteString(ChangeDescription("New description BLABLA ").toJson.prettyPrint)
+
+    val postRequest = HttpRequest(
+      HttpMethods.PUT,
+      uri = s"/experiment/${exp1.uid}/description",
+      entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
+
+    responseFuture.map { r ⇒
+      logger.info(r.toString())
+      assert(r.status == StatusCodes.OK)
+    }
+  }
+
+
+  "Retrieving an experiment after the description has changed " should
+    " return detailed information with new description " in {
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(HttpRequest(uri = s"/experiment/${exp1.uid}")).via(connectionFlow).runWith(Sink.head)
+
+    responseFuture.map { r ⇒
+      assert(r.status == StatusCodes.OK)
+
+      val experiment = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+        .parseJson.convertTo[Experiment]
+
+      assert(experiment.name == exp1.name)
+      assert(experiment.description.contains("BLABLA"))
     }
   }
 
@@ -212,7 +253,6 @@ class ExperimentsApiTests extends ApiTests {
   "Delete an experiment " should " move the experiment to the deleted folder " in {
 
     implicit val executionContext = system.dispatcher
-    import spray.json._
 
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)

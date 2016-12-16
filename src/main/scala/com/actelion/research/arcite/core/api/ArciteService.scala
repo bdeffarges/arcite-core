@@ -16,6 +16,25 @@ import com.actelion.research.arcite.core.utils.RemoveFile
 import com.typesafe.config.ConfigFactory
 
 /**
+  * arcite-core
+  *
+  * Copyright (C) 2016 Actelion Pharmaceuticals Ltd.
+  * Gewerbestrasse 16
+  * CH-4123 Allschwil, Switzerland.
+  *
+  * This program is free software: you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+  * the Free Software Foundation, either version 3 of the License, or
+  * (at your option) any later version.
+  *
+  * This program is distributed in the hope that it will be useful,
+  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  * GNU General Public License for more details.
+  *
+  * You should have received a copy of the GNU General Public License
+  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  *
   * Created by deffabe1 on 2/29/16.
   */
 object ArciteService {
@@ -87,6 +106,13 @@ object ArciteService {
   case class FailedRemovingProperties(error: String) extends RemovePropertiesFeedback
 
 
+  sealed trait DescriptionChangeFeedback
+
+  case object DescriptionChangeOK extends DescriptionChangeFeedback
+
+  case class DescriptionChangeFailed(error: String) extends DescriptionChangeFeedback
+
+
   sealed trait ExperimentFoundFeedback
 
   case class ExperimentFound(exp: Experiment) extends ExperimentFoundFeedback
@@ -153,6 +179,7 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
   import ArciteService._
 
+  // todo all with requester could be replaced by forward
   override def receive = {
     case gae: GetAllExperiments ⇒
       expManager ! GetAllExperimentsWithRequester(sender(), gae.page, gae.max)
@@ -216,6 +243,10 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
     case iaaf: InfoAboutAllFiles ⇒
       expManager forward iaaf
+
+
+    case changeDesc: ChangeDescriptionOfExperiment ⇒
+      expManager forward changeDesc
 
 
     case rds: RawDataSet ⇒

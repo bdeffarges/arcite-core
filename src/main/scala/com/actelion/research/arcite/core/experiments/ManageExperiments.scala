@@ -23,9 +23,28 @@ import com.actelion.research.arcite.core.utils
 import com.actelion.research.arcite.core.utils._
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
-
 /**
+  * arcite-core
+  *
+  * Copyright (C) 2016 Actelion Pharmaceuticals Ltd.
+  * Gewerbestrasse 16
+  * CH-4123 Allschwil, Switzerland.
+  *
+  * This program is free software: you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+  * the Free Software Foundation, either version 3 of the License, or
+  * (at your option) any later version.
+  *
+  * This program is distributed in the hope that it will be useful,
+  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  * GNU General Public License for more details.
+  *
+  * You should have received a copy of the GNU General Public License
+  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  *
   * Created by Bernard Deffarges on 06/03/16.
+  *
   */
 
 class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with ArciteJSONProtocol with ActorLogging {
@@ -149,7 +168,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
             requester ! FailedAddingDesign(error)
         }
       } else {
-        requester ! FailedAddingDesign("Experiment does not exist")
+        requester ! FailedAddingDesign("It seems the experiment does not exist.")
       }
 
 
@@ -171,7 +190,28 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
             requester ! FailedAddingProperties(error)
         }
       } else {
-        requester ! FailedAddingProperties("Experiment does not exist")
+        requester ! FailedAddingProperties("It seems the experiment does not exist.")
+      }
+
+
+    case ChangeDescriptionOfExperiment(uid, desc) ⇒
+
+      val exp = experiments.get(uid)
+      if (exp.isDefined) {
+        val nex = exp.get.copy(description = desc)
+        experiments += ((uid, nex))
+        LocalExperiments.saveExperiment(nex) match {
+
+          case SaveExperimentSuccessful(expL) ⇒
+            luceneRAMSearchAct ! IndexExperiment(nex)
+            sender() ! DescriptionChangeOK
+
+          case SaveExperimentFailed(error) ⇒
+            sender() ! DescriptionChangeFailed(error)
+        }
+
+      } else {
+        sender() ! DescriptionChangeFailed("It seems the experiment does not exist.")
       }
 
 
@@ -497,6 +537,10 @@ object ManageExperiments {
   case class AddExpProps(properties: Map[String, String])
 
   case class RmExpProps(properties: List[String])
+
+  case class ChangeDescription(description: String)
+
+  case class ChangeDescriptionOfExperiment(experiment: String, description: String)
 
   case class AddExpProperties(exp: String, properties: Map[String, String])
 
