@@ -85,9 +85,11 @@ case class TransformHelper(transform: Transform) {
 
   def getTransformFolder(): Path = experimentFolderVisitor.transformFolderPath resolve transform.uid
 
-  def getRawUserFiles(): Set[Path] = experimentFolderVisitor.userRawFolderPath.toFile.listFiles().toSet.map(_.toPath)
+  def getRawUserFiles(): Set[Path] = experimentFolderVisitor.userRawFolderPath
+    .toFile.listFiles().toSet[File].map(_.toPath)
 
-  def getMetaUserFiles(): Set[Path] = experimentFolderVisitor.userMetaFolderPath.toFile.listFiles().toSet.map(_.toPath)
+  def getMetaUserFiles(): Set[Path] = experimentFolderVisitor.userMetaFolderPath
+    .toFile.listFiles().toSet[File].map(_.toPath)
 
 }
 
