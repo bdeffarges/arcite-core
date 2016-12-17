@@ -1,18 +1,14 @@
-package com.actelion.research.arcite.core.api
+package com.actelion.research.arcite.core.transforms.cluster
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSelection, Props}
-import akka.stream.FlowMonitorState.Failed
 import com.actelion.research.arcite.core
 import com.actelion.research.arcite.core.api.ArciteService.{ExperimentFound, ExperimentFoundFeedback, GetExperiment}
-import com.actelion.research.arcite.core.api.ScatGathTransform.PrepareTransform
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, MsgFromTransfDefsManager, OneTransfDef}
-import com.actelion.research.arcite.core.transforms.cluster.Frontend.NotOk
 import com.actelion.research.arcite.core.transforms._
-import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
-
-import scala.concurrent.duration._
+import com.actelion.research.arcite.core.transforms.cluster.Frontend.NotOk
+import com.actelion.research.arcite.core.transforms.cluster.ScatGathTransform.PrepareTransform
 
 
 /**
@@ -47,8 +43,6 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
 
   private var procWTransf: Option[ProceedWithTransform] = None
 
-  private var dependsOnIsFine = false
-
   private var time = core.timeToRetryCheckingPreviousTransform
 
   import context._
@@ -78,27 +72,18 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
         case otd: OneTransfDef ⇒
           if (otd.transfDefId.digestUID == procWTransf.get.transformDefinition) {
             transfDef = Some(otd.transfDefId)
-            if (otd.transfDefId.dependsOn.isDefined) {
-              procWTransf.get match {
-                case ptft: ProcTransfFromTransf ⇒
-                  context.become(waitForDependingTransformToComplete)
-                  expManager ! GetTransfCompletionFromExpAndTransf(ptft.experiment, ptft.transformOrigin)
+            procWTransf.get match {
+              case ptft: ProcTransfFromTransf ⇒
+                context.become(waitForDependingTransformToComplete)
+                expManager ! GetTransfCompletionFromExpAndTransf(ptft.experiment, ptft.transformOrigin)
 
-                case _ ⇒
-                  val error =
-                    s"""it said it depends on a transform but its type is not a transf-From-Transf""".stripMargin
-                  log.error(error)
-                  requester ! NotOk(error)
-              }
-            } else {
-              dependsOnIsFine = true
-              log.info(s"preparing transform, no dependency to previous transform")
-              self ! PrepareTransform
+              case _ ⇒
+                self ! PrepareTransform
             }
 
           } else {
             val error =
-              s"""transforms uid don't seem to match [${otd.transfDefId.digestUID}] vs
+              s"""transforms uid don't seem to match [${otd.transfDefId.digestUID}] with
                  |[${procWTransf.get.transformDefinition}]""".stripMargin
             log.error(error)
             requester ! NotOk(error)
@@ -135,10 +120,8 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
 
     case FoundTransfDefFullName(fullName) ⇒
       //todo before actual transform, what about a transform precheck (are all the properties, infos, etc. available ?
-      if (transfDef.get.dependsOn.isDefined &&
-        transfDef.get.dependsOn.get == fullName) {
-        dependsOnIsFine = true
-        if (expFound.isDefined) self ! PrepareTransform
+      if (transfDef.get.dependsOn.get == fullName) {
+        self ! PrepareTransform
       } else {
         val error =
           s"""expected transform origin [${transfDef.get.fullName}]
@@ -181,8 +164,6 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
 object ScatGathTransform {
 
   def props(reqRef: ActorRef, expManag: ActorSelection) = Props(classOf[ScatGathTransform], reqRef, expManag)
-
-  //  case class ReadyForTransform(expFound: Option[ExperimentFound], transfDef: Option[TransformDefinitionIdentity])
 
   sealed trait TransformResponse
 

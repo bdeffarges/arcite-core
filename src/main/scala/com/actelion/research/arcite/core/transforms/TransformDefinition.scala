@@ -27,9 +27,14 @@ case class TransformDescription(summary: String, consumes: String, produces: Str
 
 /**
   * Basic definition of a transform. What it does and its unique name.
+  * DependsOn can specify a previous transformation on which results this one might depend on
+  * It just gives an indication for the user and developer of activity workers, however what counts
+  * is that the input (transformation result) is indeed available to the next transform.
   *
   * @param fullName
+  * @param shortName
   * @param description
+  * @param dependsOn
   */
 case class TransformDefinitionIdentity(fullName: FullName, shortName: String, // todo version
                                        description: TransformDescription, dependsOn: Option[FullName] = None) {

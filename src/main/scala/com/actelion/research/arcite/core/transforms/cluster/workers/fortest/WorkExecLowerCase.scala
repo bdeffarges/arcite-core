@@ -40,12 +40,12 @@ class WorkExecLowerCase extends Actor with ActorLogging {
 
   import WorkExecLowerCase._
 
-  def receive = {
+  def receive: Receive = {
     case t: Transform =>
       log.info(s"transformDef: ${t.transfDefName} defLight=$transfDefId")
       require(t.transfDefName == transfDefId.fullName)
       log.info("starting work but will wait for fake...")
-      Thread.sleep(java.util.concurrent.ThreadLocalRandom.current().nextInt(30000))
+      Thread.sleep(java.util.concurrent.ThreadLocalRandom.current().nextLong(100000))
       t.source match {
         case tfo: TransformSourceFromObject ⇒
           import spray.json.DefaultJsonProtocol._

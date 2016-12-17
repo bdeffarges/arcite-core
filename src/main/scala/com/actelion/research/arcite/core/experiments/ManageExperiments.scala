@@ -500,7 +500,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       .map(convertToTransfComFeed).filter(_.isDefined).map(_.get).toSet
   }
 
-  def getTransfDefFromExpAndTransf(experiment: String, transform: String): FoundTransfDefFullName = {
+  private def getTransfDefFromExpAndTransf(experiment: String, transform: String): FoundTransfDefFullName = {
 
     val exp = experiments(experiment)
     val ef = ExperimentFolderVisitor(exp).transformFolderPath
@@ -514,7 +514,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
     FoundTransfDefFullName(tdi.transformDefinition)
   }
 
-  def isSuccessfulTransform(experiment: String, transform: String): TransformOutcome = {
+  private def isSuccessfulTransform(experiment: String, transform: String): TransformOutcome = {
 
     val exp = experiments(experiment)
     val transfP = ExperimentFolderVisitor(exp).transformFolderPath

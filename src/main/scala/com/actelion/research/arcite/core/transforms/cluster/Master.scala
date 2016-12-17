@@ -6,7 +6,7 @@ import akka.cluster.client.ClusterClientReceptionist
 import akka.persistence.PersistentActor
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend._
-import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformDefinitionIdentity}
+import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinitionIdentity}
 import com.actelion.research.arcite.core.utils.WriteFeedbackActor
 import com.actelion.research.arcite.core.utils.WriteFeedbackActor.WriteFeedback
 

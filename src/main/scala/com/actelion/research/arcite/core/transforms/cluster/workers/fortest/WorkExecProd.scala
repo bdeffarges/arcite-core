@@ -10,11 +10,11 @@ class WorkExecProd extends Actor with ActorLogging {
 
   import WorkExecProd._
 
-  def receive = {
+  def receive: Receive = {
     case CalcProd(n) =>
       val n2 = n * n
       val result = s"workexecutor= $n * $n = $n2"
-      Thread.sleep(java.util.concurrent.ThreadLocalRandom.current().nextInt(30000))
+      Thread.sleep(java.util.concurrent.ThreadLocalRandom.current().nextLong(100000))
       sender() ! WorkSuccessFull(result)
 
     case GetTransfDefId(wi) ⇒
