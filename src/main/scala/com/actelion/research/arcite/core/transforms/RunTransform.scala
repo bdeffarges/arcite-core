@@ -1,7 +1,6 @@
 package com.actelion.research.arcite.core.transforms
 
-import akka.actor.ActorRef
-import spray.json.{JsString, JsValue}
+import spray.json.JsValue
 
 /**
   * arcite-core
@@ -31,7 +30,7 @@ object RunTransform {
   sealed trait ProceedWithTransform {
     def experiment: String
 
-    def transformDefinition: String
+    def transfDefUID: String
 
     def parameters: Option[JsValue]
   }
@@ -39,10 +38,10 @@ object RunTransform {
 
   sealed trait TransfOnRaw extends ProceedWithTransform
 
-  case class RunTransformOnRawData(experiment: String, transformDefinition: String,
+  case class RunTransformOnRawData(experiment: String, transfDefUID: String,
                                    parameters: Option[JsValue]) extends TransfOnRaw
 
-  case class RunTransformOnRawDataWithExclusion(experiment: String, transformDefinition: String,
+  case class RunTransformOnRawDataWithExclusion(experiment: String, transfDefUID: String,
                                                 excludes: Set[String] = Set(), excludesRegex: Set[String] = Set(),
                                                 parameters: Option[JsValue]) extends TransfOnRaw
 
@@ -51,16 +50,16 @@ object RunTransform {
     def transformOrigin: String
   }
 
-  case class RunTransformOnTransform(experiment: String, transformDefinition: String, transformOrigin: String,
+  case class RunTransformOnTransform(experiment: String, transfDefUID: String, transformOrigin: String,
                                      parameters: Option[JsValue]) extends ProcTransfFromTransf
 
-  case class RunTransformOnTransformWithExclusion(experiment: String, transformDefinition: String,
+  case class RunTransformOnTransformWithExclusion(experiment: String, transfDefUID: String,
                                                   transformOrigin: String, excludes: Set[String] = Set(),
                                                   excludesRegex: Set[String] = Set(),
                                                   parameters: Option[JsValue]) extends ProcTransfFromTransf
 
 
-  case class RunTransformOnObject(experiment: String, transformDefinition: String,
+  case class RunTransformOnObject(experiment: String, transfDefUID: String,
                                   parameters: Option[JsValue]) extends ProceedWithTransform
 
 }

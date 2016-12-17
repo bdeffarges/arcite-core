@@ -60,7 +60,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
       efr match {
         case ef: ExperimentFound ⇒
           expFound = Some(ef)
-          ManageTransformCluster.getNextFrontEnd() ! GetTransfDef(procWTransf.get.transformDefinition)
+          ManageTransformCluster.getNextFrontEnd() ! GetTransfDef(procWTransf.get.transfDefUID)
 
         case _ ⇒
           requester ! NotOk("could not find experiment for given id.")
@@ -70,7 +70,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
     case mftdm: MsgFromTransfDefsManager ⇒
       mftdm match {
         case otd: OneTransfDef ⇒
-          if (otd.transfDefId.digestUID == procWTransf.get.transformDefinition) {
+          if (otd.transfDefId.digestUID == procWTransf.get.transfDefUID) {
             transfDef = Some(otd.transfDefId)
             procWTransf.get match {
               case ptft: ProcTransfFromTransf ⇒
@@ -84,7 +84,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
           } else {
             val error =
               s"""transforms uid don't seem to match [${otd.transfDefId.digestUID}] with
-                 |[${procWTransf.get.transformDefinition}]""".stripMargin
+                 |[${procWTransf.get.transfDefUID}]""".stripMargin
             log.error(error)
             requester ! NotOk(error)
           }
