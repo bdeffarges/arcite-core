@@ -5,16 +5,21 @@ import java.nio.file.StandardOpenOption._
 import java.nio.file.{Files, Paths}
 
 import akka.actor.{Actor, ActorLogging, Props}
+import com.actelion.research.arcite.core.api.ArciteJSONProtocol
+import com.actelion.research.arcite.core.experiments.ExperimentFolderVisitor
 import com.actelion.research.arcite.core.transforms._
-import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.WorkSuccessFull
+import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.{WorkFailed, WorkSuccessFull}
 import com.actelion.research.arcite.core.transforms.cluster.{GetTransfDefId, TransformType}
-import com.actelion.research.arcite.core.utils.FullName
+import com.actelion.research.arcite.core.utils.{FullName, WriteFeedbackActor}
+import spray.json._
 
-class WorkExecUpperCase extends Actor with ActorLogging {
+import scala.collection.convert.wrapAsScala._
+
+class WorkExecUpperCase extends Actor with ActorLogging with ArciteJSONProtocol {
 
   import WorkExecUpperCase._
 
-  def receive = {
+  def receive: Receive = {
     case t: Transform =>
       log.info(s"transformDef: ${t.transfDefName} defLight=$transfDefId")
       require(t.transfDefName == transfDefId.fullName)
@@ -22,14 +27,49 @@ class WorkExecUpperCase extends Actor with ActorLogging {
       Thread.sleep(java.util.concurrent.ThreadLocalRandom.current().nextLong(100000))
       t.source match {
         case tfo: TransformSourceFromObject ⇒
-          import spray.json.DefaultJsonProtocol._
-          implicit val toUpperCaseJson = jsonFormat1(ToUpperCase)
+
           log.info("waited enough time, doing the work now...")
           val toBeTransformed = t.parameters.get.convertTo[ToUpperCase]
           val upperCased = toBeTransformed.stgToUpperCase.toUpperCase()
           val p = Paths.get(TransformHelper(t).getTransformFolder().toString, "uppercase.txt")
           Files.write(p, upperCased.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
           sender() ! WorkSuccessFull("to upper case completed", p.getFileName.toString :: Nil)
+
+
+        case tfFtf: TransformSourceFromTransform ⇒
+          val transfFolder = ExperimentFolderVisitor(tfFtf.experiment).transformFolderPath
+          val path = transfFolder resolve tfFtf.srcTransformID
+          val feedbF = path resolve WriteFeedbackActor.FILE_NAME
+          if (feedbF.toFile.exists()) {
+            val tdi = Files.readAllLines(feedbF).toList.mkString("\n").parseJson.convertTo[TransformCompletionFeedback]
+            var listFiles: List[String] = Nil
+            tdi.artifacts.map { f ⇒
+              val fileP = path resolve f
+              if (fileP.toFile.exists) {
+                val textUpperC = Files.readAllLines(fileP).mkString("\n").toUpperCase()
+                listFiles = s"Uppercase_$f" :: listFiles
+                val p = Paths.get(TransformHelper(t).getTransformFolder().toString, listFiles.head)
+                Files.write(p, textUpperC.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
+              }
+            }
+            sender() ! WorkSuccessFull("to Upper case completed", listFiles)
+          } else {
+            sender() ! WorkFailed("to Upper case failed ", "did not find previous transform output file.")
+          }
+
+
+        case tfr: TransformSourceFromRaw ⇒
+          val expVisFolder = ExperimentFolderVisitor(tfr.experiment)
+          var listFiles: List[String] = Nil
+
+          expVisFolder.rawFolderPath.toFile.listFiles
+            .filterNot(fn ⇒ ExperimentFolderVisitor.isInternalFile(fn.getName)).map { f ⇒
+            val textUpperC = Files.readAllLines(f.toPath).mkString("\n").toUpperCase()
+            listFiles = s"Uppercase_$f" :: listFiles
+            val p = Paths.get(TransformHelper(t).getTransformFolder().toString, listFiles.head)
+            Files.write(p, textUpperC.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
+          }
+          sender() ! WorkSuccessFull("to Upper case completed", listFiles)
       }
 
     case GetTransfDefId(wi) ⇒

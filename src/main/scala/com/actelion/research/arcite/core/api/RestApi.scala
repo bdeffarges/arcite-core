@@ -158,23 +158,23 @@ trait ArciteServiceApi extends LazyLogging {
   }
 
   def runTransformFromRaw(runTransform: RunTransformOnRawData) = {
-    arciteService.ask(runTransform).mapTo[TransformJobAcceptance]
+    arciteService.ask(runTransform).mapTo[TransformJobReceived]
   }
 
   def runTransformFromRaw(runTransform: RunTransformOnRawDataWithExclusion) = {
-    arciteService.ask(runTransform).mapTo[TransformJobAcceptance]
+    arciteService.ask(runTransform).mapTo[TransformJobReceived]
   }
 
   def runTransformFromObject(runTransform: RunTransformOnObject) = {
-    arciteService.ask(runTransform).mapTo[TransformJobAcceptance]
+    arciteService.ask(runTransform).mapTo[TransformJobReceived]
   }
 
   def runTransformFromTransform(runTransform: RunTransformOnTransform) = {
-    arciteService.ask(runTransform).mapTo[TransformJobAcceptance]
+    arciteService.ask(runTransform).mapTo[TransformJobReceived]
   }
 
   def runTransformFromTransform(runTransform: RunTransformOnTransformWithExclusion) = {
-    arciteService.ask(runTransform).mapTo[TransformJobAcceptance]
+    arciteService.ask(runTransform).mapTo[TransformJobReceived]
   }
 
   def getAllTransformsForExperiment(exp: String) = {
@@ -600,7 +600,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
         logger.debug("running a transform on the raw data from an experiment.")
         entity(as[RunTransformOnRawData]) {
           rtf ⇒
-            val saved: Future[TransformJobAcceptance] = runTransformFromRaw(rtf)
+            val saved: Future[TransformJobReceived] = runTransformFromRaw(rtf)
             onSuccess(saved) {
               case ok: Ok ⇒ complete(OK -> ok)
               case NotOk(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
@@ -613,7 +613,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           logger.debug("running a transform from a previous transform ")
           entity(as[RunTransformOnTransform]) {
             rtf ⇒
-              val saved: Future[TransformJobAcceptance] = runTransformFromTransform(rtf)
+              val saved: Future[TransformJobReceived] = runTransformFromTransform(rtf)
               onSuccess(saved) {
                 case ok: Ok ⇒ complete(OK -> ok)
                 case NotOk(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
@@ -626,7 +626,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           logger.debug("running a transform on the raw data from an experiment.")
           entity(as[RunTransformOnRawDataWithExclusion]) {
             rtf ⇒
-              val saved: Future[TransformJobAcceptance] = runTransformFromRaw(rtf)
+              val saved: Future[TransformJobReceived] = runTransformFromRaw(rtf)
               onSuccess(saved) {
                 case ok: Ok ⇒ complete(OK -> ok)
                 case NotOk(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
@@ -639,7 +639,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           logger.debug("running a transform from a previous transform ")
           entity(as[RunTransformOnTransformWithExclusion]) {
             rtf ⇒
-              val saved: Future[TransformJobAcceptance] = runTransformFromTransform(rtf)
+              val saved: Future[TransformJobReceived] = runTransformFromTransform(rtf)
               onSuccess(saved) {
                 case ok: Ok ⇒ complete(OK -> ok)
                 case NotOk(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
@@ -652,7 +652,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           logger.debug("running a transform from a JS structure as definition object ")
           entity(as[RunTransformOnObject]) {
             rtf ⇒
-              val saved: Future[TransformJobAcceptance] = runTransformFromObject(rtf)
+              val saved: Future[TransformJobReceived] = runTransformFromObject(rtf)
               onSuccess(saved) {
                 case ok: Ok ⇒ complete(OK -> ok)
                 case NotOk(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))

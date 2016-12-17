@@ -1,20 +1,19 @@
 package com.actelion.research.arcite.core.transforms.cluster
 
-import scala.concurrent.duration._
 import akka.actor.{Actor, ActorLogging}
+import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
 import akka.pattern._
 import akka.util.Timeout
-import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
-import com.actelion.research.arcite.core.experiments.ManageExperiments.GetTransfDefFromExpAndTransf
-import com.actelion.research.arcite.core.transforms.RunTransform.ProceedWithTransform
 import com.actelion.research.arcite.core.transforms.TransfDefMsg.{FindTransfDefs, GetAllTransfDefs, GetTransfDef, GetTransfDefFromName}
 import com.actelion.research.arcite.core.transforms.Transform
 
+import scala.concurrent.duration._
+
 object Frontend {
 
-  sealed trait TransformJobAcceptance
-  case class Ok(transfUID: String) extends TransformJobAcceptance
-  case class NotOk(reason: String) extends TransformJobAcceptance
+  sealed trait TransformJobReceived
+  case class Ok(transfUID: String) extends TransformJobReceived
+  case class NotOk(reason: String) extends TransformJobReceived
 
   case class QueryWorkStatus(uid: String)
 

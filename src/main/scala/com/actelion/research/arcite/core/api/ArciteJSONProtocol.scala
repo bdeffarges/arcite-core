@@ -18,8 +18,11 @@ import com.actelion.research.arcite.core.transforms.TransformCompletionStatus.Tr
 import com.actelion.research.arcite.core.transforms._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.Ok
 import com.actelion.research.arcite.core.transforms.cluster.WorkState.AllJobsFeedback
+import com.actelion.research.arcite.core.transforms.cluster.workers.fortest.WorkExecLowerCase.ToLowerCase
+import com.actelion.research.arcite.core.transforms.cluster.workers.fortest.WorkExecUpperCase.ToUpperCase
 import com.actelion.research.arcite.core.utils
 import com.actelion.research.arcite.core.utils._
+import spray.json.DefaultJsonProtocol.jsonFormat1
 import spray.json.{DefaultJsonProtocol, _}
 
 /**
@@ -371,6 +374,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
 
   implicit val sourceFolderJson: RootJsonFormat[SourceFoldersAsString] = jsonFormat1(SourceFoldersAsString)
 
-
+  implicit val toLowerCaseJson: RootJsonFormat[ToLowerCase] = jsonFormat1(ToLowerCase)
+  implicit val toUpperCaseJson: RootJsonFormat[ToUpperCase] = jsonFormat1(ToUpperCase)
 
 }

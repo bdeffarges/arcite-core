@@ -118,14 +118,13 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
       }
 
 
-    case FoundTransfDefFullName(fullName) ⇒
-      //todo before actual transform, what about a transform precheck (are all the properties, infos, etc. available ?
-      if (transfDef.get.dependsOn.get == fullName) {
+    case FoundTransformDefinition(transfFeedback) ⇒
+      if (transfDef.get.dependsOn.get == transfFeedback.transformDefinition) {
         self ! PrepareTransform
       } else {
         val error =
           s"""expected transform origin [${transfDef.get.fullName}]
-             | does not seem to match provided transform origin [${fullName}]...""".stripMargin
+             | does not seem to match provided transform origin [${transfFeedback.transformDefinition}]...""".stripMargin
         log.error(error)
         requester ! NotOk(error)
       }

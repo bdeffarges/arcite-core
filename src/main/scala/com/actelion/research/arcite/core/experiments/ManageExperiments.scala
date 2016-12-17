@@ -500,7 +500,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       .map(convertToTransfComFeed).filter(_.isDefined).map(_.get).toSet
   }
 
-  private def getTransfDefFromExpAndTransf(experiment: String, transform: String): FoundTransfDefFullName = {
+  private def getTransfDefFromExpAndTransf(experiment: String, transform: String): FoundTransformDefinition = {
 
     val exp = experiments(experiment)
     val ef = ExperimentFolderVisitor(exp).transformFolderPath
@@ -508,10 +508,10 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
     import spray.json._
 
     //todo check whether it exists...
-    val f = Paths.get(ef.toString, transform, WriteFeedbackActor.FILE_NAME)
+    val f = ef resolve transform resolve WriteFeedbackActor.FILE_NAME
     val tdi = Files.readAllLines(f).toList.mkString("\n").parseJson.convertTo[TransformCompletionFeedback]
 
-    FoundTransfDefFullName(tdi.transformDefinition)
+    FoundTransformDefinition(tdi)
   }
 
   private def isSuccessfulTransform(experiment: String, transform: String): TransformOutcome = {
@@ -582,7 +582,7 @@ object ManageExperiments {
 
   case class GetTransfCompletionFromExpAndTransf(experiment: String, transform: String)
 
-  case class FoundTransfDefFullName(fullName: FullName)
+  case class FoundTransformDefinition(transfFeedback: TransformCompletionFeedback)
 
   sealed trait TransformOutcome
 
