@@ -1,5 +1,7 @@
 package com.actelion.research.arcite.core.transforms.cluster
 
+import java.util.UUID
+
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSelection, Props}
 import com.actelion.research.arcite.core
 import com.actelion.research.arcite.core.api.ArciteService.{ExperimentFound, ExperimentFoundFeedback, GetExperiment}
@@ -7,7 +9,7 @@ import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, MsgFromTransfDefsManager, OneTransfDef}
 import com.actelion.research.arcite.core.transforms._
-import com.actelion.research.arcite.core.transforms.cluster.Frontend.NotOk
+import com.actelion.research.arcite.core.transforms.cluster.Frontend.{NotOk, Ok}
 import com.actelion.research.arcite.core.transforms.cluster.ScatGathTransform.PrepareTransform
 
 
@@ -45,9 +47,11 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
 
   private var time = core.timeToRetryCheckingPreviousTransform
 
+  private var transfUID: Option[String] = None
+
   import context._
 
-  override def receive = {
+  override def receive: Receive = {
 
     case pwt: ProceedWithTransform ⇒
       log.info(s"transform requested ${pwt}")
@@ -75,8 +79,9 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
             procWTransf.get match {
               case ptft: ProcTransfFromTransf ⇒
                 context.become(waitForDependingTransformToComplete)
+                transfUID = Some(UUID.randomUUID().toString)
                 expManager ! GetTransfCompletionFromExpAndTransf(ptft.experiment, ptft.transformOrigin)
-
+                requester ! Ok(transfUID.get)
               case _ ⇒
                 self ! PrepareTransform
             }
@@ -106,12 +111,17 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
           ManageTransformCluster.getNextFrontEnd() ! t
 
         case RunTransformOnRawData(_, _, params) ⇒
-          val t = Transform(td.fullName, TransformSourceFromRaw(exp), params)
-          ManageTransformCluster.getNextFrontEnd() ! t
+          ManageTransformCluster.getNextFrontEnd() !
+            Transform(td.fullName, TransformSourceFromRaw(exp), params)
 
         case RunTransformOnTransform(_, _, transfOrigin, params) ⇒
-          val t = Transform(td.fullName, TransformSourceFromTransform(exp, transfOrigin), params)
-          ManageTransformCluster.getNextFrontEnd() ! t
+          if (transfUID.nonEmpty) {
+            ManageTransformCluster.getNextFrontEnd() !
+              Transform(td.fullName, TransformSourceFromTransform(exp, transfOrigin), params, transfUID.get)
+          } else {
+            ManageTransformCluster.getNextFrontEnd() !
+              Transform(td.fullName, TransformSourceFromTransform(exp, transfOrigin), params)
+          }
 
         case _ ⇒
           requester ! NotOk("Transform not implemented yet")
@@ -145,7 +155,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
       }
 
     case NotYetCompletedTransform ⇒
-      log.info("depending ")
+      log.info("depending on a transform that does not seem to be completed yet...")
       context.system.scheduler.scheduleOnce(time) {
         procWTransf.get match {
           case ptft: ProcTransfFromTransf ⇒

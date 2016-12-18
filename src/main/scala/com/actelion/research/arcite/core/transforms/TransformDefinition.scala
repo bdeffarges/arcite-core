@@ -78,7 +78,7 @@ case class TransformSourceFromObject(experiment: Experiment) extends TransformSo
   *
   * @param transfDefName
   * @param source
-  * @param parameters , we keep it as a JsValue so the real transformer can decide at run time what to do with the parameters
+  * @param parameters we keep it as a JsValue so the real transformer can decide at run time what to do with the parameters
   * @param uid
   */
 case class Transform(transfDefName: FullName, source: TransformSource, parameters: Option[JsValue],

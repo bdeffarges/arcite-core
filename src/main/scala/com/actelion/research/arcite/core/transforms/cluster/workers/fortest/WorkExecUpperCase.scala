@@ -24,11 +24,11 @@ class WorkExecUpperCase extends Actor with ActorLogging with ArciteJSONProtocol 
       log.info(s"transformDef: ${t.transfDefName} defLight=$transfDefId")
       require(t.transfDefName == transfDefId.fullName)
       log.info("starting work but will wait for fake...")
-      Thread.sleep(java.util.concurrent.ThreadLocalRandom.current().nextLong(100000))
+      Thread.sleep(java.util.concurrent.ThreadLocalRandom.current().nextLong(200000))
+      log.info("waited enough time, doing the work now...")
+
       t.source match {
         case tfo: TransformSourceFromObject ⇒
-
-          log.info("waited enough time, doing the work now...")
           val toBeTransformed = t.parameters.get.convertTo[ToUpperCase]
           val upperCased = toBeTransformed.stgToUpperCase.toUpperCase()
           val p = Paths.get(TransformHelper(t).getTransformFolder().toString, "uppercase.txt")
@@ -65,7 +65,7 @@ class WorkExecUpperCase extends Actor with ActorLogging with ArciteJSONProtocol 
           expVisFolder.rawFolderPath.toFile.listFiles
             .filterNot(fn ⇒ ExperimentFolderVisitor.isInternalFile(fn.getName)).map { f ⇒
             val textUpperC = Files.readAllLines(f.toPath).mkString("\n").toUpperCase()
-            listFiles = s"Uppercase_$f" :: listFiles
+            listFiles = s"Uppercase_${f.getName}" :: listFiles
             val p = Paths.get(TransformHelper(t).getTransformFolder().toString, listFiles.head)
             Files.write(p, textUpperC.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
           }

@@ -41,7 +41,7 @@ object ManageTransformCluster {
 
   logger.info(s"work initial contacts: $workInitialContacts")
 
-  private var frontends = Seq[ActorRef]()
+  private var frontEnds = Seq[ActorRef]()
 
   def defaultTransformClusterStartFromConf(): Unit = {
     val bePorts = config.getIntList("transform_cluster.backends.ports")
@@ -51,17 +51,17 @@ object ManageTransformCluster {
     startUpperCaseWorkersForTests()
   }
 
-  def defaultTransformClusterStart(backendPorts: Seq[Int], frontEnds: Int): Unit = {
+  def defaultTransformClusterStart(backendPorts: Seq[Int], nbrOffrontEnds: Int): Unit = {
     backendPorts.foreach(startBackend(_, "backend"))
 
-    frontends = (1 to frontEnds).map(_ ⇒ startFrontend(0))
+    frontEnds = (1 to nbrOffrontEnds).map(_ ⇒ startFrontend(0))
   }
 
   def getNextFrontEnd(): ActorRef = {
     // todo random for now, instead it should pick-up those that are available
     //
-    val i = ThreadLocalRandom.current().nextInt(frontends.size)
-    val ar = frontends(i)
+    val i = ThreadLocalRandom.current().nextInt(frontEnds.size)
+    val ar = frontEnds(i)
     logger.info(s"pickup id[$i] => $ar}")
 
     ar
