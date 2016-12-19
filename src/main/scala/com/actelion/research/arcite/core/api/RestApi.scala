@@ -15,7 +15,7 @@ import com.actelion.research.arcite.core.api.ArciteService._
 import com.actelion.research.arcite.core.eventinfo.ArciteAppLogs.GetAppLogs
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{InfoLogs, MostRecentLogs, ReadLogs, RecentAllLastUpdates}
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
-import com.actelion.research.arcite.core.fileservice.FileServiceActor.{AllFilesInformation, FolderFilesInformation, GetSourceFolders, SourceFoldersAsString}
+import com.actelion.research.arcite.core.fileservice.FileServiceActor._
 import com.actelion.research.arcite.core.rawdata.DefineRawData._
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
@@ -64,9 +64,6 @@ trait ArciteServiceApi extends LazyLogging {
   implicit def requestTimeout: Timeout
 
   lazy val arciteService = createArciteApi()
-
-  def createFullRawMatrix(folder: String, target: String) =
-    arciteService.ask(CreateAgilentRawMatrix).mapTo[MatrixResponse]
 
   def getAllExperiments(page: Int = 0, max: Int = 100) = {
     logger.debug("asking for all experiments. ")
@@ -212,6 +209,10 @@ trait ArciteServiceApi extends LazyLogging {
 
   def getDataSources() = {
     arciteService.ask(GetSourceFolders).mapTo[SourceFoldersAsString]
+  }
+
+  def getFolderAndFiles(getFiles: GetFiles): Future[FoundFiles] = {
+    arciteService.ask(getFiles).mapTo[FoundFiles]
   }
 }
 
@@ -452,19 +453,19 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           }
         } ~
         path("description") {
-        pathEnd {
-          put {
-            logger.info(s"updating description of $experiment")
-            entity(as[ChangeDescription]) { desc ⇒
-              val saved: Future[DescriptionChangeFeedback] = changeDescription(ChangeDescriptionOfExperiment(experiment, desc.description))
-              onSuccess(saved) {
-                case DescriptionChangeOK ⇒ complete(OK -> SuccessMessage("description changed successfully."))
-                case dcf: DescriptionChangeFailed ⇒ complete(BadRequest -> ErrorMessage(dcf.error))
+          pathEnd {
+            put {
+              logger.info(s"updating description of $experiment")
+              entity(as[ChangeDescription]) { desc ⇒
+                val saved: Future[DescriptionChangeFeedback] = changeDescription(ChangeDescriptionOfExperiment(experiment, desc.description))
+                onSuccess(saved) {
+                  case DescriptionChangeOK ⇒ complete(OK -> SuccessMessage("description changed successfully."))
+                  case dcf: DescriptionChangeFailed ⇒ complete(BadRequest -> ErrorMessage(dcf.error))
+                }
               }
             }
           }
-        }
-      }~
+        } ~
         path("clone") {
           pathEnd {
             post {
@@ -718,14 +719,27 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
     }
   }
 
-  def dataSources = path("data_sources") {
-    get {
-      logger.debug("returns all data sources ")
-      onSuccess(getDataSources()) {
-        case sf: SourceFoldersAsString ⇒ complete(OK -> sf)
-        case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning list of source folders."))
+  def dataSources = pathPrefix("data_sources") {
+    pathPrefix(Segment) { dataS ⇒
+      pathEnd {
+        get {
+          logger.debug("returns data source files ")
+          onSuccess(getFolderAndFiles(GetFiles(FromSourceFolder(dataS)))) {
+            case ff: FoundFiles ⇒ complete(OK -> ff)
+            case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning files for given source folder."))
+          }
+        }
       }
-    }
+    } ~
+      pathEnd {
+        get {
+          logger.debug("returns all data sources ")
+          onSuccess(getDataSources()) {
+            case sf: SourceFoldersAsString ⇒ complete(OK -> sf)
+            case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning list of source folders."))
+          }
+        }
+      }
   }
 
   def allTransforms = path("all_transforms") {

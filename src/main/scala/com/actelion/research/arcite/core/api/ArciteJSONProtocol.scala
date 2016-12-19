@@ -9,7 +9,7 @@ import com.actelion.research.arcite.core.eventinfo.{ArciteAppLog, ExpLog, LogCat
 import com.actelion.research.arcite.core.experiments.ExpState.ExpState
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.experiments._
-import com.actelion.research.arcite.core.fileservice.FileServiceActor.{AllFilesInformation, FolderFilesInformation, SourceFoldersAsString}
+import com.actelion.research.arcite.core.fileservice.FileServiceActor._
 import com.actelion.research.arcite.core.rawdata.DefineRawData.{RawDataSet, RawDataSetRegex, SourceRawDataSet}
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments}
 import com.actelion.research.arcite.core.transforms.RunTransform._
@@ -377,4 +377,5 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val toLowerCaseJson: RootJsonFormat[ToLowerCase] = jsonFormat1(ToLowerCase)
   implicit val toUpperCaseJson: RootJsonFormat[ToUpperCase] = jsonFormat1(ToUpperCase)
 
+  implicit val foundFilesJson: RootJsonFormat[FoundFiles] = jsonFormat2(FoundFiles)
 }

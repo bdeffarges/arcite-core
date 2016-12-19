@@ -60,16 +60,16 @@ class FileServiceActor(mounts: Option[Map[String, SourceInformation]]) extends A
         case rfl: FromExperiment ⇒
           val ev = ExperimentFolderVisitor(rfl.experiment)
           rfl match {
-            case r: FromRawFolder ⇒
+            case FromRawFolder(_) ⇒
               sender() ! getFolderAndFiles(ev.rawFolderPath, subFolder)
-            case r: FromMetaFolder ⇒
+            case FromMetaFolder(_) ⇒
               sender() ! getFolderAndFiles(ev.metaFolderPath, subFolder)
           }
 
         case rfl: FromSourceFolder ⇒
           val sourceF = sourceFolders.get(rfl.name)
           if (sourceF.isDefined) sender() ! getFolderAndFiles(sourceF.get.path, subFolder)
-          else sender() ! FoundFiles(GetFiles(rootFileLoc, subFolder), Set(), Set())
+          else sender() ! FoundFiles(Set(), Set())
       }
 
       def getFolderAndFiles(sourceP: Path, subFolderPath: List[String]): FoundFiles = {
@@ -80,12 +80,12 @@ class FileServiceActor(mounts: Option[Map[String, SourceInformation]]) extends A
           if (folder.isDirectory) {
             val subdirs = folder.listFiles.filter(f ⇒ f.isDirectory).map(_.toString).toSet
             val files = folder.listFiles.filter(f ⇒ f.isFile).map(FileVisitor(_).fileInformation).toSet
-            FoundFiles(GetFiles(rootFileLoc, subFolderPath), subdirs, files)
+            FoundFiles(subdirs, files)
           } else {
-            FoundFiles(GetFiles(rootFileLoc, subFolderPath), Set(), Set(FileVisitor(folder).fileInformation))
+            FoundFiles(Set(), Set(FileVisitor(folder).fileInformation))
           }
         } else {
-          FoundFiles(GetFiles(rootFileLoc, subFolderPath), Set(), Set())
+          FoundFiles(Set(), Set())
         }
       }
 
@@ -164,7 +164,7 @@ object FileServiceActor {
 
   case class GetFiles(rootLocation: RootFileLocations, subFolder: List[String] = List())
 
-  case class FoundFiles(getFilesList: GetFiles, folders: Set[String], files: Set[FileInformation])
+  case class FoundFiles(folders: Set[String], files: Set[FileInformation])
 
   case class GetAllFiles(fromExp: FromExperiment)
 

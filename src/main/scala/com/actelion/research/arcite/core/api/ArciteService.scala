@@ -5,7 +5,7 @@ import akka.util.Timeout
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{MostRecentLogs, ReadLogs, RecentAllLastUpdates}
 import com.actelion.research.arcite.core.experiments.ManageExperiments.{GetAllTransforms, _}
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSummary}
-import com.actelion.research.arcite.core.fileservice.FileServiceActor.GetSourceFolders
+import com.actelion.research.arcite.core.fileservice.FileServiceActor.{GetFiles, GetSourceFolders}
 import com.actelion.research.arcite.core.rawdata.DefineRawData._
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{SearchForXResults, SearchForXResultsWithRequester}
 import com.actelion.research.arcite.core.transforms.RunTransform._
@@ -43,17 +43,6 @@ object ArciteService {
   def name = "arcite-services"
 
   case class GeneralFailure(info: String)
-
-  //for agilent files, todo move somewhere else as it's specific to a platform
-  case object CreateAgilentRawMatrix
-
-  case class GetAgilentRawMatrix(matrixHashCode: String)
-
-  trait MatrixResponse
-
-
-  case class MatrixCreated(target: String)
-
 
   // available json services
   case class GetAllExperiments(page: Int = 0, max: Int = 100)
@@ -305,6 +294,11 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
     case GetSourceFolders ⇒
       fileServiceAct forward GetSourceFolders
+
+
+    case gf: GetFiles ⇒
+      fileServiceAct forward gf
+
 
     //don't know what to do with this message...
     case msg: Any ⇒ log.error(s"don't know what to do with the passed message [$msg] in ${getClass}")
