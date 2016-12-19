@@ -35,7 +35,7 @@ import scala.concurrent.Future
   */
 class GetInfoTests extends ApiTests {
 
-  "get recent logs " should " return a least a couple of logs..." in {
+  "get recent logs " should " return at least a couple of logs..." in {
 
     implicit val executionContext = system.dispatcher
 
