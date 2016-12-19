@@ -129,15 +129,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
 
 
     case FoundTransformDefinition(transfFeedback) ⇒
-      if (transfDef.get.dependsOn.get == transfFeedback.transformDefinition) {
         self ! PrepareTransform
-      } else {
-        val error =
-          s"""expected transform origin [${transfDef.get.fullName}]
-             | does not seem to match provided transform origin [${transfFeedback.transformDefinition}]...""".stripMargin
-        log.error(error)
-        requester ! NotOk(error)
-      }
 
 
     case msg: Any ⇒
@@ -149,17 +141,18 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
 
     case SuccessTransform ⇒
       context.unbecome()
+      log.info(s"was waiting for [$time] for transform to complete, done now, can proceed with next step get transfdef....")
       procWTransf.get match {
         case ptft: ProcTransfFromTransf ⇒
           expManager ! GetTransfDefFromExpAndTransf(ptft.experiment, ptft.transformOrigin)
       }
 
     case NotYetCompletedTransform ⇒
-      log.info("depending on a transform that does not seem to be completed yet...")
+      time = time + core.timeToRetryCheckingPreviousTransform
+      log.info(s"depending on a transform that does not seem to be completed yet... will wait for $time...")
       context.system.scheduler.scheduleOnce(time) {
         procWTransf.get match {
           case ptft: ProcTransfFromTransf ⇒
-            time = time + core.timeToRetryCheckingPreviousTransform
             expManager ! GetTransfCompletionFromExpAndTransf(ptft.experiment, ptft.transformOrigin)
         }
       }

@@ -517,13 +517,20 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
   private def isSuccessfulTransform(experiment: String, transform: String): TransformOutcome = {
 
     val exp = experiments(experiment)
-    val transfP = ExperimentFolderVisitor(exp).transformFolderPath
+    val transfP = ExperimentFolderVisitor(exp).transformFolderPath resolve transform
 
-    val files = transfP.toFile.listFiles()
-
-    if (files.exists(_.getName == core.successFile)) SuccessTransform
-    else if (files.exists(_.getName == core.failedFile)) FailedTransform
-    else NotYetCompletedTransform
+    if (transfP.toFile.exists()) {
+      val files = transfP.toFile.listFiles()
+      if (files.exists(_.getName == core.successFile)) {
+        SuccessTransform
+      } else if (files.exists(_.getName == core.failedFile)) {
+        FailedTransform
+      } else {
+        NotYetCompletedTransform
+      }
+    } else {
+      NotYetCompletedTransform
+    }
   }
 }
 
