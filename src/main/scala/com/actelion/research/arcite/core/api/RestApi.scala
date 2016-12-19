@@ -190,29 +190,29 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(AllJobsStatus).mapTo[AllJobsFeedback]
   }
 
-  def fileUploaded(experiment: String, filePath: Path, meta: Boolean) = {
+  private[api] def fileUploaded(experiment: String, filePath: Path, meta: Boolean) = {
     val fileUp = if (meta) MoveMetaFile(experiment, filePath.toString) else MoveRawFile(experiment, filePath.toString)
     arciteService ! fileUp
   }
 
-  def getRecentLastUpdatesLogs() = {
+  private[api] def getRecentLastUpdatesLogs() = {
     arciteService.ask(RecentAllLastUpdates).mapTo[InfoLogs]
   }
 
-  def getAllExperimentsRecentLogs() = {
+  private[api] def getAllExperimentsRecentLogs() = {
     arciteService.ask(MostRecentLogs).mapTo[InfoLogs]
   }
 
-  def getApplicationLogs() = {
+  private[api] def getApplicationLogs() = {
     arciteService.ask(GetAppLogs).mapTo[InfoLogs]
   }
 
-  def getDataSources() = {
+  private[api] def getDataSources() = {
     arciteService.ask(GetSourceFolders).mapTo[SourceFoldersAsString]
   }
 
-  def getFolderAndFiles(getFiles: GetFiles): Future[FoundFiles] = {
-    arciteService.ask(getFiles).mapTo[FoundFiles]
+  private[api] def getFolderAndFilesFromSource(getFiles: GetFilesFromSource): Future[FoundFoldersAndFiles] = {
+    arciteService.ask(getFiles).mapTo[FoundFoldersAndFiles]
   }
 }
 
@@ -612,13 +612,12 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       path("on_transform") {
         post {
           logger.debug("running a transform from a previous transform ")
-          entity(as[RunTransformOnTransform]) {
-            rtf ⇒
-              val saved: Future[TransformJobReceived] = runTransformFromTransform(rtf)
-              onSuccess(saved) {
-                case ok: Ok ⇒ complete(OK -> ok)
-                case NotOk(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
-              }
+          entity(as[RunTransformOnTransform]) { rtf ⇒
+            val saved: Future[TransformJobReceived] = runTransformFromTransform(rtf)
+            onSuccess(saved) {
+              case ok: Ok ⇒ complete(OK -> ok)
+              case NotOk(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
+            }
           }
         }
       } ~
@@ -724,8 +723,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       pathEnd {
         get {
           logger.debug("returns data source files ")
-          onSuccess(getFolderAndFiles(GetFiles(FromSourceFolder(dataS)))) {
-            case ff: FoundFiles ⇒ complete(OK -> ff)
+          onSuccess(getFolderAndFilesFromSource(GetFilesFromSource(dataS))) {
+            case ff: FoundFoldersAndFiles ⇒ complete(OK -> ff)
             case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning files for given source folder."))
           }
         }
@@ -738,7 +737,16 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             case sf: SourceFoldersAsString ⇒ complete(OK -> sf)
             case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning list of source folders."))
           }
-        }
+        }~
+          post {
+            logger.debug("returns data source files with subfolder ")
+            entity(as[GetFilesFromSource]) { gf ⇒
+              val found: Future[FoundFoldersAndFiles] = getFolderAndFilesFromSource(gf)
+              onSuccess(found) {
+                case ff: FoundFoldersAndFiles ⇒ complete(OK -> ff)
+              }
+            }
+          }
       }
   }
 

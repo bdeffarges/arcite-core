@@ -6,6 +6,12 @@
 
 //println(m  l)
 "\\S+(257236312158|257236312159)\\S+txt".r.findFirstIn("161125_br_257236312158_S01_GE2_1105_Oct12_1_3_MAGEML.txt")
+
+
+"aa/bb/cc/DD/at.txt".split("aa/bb/cc/DD")(1)
+
+
+
 //".*[58|59].*\\.txt".r.findFirstIn("af2315923jkdd.txt")
 
 //import scala.collection.immutable.Queue

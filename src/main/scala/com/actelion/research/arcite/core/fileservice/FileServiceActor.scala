@@ -55,39 +55,20 @@ class FileServiceActor(mounts: Option[Map[String, SourceInformation]]) extends A
         sourceFolders.values.map(si ⇒ (si.name, s"${si.description} (${si.path.toString})")).toMap)
 
 
-    case GetFiles(rootFileLoc, subFolder) ⇒
-      rootFileLoc match {
-        case rfl: FromExperiment ⇒
-          val ev = ExperimentFolderVisitor(rfl.experiment)
-          rfl match {
-            case FromRawFolder(_) ⇒
-              sender() ! getFolderAndFiles(ev.rawFolderPath, subFolder)
-            case FromMetaFolder(_) ⇒
-              sender() ! getFolderAndFiles(ev.metaFolderPath, subFolder)
-          }
+    case GetExperimentFiles(fromExperiment, subFolder) ⇒
 
-        case rfl: FromSourceFolder ⇒
-          val sourceF = sourceFolders.get(rfl.name)
-          if (sourceF.isDefined) sender() ! getFolderAndFiles(sourceF.get.path, subFolder)
-          else sender() ! FoundFiles(Set(), Set())
+      fromExperiment match {
+        case FromRawFolder(exp) ⇒
+          sender() ! getFolderAndFiles(ExperimentFolderVisitor(exp).rawFolderPath, subFolder)
+        case FromMetaFolder(exp) ⇒
+          sender() ! getFolderAndFiles(ExperimentFolderVisitor(exp).metaFolderPath, subFolder)
       }
 
-      def getFolderAndFiles(sourceP: Path, subFolderPath: List[String]): FoundFiles = {
 
-        val folder = subFolderPath.foldLeft(sourceP)((p, s) ⇒ p resolve s).toFile
-
-        if (folder.exists()) {
-          if (folder.isDirectory) {
-            val subdirs = folder.listFiles.filter(f ⇒ f.isDirectory).map(_.toString).toSet
-            val files = folder.listFiles.filter(f ⇒ f.isFile).map(FileVisitor(_).fileInformation).toSet
-            FoundFiles(subdirs, files)
-          } else {
-            FoundFiles(Set(), Set(FileVisitor(folder).fileInformation))
-          }
-        } else {
-          FoundFiles(Set(), Set())
-        }
-      }
+    case GetFilesFromSource(source, subFolder) ⇒
+      val sourceF = sourceFolders.get(source)
+      if (sourceF.isDefined) sender() ! getFolderAndFiles(sourceF.get.path, subFolder)
+      else sender() ! FoundFoldersAndFiles(Set(), Set())
 
 
     case GetAllFilesWithRequester(fromExp, requester) ⇒
@@ -132,19 +113,19 @@ object FileServiceActor {
 
   def props(): Props = Props(classOf[FileServiceActor], mounts)
 
-  sealed trait RootFileLocations
 
-  sealed trait FromExperiment extends RootFileLocations {
+  sealed trait FilesFromExperiment {
     def experiment: Experiment
   }
 
-  case class FromRawFolder(experiment: Experiment) extends FromExperiment
+  case class FromRawFolder(experiment: Experiment) extends FilesFromExperiment
 
-  case class FromMetaFolder(experiment: Experiment) extends FromExperiment
+  case class FromMetaFolder(experiment: Experiment) extends FilesFromExperiment
 
-  case class FromAllFolders(experiment: Experiment) extends FromExperiment
+  case class FromAllFolders(experiment: Experiment) extends FilesFromExperiment
 
-  case class FromSourceFolder(name: String) extends RootFileLocations
+
+  case class FromSourceFolder(name: String)
 
   case class SetSourceFolder(sourceInformation: SourceInformation)
 
@@ -160,13 +141,15 @@ object FileServiceActor {
     override def toString: String = s"$name, $description (${path.toString})"
   }
 
+  case class GetFilesFromSource(sourceName: String, subFolder: List[String] = List())
+
   case object NothingFound
 
-  case class GetFiles(rootLocation: RootFileLocations, subFolder: List[String] = List())
+  case class GetExperimentFiles(source: FilesFromExperiment, subFolder: List[String] = List())
 
-  case class FoundFiles(folders: Set[String], files: Set[FileInformation])
+  case class FoundFoldersAndFiles(folders: Set[String], files: Set[FileInformation])
 
-  case class GetAllFiles(fromExp: FromExperiment)
+  case class GetAllFiles(fromExp: FilesFromExperiment)
 
   case class GetAllFilesWithRequester(getAllFiles: GetAllFiles, requester: ActorRef)
 
@@ -175,4 +158,23 @@ object FileServiceActor {
   case class AllFilesInformation(rawFiles: Set[FileInformationWithSubFolder] = Set(),
                                  userRawFiles: Set[FileInformationWithSubFolder] = Set(),
                                  metaFiles: Set[FileInformationWithSubFolder] = Set())
+
+
+  private def getFolderAndFiles(sourceP: Path, subFolderPath: List[String]): FoundFoldersAndFiles = {
+
+    val folder = subFolderPath.foldLeft(sourceP)((p, s) ⇒ p resolve s).toFile
+
+    if (folder.exists()) {
+      if (folder.isDirectory) {
+        val subdirs = folder.listFiles.filter(f ⇒ f.isDirectory).map(_.getName).toSet
+
+        val files = folder.listFiles.filter(f ⇒ f.isFile).map(FileVisitor(_).fileInformation).toSet
+        FoundFoldersAndFiles(subdirs, files)
+      } else {
+        FoundFoldersAndFiles(Set(), Set(FileVisitor(folder).fileInformation))
+      }
+    } else {
+      FoundFoldersAndFiles(Set(), Set())
+    }
+  }
 }

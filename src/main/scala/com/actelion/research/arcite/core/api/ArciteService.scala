@@ -5,7 +5,7 @@ import akka.util.Timeout
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{MostRecentLogs, ReadLogs, RecentAllLastUpdates}
 import com.actelion.research.arcite.core.experiments.ManageExperiments.{GetAllTransforms, _}
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSummary}
-import com.actelion.research.arcite.core.fileservice.FileServiceActor.{GetFiles, GetSourceFolders}
+import com.actelion.research.arcite.core.fileservice.FileServiceActor.{GetExperimentFiles, GetFilesFromSource, GetSourceFolders}
 import com.actelion.research.arcite.core.rawdata.DefineRawData._
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{SearchForXResults, SearchForXResultsWithRequester}
 import com.actelion.research.arcite.core.transforms.RunTransform._
@@ -296,7 +296,11 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
       fileServiceAct forward GetSourceFolders
 
 
-    case gf: GetFiles ⇒
+    case gf: GetFilesFromSource ⇒
+      fileServiceAct forward gf
+
+
+    case gf: GetExperimentFiles ⇒
       fileServiceAct forward gf
 
 
