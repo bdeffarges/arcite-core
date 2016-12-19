@@ -101,4 +101,21 @@ class GetInfoTests extends ApiTests {
       assert(dataSources.sourceFolders.size > 1)
     }
   }
+
+  "get data sources details " should " return the list of folders and files for the given source..." in {
+
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(HttpRequest(uri = "/data_sources")).via(connectionFlow).runWith(Sink.head)
+
+    import spray.json._
+
+    responseFuture.map { r ⇒
+        fail()
+    }
+  }
 }
