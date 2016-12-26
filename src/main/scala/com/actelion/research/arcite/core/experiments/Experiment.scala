@@ -42,6 +42,7 @@ object DefaultExperiment {
 case class ExperimentSummary(name: String, description: String, owner: Owner, uid: String,
                              lastUpdate: String = utils.almostTenYearsAgoAsString)
 
+//todo what happens in case project has same name as a folder...
 case class ExperimentFolderVisitor(exp: Experiment) {
 
   val config: Config = ConfigFactory.load()

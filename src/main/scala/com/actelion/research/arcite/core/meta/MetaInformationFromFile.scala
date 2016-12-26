@@ -9,11 +9,11 @@ import scala.io.Source
   */
 class MetaInformationFromFile(filePath: String, parsedFile: ParsedFile) extends LazyLogging {
 
-  val headers = parsedFile.header
-  val lines = parsedFile.lines
+  val headers: List[String] = parsedFile.header
+  val lines: List[List[String]] = parsedFile.lines
 
-  val headerMap = headers.map(h ⇒ (headers.indexOf(h), h)).toMap
-  val headerReverseMap = headers.map(h ⇒ (h, headers.indexOf(h))).toMap
+  val headerMap: Map[Int,String] = headers.map(h ⇒ (headers.indexOf(h), h)).toMap
+  val headerReverseMap: Map[String, Int] = headers.map(h ⇒ (h, headers.indexOf(h))).toMap
 
   logger.debug(s"headers=$headerReverseMap")
   logger.debug(s"line size=${lines.size}")

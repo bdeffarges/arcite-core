@@ -1,0 +1,5 @@
+the publish area of an experiments links to transform results that the user wants to make available to her
+ fellow researchers.
+ So we could define grammar (using Tika/lucene) to automatically buid a search index on published material (which
+ could be PDFs, or matrices, etc.).
+
