@@ -11,6 +11,7 @@ import akka.http.scaladsl.server._
 import akka.pattern.ask
 import akka.stream.scaladsl.FileIO
 import akka.util.Timeout
+import com.actelion.research.arcite.core
 import com.actelion.research.arcite.core.api.ArciteService._
 import com.actelion.research.arcite.core.eventinfo.ArciteAppLogs.GetAppLogs
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{InfoLogs, MostRecentLogs, ReadLogs, RecentAllLastUpdates}
@@ -240,12 +241,22 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       allTransforms ~
       dataSources ~
       appLogs ~
+      organizationRoute ~
       defaultRoute
   }
 
   def defaultRoute = {
     get {
       complete(OK -> apiSpec.stripMargin)
+    }
+  }
+
+
+  def organizationRoute = path("organization") {
+    pathEnd {
+      get {
+        complete(OK -> core.organization)
+      }
     }
   }
 

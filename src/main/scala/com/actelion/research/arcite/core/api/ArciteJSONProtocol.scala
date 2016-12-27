@@ -20,7 +20,7 @@ import com.actelion.research.arcite.core.transforms.cluster.Frontend.Ok
 import com.actelion.research.arcite.core.transforms.cluster.WorkState.AllJobsFeedback
 import com.actelion.research.arcite.core.transforms.cluster.workers.fortest.WorkExecLowerCase.ToLowerCase
 import com.actelion.research.arcite.core.transforms.cluster.workers.fortest.WorkExecUpperCase.ToUpperCase
-import com.actelion.research.arcite.core.utils
+import com.actelion.research.arcite.core.{ExperimentType, Organization, utils}
 import com.actelion.research.arcite.core.utils._
 import spray.json.DefaultJsonProtocol.jsonFormat1
 import spray.json.{DefaultJsonProtocol, _}
@@ -377,9 +377,12 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val foundFilesJson: RootJsonFormat[FoundFoldersAndFiles] = jsonFormat2(FoundFoldersAndFiles)
   implicit val getFilesFolderJson: RootJsonFormat[GetFilesFromSource] = jsonFormat2(GetFilesFromSource)
 
+  implicit val expTypesJson: RootJsonFormat[ExperimentType] = jsonFormat3(ExperimentType)
+  implicit val organizationJson: RootJsonFormat[Organization] = jsonFormat4(Organization)
   // for test workers
   implicit val toLowerCaseJson: RootJsonFormat[ToLowerCase] = jsonFormat1(ToLowerCase)
   implicit val toUpperCaseJson: RootJsonFormat[ToUpperCase] = jsonFormat1(ToUpperCase)
+
 
 
 }

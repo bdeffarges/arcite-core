@@ -4,7 +4,7 @@ import java.io.File
 import java.nio.file.{Path, Paths}
 
 import com.actelion.research.arcite.core.utils.{FileInformationWithSubFolder, FileVisitor}
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
 import org.slf4j.LoggerFactory
 
 package object core {
@@ -42,8 +42,20 @@ package object core {
 
   // could be later on in config
   import scala.concurrent.duration._
-  val timeToRetryCheckingPreviousTransform = 1 minutes
 
+  val timeToRetryCheckingPreviousTransform: FiniteDuration = 1 minutes
+
+  lazy val organization: Organization = {
+    val name = config.getString("arcite.organization.name")
+    val department = config.getString("arcite.organization.department")
+    val packagePath = config.getString("arcite.organization.package")
+
+    import scala.collection.convert.wrapAsScala._
+    val expTypes = config.getConfigList("arcite.organization.experiment_types").toSet[Config]
+      .map(c ⇒ ExperimentType(c.getString("name"), c.getString("description"), s"""$packagePath.${c.getString("package")}"""))
+
+    Organization(name, department, packagePath, expTypes)
+  }
 
   def allRegexFilesInFolderAndSubfolder(folder: String, regex: String, includeSubfolder: Boolean): Map[File, String] = {
     val reg = regex.r
