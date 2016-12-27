@@ -11,6 +11,7 @@ import com.actelion.research.arcite.core.utils.Owner
 object TestHelpers {
 
   val organization = "com.actelion.research.bioinfo.mock"
+  val organization2 = "com.actelion.research.bioinfo.mockmock"
   val person1 = "B. Deffarges"
   val person2 = "B. Renault"
   val person3 = "M. Best Scientist of planet earth"
@@ -18,6 +19,7 @@ object TestHelpers {
   val owner1 = Owner(organization, person1)
   val owner2 = Owner(organization, person2)
   val owner3 = Owner(organization, person3)
+  val owner4 = Owner(organization2, person3)
 
   val cond1 = Condition("hw", "helloworld", "greetings")
   val cond2 = Condition("he", "helloearth", "greetings")
@@ -37,7 +39,9 @@ object TestHelpers {
   val expDesign2 = ExperimentalDesign("hello", (condFS1 :: condFS2 :: condFS3 :: condFS4 :: Nil).toSet)
 
   val experiment1 = Experiment("flying to Mars", "Indeed, I will fly to Mars...", owner1, design = expDesign1)
-  val experiment2 = Experiment("flying to Neptune", "Flying to Neptune is better...", owner1, design = expDesign2)
+  val experiment2 = Experiment("flying to Neptune", "Flying to Neptune is better...", owner2, design = expDesign2)
+
+  val experiment3 = Experiment("flying to the next galaxy ", "Flying far away...", owner4, design = expDesign2)
 
   def cloneForFakeExperiment(exp: Experiment): Experiment =
     exp.copy(name = s"${exp.name}--${UUID.randomUUID().toString}")

@@ -46,6 +46,7 @@ import scala.concurrent.Future
 class ExperimentsApiTests extends ApiTests {
 
   val exp1 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment1)
+  val exp2 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment3)
 
   "Default get " should "return rest interface specification " in {
 
@@ -129,6 +130,31 @@ class ExperimentsApiTests extends ApiTests {
     responseFuture.map { r ⇒
       logger.info(r.toString())
       assert(r.status == StatusCodes.Created)
+    }
+  }
+
+
+  "Create a new experiment with a wrong organization " should " not work and raise an exception " in {
+
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+
+    val jsonRequest = ByteString(AddExperiment(exp2).toJson.prettyPrint)
+
+    val postRequest = HttpRequest(
+      HttpMethods.POST,
+      uri = "/experiment",
+      entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
+
+    responseFuture.map { r ⇒
+      logger.info(r.toString())
+      assert(r.status == StatusCodes.Conflict)
     }
   }
 

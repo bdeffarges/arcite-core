@@ -85,20 +85,26 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
 
     case AddExperimentWithRequester(exp, requester) ⇒
       if (!experiments.contains(exp.uid)) {
-        experiments += ((exp.uid, exp))
+        if (core.organization.experimentTypes.exists(_.packagePath == exp.owner.organization)) {
 
-        LocalExperiments.saveExperiment(exp) match {
+          experiments += ((exp.uid, exp))
 
-          case SaveExperimentSuccessful(expLog) ⇒
-            eventInfoLoggingAct ! AddLog(exp, ExpLog(LogType.CREATED, LogCategory.SUCCESS, "experiment created. ", Some(exp.uid)))
-            requester ! AddedExperiment(exp.uid)
+          LocalExperiments.saveExperiment(exp) match {
 
-          case SaveExperimentFailed(error) ⇒
-            requester ! FailedAddingExperiment(error)
+            case SaveExperimentSuccessful(expLog) ⇒
+              eventInfoLoggingAct ! AddLog(exp, ExpLog(LogType.CREATED, LogCategory.SUCCESS, "experiment created. ", Some(exp.uid)))
+              requester ! AddedExperiment(exp.uid)
+
+            case SaveExperimentFailed(error) ⇒
+              requester ! FailedAddingExperiment(error)
+          }
+
+          luceneRAMSearchAct ! IndexExperiment(exp)
+        } else {
+          requester ! FailedAddingExperiment(
+            s"""experiment owner organization ${exp.owner.organization} does not conform with
+               |authorized organizations for this installation of Arcite, see API/organization """.stripMargin)
         }
-
-        luceneRAMSearchAct ! IndexExperiment(exp)
-
       } else {
         requester ! FailedAddingExperiment(s"same experiment ${exp.owner.organization}/${exp.name} already exists. ")
       }
