@@ -4,7 +4,7 @@ import java.util.concurrent.Executors
 
 import akka.actor.{Actor, ActorLogging, ActorRef}
 import com.actelion.research.arcite.core.experiments.{Condition, Experiment}
-import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{IndexExperiment, _}
+import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex._
 import org.apache.lucene.analysis.Analyzer
 import org.apache.lucene.analysis.Analyzer.TokenStreamComponents
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer
@@ -23,17 +23,15 @@ class ArciteLuceneRamIndex extends Actor with ActorLogging {
 
   val directory = new RAMDirectory
 
-  lazy val executors = Executors.newCachedThreadPool
+  private lazy val executors = Executors.newCachedThreadPool
 
-  lazy val indexReader = DirectoryReader.open(directory)
-  lazy val indexSearcher = new IndexSearcher(indexReader, executors) //todo is that compatible with the actor model??
+  private lazy val indexReader = DirectoryReader.open(directory)
+  private lazy val indexSearcher = new IndexSearcher(indexReader, executors)
 
-  override def receive = {
+  override def receive: Receive = {
     case IndexExperiment(exp) ⇒
       val indexWriter = new IndexWriter(directory,
         new IndexWriterConfig(ArciteAnalyzerFactory.perfieldAnalyzerWrapper))
-
-      import ArciteLuceneRamIndex._
 
       val d = new Document
       d.add(new TextField(luc_name, exp.name, Field.Store.NO))
@@ -47,17 +45,16 @@ class ArciteLuceneRamIndex extends Actor with ActorLogging {
       d.add(new StringField(luc_digest, exp.uid, Field.Store.YES))
       indexWriter.addDocument(d)
 
-      indexWriter.close() //todo when to close the writer?
+      indexWriter.close()
 
 
     case RemoveFromIndex(exp) ⇒
 
-      // todo move config and index writer somewhere else
       val indexWriter = new IndexWriter(directory,
         new IndexWriterConfig(ArciteAnalyzerFactory.perfieldAnalyzerWrapper))
 
       indexWriter.deleteDocuments(new TermQuery(new Term(luc_digest, exp.uid)))
-      indexWriter.close() //todo when to close the writer?
+      indexWriter.close()
 
 
     case s: SearchForXResultsWithRequester ⇒
@@ -183,11 +180,11 @@ class NGramExperimentAnalyzer extends Analyzer {
 
 object ArciteAnalyzerFactory {
 
-  val perFieldAnalyzer = scala.collection.mutable.Map[String, Analyzer]()
+  private val perFieldAnalyzer = scala.collection.mutable.Map[String, Analyzer]()
 
-  val whiteSpaceAnalyzer = new WhitespaceAnalyzer
-  val standardAnalyzer = new StandardAnalyzer
-  val nGramAnalyzer = new NGramExperimentAnalyzer
+  private val whiteSpaceAnalyzer = new WhitespaceAnalyzer
+  private val standardAnalyzer = new StandardAnalyzer
+  private val nGramAnalyzer = new NGramExperimentAnalyzer
 
   import ArciteLuceneRamIndex._
 

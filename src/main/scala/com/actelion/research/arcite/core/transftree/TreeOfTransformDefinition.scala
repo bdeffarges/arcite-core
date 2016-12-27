@@ -1,6 +1,6 @@
 package com.actelion.research.arcite.core.transftree
 
-import com.actelion.research.arcite.core.transforms.TransformDefinitionIdentity
+import com.actelion.research.arcite.core.utils.{FullName, GetDigest}
 
 /**
   *
@@ -26,15 +26,22 @@ import com.actelion.research.arcite.core.transforms.TransformDefinitionIdentity
   * Created by Bernard Deffarges on 2016/12/14.
   *
   */
-case class TreeOfTransformDefinition(name: String, description: String,
-                                     root: TreeOfTransformNode)
+case class TreeOfTransformDefinition(name: FullName, description: String,
+                                     root: TreeOfTransformNode) {
+
+  lazy val uid = GetDigest.getDigest(s"$name $description")
 
 
-case class TreeOfTransformNode(nodeTransfIden: TransformDefinitionIdentity,
-                               parent: Option[TreeOfTransformNode], children: List[TreeOfTransformNode]) {
+  def getAllNodes(nodes: List[TreeOfTransformNode]): List[TreeOfTransformNode] = nodes match {
+    case Nil ⇒ List()
+    case h :: l ⇒ h :: getAllNodes(h.children) ++ getAllNodes(l)
+  }
 
-  def isRoot = parent.isEmpty
+  lazy val allNodes: List[TreeOfTransformNode] = getAllNodes(root :: Nil)
+}
+
+
+case class TreeOfTransformNode(nodeTransDefName: FullName, children: List[TreeOfTransformNode]) {
 
   def isLeaf = children.isEmpty
 }
-

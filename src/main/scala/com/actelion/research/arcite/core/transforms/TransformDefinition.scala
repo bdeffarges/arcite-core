@@ -17,7 +17,7 @@ import spray.json.JsValue
   */
 
 /**
-  * description of a transform, what its purpose is, what it consumes and what it produces
+  * description of a transform, its purpose, what it consumes and what it produces
   *
   * @param summary
   * @param consumes
@@ -29,7 +29,7 @@ case class TransformDescription(summary: String, consumes: String, produces: Str
   * Basic definition of a transform. What it does and its unique name.
   * DependsOn can specify a previous transformation on which results this one might depend on
   * It just gives an indication for the user and developer of activity workers, however what counts
-  * is that the input (transformation result) is indeed available to the next transform.
+  * is the actual input (e.g. transformation result) available to the next transform.
   *
   * @param fullName
   * @param shortName

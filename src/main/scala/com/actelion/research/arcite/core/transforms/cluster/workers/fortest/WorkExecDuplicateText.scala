@@ -38,7 +38,7 @@ class WorkExecDuplicateText extends Actor with ActorLogging {
 
   import WorkExecDuplicateText._
 
-  def receive = {
+  def receive: Receive = {
     case t: Transform =>
       log.info(s"transformDef: ${t.transfDefName} transfDef=$transfDefId")
       require(t.transfDefName == transfDefId.fullName)
@@ -72,7 +72,7 @@ class WorkExecDuplicateText extends Actor with ActorLogging {
 
 
 object WorkExecDuplicateText {
-  val fullName = FullName("com.actelion.research.arcite.core", "duplicate-text")
+  val fullName: FullName = FullName("com.actelion.research.arcite.core", "duplicate-text")
 
   val transfDefId = TransformDefinitionIdentity(fullName, "dupText",
     TransformDescription("duplicate-text", "upper-cased-text", "duplicated"),

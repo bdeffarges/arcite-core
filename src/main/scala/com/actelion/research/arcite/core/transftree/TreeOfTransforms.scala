@@ -1,6 +1,8 @@
 package com.actelion.research.arcite.core.transftree
 
 import akka.actor.{Actor, ActorLogging, Props}
+import com.actelion.research.arcite.core.experiments.Experiment
+import com.actelion.research.arcite.core.transftree.TreeOfTransforms.AddTofT
 
 /**
   *
@@ -44,11 +46,30 @@ import akka.actor.{Actor, ActorLogging, Props}
   */
 class TreeOfTransforms extends Actor with ActorLogging {
 
-  var treeOfTransforms: Map[String, TreeOfTransforms] = Map()
+  val searcher = context.actorOf(Props[IndexAndSearchTofT])
 
-  override def receive: Receive = ???
+  var treeOfTransforms: Vector[TreeOfTransformDefinition] = Vector()
+
+  override def receive: Receive = {
+    case AddTofT(tot) ⇒
+
+  }
 }
 
 object TreeOfTransforms {
   def props(): Props = Props(classOf[TreeOfTransforms])
+
+  case class AddTofT(treeOfTransforms: TreeOfTransformDefinition)
+
+  case object GetTreeOfTransformDefinitions
+
+  case class FindTofT(search: String)
+
+  case class GetTreeOfTransform(uid: String)
+
+  case class AllTreeOfTransforms(tOft: Set[TreeOfTransformDefinition])
+
+  case class FoundTreeOfTransform(tot: Option[TreeOfTransformDefinition])
+
+  case class ExecuteTofT(experiment: Experiment, treeOfTDef: TreeOfTransformDefinition)
 }
