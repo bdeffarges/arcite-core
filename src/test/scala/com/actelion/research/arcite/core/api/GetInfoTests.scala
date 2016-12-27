@@ -1,12 +1,14 @@
 package com.actelion.research.arcite.core.api
 
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{HttpEntity, HttpRequest, HttpResponse, StatusCodes}
+import akka.http.scaladsl.model._
 import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.util.ByteString
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.InfoLogs
-import com.actelion.research.arcite.core.experiments.ManageExperiments.ManyTransforms
-import com.actelion.research.arcite.core.fileservice.FileServiceActor.SourceFoldersAsString
+import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddExperiment, ManyTransforms}
+import com.actelion.research.arcite.core.fileservice.FileServiceActor.{FoundFoldersAndFiles, GetFilesFromSource, SourceFoldersAsString}
 import com.actelion.research.arcite.core.transforms.TransformCompletionFeedback
+import spray.json._
 
 import scala.concurrent.Future
 
@@ -45,8 +47,6 @@ class GetInfoTests extends ApiTests {
     val responseFuture: Future[HttpResponse] =
       Source.single(HttpRequest(uri = "/recent_logs")).via(connectionFlow).runWith(Sink.head)
 
-    import spray.json._
-
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
 
@@ -58,6 +58,7 @@ class GetInfoTests extends ApiTests {
     }
   }
 
+
   "get recent transforms " should " return a least a couple of transform logs..." in {
 
     implicit val executionContext = system.dispatcher
@@ -68,17 +69,16 @@ class GetInfoTests extends ApiTests {
     val responseFuture: Future[HttpResponse] =
       Source.single(HttpRequest(uri = "/all_transforms")).via(connectionFlow).runWith(Sink.head)
 
-    import spray.json._
-
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
 
       val transformInfos = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
         .parseJson.convertTo[Set[TransformCompletionFeedback]]
 
-      assert(transformInfos.size > 1)
+      assert(transformInfos.nonEmpty)
     }
   }
+
 
   "get data sources " should " return the different data sources (mounted drives)..." in {
 
@@ -90,17 +90,16 @@ class GetInfoTests extends ApiTests {
     val responseFuture: Future[HttpResponse] =
       Source.single(HttpRequest(uri = "/data_sources")).via(connectionFlow).runWith(Sink.head)
 
-    import spray.json._
-
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
 
       val dataSources = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
         .parseJson.convertTo[SourceFoldersAsString]
 
-      assert(dataSources.sourceFolders.size > 1)
+      assert(dataSources.sourceFolders.nonEmpty)
     }
   }
+
 
   "get data sources details " should " return the list of folders and files for the given source..." in {
 
@@ -109,13 +108,24 @@ class GetInfoTests extends ApiTests {
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)
 
-    val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri = "/data_sources")).via(connectionFlow).runWith(Sink.head)
+    val jsonRequest = ByteString(GetFilesFromSource("microarray1", List("AMS0100")).toJson.prettyPrint)
 
-    import spray.json._
+    val postRequest = HttpRequest(
+      HttpMethods.POST,
+      uri = "/data_sources",
+      entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
 
     responseFuture.map { r ⇒
-        fail()
+      assert(r.status == StatusCodes.OK)
+
+      val dataSources = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+        .parseJson.convertTo[FoundFoldersAndFiles]
+
+      assert(dataSources.files.nonEmpty)
+
     }
   }
 }
