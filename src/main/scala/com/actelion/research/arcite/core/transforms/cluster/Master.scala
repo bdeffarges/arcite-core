@@ -174,15 +174,11 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
 
     case QueryWorkStatus(transfUID) ⇒
-      sender() ! workState.jobsInProgress(transfUID)
+      sender() ! workState.jobState(transfUID)
 
 
     case AllJobsStatus ⇒
       sender() ! workState.workStateSummary()
-
-
-    case QueryJobInfo(qji) ⇒
-      sender() ! "hello world" //todo implement
 
 
     case GetAllTransfDefs ⇒

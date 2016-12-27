@@ -17,8 +17,6 @@ object Frontend {
 
   case class QueryWorkStatus(uid: String)
 
-  case class QueryJobInfo(transf: Transform)
-
   case object AllJobsStatus
 
 }
@@ -47,10 +45,6 @@ class Frontend extends Actor with ActorLogging {
     case AllJobsStatus ⇒
       implicit val timeout = Timeout(10.seconds)
       (masterProxy ? AllJobsStatus) pipeTo sender()
-
-    case qji: QueryJobInfo ⇒
-      implicit val timeout = Timeout(1.second)
-      (masterProxy ? qji) pipeTo sender()
 
     case transform: Transform ⇒
       log.info(s"got work message [$transform]")

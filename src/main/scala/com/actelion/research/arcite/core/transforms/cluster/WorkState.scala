@@ -87,7 +87,7 @@ case class WorkState(pendingJobs: Queue[Transform],
     val jd = jobsDone.find(_.uid == transfID)
     if (jd.isDefined) return WorkCompleted(jd.get)
 
-    if (jobsInProgress(transfID) != null) return WorkInProgress(jobsInProgress(transfID))
+    if (jobsInProgress.isDefinedAt(transfID)) return WorkInProgress(jobsInProgress(transfID))
 
     val pj = pendingJobs.find(_.uid == transfID)
     if (pj.isDefined) return WorkAccepted(pj.get)
