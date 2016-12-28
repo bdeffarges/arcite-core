@@ -22,6 +22,7 @@ import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.{NotOk, _}
 import com.actelion.research.arcite.core.transforms.cluster.WorkState._
+import com.actelion.research.arcite.core.transftree.TreeOfTransforms.{AllTreeOfTransfInfos, GetTreeOfTransformInfo}
 import com.actelion.research.arcite.core.utils._
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
@@ -54,9 +55,9 @@ import scala.util.Failure
   */
 trait ArciteServiceApi extends LazyLogging {
 
-  val config = ConfigFactory.load()
+  private[api] val config = ConfigFactory.load()
 
-  val apiSpec = config.getString("api.specification")
+  private[api] val apiSpec = config.getString("api.specification")
 
   def createArciteApi(): ActorRef
 
@@ -64,7 +65,7 @@ trait ArciteServiceApi extends LazyLogging {
 
   implicit def requestTimeout: Timeout
 
-  lazy val arciteService = createArciteApi()
+  private[api] lazy val arciteService = createArciteApi()
 
   def getAllExperiments(page: Int = 0, max: Int = 100) = {
     logger.debug("asking for all experiments. ")
@@ -147,47 +148,51 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(InfoAboutRawFiles(digest)).mapTo[FolderFilesInformation]
   }
 
-  def getAllFiles(digest: String) = {
+  private[api] def getAllFiles(digest: String) = {
     arciteService.ask(InfoAboutAllFiles(digest)).mapTo[AllFilesInformation]
   }
 
-  def getAllMetaFiles(digest: String) = {
+  private[api] def getAllMetaFiles(digest: String) = {
     arciteService.ask(InfoAboutMetaFiles(digest)).mapTo[FolderFilesInformation]
   }
 
-  def runTransformFromRaw(runTransform: RunTransformOnRawData) = {
+  private[api] def runTransformFromRaw(runTransform: RunTransformOnRawData) = {
     arciteService.ask(runTransform).mapTo[TransformJobReceived]
   }
 
-  def runTransformFromRaw(runTransform: RunTransformOnRawDataWithExclusion) = {
+  private[api] def runTransformFromRaw(runTransform: RunTransformOnRawDataWithExclusion) = {
     arciteService.ask(runTransform).mapTo[TransformJobReceived]
   }
 
-  def runTransformFromObject(runTransform: RunTransformOnObject) = {
+  private[api] def runTransformFromObject(runTransform: RunTransformOnObject) = {
     arciteService.ask(runTransform).mapTo[TransformJobReceived]
   }
 
-  def runTransformFromTransform(runTransform: RunTransformOnTransform) = {
+  private[api] def runTransformFromTransform(runTransform: RunTransformOnTransform) = {
     arciteService.ask(runTransform).mapTo[TransformJobReceived]
   }
 
-  def runTransformFromTransform(runTransform: RunTransformOnTransformWithExclusion) = {
+  private[api] def runTransformFromTransform(runTransform: RunTransformOnTransformWithExclusion) = {
     arciteService.ask(runTransform).mapTo[TransformJobReceived]
   }
 
-  def getAllTransformsForExperiment(exp: String) = {
+  private[api] def getAllTransformsForExperiment(exp: String) = {
     arciteService.ask(GetTransforms(exp)).mapTo[TransformsForExperiment]
   }
 
-  def getAllTransforms() = {
+  private[api] def getAllTransforms() = {
     arciteService.ask(GetAllTransforms).mapTo[ManyTransforms]
   }
 
-  def jobStatus(qws: QueryWorkStatus) = {
+  private[api] def getTreeOfTransformInfo() = {
+    arciteService.ask(GetTreeOfTransformInfo).mapTo[AllTreeOfTransfInfos]
+  }
+
+  private[api] def jobStatus(qws: QueryWorkStatus) = {
     arciteService.ask(qws).mapTo[WorkStatus]
   }
 
-  def jobsStatus() = {
+  private[api] def jobsStatus() = {
     arciteService.ask(AllJobsStatus).mapTo[AllJobsFeedback]
   }
 
@@ -242,6 +247,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       dataSources ~
       appLogs ~
       organizationRoute ~
+      treeOfTransforms ~
       defaultRoute
   }
 
@@ -748,7 +754,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             case sf: SourceFoldersAsString ⇒ complete(OK -> sf)
             case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning list of source folders."))
           }
-        }~
+        } ~
           post {
             logger.debug("returns data source files with subfolder ")
             entity(as[GetFilesFromSource]) { gf ⇒
@@ -770,6 +776,18 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       }
     }
   }
+
+  def treeOfTransforms = path("tree_of_transforms") {
+    pathEnd {
+      get {
+        logger.info("return all tree of transforms")
+        onSuccess(getTreeOfTransformInfo()) {
+          case AllTreeOfTransfInfos(tots) ⇒ complete(OK -> tots)
+        }
+      }
+    }
+  }
+
 }
 
 /**

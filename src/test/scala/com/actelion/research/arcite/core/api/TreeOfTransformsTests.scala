@@ -1,5 +1,14 @@
 package com.actelion.research.arcite.core.api
 
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.{HttpEntity, HttpRequest, HttpResponse, StatusCodes}
+import akka.stream.scaladsl.{Flow, Sink, Source}
+import com.actelion.research.arcite.core.api.ArciteService.AllExperiments
+import com.actelion.research.arcite.core.transftree.TreeOfTransformInfo
+import spray.json._
+
+import scala.concurrent.Future
+
 /**
   *
   * arcite-core
@@ -26,14 +35,24 @@ package com.actelion.research.arcite.core.api
   */
 class TreeOfTransformsTests extends ApiTests {
 
-  " adding a tree of transforms " should " return the uid of the tree " in {
-
-    fail()
-  }
-
   " returning all tree of transforms " should " return all TOfT names and descriptions "  in {
 
-    fail()
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(HttpRequest(uri = "/tree_of_transforms")).via(connectionFlow).runWith(Sink.head)
+
+    responseFuture.map { r ⇒
+      assert(r.status == StatusCodes.OK)
+
+      val treeOfTransformInfos = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+        .parseJson.convertTo[Set[TreeOfTransformInfo]]
+
+      assert(treeOfTransformInfos.nonEmpty)
+    }
   }
 
   " starting a simple tree of transform (upper, lower, ...) " should " produce the expected transform output "  in {

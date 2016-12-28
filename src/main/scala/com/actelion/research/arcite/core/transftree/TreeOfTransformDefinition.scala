@@ -1,5 +1,6 @@
 package com.actelion.research.arcite.core.transftree
 
+import com.actelion.research.arcite.core.Organization
 import com.actelion.research.arcite.core.utils.{FullName, GetDigest}
 
 /**
@@ -41,7 +42,11 @@ case class TreeOfTransformDefinition(name: FullName, description: String,
 }
 
 
-case class TreeOfTransformNode(nodeTransDefName: FullName, children: List[TreeOfTransformNode]) {
+case class TreeOfTransformNode(transfDefUID: String, children: List[TreeOfTransformNode]) {
 
   def isLeaf = children.isEmpty
 }
+
+case class TreeOfTransformInfo(name: String, organization: String, version: String, description: String, uid: String)
+
+

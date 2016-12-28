@@ -60,9 +60,8 @@ class IndexAndSearchTofT extends Actor with ActorLogging {
       d.add(new TextField(LUC_DESC, tot.description, Field.Store.NO))
 
       //todo should also include the description of the transforms
-      val content = tot.allNodes.map(n ⇒ n.nodeTransDefName.name).mkString(" ")
-
-      d.add(new TextField(LUC_CONTENT, content, Field.Store.NO))
+//      val content = tot.allNodes.map(n ⇒ n.transfDefUID).mkString(" ")
+//      d.add(new TextField(LUC_CONTENT, content, Field.Store.NO))
 
       indexW.addDocument(d)
       indexW.close()

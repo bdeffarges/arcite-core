@@ -1,8 +1,10 @@
 package com.actelion.research.arcite.core.transftree
 
-import akka.actor.{Actor, ActorLogging, Props}
-import com.actelion.research.arcite.core.experiments.Experiment
+import akka.actor.SupervisorStrategy.Escalate
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, OneForOneStrategy, Props, SupervisorStrategy}
+import com.actelion.research.arcite.core.transforms.RunTransform.ProceedWithTransform
 import com.actelion.research.arcite.core.transftree.TreeOfTransforms.AddTofT
+import com.typesafe.config.ConfigFactory
 
 /**
   *
@@ -46,12 +48,21 @@ import com.actelion.research.arcite.core.transftree.TreeOfTransforms.AddTofT
   */
 class TreeOfTransforms extends Actor with ActorLogging {
 
-  val searcher = context.actorOf(Props[IndexAndSearchTofT])
+  import TreeOfTransforms._
+
+  private val searcher = context.actorOf(Props[IndexAndSearchTofT]) //todo implement
 
   var treeOfTransforms: Vector[TreeOfTransformDefinition] = Vector()
 
   override def receive: Receive = {
     case AddTofT(tot) ⇒
+      if (!treeOfTransforms.contains(tot)) treeOfTransforms = tot +: treeOfTransforms
+
+    case GetTreeOfTransformInfo ⇒
+      val totnfos = treeOfTransforms
+        .map(t ⇒ TreeOfTransformInfo(t.name.name, t.name.organization, t.name.version, t.description, t.uid))
+
+      sender ! AllTreeOfTransfInfos(totnfos.toSet)
 
   }
 }
@@ -61,15 +72,54 @@ object TreeOfTransforms {
 
   case class AddTofT(treeOfTransforms: TreeOfTransformDefinition)
 
-  case object GetTreeOfTransformDefinitions
+  case object GetTreeOfTransformInfo
 
   case class FindTofT(search: String)
 
   case class GetTreeOfTransform(uid: String)
 
-  case class AllTreeOfTransforms(tOft: Set[TreeOfTransformDefinition])
+  case class AllTreeOfTransfInfos(tOft: Set[TreeOfTransformInfo])
 
-  case class FoundTreeOfTransform(tot: Option[TreeOfTransformDefinition])
+  case class FoundTreeOfTransfInfo(tot: Option[TreeOfTransformInfo])
 
-  case class ExecuteTofT(experiment: Experiment, treeOfTDef: TreeOfTransformDefinition)
+  case class ExecuteTofT(rootNode: ProceedWithTransform, treeOfTDef: TreeOfTransformDefinition)
+
+}
+
+
+object TreeOfTransformActorSystem {
+
+  private val actorSystemName = "tree-of-transforms-actor-system"
+
+  private val config = ConfigFactory.load().getConfig(actorSystemName)
+  private val actSys = config.getString("akka.uri")
+
+  implicit val system = ActorSystem(actorSystemName, config)
+
+  val treeOfTransfParentAct: ActorRef = system.actorOf(Props(classOf[TreeOfTransformParentActor]), "tree-of-transforms-parent")
+
+  val treeOfTransfParentActPath = s"${actSys}/user/tree-of-transforms-parent"
+  val treeOfTransfActPath = s"${actSys}/user/tree-of-transforms-parent/tree-of-transforms"
+
+  treeOfTransfParentAct ! AddTofT(DefaultTofT.testTofT1)
+}
+
+
+class TreeOfTransformParentActor extends Actor with ActorLogging {
+
+  import scala.concurrent.duration._
+
+  private val treeOfTransforms = context.actorOf(TreeOfTransforms.props(), "tree-of-transforms")
+
+  override val supervisorStrategy: SupervisorStrategy =
+    OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
+      // todo implement strategy
+      case _: Exception ⇒ Escalate
+    }
+
+  override def receive: Receive = {
+
+    case att: AddTofT ⇒
+      treeOfTransforms forward att
+  }
 }

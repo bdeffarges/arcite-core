@@ -133,6 +133,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
 
 
     case msg: Any ⇒
+      log.debug(s"returning message $msg to requester...")
       requester ! msg
   }
 

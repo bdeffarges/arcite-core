@@ -48,7 +48,7 @@ object ManageTransformCluster {
     val fePorts = config.getInt("transform_cluster.frontends.numberOfports")
     import scala.collection.convert.wrapAsScala._
     defaultTransformClusterStart(bePorts.toIndexedSeq.map(_.intValue()), fePorts)
-    startUpperCaseWorkersForTests()
+    startTestWorkers()
   }
 
   def defaultTransformClusterStart(backendPorts: Seq[Int], nbrOffrontEnds: Int): Unit = {
@@ -147,10 +147,10 @@ object ManageTransformCluster {
 
   def startSomeDefaultClusterForTesting(): Unit = {
     defaultTransformClusterStart(Seq(2551, 2552, 2553, 2554, 2555, 2556, 2557, 2558), 30)
-    startUpperCaseWorkersForTests()
+    startTestWorkers()
   }
 
-  def startUpperCaseWorkersForTests(): Unit = {
+  def startTestWorkers(): Unit = {
     ManageTransformCluster.addWorker(WorkExecUpperCase.definition)
     ManageTransformCluster.addWorker(WorkExecUpperCase.definition)
     ManageTransformCluster.addWorker(WorkExecLowerCase.definition)

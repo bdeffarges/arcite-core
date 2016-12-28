@@ -12,6 +12,8 @@ import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.{AllJobsStatus, QueryWorkStatus}
 import com.actelion.research.arcite.core.transforms.cluster.{ManageTransformCluster, ScatGathTransform}
+import com.actelion.research.arcite.core.transftree.TreeOfTransformActorSystem
+import com.actelion.research.arcite.core.transftree.TreeOfTransforms.GetTreeOfTransformInfo
 import com.actelion.research.arcite.core.utils.RemoveFile
 import com.typesafe.config.ConfigFactory
 
@@ -165,6 +167,9 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
   private val fileServiceAct = context.actorSelection(ActorPath.fromString(fileServiceActPath))
   log.info(s"****** connect file service actor [$fileServiceActPath] actor: $fileServiceAct")
 
+  private val treeOfTransformActor = context.actorSelection(
+    ActorPath.fromString(TreeOfTransformActorSystem.treeOfTransfActPath))
+  log.info(s"****** connect to TreeOfTransform service actor: $treeOfTransformActor")
 
   import ArciteService._
 
@@ -298,6 +303,10 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
     case gf: GetExperimentFiles ⇒
       fileServiceAct forward gf
+
+
+    case GetTreeOfTransformInfo ⇒
+      treeOfTransformActor forward GetTreeOfTransformInfo
 
 
     //don't know what to do with this message...
