@@ -1,9 +1,5 @@
 package com.actelion.research.arcite.core.transftree
 
-import akka.actor.Actor.Receive
-import akka.actor.{Actor, ActorLogging, Props}
-import com.actelion.research.arcite.core.experiments.Experiment
-
 /**
   * arcite-core
   *
@@ -24,18 +20,22 @@ import com.actelion.research.arcite.core.experiments.Experiment
   * You should have received a copy of the GNU General Public License
   * along with this program.  If not, see <http://www.gnu.org/licenses/>.
   *
-  * Created by Bernard Deffarges on 2016/12/27.
+  * Created by Bernard Deffarges on 2016/12/28.
   *
   */
-class TofTExecutionManager(experiment: Experiment, totDef: TreeOfTransformDefinition) extends Actor with ActorLogging {
 
-  override def receive: Receive = ???
+case class TreeOfTransfFeedback(start: Long, end: Long, uid: String, percentageSuccess: Double,
+                                percentageCompleted: Double)
+
+
+case class TreeOfTransfNodeFeedback(nodeFeedback: String)
+
+object TreeOfTransfOutcome extends scala.Enumeration {
+  type TreeOfTransfOutcome = Value
+  val SUCCESS, PARTIAL_SUCCESS, FAILED = Value
 }
 
-object TofTExecutionManager {
-
-  def props(exp: Experiment, tofDef: TreeOfTransformDefinition): Props =
-    Props(classOf[TofTExecutionManager], exp, tofDef)
-
-
+object TreeOfTransfNodeOutcome extends scala.Enumeration {
+  type TreeOfTransfOutcome = Value
+  val SUCCESS, SUCCESS_WITH_WARNING, ERROR = Value
 }

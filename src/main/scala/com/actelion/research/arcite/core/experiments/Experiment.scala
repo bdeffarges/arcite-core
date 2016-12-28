@@ -63,6 +63,7 @@ case class ExperimentFolderVisitor(exp: Experiment) {
   val relRawFolderPath: Path = relFolderPath resolve "raw"
   val relUserRawFolderPath: Path = relFolderPath resolve "user_raw"
   val relTransformFolderPath: Path = relFolderPath resolve "transforms"
+  val relTreeOfTransfFolderPath: Path = relFolderPath resolve "tree_of_transforms"
   val relPublishedFolderPath: Path = relFolderPath resolve "published"
 
   val arcitH: Path = core.dataPath
@@ -85,6 +86,8 @@ case class ExperimentFolderVisitor(exp: Experiment) {
 
   val transformFolderPath: Path = arcitH resolve relTransformFolderPath
 
+  val treeOfTransfFolderPath: Path = arcitH resolve relTreeOfTransfFolderPath
+
   val publishedFolderPath: Path = arcitH resolve relPublishedFolderPath
 
   val experimentFilePath: Path = metaFolderPath resolve LocalExperiments.EXPERIMENT_FILE_NAME
@@ -106,16 +109,16 @@ case class ExperimentFolderVisitor(exp: Experiment) {
     logsFolderPath.toFile.mkdir()
     userMetaFolderPath.toFile.mkdir()
     transformFolderPath.toFile.mkdir()
+    treeOfTransfFolderPath.toFile.mkdir()
     publishedFolderPath.toFile.mkdir()
   }
 
   ensureFolderStructure()
 
-  def isImmutableExperiment(): Boolean = immutableStateFile.toFile.exists()
+  def isImmutableExperiment: Boolean = immutableStateFile.toFile.exists()
 
   def linkTo(otherExp: Experiment): Unit = {
     val visitor = ExperimentFolderVisitor(otherExp)
-
   }
 }
 

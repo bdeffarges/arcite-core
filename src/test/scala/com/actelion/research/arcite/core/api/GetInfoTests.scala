@@ -5,7 +5,6 @@ import akka.http.scaladsl.model._
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.util.ByteString
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.InfoLogs
-import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddExperiment, ManyTransforms}
 import com.actelion.research.arcite.core.fileservice.FileServiceActor.{FoundFoldersAndFiles, GetFilesFromSource, SourceFoldersAsString}
 import com.actelion.research.arcite.core.transforms.TransformCompletionFeedback
 import spray.json._

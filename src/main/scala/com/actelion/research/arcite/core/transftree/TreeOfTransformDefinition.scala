@@ -1,6 +1,5 @@
 package com.actelion.research.arcite.core.transftree
 
-import com.actelion.research.arcite.core.Organization
 import com.actelion.research.arcite.core.utils.{FullName, GetDigest}
 
 /**
@@ -30,7 +29,7 @@ import com.actelion.research.arcite.core.utils.{FullName, GetDigest}
 case class TreeOfTransformDefinition(name: FullName, description: String,
                                      root: TreeOfTransformNode) {
 
-  lazy val uid = GetDigest.getDigest(s"$name $description")
+  lazy val uid: String = GetDigest.getDigest(s"$name $description")
 
 
   def getAllNodes(nodes: List[TreeOfTransformNode]): List[TreeOfTransformNode] = nodes match {
@@ -42,11 +41,44 @@ case class TreeOfTransformDefinition(name: FullName, description: String,
 }
 
 
-case class TreeOfTransformNode(transfDefUID: String, children: List[TreeOfTransformNode]) {
+case class TreeOfTransformNode(transfDefUID: String, children: List[TreeOfTransformNode] = List(),
+                               properties: Map[String, String] = Map()) {
 
-  def isLeaf = children.isEmpty
+  def isLeaf: Boolean = children.isEmpty
 }
 
-case class TreeOfTransformInfo(name: String, organization: String, version: String, description: String, uid: String)
+
+
+case class TreeOfTransformInfo(name: String, organization: String,
+                               version: String, description: String, uid: String)
+
+
+sealed trait ProceedWithTreeOfTransf {
+  def experiment: String
+  def treeOfTransformUID: String
+}
+
+case class ProceedWithTreeOfTransfOnRaw(experiment: String, treeOfTransformUID: String,
+                                        properties: Map[String, String] = Map(),
+                                        exclusions: Set[String] = Set()) extends ProceedWithTreeOfTransf
+
+
+case class ProceedWithTreeOfTransfOnTransf(experiment: String, treeOfTransformUID: String,
+                                              properties: Map[String, String] = Map(),
+                                              startingTransform: String,
+                                              exclusions: Set[String] = Set()) extends ProceedWithTreeOfTransf
+
+
+sealed trait TreeOfTransfStartFeedback
+
+case class TreeOfTransformStarted(uid: String) extends TreeOfTransfStartFeedback
+
+case object CouldNotFindTreeOfTransfDef extends TreeOfTransfStartFeedback
+
+
+
+
+
+
 
 

@@ -149,7 +149,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
 
       if (exp.isEmpty) {
         requester ! ExperimentDeleteFailed(s"experiment [$digest] does not exist.")
-      } else if (exp.get.state.eq(ExpState.NEW) && !ExperimentFolderVisitor(exp.get).isImmutableExperiment()) {
+      } else if (exp.get.state.eq(ExpState.NEW) && !ExperimentFolderVisitor(exp.get).isImmutableExperiment) {
         experiments -= digest
         luceneRAMSearchAct ! RemoveFromIndex(exp.get)
         requester ! LocalExperiments.safeDeleteExperiment(exp.get)

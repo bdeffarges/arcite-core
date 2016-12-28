@@ -1,10 +1,13 @@
 package com.actelion.research.arcite.core.transftree
 
+import java.util.UUID
+
 import akka.actor.SupervisorStrategy.Escalate
-import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, OneForOneStrategy, Props, SupervisorStrategy}
-import com.actelion.research.arcite.core.transforms.RunTransform.ProceedWithTransform
-import com.actelion.research.arcite.core.transftree.TreeOfTransforms.AddTofT
+import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSystem, OneForOneStrategy, Props, SupervisorStrategy}
+import com.actelion.research.arcite.core.transftree.TreeOfTransformsManager.AddTofT
 import com.typesafe.config.ConfigFactory
+
+import scala.concurrent.duration._
 
 /**
   *
@@ -46,29 +49,58 @@ import com.typesafe.config.ConfigFactory
   * the definition and the execution of tree of transforms as describe herein.
   *
   */
-class TreeOfTransforms extends Actor with ActorLogging {
+class TreeOfTransformsManager extends Actor with ActorLogging {
 
-  import TreeOfTransforms._
+  override val supervisorStrategy: SupervisorStrategy =
+    OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
+      // todo implement strategy
+      case _: Exception ⇒ Escalate
+    }
+
+  import TreeOfTransformsManager._
 
   private val searcher = context.actorOf(Props[IndexAndSearchTofT]) //todo implement
 
-  var treeOfTransforms: Vector[TreeOfTransformDefinition] = Vector()
+  private var treeOfTransfDefs: Vector[TreeOfTransformDefinition] = Vector()
+
+  private var treeOfTransform: Map[String, ActorRef] = Map()
+
+  private val conf = ConfigFactory.load().getConfig("experiments-manager")
+  private val actSys = conf.getString("akka.uri")
+  private val expManSelect = s"${actSys}/user/exp_actors_manager/experiments_manager"
+  private val expManager = context.actorSelection(ActorPath.fromString(expManSelect))
+  log.info(s"****** connect exp Manager [$expManSelect] actor: $expManager")
+
 
   override def receive: Receive = {
     case AddTofT(tot) ⇒
-      if (!treeOfTransforms.contains(tot)) treeOfTransforms = tot +: treeOfTransforms
+      if (!treeOfTransfDefs.contains(tot)) treeOfTransfDefs = tot +: treeOfTransfDefs
+
 
     case GetTreeOfTransformInfo ⇒
-      val totnfos = treeOfTransforms
+      val totnfos = treeOfTransfDefs
         .map(t ⇒ TreeOfTransformInfo(t.name.name, t.name.organization, t.name.version, t.description, t.uid))
 
       sender ! AllTreeOfTransfInfos(totnfos.toSet)
 
+
+    case ptot: ProceedWithTreeOfTransf ⇒
+      val treeOfTransfDef = treeOfTransfDefs.find(_.uid == ptot.treeOfTransformUID)
+
+      if (treeOfTransfDef.isDefined) {
+        val uid = UUID.randomUUID().toString
+        val treeOfT = context.actorOf(TreeOfTransfExecAct.props(expManager, treeOfTransfDef.get, uid))
+        treeOfTransform += uid -> treeOfT
+        treeOfT ! ptot
+        sender() ! TreeOfTransformStarted(uid)
+      } else {
+        sender() ! CouldNotFindTreeOfTransfDef
+      }
   }
 }
 
-object TreeOfTransforms {
-  def props(): Props = Props(classOf[TreeOfTransforms])
+object TreeOfTransformsManager {
+  def props(): Props = Props(classOf[TreeOfTransformsManager])
 
   case class AddTofT(treeOfTransforms: TreeOfTransformDefinition)
 
@@ -82,7 +114,6 @@ object TreeOfTransforms {
 
   case class FoundTreeOfTransfInfo(tot: Option[TreeOfTransformInfo])
 
-  case class ExecuteTofT(rootNode: ProceedWithTransform, treeOfTDef: TreeOfTransformDefinition)
 
 }
 
@@ -107,9 +138,8 @@ object TreeOfTransformActorSystem {
 
 class TreeOfTransformParentActor extends Actor with ActorLogging {
 
-  import scala.concurrent.duration._
 
-  private val treeOfTransforms = context.actorOf(TreeOfTransforms.props(), "tree-of-transforms")
+  private val treeOfTransforms = context.actorOf(TreeOfTransformsManager.props(), "tree-of-transforms")
 
   override val supervisorStrategy: SupervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {

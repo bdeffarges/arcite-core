@@ -38,6 +38,7 @@ import com.actelion.research.arcite.core.transforms.cluster.ScatGathTransform.Pr
   */
 class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends Actor with ActorLogging {
   //todo get expManager actor from path
+  //todo too many vars !
 
   private var expFound: Option[ExperimentFound] = None
 

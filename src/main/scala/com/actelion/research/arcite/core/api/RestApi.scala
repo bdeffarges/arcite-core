@@ -22,7 +22,7 @@ import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.{NotOk, _}
 import com.actelion.research.arcite.core.transforms.cluster.WorkState._
-import com.actelion.research.arcite.core.transftree.TreeOfTransforms.{AllTreeOfTransfInfos, GetTreeOfTransformInfo}
+import com.actelion.research.arcite.core.transftree.TreeOfTransformsManager.{AllTreeOfTransfInfos, GetTreeOfTransformInfo}
 import com.actelion.research.arcite.core.utils._
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
