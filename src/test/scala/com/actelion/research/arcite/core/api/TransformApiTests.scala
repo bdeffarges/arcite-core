@@ -9,7 +9,6 @@ import com.actelion.research.arcite.core.experiments.Experiment
 import com.actelion.research.arcite.core.experiments.ManageExperiments.AddExperiment
 import com.actelion.research.arcite.core.transforms.RunTransform.RunTransformOnObject
 import com.actelion.research.arcite.core.transforms.TransformDefinitionIdentity
-import com.actelion.research.arcite.core.transforms.cluster.workers.fortest.WorkExecUpperCase.ToUpperCase
 
 import scala.concurrent.Future
 
@@ -173,7 +172,7 @@ class TransformApiTests extends ApiTests {
 
     import spray.json._
     val transf1 = RunTransformOnObject(exp1.uid, transfDef1.get.digestUID,
-      Some(ToUpperCase("transform me to upper case").toJson))
+      Map("ToUpperCase" -> "transform me to upper case"))
 
     val jsonRequest = ByteString(transf1.toJson.prettyPrint)
 
@@ -205,7 +204,7 @@ class TransformApiTests extends ApiTests {
 
     import spray.json._
     val transf1 = RunTransformOnObject(exp1.uid, transfDef1.get.digestUID,
-      Some(ToUpperCase("transform me to lower case").toJson))
+      Map("ToLowerCase" -> "transform me to lower case"))
 
     val jsonRequest = ByteString(transf1.toJson.prettyPrint)
 

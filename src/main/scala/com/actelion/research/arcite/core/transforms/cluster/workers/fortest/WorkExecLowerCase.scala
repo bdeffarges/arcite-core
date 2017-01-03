@@ -55,7 +55,7 @@ class WorkExecLowerCase extends Actor with ActorLogging with ArciteJSONProtocol 
 
       t.source match {
         case tfo: TransformSourceFromObject ⇒
-          val toBeTransformed = t.parameters.get.convertTo[ToLowerCase]
+          val toBeTransformed = ToLowerCase(t.parameters("ToLowerCase"))
           val lowerCased = toBeTransformed.stgToLowerCase.toLowerCase()
           val p = Paths.get(TransformHelper(t).getTransformFolder().toString, "lowercase.txt")
           Files.write(p, lowerCased.getBytes(StandardCharsets.UTF_8), CREATE_NEW)

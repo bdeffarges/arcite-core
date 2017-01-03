@@ -81,8 +81,8 @@ case class TransformSourceFromObject(experiment: Experiment) extends TransformSo
   * @param parameters we keep it as a JsValue so the real transformer can decide at run time what to do with the parameters
   * @param uid
   */
-case class Transform(transfDefName: FullName, source: TransformSource, parameters: Option[JsValue],
-                     uid: String = UUID.randomUUID().toString)
+case class Transform(transfDefName: FullName, source: TransformSource,
+                     parameters: Map[String, String] = Map(), uid: String = UUID.randomUUID().toString)
 
 
 case class TransformHelper(transform: Transform) {
@@ -104,7 +104,7 @@ case class TransformDoneSource(experiment: String, kindOfSource: String, fromTra
 
 
 case class TransformCompletionFeedback(transform: String, transformDefinition: FullName, source: TransformDoneSource,
-                                       parameters: Option[JsValue], status: TransformCompletionStatus,
+                                       parameters: Map[String, String], status: TransformCompletionStatus,
                                        artifacts: List[String], feedback: String, errors: String,
                                        startTime: String, endTime: String = utils.getCurrentDateAsString())
 

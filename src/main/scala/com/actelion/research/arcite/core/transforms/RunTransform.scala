@@ -1,7 +1,5 @@
 package com.actelion.research.arcite.core.transforms
 
-import spray.json.JsValue
-
 /**
   * arcite-core
   *
@@ -32,18 +30,18 @@ object RunTransform {
 
     def transfDefUID: String
 
-    def parameters: Option[JsValue]
+    def parameters: Map[String, String]
   }
 
 
   sealed trait TransfOnRaw extends ProceedWithTransform
 
   case class RunTransformOnRawData(experiment: String, transfDefUID: String,
-                                   parameters: Option[JsValue]) extends TransfOnRaw
+                                   parameters: Map[String, String] = Map()) extends TransfOnRaw
 
   case class RunTransformOnRawDataWithExclusion(experiment: String, transfDefUID: String,
                                                 excludes: Set[String] = Set(), excludesRegex: Set[String] = Set(),
-                                                parameters: Option[JsValue]) extends TransfOnRaw
+                                                parameters: Map[String, String] = Map()) extends TransfOnRaw
 
 
   sealed trait ProcTransfFromTransf extends ProceedWithTransform {
@@ -51,15 +49,15 @@ object RunTransform {
   }
 
   case class RunTransformOnTransform(experiment: String, transfDefUID: String, transformOrigin: String,
-                                     parameters: Option[JsValue]) extends ProcTransfFromTransf
+                                     parameters: Map[String, String] = Map()) extends ProcTransfFromTransf
 
   case class RunTransformOnTransformWithExclusion(experiment: String, transfDefUID: String,
                                                   transformOrigin: String, excludes: Set[String] = Set(),
                                                   excludesRegex: Set[String] = Set(),
-                                                  parameters: Option[JsValue]) extends ProcTransfFromTransf
+                                                  parameters: Map[String, String] = Map()) extends ProcTransfFromTransf
 
 
   case class RunTransformOnObject(experiment: String, transfDefUID: String,
-                                  parameters: Option[JsValue]) extends ProceedWithTransform
+                                  parameters: Map[String, String] = Map()) extends ProceedWithTransform
 
 }

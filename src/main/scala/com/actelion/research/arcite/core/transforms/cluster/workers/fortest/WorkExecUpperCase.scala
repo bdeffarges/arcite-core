@@ -29,7 +29,7 @@ class WorkExecUpperCase extends Actor with ActorLogging with ArciteJSONProtocol 
 
       t.source match {
         case tfo: TransformSourceFromObject ⇒
-          val toBeTransformed = t.parameters.get.convertTo[ToUpperCase]
+          val toBeTransformed = ToUpperCase(t.parameters("ToUpperCase"))
           val upperCased = toBeTransformed.stgToUpperCase.toUpperCase()
           val p = Paths.get(TransformHelper(t).getTransformFolder().toString, "uppercase.txt")
           Files.write(p, upperCased.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
