@@ -1,5 +1,8 @@
 package com.actelion.research.arcite.core.transftree
 
+import com.actelion.research.arcite.core.transftree.TreeOfTransfNodeOutcome.TreeOfTransfNodeOutcome
+import com.actelion.research.arcite.core.transftree.TreeOfTransfOutcome.TreeOfTransfOutcome
+
 /**
   * arcite-core
   *
@@ -24,18 +27,21 @@ package com.actelion.research.arcite.core.transftree
   *
   */
 
-case class TreeOfTransfFeedback(start: Long, end: Long, uid: String, percentageSuccess: Double,
-                                percentageCompleted: Double)
+case class TreeOfTransfFeedback(uid: String, start: Long = System.currentTimeMillis,
+                                end: Long = System.currentTimeMillis, percentageSuccess: Double = 0.0,
+                                percentageCompleted: Double = 0.0,
+                                outcome: TreeOfTransfOutcome = TreeOfTransfOutcome.IN_PROGRESS,
+                                feedback: List[TreeOfTransfNodeOutcome] = List())
 
 
-case class TreeOfTransfNodeFeedback(nodeFeedback: String)
+case class TreeOfTransfNodeFeedback(nodeFeedback: String, outcome: TreeOfTransfNodeOutcome)
 
 object TreeOfTransfOutcome extends scala.Enumeration {
   type TreeOfTransfOutcome = Value
-  val SUCCESS, PARTIAL_SUCCESS, FAILED = Value
+  val SUCCESS, PARTIAL_SUCCESS, FAILED, IN_PROGRESS = Value
 }
 
 object TreeOfTransfNodeOutcome extends scala.Enumeration {
-  type TreeOfTransfOutcome = Value
+  type TreeOfTransfNodeOutcome = Value
   val SUCCESS, SUCCESS_WITH_WARNING, ERROR = Value
 }

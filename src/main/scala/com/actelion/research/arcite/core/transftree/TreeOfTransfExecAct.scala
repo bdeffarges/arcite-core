@@ -1,10 +1,16 @@
 package com.actelion.research.arcite.core.transftree
 
+import java.util.UUID
+
 import akka.actor.{Actor, ActorLogging, ActorSelection, Props}
 import com.actelion.research.arcite.core.api.ArciteService.{ExperimentFound, ExperimentFoundFeedback, GetExperiment}
-import com.actelion.research.arcite.core.transforms.TransfDefMsg.GetTransfDef
-import com.actelion.research.arcite.core.transforms.cluster.Frontend.NotOk
+import com.actelion.research.arcite.core.experiments.ManageExperiments.GetTransfCompletionFromExpAndTransf
+import com.actelion.research.arcite.core.transforms.RunTransform.ProcTransfFromTransf
+import com.actelion.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, MsgFromTransfDefsManager, OneTransfDef}
+import com.actelion.research.arcite.core.transforms.TransformDefinitionIdentity
+import com.actelion.research.arcite.core.transforms.cluster.Frontend.{NotOk, Ok}
 import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
+import com.actelion.research.arcite.core.transftree.TreeOfTransfExecAct.{NextNode, StartTreeOfTransf, UnrollTreeOfTransf}
 
 /**
   * arcite-core
@@ -32,21 +38,48 @@ import com.actelion.research.arcite.core.transforms.cluster.ManageTransformClust
 class TreeOfTransfExecAct(expManager: ActorSelection, treeOfTransformDefinition: TreeOfTransformDefinition,
                           uid: String) extends Actor with ActorLogging {
 
+  private val allTofTNodes = treeOfTransformDefinition.allNodes
+
+  private var proceedWithTreeOfTransf: Option[ProceedWithTreeOfTransf] = None
+
   private var expFound: Option[ExperimentFound] = None
+
+  private var transfDefIds: Map[String, TransformDefinitionIdentity] = Map()
+
+  private var nextNodes: List[NextNode] = List()
+
+  private var feedback: TreeOfTransfFeedback = TreeOfTransfFeedback(uid = uid)
 
   override def receive: Receive = {
     case ptotr: ProceedWithTreeOfTransf ⇒
+      proceedWithTreeOfTransf = Some(ptotr)
       expManager ! GetExperiment(ptotr.experiment)
+
 
     case efr: ExperimentFoundFeedback ⇒
       efr match {
         case ef: ExperimentFound ⇒
           expFound = Some(ef)
-          ManageTransformCluster.getNextFrontEnd() ! GetTransfDef(treeOfTransformDefinition.root.transfDefUID)
+          allTofTNodes.map(_.transfDefUID).foreach(t ⇒ ManageTransformCluster.getNextFrontEnd() ! GetTransfDef(t))
 
         case _ ⇒
-          //todo case nothing found
+        //todo case no experiment found, should poison pill itself
       }
+
+
+    case mftdm: MsgFromTransfDefsManager ⇒
+      mftdm match {
+        case otd: OneTransfDef ⇒
+            transfDefIds += otd.transfDefId.digestUID -> otd.transfDefId
+            if (transfDefIds.keySet.contains(treeOfTransformDefinition.root.transfDefUID)) self ! StartTreeOfTransf
+      }
+
+
+    case StartTreeOfTransf ⇒
+      log.info("start tree of transform")
+
+    case UnrollTreeOfTransf ⇒
+      log.info("proceed with next set of nodes...")
 
   }
 }
@@ -57,6 +90,13 @@ object TreeOfTransfExecAct {
   def props(expManager: ActorSelection, treeOfTransformDefinition: TreeOfTransformDefinition,
             uid: String): Props =
     Props(classOf[TreeOfTransfExecAct], expManager, treeOfTransformDefinition, uid)
+
+
+  case object UnrollTreeOfTransf
+
+  case object StartTreeOfTransf
+
+  case class NextNode(parentTransform: String, treeOfTransformNode: TreeOfTransformNode)
 
 }
 

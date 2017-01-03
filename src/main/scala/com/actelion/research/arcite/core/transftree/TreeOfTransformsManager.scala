@@ -89,7 +89,8 @@ class TreeOfTransformsManager extends Actor with ActorLogging {
 
       if (treeOfTransfDef.isDefined) {
         val uid = UUID.randomUUID().toString
-        val treeOfT = context.actorOf(TreeOfTransfExecAct.props(expManager, treeOfTransfDef.get, uid))
+        val treeOfT = context.actorOf(TreeOfTransfExecAct.props(expManager, treeOfTransfDef.get, uid),
+          s"treeOfTransfExecManager-$uid")
         treeOfTransform += uid -> treeOfT
         treeOfT ! ptot
         sender() ! TreeOfTransformStarted(uid)

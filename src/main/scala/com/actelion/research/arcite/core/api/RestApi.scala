@@ -22,6 +22,7 @@ import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.{NotOk, _}
 import com.actelion.research.arcite.core.transforms.cluster.WorkState._
+import com.actelion.research.arcite.core.transftree._
 import com.actelion.research.arcite.core.transftree.TreeOfTransformsManager.{AllTreeOfTransfInfos, GetTreeOfTransformInfo}
 import com.actelion.research.arcite.core.utils._
 import com.typesafe.config.ConfigFactory
@@ -186,6 +187,10 @@ trait ArciteServiceApi extends LazyLogging {
 
   private[api] def getTreeOfTransformInfo() = {
     arciteService.ask(GetTreeOfTransformInfo).mapTo[AllTreeOfTransfInfos]
+  }
+
+  private[api] def startTreeOfTransform(ptt: ProceedWithTreeOfTransf) = {
+    arciteService.ask(ptt).mapTo[TreeOfTransfStartFeedback]
   }
 
   private[api] def jobStatus(qws: QueryWorkStatus) = {
@@ -784,6 +789,17 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
         onSuccess(getTreeOfTransformInfo()) {
           case AllTreeOfTransfInfos(tots) ⇒ complete(OK -> tots)
         }
+      }~
+      post {
+        logger.info("starting tree of transform...")
+        entity(as[ProceedWithTreeOfTransfOnRaw]) { pwtt ⇒
+          val started: Future[TreeOfTransfStartFeedback] = startTreeOfTransform(pwtt)
+          onSuccess(started) {
+            case tofs : TreeOfTransformStarted ⇒ complete(OK, tofs)
+            case CouldNotFindTreeOfTransfDef ⇒ complete(BadRequest, "could not find tree of transform definition.")
+            case _ ⇒ complete(BadRequest, "unknown error or problem [*388&]")
+          }
+        }
       }
     }
   }
@@ -805,10 +821,12 @@ class RestApi(system: ActorSystem, timeout: Timeout) extends RestRoutes {
 }
 
 // Api Misc Messages
-case class ExperimentCreated(uid: String, message: String)
+sealed trait GeneralFeedbackMessage
 
-case class SuccessMessage(message: String)
+case class ExperimentCreated(uid: String, message: String) extends GeneralFeedbackMessage
 
-case class ErrorMessage(error: String)
+case class SuccessMessage(message: String) extends GeneralFeedbackMessage
+
+case class ErrorMessage(error: String) extends GeneralFeedbackMessage
 
 

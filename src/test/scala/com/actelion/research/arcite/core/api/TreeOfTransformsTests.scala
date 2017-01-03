@@ -60,7 +60,7 @@ class TreeOfTransformsTests extends ApiTests {
     }
   }
 
-  " starting a simple tree of transform (upper, lower, ...) " should " produce the expected transform output " in {
+  " starting a simple tree of transform (upper, lower, ...) " should " return the tree Of transform UID " in {
 
     implicit val executionContext = system.dispatcher
 

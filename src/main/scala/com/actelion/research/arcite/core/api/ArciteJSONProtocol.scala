@@ -20,7 +20,7 @@ import com.actelion.research.arcite.core.transforms.cluster.Frontend.Ok
 import com.actelion.research.arcite.core.transforms.cluster.WorkState.AllJobsFeedback
 import com.actelion.research.arcite.core.transforms.cluster.workers.fortest.WorkExecLowerCase.ToLowerCase
 import com.actelion.research.arcite.core.transforms.cluster.workers.fortest.WorkExecUpperCase.ToUpperCase
-import com.actelion.research.arcite.core.transftree.{ProceedWithTreeOfTransfOnRaw, ProceedWithTreeOfTransfOnTransf, TreeOfTransformInfo}
+import com.actelion.research.arcite.core.transftree.{ProceedWithTreeOfTransfOnRaw, ProceedWithTreeOfTransfOnTransf, TreeOfTransformInfo, TreeOfTransformStarted}
 import com.actelion.research.arcite.core.transftree.TreeOfTransformsManager.AllTreeOfTransfInfos
 import com.actelion.research.arcite.core.{ExperimentType, Organization, utils}
 import com.actelion.research.arcite.core.utils._
@@ -390,4 +390,6 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
 
   implicit val proceedWithTofTOnRaw: RootJsonFormat[ProceedWithTreeOfTransfOnRaw] = jsonFormat4(ProceedWithTreeOfTransfOnRaw)
   implicit val proceedWithTofTOnTransf: RootJsonFormat[ProceedWithTreeOfTransfOnTransf] = jsonFormat5(ProceedWithTreeOfTransfOnTransf)
+
+  implicit val treeOFTransfStartedJson: RootJsonFormat[TreeOfTransformStarted] = jsonFormat1(TreeOfTransformStarted)
 }
