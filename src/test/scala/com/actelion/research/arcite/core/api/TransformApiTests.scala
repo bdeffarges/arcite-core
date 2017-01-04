@@ -203,7 +203,7 @@ class TransformApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     import spray.json._
-    val transf1 = RunTransformOnObject(exp1.uid, transfDef1.get.digestUID,
+    val transf1 = RunTransformOnObject(exp1.uid, transfDef2.get.digestUID,
       Map("ToLowerCase" -> "transform me to lower case"))
 
     val jsonRequest = ByteString(transf1.toJson.prettyPrint)
