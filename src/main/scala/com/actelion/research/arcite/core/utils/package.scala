@@ -29,6 +29,7 @@ import java.util.Date
 package object utils {
 
   val dateDefaultFormatter = new SimpleDateFormat("yyyy/MM/dd-HH:mm:ss")
+  val dateDefaultFormatterMS = new SimpleDateFormat("yyyy/MM/dd-HH:mm:ss:SSS")
 
   val dateForFolderName = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss_S")
 
@@ -38,9 +39,13 @@ package object utils {
 
   def getDateAsString(time: Long) = dateDefaultFormatter.format(new Date(time))
 
+  def getDateAsStringMS(time: Long) = dateDefaultFormatterMS.format(new Date(time))
+
   def getDateAsStrg(date: Date) = dateDefaultFormatter.format(date)
 
   def getAsDate(date: String) = dateDefaultFormatter.parse(date)
+
+  def getAsDateMS(date: String) = dateDefaultFormatterMS.parse(date)
 
 
   def getDateForFolderName() = dateForFolderName.format(new Date())

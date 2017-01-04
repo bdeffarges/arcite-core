@@ -528,14 +528,14 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
     if (transfP.toFile.exists()) {
       val files = transfP.toFile.listFiles()
       if (files.exists(_.getName == core.successFile)) {
-        SuccessTransform
+        SuccessTransform(experiment)
       } else if (files.exists(_.getName == core.failedFile)) {
-        FailedTransform
+        FailedTransform(experiment)
       } else {
-        NotYetCompletedTransform
+        NotYetCompletedTransform(experiment)
       }
     } else {
-      NotYetCompletedTransform
+      NotYetCompletedTransform(experiment)
     }
   }
 }
@@ -597,13 +597,15 @@ object ManageExperiments {
 
   case class FoundTransformDefinition(transfFeedback: TransformCompletionFeedback)
 
-  sealed trait TransformOutcome
+  sealed trait TransformOutcome {
+    def transfUID : String
+  }
 
-  case object SuccessTransform extends TransformOutcome
+  case class SuccessTransform(transfUID: String) extends TransformOutcome
 
-  case object NotYetCompletedTransform extends TransformOutcome
+  case class NotYetCompletedTransform(transfUID: String) extends TransformOutcome
 
-  case object FailedTransform extends TransformOutcome
+  case class FailedTransform(transfUID: String) extends TransformOutcome
 
   case object GetAllExperimentsLastUpdate
 

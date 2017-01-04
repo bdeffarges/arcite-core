@@ -39,6 +39,7 @@ package object core {
   val arciteFilePrefix = "##@ArCiTe8@@$__"
   val successFile = ".success"
   val failedFile = ".failed"
+  val feedbackfile = "-feedback.json"
 
   // could be later on in config
   import scala.concurrent.duration._

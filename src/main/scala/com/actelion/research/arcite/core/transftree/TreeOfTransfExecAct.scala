@@ -1,16 +1,20 @@
 package com.actelion.research.arcite.core.transftree
 
+import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, StandardOpenOption}
 import java.util.UUID
 
-import akka.actor.{Actor, ActorLogging, ActorSelection, Props}
+import akka.actor.{Actor, ActorLogging, ActorSelection, PoisonPill, Props}
+import com.actelion.research.arcite.core
+import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.api.ArciteService.{ExperimentFound, ExperimentFoundFeedback, GetExperiment}
-import com.actelion.research.arcite.core.experiments.ManageExperiments.GetTransfCompletionFromExpAndTransf
-import com.actelion.research.arcite.core.transforms.RunTransform.ProcTransfFromTransf
+import com.actelion.research.arcite.core.experiments.ExperimentFolderVisitor
+import com.actelion.research.arcite.core.experiments.ManageExperiments.{FailedTransform, GetTransfCompletionFromExpAndTransf, SuccessTransform, TransformOutcome}
 import com.actelion.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, MsgFromTransfDefsManager, OneTransfDef}
-import com.actelion.research.arcite.core.transforms.TransformDefinitionIdentity
-import com.actelion.research.arcite.core.transforms.cluster.Frontend.{NotOk, Ok}
+import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinitionIdentity, TransformSourceFromRaw, TransformSourceFromTransform}
 import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
-import com.actelion.research.arcite.core.transftree.TreeOfTransfExecAct.{NextNode, StartTreeOfTransf, UnrollTreeOfTransf}
+import com.actelion.research.arcite.core.transftree.TreeOfTransfExecAct._
+import com.actelion.research.arcite.core.transftree.TreeOfTransfNodeOutcome.TreeOfTransfNodeOutcome
 
 /**
   * arcite-core
@@ -36,7 +40,7 @@ import com.actelion.research.arcite.core.transftree.TreeOfTransfExecAct.{NextNod
   *
   */
 class TreeOfTransfExecAct(expManager: ActorSelection, treeOfTransformDefinition: TreeOfTransformDefinition,
-                          uid: String) extends Actor with ActorLogging {
+                          uid: String) extends Actor with ActorLogging with ArciteJSONProtocol {
 
   private val allTofTNodes = treeOfTransformDefinition.allNodes
 
@@ -48,7 +52,10 @@ class TreeOfTransfExecAct(expManager: ActorSelection, treeOfTransformDefinition:
 
   private var nextNodes: List[NextNode] = List()
 
-  private var feedback: TreeOfTransfFeedback = TreeOfTransfFeedback(uid = uid)
+  private var feedback: TreeOfTransfFeedback = TreeOfTransfFeedback(uid = uid,
+    name = treeOfTransformDefinition.name, treeOfTransform = treeOfTransformDefinition.uid)
+
+  private var actualTransforms: Map[String, TreeOfTransfNodeOutcome] = Map()
 
   override def receive: Receive = {
     case ptotr: ProceedWithTreeOfTransf ⇒
@@ -63,24 +70,134 @@ class TreeOfTransfExecAct(expManager: ActorSelection, treeOfTransformDefinition:
           allTofTNodes.map(_.transfDefUID).foreach(t ⇒ ManageTransformCluster.getNextFrontEnd() ! GetTransfDef(t))
 
         case _ ⇒
-        //todo case no experiment found, should poison pill itself
+          //todo case no experiment found, should poison pill itself
+          log.error("did not find experiment. ")
       }
 
 
     case mftdm: MsgFromTransfDefsManager ⇒
       mftdm match {
         case otd: OneTransfDef ⇒
-            transfDefIds += otd.transfDefId.digestUID -> otd.transfDefId
-            if (transfDefIds.keySet.contains(treeOfTransformDefinition.root.transfDefUID)) self ! StartTreeOfTransf
+          transfDefIds += otd.transfDefId.digestUID -> otd.transfDefId
+          if (transfDefIds.keySet.contains(treeOfTransformDefinition.root.transfDefUID)) self ! StartTreeOfTransf
       }
 
 
     case StartTreeOfTransf ⇒
       log.info("start tree of transform")
+      val tuid = UUID.randomUUID().toString
+      val td = transfDefIds(treeOfTransformDefinition.root.transfDefUID)
+      val exp = expFound.get.exp
+      actualTransforms += tuid -> TreeOfTransfNodeOutcome.IN_PROGRESS
+      nextNodes ++= treeOfTransformDefinition.root.children.map(n ⇒ NextNode(tuid, n))
+
+      proceedWithTreeOfTransf.get match {
+        case pwttot: ProceedWithTreeOfTransfOnTransf ⇒
+          ManageTransformCluster.getNextFrontEnd() ! Transform(td.fullName,
+            TransformSourceFromTransform(exp, pwttot.startingTransform), pwttot.properties, tuid)
+          self ! StartScheduler
+
+        case pwttot: ProceedWithTreeOfTransfOnRaw ⇒
+          ManageTransformCluster.getNextFrontEnd() ! Transform(td.fullName,
+            TransformSourceFromRaw(exp), pwttot.properties, tuid)
+          self ! StartScheduler
+
+        case _ ⇒
+          log.error("wrong proceedWithTreeOfTransf...")
+      }
+
 
     case UnrollTreeOfTransf ⇒
       log.info("proceed with next set of nodes...")
+      val nnodes = nextNodes
+        .filter(nn ⇒ actualTransforms.getOrElse(nn.parentTransform, TreeOfTransfNodeOutcome.IN_PROGRESS)
+          == TreeOfTransfNodeOutcome.SUCCESS)
 
+      nnodes.foreach { nn ⇒
+        val tuid = UUID.randomUUID().toString
+        val exp = expFound.get.exp
+        val td = transfDefIds.get(nn.treeOfTransformNode.transfDefUID)
+        if (td.isDefined) {
+          actualTransforms += tuid -> TreeOfTransfNodeOutcome.IN_PROGRESS
+          nextNodes ++= nn.treeOfTransformNode.children.map(n ⇒ NextNode(tuid, n))
+          nextNodes = nextNodes.filterNot(_ == nn)
+
+          ManageTransformCluster.getNextFrontEnd() ! Transform(td.get.fullName,
+            TransformSourceFromTransform(exp, nn.parentTransform), proceedWithTreeOfTransf.get.properties, tuid)
+        }
+      }
+
+
+    case UpdateAllTransformStatus ⇒
+      actualTransforms.filter(_._2 == TreeOfTransfNodeOutcome.IN_PROGRESS)
+        .foreach(t ⇒ expManager ! GetTransfCompletionFromExpAndTransf(expFound.get.exp.uid, t._1))
+
+
+    case toc: TransformOutcome ⇒
+      toc match {
+        case SuccessTransform(tuid) ⇒
+          actualTransforms += tuid -> TreeOfTransfNodeOutcome.SUCCESS
+
+        case FailedTransform(tuid) ⇒
+          actualTransforms += tuid -> TreeOfTransfNodeOutcome.FAILED
+      }
+
+
+    case StartScheduler ⇒
+      import scala.concurrent.duration._
+      import context.dispatcher
+
+      context.system.scheduler.schedule(4 seconds, 15 seconds) {
+        self ! UpdateAllTransformStatus
+      }
+
+      context.system.scheduler.schedule(8 seconds, 15 seconds) {
+        self ! UnrollTreeOfTransf
+      }
+
+      context.system.scheduler.schedule(12 seconds, 15 seconds) {
+        self ! UpdateFeedback
+      }
+
+
+    case UpdateFeedback ⇒
+      val comp = actualTransforms.count(_._2 != TreeOfTransfNodeOutcome.IN_PROGRESS)
+      val succ = actualTransforms.count(_._2 == TreeOfTransfNodeOutcome.SUCCESS)
+      val allNSize = allTofTNodes.size
+
+      val perCompleted = (comp.toDouble * 100) / allNSize.toDouble
+      val perSuccess = (succ.toDouble * 100) / allNSize.toDouble
+
+      val success = succ == allNSize
+
+      val completed = nextNodes.isEmpty && comp == 0
+
+      import TreeOfTransfOutcome._
+      val compStatus =
+        if (success) SUCCESS
+        else if (completed) {
+          if (perSuccess > 0) PARTIAL_SUCCESS else FAILED
+        } else IN_PROGRESS
+
+      feedback = feedback.copy(end = System.currentTimeMillis, percentageCompleted = perCompleted,
+        percentageSuccess = perSuccess, outcome = compStatus,
+        nodesFeedback = actualTransforms.map(atf ⇒ TreeOfTransfNodeFeedback(atf._1, atf._2)).toList)
+
+      import spray.json._
+      if (completed) {
+        val file = ExperimentFolderVisitor(expFound.get.exp).treeOfTransfFolderPath resolve s"$uid${core.feedbackfile}"
+        Files.write(file, feedback.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE_NEW)
+        context.parent ! feedback
+        self ! PoisonPill
+      }
+
+
+    case GetFeedback ⇒
+      sender() ! feedback
+
+
+    case _ ⇒
+      log.error("don't know what to do with message")
   }
 }
 
@@ -95,6 +212,14 @@ object TreeOfTransfExecAct {
   case object UnrollTreeOfTransf
 
   case object StartTreeOfTransf
+
+  case object UpdateAllTransformStatus
+
+  case object StartScheduler
+
+  case object UpdateFeedback
+
+  case object GetFeedback
 
   case class NextNode(parentTransform: String, treeOfTransformNode: TreeOfTransformNode)
 

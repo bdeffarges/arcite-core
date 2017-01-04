@@ -20,7 +20,8 @@ import com.actelion.research.arcite.core.transforms.cluster.Frontend.Ok
 import com.actelion.research.arcite.core.transforms.cluster.WorkState.AllJobsFeedback
 import com.actelion.research.arcite.core.transforms.cluster.workers.fortest.WorkExecLowerCase.ToLowerCase
 import com.actelion.research.arcite.core.transforms.cluster.workers.fortest.WorkExecUpperCase.ToUpperCase
-import com.actelion.research.arcite.core.transftree.{ProceedWithTreeOfTransfOnRaw, ProceedWithTreeOfTransfOnTransf, TreeOfTransformInfo, TreeOfTransformStarted}
+import com.actelion.research.arcite.core.transftree.TreeOfTransfOutcome.TreeOfTransfOutcome
+import com.actelion.research.arcite.core.transftree._
 import com.actelion.research.arcite.core.transftree.TreeOfTransformsManager.AllTreeOfTransfInfos
 import com.actelion.research.arcite.core.{ExperimentType, Organization, utils}
 import com.actelion.research.arcite.core.utils._
@@ -51,13 +52,13 @@ import spray.json.{DefaultJsonProtocol, _}
   *
   */
 trait ArciteJSONProtocol extends DefaultJsonProtocol {
-//todo split up JSON marshalling by domain (like the routes)
+  //todo split up JSON marshalling by domain (like the routes)
 
   val noDependsOn = FullName("none", "none")
 
   implicit object DateJsonFormat extends RootJsonFormat[Date] {
 
-    override def read(json: JsValue): Date =  utils.getAsDate(json.toString())
+    override def read(json: JsValue): Date = utils.getAsDate(json.toString())
 
     override def write(date: Date): JsValue = JsString(utils.getDateAsStrg(date))
   }
@@ -392,4 +393,75 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val proceedWithTofTOnTransf: RootJsonFormat[ProceedWithTreeOfTransfOnTransf] = jsonFormat5(ProceedWithTreeOfTransfOnTransf)
 
   implicit val treeOFTransfStartedJson: RootJsonFormat[TreeOfTransformStarted] = jsonFormat1(TreeOfTransformStarted)
+
+
+  implicit object TreeFoTransfOutcomeJson extends RootJsonFormat[TreeOfTransfOutcome] {
+    override def write(obj: TreeOfTransfOutcome): JsValue = {
+      JsObject("outcome" -> JsString(obj.toString))
+    }
+
+    import TreeOfTransfOutcome._
+
+    override def read(json: JsValue): TreeOfTransfOutcome = json match {
+      case JsString("SUCCESS") ⇒ SUCCESS
+      case JsString("PARTIAL_SUCCESS") ⇒ PARTIAL_SUCCESS
+      case JsString("FAILED") ⇒ FAILED
+      case JsString("IN_PROGRESS") ⇒ IN_PROGRESS
+    }
+  }
+
+  implicit object TreeOfTransfNodeFeedbackJsonFormat extends RootJsonFormat[TreeOfTransfNodeFeedback] {
+    override def write(ttnfb: TreeOfTransfNodeFeedback): JsValue = {
+      JsObject(
+        "transfUID" -> JsString(ttnfb.transfUID),
+        "outcome" -> JsString(ttnfb.outcome.toString)
+      )
+    }
+
+    override def read(json: JsValue): TreeOfTransfNodeFeedback = {
+      json.asJsObject.getFields("transfUID", "outcome") match {
+        case Seq(JsString(transfUID), JsString("SUCCESS")) ⇒
+          TreeOfTransfNodeFeedback(transfUID, TreeOfTransfNodeOutcome.SUCCESS)
+        case Seq(JsString(transfUID), JsString("FAILED")) ⇒
+          TreeOfTransfNodeFeedback(transfUID, TreeOfTransfNodeOutcome.SUCCESS)
+      }
+
+    }
+  }
+
+  implicit object TreeOfTransFeedbackJson extends RootJsonFormat[TreeOfTransfFeedback] {
+    override def write(ttfb: TreeOfTransfFeedback): JsValue = {
+      JsObject(
+        "uid" -> JsString(ttfb.uid),
+        "name" -> ttfb.name.toJson,
+        "treeOfTransform" -> JsString(ttfb.treeOfTransform),
+        "properties" -> ttfb.properties.toJson,
+        "startFromRaw" -> JsBoolean(ttfb.startFromRaw),
+        "originTransf" -> (if (ttfb.originTransform.isDefined) JsString(ttfb.originTransform.get) else JsString("None")),
+        "start" -> JsString(utils.getDateAsStringMS(ttfb.start)),
+        "end" -> JsString(utils.getDateAsStringMS(ttfb.end)),
+        "success" -> JsNumber(ttfb.percentageSuccess),
+        "completed" -> JsNumber(ttfb.percentageCompleted),
+        "outcompe" -> ttfb.outcome.toJson,
+        "nodesFeeback" -> ttfb.nodesFeedback.toJson
+      )
+    }
+
+    override def read(json: JsValue): TreeOfTransfFeedback = {
+      json.asJsObject.getFields("uid", "name", "treeOfTransform", "properties", "startFromRaw", "originTransf",
+        "start", "end", "success", "completed", "outcome", "nodesFeedback") match {
+        case Seq(JsString(uid), name, JsString(treeOfTrans), props, JsBoolean(startFromRaw), JsString(origin),
+        JsString(start), JsString(end), JsNumber(success), JsNumber(completed), outcome, nodesFeedback) ⇒
+          TreeOfTransfFeedback(uid = uid, name = name.convertTo[FullName], treeOfTransform = treeOfTrans,
+            properties = props.convertTo[Map[String, String]],
+            startFromRaw = startFromRaw,
+            originTransform = if (origin == "None") None else Some(origin),
+            start = utils.getAsDateMS(start).getTime, end = utils.getAsDateMS(end).getTime,
+            percentageSuccess = success.toDouble, percentageCompleted = completed.toDouble,
+            outcome = outcome.convertTo[TreeOfTransfOutcome],
+            nodesFeedback = nodesFeedback.convertTo[List[TreeOfTransfNodeFeedback]])
+      }
+    }
+  }
+
 }

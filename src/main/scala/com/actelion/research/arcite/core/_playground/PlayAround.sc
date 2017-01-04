@@ -10,14 +10,14 @@
 
 //"aa/bb/cc/DD/at.txt".split("aa/bb/cc/DD")(1)
 
-var v = Vector("aa")
-
-v = v :+ "bb"
-
-v = v :+ "aa"
-
-v = "cc" +: v
-
+//var v = Vector("aa")
+//
+//v = v :+ "bb"
+//
+//v = v :+ "aa"
+//
+//v = "cc" +: v
+//
 var l: List[String] = List("aa")
 
 l = l :+ "bb"
@@ -25,6 +25,15 @@ l = l :+ "bb"
 l = l :+ "aa"
 
 l = "cc" +: l
+
+l += "kk"
+
+l ++= List("aakk", "bbdd")
+
+//l --= List("kk")
+//
+//println(l)
+
 
 //".*[58|59].*\\.txt".r.findFirstIn("af2315923jkdd.txt")
 

@@ -141,7 +141,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
 
   def waitForDependingTransformToComplete: Receive = {
 
-    case SuccessTransform ⇒
+    case SuccessTransform(_) ⇒
       context.unbecome()
       log.info(s"was waiting for [$time] for transform to complete, done now, can proceed with next step get transfdef....")
       procWTransf.get match {
@@ -149,7 +149,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
           expManager ! GetTransfDefFromExpAndTransf(ptft.experiment, ptft.transformOrigin)
       }
 
-    case NotYetCompletedTransform ⇒
+    case NotYetCompletedTransform(_) ⇒
       time = time + core.timeToRetryCheckingPreviousTransform
       log.info(s"depending on a transform that does not seem to be completed yet... will wait for $time...")
       context.system.scheduler.scheduleOnce(time) {
@@ -159,7 +159,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
         }
       }
 
-    case FailedTransform ⇒
+    case FailedTransform(_) ⇒
       requester ! NotOk("Depending transform apparently failed.")
   }
 }

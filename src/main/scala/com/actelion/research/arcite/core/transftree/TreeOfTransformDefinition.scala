@@ -56,6 +56,7 @@ case class TreeOfTransformInfo(name: String, organization: String,
 sealed trait ProceedWithTreeOfTransf {
   def experiment: String
   def treeOfTransformUID: String
+  def properties: Map[String, String]
 }
 
 case class ProceedWithTreeOfTransfOnRaw(experiment: String, treeOfTransformUID: String,
