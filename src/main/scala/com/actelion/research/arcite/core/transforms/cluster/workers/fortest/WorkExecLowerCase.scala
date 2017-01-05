@@ -89,7 +89,7 @@ class WorkExecLowerCase extends Actor with ActorLogging with ArciteJSONProtocol 
           val expVisFolder = ExperimentFolderVisitor(tfr.experiment)
           var listFiles: List[String] = Nil
 
-          expVisFolder.rawFolderPath.toFile.listFiles
+          (expVisFolder.userRawFolderPath.toFile.listFiles ++ expVisFolder.rawFolderPath.toFile.listFiles)
             .filterNot(fn ⇒ ExperimentFolderVisitor.isInternalFile(fn.getName)).map { f ⇒
             val textLowerC = Files.readAllLines(f.toPath).mkString("\n").toLowerCase()
             listFiles = s"lowercase_${f.getName}" :: listFiles

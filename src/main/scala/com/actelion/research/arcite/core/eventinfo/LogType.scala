@@ -31,7 +31,7 @@ import com.actelion.research.arcite.core.utils
   */
 object LogType extends scala.Enumeration {
   type LogType = Value
-  val CREATED, UPDATED, TRANSFORM, UNKNOWN = Value
+  val CREATED, UPDATED, TRANSFORM, TREE_OF_TRANSFORM, PUBLISHED, UNKNOWN = Value
 }
 
 object LogCategory extends scala.Enumeration {

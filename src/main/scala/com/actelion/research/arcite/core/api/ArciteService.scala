@@ -12,7 +12,7 @@ import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.{AllJobsStatus, QueryWorkStatus}
 import com.actelion.research.arcite.core.transforms.cluster.{ManageTransformCluster, ScatGathTransform}
-import com.actelion.research.arcite.core.transftree.{ProceedWithTreeOfTransf, ProceedWithTreeOfTransfOnRaw, TreeOfTransformActorSystem}
+import com.actelion.research.arcite.core.transftree.{ProceedWithTreeOfTransf, TreeOfTransformActorSystem}
 import com.actelion.research.arcite.core.transftree.TreeOfTransformsManager.GetTreeOfTransformInfo
 import com.actelion.research.arcite.core.utils.RemoveFile
 import com.typesafe.config.ConfigFactory

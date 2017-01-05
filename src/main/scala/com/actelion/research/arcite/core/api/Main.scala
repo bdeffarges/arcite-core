@@ -9,7 +9,7 @@ import akka.http.scaladsl.model.headers.{Allow, RawHeader}
 import akka.http.scaladsl.server.{MethodRejection, RejectionHandler}
 import akka.stream.ActorMaterializer
 import com.actelion.research.arcite.core.eventinfo.{ArciteAppLog, LogCategory}
-import com.actelion.research.arcite.core.eventinfo.ArciteAppLogs.AddLog
+import com.actelion.research.arcite.core.eventinfo.ArciteAppLogs.AddAppLog
 import com.actelion.research.arcite.core.experiments.ExperimentActorsManager
 import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
 import com.typesafe.config.ConfigFactory
@@ -93,13 +93,13 @@ object Main extends App {
   val log = Logging(system.eventStream, "arcite...")
 
   bindingFuture.map { serverBinding ⇒
-    arciteAppService ! AddLog(ArciteAppLog(LogCategory.INFO,
+    arciteAppService ! AddAppLog(ArciteAppLog(LogCategory.INFO,
       s"application started successfully, listening on port ${serverBinding.localAddress}"))
     log.info(s"RestApi bound to ${serverBinding.localAddress} ")
   }.onFailure {
     case ex: Exception ⇒
       log.error(ex, s"Failed to bind to $host:$port")
-      arciteAppService ! AddLog(ArciteAppLog(LogCategory.ERROR,
+      arciteAppService ! AddAppLog(ArciteAppLog(LogCategory.ERROR,
         s"could not start ARCITE. ${ex}"))
       system.terminate()
   }

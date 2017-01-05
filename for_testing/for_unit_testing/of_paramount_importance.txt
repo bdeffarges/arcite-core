@@ -1,1 +1,5 @@
+original lowerCase:
 indeed, very important information for this project
+
+ORIGINAL UPPPERCASE:
+INDEED, VERY IMPORTANT INFORMATION FOR THIS PROJECT

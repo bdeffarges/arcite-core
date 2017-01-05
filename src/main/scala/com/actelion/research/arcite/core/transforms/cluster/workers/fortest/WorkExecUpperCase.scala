@@ -62,7 +62,7 @@ class WorkExecUpperCase extends Actor with ActorLogging with ArciteJSONProtocol 
           val expVisFolder = ExperimentFolderVisitor(tfr.experiment)
           var listFiles: List[String] = Nil
 
-          expVisFolder.rawFolderPath.toFile.listFiles
+          (expVisFolder.userRawFolderPath.toFile.listFiles ++ expVisFolder.rawFolderPath.toFile.listFiles)
             .filterNot(fn ⇒ ExperimentFolderVisitor.isInternalFile(fn.getName)).map { f ⇒
             val textUpperC = Files.readAllLines(f.toPath).mkString("\n").toUpperCase()
             listFiles = s"Uppercase_${f.getName}" :: listFiles

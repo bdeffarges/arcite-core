@@ -53,21 +53,10 @@ case class TreeOfTransformInfo(name: String, organization: String,
                                version: String, description: String, uid: String)
 
 
-sealed trait ProceedWithTreeOfTransf {
-  def experiment: String
-  def treeOfTransformUID: String
-  def properties: Map[String, String]
-}
-
-case class ProceedWithTreeOfTransfOnRaw(experiment: String, treeOfTransformUID: String,
-                                        properties: Map[String, String] = Map(),
-                                        exclusions: Set[String] = Set()) extends ProceedWithTreeOfTransf
-
-
-case class ProceedWithTreeOfTransfOnTransf(experiment: String, treeOfTransformUID: String,
+case class ProceedWithTreeOfTransf(experiment: String, treeOfTransformUID: String,
                                               properties: Map[String, String] = Map(),
-                                              startingTransform: String,
-                                              exclusions: Set[String] = Set()) extends ProceedWithTreeOfTransf
+                                              startingTransform: Option[String] = None,
+                                              exclusions: Set[String] = Set())
 
 
 sealed trait TreeOfTransfStartFeedback

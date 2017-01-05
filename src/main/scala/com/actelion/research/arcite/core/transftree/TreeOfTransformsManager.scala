@@ -4,6 +4,7 @@ import java.util.UUID
 
 import akka.actor.SupervisorStrategy.Escalate
 import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSystem, OneForOneStrategy, Props, SupervisorStrategy}
+import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.AddLog
 import com.actelion.research.arcite.core.transftree.TreeOfTransformsManager.AddTofT
 import com.typesafe.config.ConfigFactory
 
@@ -71,6 +72,9 @@ class TreeOfTransformsManager extends Actor with ActorLogging {
   private val expManager = context.actorSelection(ActorPath.fromString(expManSelect))
   log.info(s"****** connect exp Manager [$expManSelect] actor: $expManager")
 
+  private val eventInfoSelect = s"${actSys}/user/exp_actors_manager/event_logging_info"
+  private val eventInfoAct = context.actorSelection(ActorPath.fromString(eventInfoSelect))
+  log.info(s"****** connect event info actor [$eventInfoSelect] actor: $eventInfoAct")
 
   override def receive: Receive = {
     case AddTofT(tot) ⇒
@@ -89,7 +93,7 @@ class TreeOfTransformsManager extends Actor with ActorLogging {
 
       if (treeOfTransfDef.isDefined) {
         val uid = UUID.randomUUID().toString
-        val treeOfT = context.actorOf(TreeOfTransfExecAct.props(expManager, treeOfTransfDef.get, uid),
+        val treeOfT = context.actorOf(TreeOfTransfExecAct.props(expManager, eventInfoAct, treeOfTransfDef.get, uid),
           s"treeOfTransfExecManager-$uid")
         treeOfTransform += uid -> treeOfT
         treeOfT ! ptot
@@ -152,5 +156,8 @@ class TreeOfTransformParentActor extends Actor with ActorLogging {
 
     case att: AddTofT ⇒
       treeOfTransforms forward att
+
+    case ptt: ProceedWithTreeOfTransf ⇒
+      treeOfTransforms forward ptt
   }
 }

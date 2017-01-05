@@ -792,7 +792,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       }~
       post {
         logger.info("starting tree of transform...")
-        entity(as[ProceedWithTreeOfTransfOnRaw]) { pwtt ⇒
+        entity(as[ProceedWithTreeOfTransf]) { pwtt ⇒
           val started: Future[TreeOfTransfStartFeedback] = startTreeOfTransform(pwtt)
           onSuccess(started) {
             case tofs : TreeOfTransformStarted ⇒ complete(OK, tofs)
@@ -803,7 +803,6 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       }
     }
   }
-
 }
 
 /**

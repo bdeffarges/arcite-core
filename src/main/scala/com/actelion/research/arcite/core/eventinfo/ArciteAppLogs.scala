@@ -41,7 +41,7 @@ class ArciteAppLogs extends Actor with ActorLogging {
   private var logsToShow = Queue[ArciteAppLog]()
 
   override def receive: Receive = {
-    case AddLog(log) ⇒
+    case AddAppLog(log) ⇒
       logsToSave = logsToSave enqueue log
       if(logsToSave.size > maxQueueSizeToSave) self ! FlushLogsBecauseOfSize
       logsToShow = logsToShow enqueue log takeRight maxQueueSizeToSKeepForShow
@@ -77,7 +77,7 @@ object ArciteAppLogs extends ArciteJSONProtocol {
 
   def props(): Props = Props(classOf[ArciteAppLogs])
 
-  case class AddLog(log: ArciteAppLog)
+  case class AddAppLog(log: ArciteAppLog)
 
   /**
     * save a series of logs to disk

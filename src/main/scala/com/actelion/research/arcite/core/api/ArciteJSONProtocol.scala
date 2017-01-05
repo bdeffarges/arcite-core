@@ -22,7 +22,6 @@ import com.actelion.research.arcite.core.transforms.cluster.workers.fortest.Work
 import com.actelion.research.arcite.core.transforms.cluster.workers.fortest.WorkExecUpperCase.ToUpperCase
 import com.actelion.research.arcite.core.transftree.TreeOfTransfOutcome.TreeOfTransfOutcome
 import com.actelion.research.arcite.core.transftree._
-import com.actelion.research.arcite.core.transftree.TreeOfTransformsManager.AllTreeOfTransfInfos
 import com.actelion.research.arcite.core.{ExperimentType, Organization, utils}
 import com.actelion.research.arcite.core.utils._
 import spray.json.DefaultJsonProtocol.jsonFormat1
@@ -389,9 +388,6 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   // for tree of transforms
   implicit val totDefInfoJson: RootJsonFormat[TreeOfTransformInfo] = jsonFormat5(TreeOfTransformInfo)
 
-  implicit val proceedWithTofTOnRaw: RootJsonFormat[ProceedWithTreeOfTransfOnRaw] = jsonFormat4(ProceedWithTreeOfTransfOnRaw)
-  implicit val proceedWithTofTOnTransf: RootJsonFormat[ProceedWithTreeOfTransfOnTransf] = jsonFormat5(ProceedWithTreeOfTransfOnTransf)
-
   implicit val treeOFTransfStartedJson: RootJsonFormat[TreeOfTransformStarted] = jsonFormat1(TreeOfTransformStarted)
 
 
@@ -429,6 +425,28 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
     }
   }
 
+  implicit object ProceedWithTreeOfTransfJson extends RootJsonFormat[ProceedWithTreeOfTransf] {
+    override def write(obj: ProceedWithTreeOfTransf): JsValue = {
+      JsObject(
+        "experiment" -> JsString(obj.experiment),
+        "treeOfTransformUID" -> JsString(obj.treeOfTransformUID),
+        "properties" -> obj.properties.toJson,
+        "startingTransform" -> (if (obj.startingTransform.isDefined) JsString(obj.startingTransform.get) else JsString("None")),
+        "exclusions" -> obj.exclusions.toJson
+      )
+    }
+
+    override def read(json: JsValue): ProceedWithTreeOfTransf = {
+      json.asJsObject
+        .getFields("experiment", "treeOfTransformUID", "properties", "startingTransform", "exclusions") match {
+        case Seq(JsString(experiment), JsString(treeOfTrans), props, JsString(startingTransf), exclusions) ⇒
+          ProceedWithTreeOfTransf(experiment, treeOfTrans, props.convertTo[Map[String, String]],
+            startingTransform = if (startingTransf == "None") None else Some(startingTransf),
+            exclusions.convertTo[Set[String]])
+      }
+    }
+  }
+
   implicit object TreeOfTransFeedbackJson extends RootJsonFormat[TreeOfTransfFeedback] {
     override def write(ttfb: TreeOfTransfFeedback): JsValue = {
       JsObject(
@@ -463,5 +481,4 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
       }
     }
   }
-
 }

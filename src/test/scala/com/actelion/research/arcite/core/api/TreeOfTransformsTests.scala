@@ -1,11 +1,14 @@
 package com.actelion.research.arcite.core.api
 
+import java.io.File
+
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.{HttpEntity, _}
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.util.ByteString
 import com.actelion.research.arcite.core.TestHelpers
-import com.actelion.research.arcite.core.transftree.{DefaultTofT, ProceedWithTreeOfTransfOnRaw, TreeOfTransformInfo}
+import com.actelion.research.arcite.core.experiments.ManageExperiments.AddExperiment
+import com.actelion.research.arcite.core.transftree.{DefaultTofT, ProceedWithTreeOfTransf, TreeOfTransformInfo}
 import spray.json._
 
 import scala.concurrent.Future
@@ -39,6 +42,59 @@ class TreeOfTransformsTests extends ApiTests {
 
   var transfDef1: Option[TreeOfTransformInfo] = None
 
+  "Create a new experiment " should " that can then be used to test the tree of transform " in {
+
+    implicit val executionContext = system.dispatcher
+    import spray.json._
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+
+    val jsonRequest = ByteString(AddExperiment(exp1).toJson.prettyPrint)
+
+    val postRequest = HttpRequest(
+      HttpMethods.POST,
+      uri = "/experiment",
+      entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
+
+    responseFuture.map { r ⇒
+      logger.info(r.toString())
+      assert(r.status == StatusCodes.Created)
+    }
+  }
+
+  "adding raw files directly " should " copy the given file to the experiment folder " in {
+
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    def createEntity(file: File): RequestEntity = {
+      require(file.exists())
+      val formData = Multipart.FormData.fromPath("fileupload",
+        ContentTypes.`application/octet-stream`, file.toPath, 100000) // the chunk size here is currently critical for performance
+
+      formData.toEntity()
+    }
+
+    def createRequest(target: Uri, file: File): HttpRequest = HttpRequest(HttpMethods.POST, uri = target, entity = createEntity(file))
+
+    val req = createRequest(s"/experiment/${exp1.uid}/file_upload/raw",
+      new File("./for_testing/for_unit_testing/of_paramount_importance.txt"))
+
+    val res: Future[HttpResponse] = Source.single(req).via(connectionFlow).runWith(Sink.head)
+
+    res.map { r ⇒
+      assert(r.status == StatusCodes.Created)
+    }
+  }
+
+
   " returning all tree of transforms " should " return all TOfT names and descriptions " in {
 
     implicit val executionContext = system.dispatcher
@@ -69,7 +125,7 @@ class TreeOfTransformsTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
 
-    val transf1 = ProceedWithTreeOfTransfOnRaw(exp1.uid, transfDef1.get.uid)
+    val transf1 = ProceedWithTreeOfTransf(exp1.uid, transfDef1.get.uid)
 
     val jsonRequest = ByteString(transf1.toJson.prettyPrint)
 
@@ -84,8 +140,8 @@ class TreeOfTransformsTests extends ApiTests {
     responseFuture.map { r ⇒
       logger.info(r.toString())
       assert(r.status == StatusCodes.OK)
-      val result = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
 
+      val result = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
       assert(result.nonEmpty)
     }
   }

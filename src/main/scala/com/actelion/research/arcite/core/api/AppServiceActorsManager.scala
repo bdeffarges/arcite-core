@@ -5,7 +5,7 @@ import java.nio.file.FileSystemException
 import akka.actor.SupervisorStrategy.Restart
 import akka.actor.{Actor, ActorLogging, ActorRef, OneForOneStrategy, Props}
 import com.actelion.research.arcite.core.eventinfo.ArciteAppLogs
-import com.actelion.research.arcite.core.eventinfo.ArciteAppLogs.{AddLog, CleanUpLogs, FlushLogs}
+import com.actelion.research.arcite.core.eventinfo.ArciteAppLogs.{AddAppLog, CleanUpLogs, FlushLogs}
 
 
 class AppServiceActorsManager extends Actor with ActorLogging {
@@ -30,7 +30,7 @@ class AppServiceActorsManager extends Actor with ActorLogging {
     }
 
   override def receive: Receive = {
-    case al: AddLog ⇒ appLogActor forward al
+    case al: AddAppLog ⇒ appLogActor forward al
 
     case _ : Any ⇒ log.error("***$ does not know what to do with the received message...")
   }

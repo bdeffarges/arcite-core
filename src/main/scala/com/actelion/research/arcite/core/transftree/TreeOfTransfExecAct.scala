@@ -8,8 +8,10 @@ import akka.actor.{Actor, ActorLogging, ActorSelection, PoisonPill, Props}
 import com.actelion.research.arcite.core
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.api.ArciteService.{ExperimentFound, ExperimentFoundFeedback, GetExperiment}
+import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.AddLog
+import com.actelion.research.arcite.core.eventinfo.{ExpLog, LogCategory, LogType}
 import com.actelion.research.arcite.core.experiments.ExperimentFolderVisitor
-import com.actelion.research.arcite.core.experiments.ManageExperiments.{FailedTransform, GetTransfCompletionFromExpAndTransf, SuccessTransform, TransformOutcome}
+import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, MsgFromTransfDefsManager, OneTransfDef}
 import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinitionIdentity, TransformSourceFromRaw, TransformSourceFromTransform}
 import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
@@ -39,8 +41,9 @@ import com.actelion.research.arcite.core.transftree.TreeOfTransfNodeOutcome.Tree
   * Created by Bernard Deffarges on 2016/12/27.
   *
   */
-class TreeOfTransfExecAct(expManager: ActorSelection, treeOfTransformDefinition: TreeOfTransformDefinition,
-                          uid: String) extends Actor with ActorLogging with ArciteJSONProtocol {
+class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelection,
+                          treeOfTransformDefinition: TreeOfTransformDefinition, uid: String)
+  extends Actor with ActorLogging with ArciteJSONProtocol {
 
   private val allTofTNodes = treeOfTransformDefinition.allNodes
 
@@ -66,11 +69,14 @@ class TreeOfTransfExecAct(expManager: ActorSelection, treeOfTransformDefinition:
     case efr: ExperimentFoundFeedback ⇒
       efr match {
         case ef: ExperimentFound ⇒
+          eventInfoMgr ! AddLog(ef.exp,
+            ExpLog(LogType.TREE_OF_TRANSFORM, LogCategory.SUCCESS, "started a new tree of transform", Some(ef.exp.uid)))
+
           expFound = Some(ef)
           allTofTNodes.map(_.transfDefUID).foreach(t ⇒ ManageTransformCluster.getNextFrontEnd() ! GetTransfDef(t))
 
         case _ ⇒
-          //todo case no experiment found, should poison pill itself
+          //todo case no experiment found, should poison pill itself and should not happen
           log.error("did not find experiment. ")
       }
 
@@ -91,19 +97,17 @@ class TreeOfTransfExecAct(expManager: ActorSelection, treeOfTransformDefinition:
       actualTransforms += tuid -> TreeOfTransfNodeOutcome.IN_PROGRESS
       nextNodes ++= treeOfTransformDefinition.root.children.map(n ⇒ NextNode(tuid, n))
 
-      proceedWithTreeOfTransf.get match {
-        case pwttot: ProceedWithTreeOfTransfOnTransf ⇒
-          ManageTransformCluster.getNextFrontEnd() ! Transform(td.fullName,
-            TransformSourceFromTransform(exp, pwttot.startingTransform), pwttot.properties, tuid)
-          self ! StartScheduler
+      val pwtt = proceedWithTreeOfTransf.get
 
-        case pwttot: ProceedWithTreeOfTransfOnRaw ⇒
-          ManageTransformCluster.getNextFrontEnd() ! Transform(td.fullName,
-            TransformSourceFromRaw(exp), pwttot.properties, tuid)
-          self ! StartScheduler
+      if (pwtt.startingTransform.isDefined) {
+        ManageTransformCluster.getNextFrontEnd() ! Transform(td.fullName,
+          TransformSourceFromTransform(exp, pwtt.startingTransform.get), pwtt.properties, tuid)
+        self ! StartScheduler
 
-        case _ ⇒
-          log.error("wrong proceedWithTreeOfTransf...")
+      } else {
+        ManageTransformCluster.getNextFrontEnd() ! Transform(td.fullName,
+          TransformSourceFromRaw(exp), pwtt.properties, tuid)
+        self ! StartScheduler
       }
 
 
@@ -137,6 +141,9 @@ class TreeOfTransfExecAct(expManager: ActorSelection, treeOfTransformDefinition:
       toc match {
         case SuccessTransform(tuid) ⇒
           actualTransforms += tuid -> TreeOfTransfNodeOutcome.SUCCESS
+
+        case NotYetCompletedTransform(tuid) ⇒
+          actualTransforms += tuid -> TreeOfTransfNodeOutcome.IN_PROGRESS
 
         case FailedTransform(tuid) ⇒
           actualTransforms += tuid -> TreeOfTransfNodeOutcome.FAILED
@@ -187,6 +194,17 @@ class TreeOfTransfExecAct(expManager: ActorSelection, treeOfTransformDefinition:
       if (completed) {
         val file = ExperimentFolderVisitor(expFound.get.exp).treeOfTransfFolderPath resolve s"$uid${core.feedbackfile}"
         Files.write(file, feedback.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE_NEW)
+
+        val succLog = compStatus match {
+          case SUCCESS ⇒ LogCategory.SUCCESS
+          case PARTIAL_SUCCESS ⇒ LogCategory.WARNING
+          case FAILED ⇒ LogCategory.ERROR
+        }
+
+        eventInfoMgr ! AddLog(expFound.get.exp,
+          ExpLog(LogType.TREE_OF_TRANSFORM,
+            succLog, "completed tree of transform. ", Some(uid)))
+
         context.parent ! feedback
         self ! PoisonPill
       }
@@ -196,17 +214,17 @@ class TreeOfTransfExecAct(expManager: ActorSelection, treeOfTransformDefinition:
       sender() ! feedback
 
 
-    case _ ⇒
-      log.error("don't know what to do with message")
+    case msg: Any ⇒
+      log.error(s"don't know what to do with received message $msg")
   }
 }
 
 
 object TreeOfTransfExecAct {
 
-  def props(expManager: ActorSelection, treeOfTransformDefinition: TreeOfTransformDefinition,
-            uid: String): Props =
-    Props(classOf[TreeOfTransfExecAct], expManager, treeOfTransformDefinition, uid)
+  def props(expManager: ActorSelection, eventInfoMgr: ActorSelection,
+            treeOfTransformDefinition: TreeOfTransformDefinition, uid: String): Props =
+    Props(classOf[TreeOfTransfExecAct], expManager, eventInfoMgr, treeOfTransformDefinition, uid)
 
 
   case object UnrollTreeOfTransf

@@ -170,7 +170,8 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
     case TransformType(wid, wt) ⇒
       workers += (wid -> workers(wid).copy(transDef = Some(wt)))
       transformDefs += wt
-      log.info(s"workers transforms def. types: $transformDefs")
+      log.info(s"[${transformDefs.size}] workers transforms def. types")
+//      log.info(s"workers transforms def. types: $transformDefs")
 
 
     case QueryWorkStatus(transfUID) ⇒
