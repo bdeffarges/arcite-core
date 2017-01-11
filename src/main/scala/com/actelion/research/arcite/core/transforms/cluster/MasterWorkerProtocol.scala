@@ -11,6 +11,9 @@ object MasterWorkerProtocol {
 
   case class WorkerRequestsWork(workerId: String)
 
+  case object IsWorkerInProgress
+
+  case class WorkerProgress(progress: Double)
 
   sealed trait WorkerIsDone {
     def workerId: String
@@ -29,10 +32,15 @@ object MasterWorkerProtocol {
                            startTime: String,
                            endTime: String = utils.getCurrentDateAsString()) extends WorkerIsDone
 
+
   case class WorkerFailed(workerId: String, transf: Transform,
                           result: WorkFailed,
                           startTime: String,
                           endTime: String = utils.getCurrentDateAsString()) extends WorkerIsDone
+
+
+  case class WorkerInProgress(workerId: String, transf: Transform, startTime: String, percentCompleted: Double)
+
 
   // Messages to Workers
   case object WorkIsReady

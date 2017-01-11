@@ -39,7 +39,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
   ClusterClientReceptionist(context.system).registerService(self)
 
-  val feedbackActor = context.actorOf(WriteFeedbackActor.props())
+  private val feedbackActor = context.actorOf(WriteFeedbackActor.props())
 
   // persistenceId must include cluster role to support multiple masters
   override def persistenceId: String = Cluster(context.system).selfRoles.find(_.startsWith("backend-")) match {
@@ -56,7 +56,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
   import context.dispatcher
 
-  val cleanupTask = context.system.scheduler.schedule(workTimeout / 2, workTimeout / 2,
+  private val cleanupTask = context.system.scheduler.schedule(workTimeout / 2, workTimeout / 2,
     self, CleanupTick)
 
   override def postStop(): Unit = cleanupTask.cancel()
@@ -114,9 +114,9 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
         // previous Ack was lost, confirm again that this is done
         sender() ! MasterWorkerProtocol.Ack(wid.transf)
       } else if (!workState.isInProgress(wid.transf.uid)) {
-        log.info("Work {} not in progress, reported as done by worker {}", wid.transf, wid.workerId)
+        log.info(s"Work ${wid.transf} not in progress, reported as done by worker ${wid.workerId}")
       } else {
-        log.info("Work {} is done by worker {}", wid.transf, wid.workerId)
+        log.info(s"Work ${wid.transf} is done by worker ${wid.workerId}")
         changeWorkerToIdle(wid.workerId, wid.transf)
         persist(WorkCompleted(wid.transf)) { event ⇒
           workState = workState.updated(event)
@@ -171,7 +171,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       workers += (wid -> workers(wid).copy(transDef = Some(wt)))
       transformDefs += wt
       log.info(s"[${transformDefs.size}] workers transforms def. types")
-//      log.info(s"workers transforms def. types: $transformDefs")
+    //      log.info(s"workers transforms def. types: $transformDefs")
 
 
     case QueryWorkStatus(transfUID) ⇒
@@ -217,7 +217,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
   def findTransformers(search: String): Set[TransformDefinitionIdentity] = {
 
-      transformDefs.filter(td ⇒ td.fullName.name.toLowerCase.contains(search)).take(10) ++
+    transformDefs.filter(td ⇒ td.fullName.name.toLowerCase.contains(search)).take(10) ++
       transformDefs.filter(td ⇒ td.fullName.organization.toLowerCase.contains(search)).take(5) ++
       transformDefs.filter(td ⇒ td.description.summary.toLowerCase.contains(search)) ++
       transformDefs.filter(td ⇒ td.description.consumes.toLowerCase.contains(search)) ++

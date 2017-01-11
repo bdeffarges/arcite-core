@@ -120,7 +120,7 @@ object ManageTransformCluster {
     import system.dispatcher
     implicit val timeout = Timeout(15.seconds)
 
-    val f = (system.actorSelection(path) ? Identify(None))
+    val f = system.actorSelection(path) ? Identify(None)
 
     f.onSuccess {
       case ActorIdentity(_, Some(ref)) => SharedLeveldbJournal.setStore(ref, system)

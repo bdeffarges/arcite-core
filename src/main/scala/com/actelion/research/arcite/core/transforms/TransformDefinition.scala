@@ -72,6 +72,8 @@ case class TransformSourceFromTransformWithExclusion(experiment: Experiment, src
 
 case class TransformSourceFromObject(experiment: Experiment) extends TransformSource
 
+//todo introduce transform from data structure. We could persist the transform results but at the same time use the in memory structure for the next transform.
+
 
 /**
   * the actual transform that contains all information for the instance of a transform.

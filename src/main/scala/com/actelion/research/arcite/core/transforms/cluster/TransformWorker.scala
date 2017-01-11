@@ -8,7 +8,6 @@ import akka.cluster.client.ClusterClient.SendToAll
 import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.{WorkCompletionStatus, WorkFailed, WorkSuccessFull}
 import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformHelper}
 import com.actelion.research.arcite.core.utils
-import tachyon.client.WorkerFileSystemMasterClient
 
 import scala.concurrent.duration.{Duration, FiniteDuration, _}
 
@@ -39,21 +38,23 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
 
   import MasterWorkerProtocol._
 
-  val workerId = UUID.randomUUID().toString
+  private val workerId = UUID.randomUUID().toString
 
   //todo change dispatcher?
   import context.dispatcher
 
-  val registerTask = context.system.scheduler.schedule(0.seconds, registerInterval, clusterClient,
+  private val registerTask = context.system.scheduler.schedule(0.seconds, registerInterval, clusterClient,
     SendToAll("/user/master/singleton", RegisterWorker(workerId)))
 
-  val workTransformExec = context.actorOf(transformDefinition.actorProps(), s"$workerId-exec")
+  private val workTransformExec = context.actorOf(transformDefinition.actorProps(), s"$workerId-exec")
 
-  val workExecutor = context.watch(workTransformExec)
+  private val workExecutor = context.watch(workTransformExec)
 
-  var currentTransform: Option[Transform] = None
+  private var currentTransform: Option[Transform] = None
 
-  var time: Long = 0L
+  private var time: Long = 0L
+
+  private var percentedCompleted = 0.0F
 
   log.info(s"worker [$workerId] for work executor [$workExecutor] created.")
 
@@ -78,7 +79,7 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
 
   override def postStop(): Unit = registerTask.cancel()
 
-  def receive = idle
+  def receive: Receive = idle
 
   def idle: Receive = {
     case WorkIsReady =>
@@ -89,6 +90,7 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
       time = System.currentTimeMillis()
 
       log.info(s"Got a transform: ${t.transfDefName} / ${t.uid} / ${t.source.experiment.name} / ${t.source.getClass.getSimpleName}")
+
       TransformHelper(t).getTransformFolder().toFile.mkdirs()
 
       currentTransform = Some(t)
@@ -118,7 +120,11 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
         context.become(waitForWorkIsDoneAck(wf))
     }
 
-    case _: Transform =>
+    case IsWorkerInProgress ⇒ // yes indeed if we are here
+      sendToMaster(WorkerInProgress(workerId, transform, utils.getDateAsString(time), percentedCompleted))
+
+
+    case _: Transform ⇒
       log.info("Yikes. Master told me to do work, while I'm working.")
   }
 
@@ -150,9 +156,9 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
   }
 }
 
-object TransformWorker {
+object TransformWorker {//todo define timing
   def props(clusterClient: ActorRef, transfDef: TransformDefinition,
-            registerInterval: FiniteDuration = 10.seconds): Props =
+            registerInterval: FiniteDuration = 1 minute): Props =
     Props(classOf[TransformWorker], clusterClient, transfDef, registerInterval)
 
 
@@ -163,6 +169,8 @@ object TransformWorker {
   case class WorkSuccessFull(feedback: String = "", artifacts: List[String] = Nil) extends WorkCompletionStatus
 
   case class WorkFailed(feedback: String = "", errors:  String = "") extends WorkCompletionStatus
+
+  case class WorkerException(cause: String)
 
 }
 

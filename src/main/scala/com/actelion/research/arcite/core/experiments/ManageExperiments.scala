@@ -462,7 +462,6 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
 
     val transfF = ExperimentFolderVisitor(exp).transformFolderPath
 
-
     //todo what happen in case casting to feedback does not work...
     transfF.toFile.listFiles().filter(_.isDirectory)
       .map(d ⇒ Paths.get(d.getAbsolutePath, WriteFeedbackActor.FILE_NAME))
