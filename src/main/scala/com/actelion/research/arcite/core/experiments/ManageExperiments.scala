@@ -251,27 +251,11 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       val start = galex.page * galex.max
       val end = start + galex.max
 
-      val defExpLog = ExpLog(LogType.UNKNOWN, LogCategory.UNKNOWN, "no latest log. ", utils.almostTenYearsAgo)
-
-
-      def readLastExpLog(exp: Experiment): ExpLog = {
-        val f = ExperimentFolderVisitor(exp).lastUpdateLog
-        if (f.toFile.exists) {
-          try {
-            Files.readAllLines(f).mkString("\n").parseJson.convertTo[ExpLog]
-          } catch {
-            case e: Exception ⇒ defExpLog
-          }
-        } else {
-          defExpLog
-        }
-      }
-
       val allExps = experiments.values.map(exp ⇒ (exp, readLastExpLog(exp)))
         .toList.sortBy(_._2.date).reverse
         .slice(start, end)
         .map(e ⇒ ExperimentSummary(e._1.name, e._1.description, e._1.owner,
-          e._1.uid, utils.getDateAsStrg(e._2.date)))
+          e._1.uid, utils.getDateAsStrg(e._2.date), e._1.state))
 
       galex.requester ! AllExperiments(allExps)
 
@@ -288,7 +272,8 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
     case FoundExperimentsWithRequester(foundExperiments, requester) ⇒
       log.debug(s"found ${foundExperiments.experiments.size} experiments ")
       val resp = foundExperiments.experiments.map(f ⇒ experiments(f.digest))
-        .map(f ⇒ ExperimentSummary(f.name, f.description, f.owner, f.uid))
+        .map(f ⇒ ExperimentSummary(f.name, f.description, f.owner,
+          f.uid, utils.getDateAsStrg(readLastExpLog(f).date), f.state))
       requester ! SomeExperiments(resp.size, resp)
 
 
@@ -478,6 +463,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
     val transfF = ExperimentFolderVisitor(exp).transformFolderPath
 
 
+    //todo what happen in case casting to feedback does not work...
     transfF.toFile.listFiles().filter(_.isDirectory)
       .map(d ⇒ Paths.get(d.getAbsolutePath, WriteFeedbackActor.FILE_NAME))
       .filter(p ⇒ p.toFile.exists())
@@ -538,12 +524,30 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       NotYetCompletedTransform(experiment)
     }
   }
+
+  private def readLastExpLog(exp: Experiment): ExpLog = {
+    val f = ExperimentFolderVisitor(exp).lastUpdateLog
+    if (f.toFile.exists) {
+      try {
+        Files.readAllLines(f).mkString("\n").parseJson.convertTo[ExpLog]
+      } catch {
+        case e: Exception ⇒ defExpLog
+      }
+    } else {
+      defExpLog
+    }
+  }
+
 }
 
 
 object ManageExperiments {
 
-  val logger = LoggerFactory.getLogger(getClass)
+  private val logger = LoggerFactory.getLogger(getClass)
+
+
+  private[ManageExperiments] val defExpLog = ExpLog(LogType.UNKNOWN, LogCategory.UNKNOWN, "no latest log. ", utils.almostTenYearsAgo)
+
 
   case class State(experiments: Set[Experiment] = Set())
 
@@ -598,7 +602,7 @@ object ManageExperiments {
   case class FoundTransformDefinition(transfFeedback: TransformCompletionFeedback)
 
   sealed trait TransformOutcome {
-    def transfUID : String
+    def transfUID: String
   }
 
   case class SuccessTransform(transfUID: String) extends TransformOutcome
@@ -659,7 +663,7 @@ object ExperimentActorsManager {
 
   val actSystem = ActorSystem("experiments-actor-system", config.getConfig("experiments-manager"))
 
-  val topActor = actSystem.actorOf(Props(classOf[ExperimentActorsManager]), "exp_actors_manager")
+  private val topActor = actSystem.actorOf(Props(classOf[ExperimentActorsManager]), "exp_actors_manager")
 
   case object StartExperimentsServiceActors
 

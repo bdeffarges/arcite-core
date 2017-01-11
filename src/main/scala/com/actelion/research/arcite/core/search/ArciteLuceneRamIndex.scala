@@ -112,7 +112,7 @@ class ArciteLuceneRamIndex extends Actor with ActorLogging {
         .map(uuid ⇒ FoundExperiment(uuid, "ngrams", 3)).toList
     }
 
-    val res = returnValue(results)
+     val res = returnValue(results)
 
     log.debug(s"total returned results = ${res.experiments.size}")
 

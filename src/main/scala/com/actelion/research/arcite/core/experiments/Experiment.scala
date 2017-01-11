@@ -40,7 +40,7 @@ object DefaultExperiment {
   * @param uid the actual digest (from digest function)
   */
 case class ExperimentSummary(name: String, description: String, owner: Owner, uid: String,
-                             lastUpdate: String = utils.almostTenYearsAgoAsString)
+                             lastUpdate: String = utils.almostTenYearsAgoAsString, state: ExpState = ExpState.IMMUTABLE)
 
 //todo what happens in case project has same name as a folder...
 case class ExperimentFolderVisitor(exp: Experiment) {

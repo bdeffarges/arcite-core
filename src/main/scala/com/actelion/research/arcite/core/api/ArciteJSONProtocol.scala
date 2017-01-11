@@ -231,7 +231,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   }
 
 
-  implicit val experimentSummaryJson: RootJsonFormat[ExperimentSummary] = jsonFormat5(ExperimentSummary)
+  implicit val experimentSummaryJson: RootJsonFormat[ExperimentSummary] = jsonFormat6(ExperimentSummary)
 
 
   implicit val stateJSon: RootJsonFormat[State] = jsonFormat1(State)
