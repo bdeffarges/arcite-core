@@ -54,7 +54,7 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
 
   private var time: Long = 0L
 
-  private var percentedCompleted = 0.0F
+  private var percentCompleted = 0.0D
 
   log.info(s"worker [$workerId] for work executor [$workExecutor] created.")
 
@@ -86,6 +86,7 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
       log.info("received [WorkIsReady]")
       sendToMaster(WorkerRequestsWork(workerId))
 
+
     case t: Transform =>
       time = System.currentTimeMillis()
 
@@ -97,9 +98,11 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
       workExecutor ! t
       context.become(working)
 
+
     case gtd: GetTransfDefId ⇒
       log.info(s"asked for my [$self] workerType ")
       workExecutor ! gtd
+
 
     case wt: TransformType ⇒
       sendToMaster(wt)
@@ -113,15 +116,22 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
         context.setReceiveTimeout(5.seconds)
         context.become(waitForWorkIsDoneAck(ws))
 
+
       case wf: WorkFailed ⇒
         log.info(s"Work failed. feedback: ${wf.feedback}")
         sendToMaster(WorkerFailed(workerId, transform, wf, utils.getDateAsString(time)))
         context.setReceiveTimeout(5.seconds)
         context.become(waitForWorkIsDoneAck(wf))
+
+
+      case WorkerProgress(prog) ⇒
+        percentCompleted = prog
+
     }
 
+
     case IsWorkerInProgress ⇒ // yes indeed if we are here
-      sendToMaster(WorkerInProgress(workerId, transform, utils.getDateAsString(time), percentedCompleted))
+      sendToMaster(WorkerInProgress(workerId, transform, utils.getDateAsString(time), percentCompleted))
 
 
     case _: Transform ⇒
