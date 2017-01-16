@@ -11,7 +11,7 @@ object MasterWorkerProtocol {
 
   case class WorkerRequestsWork(workerId: String)
 
-  case object IsWorkerInProgress
+  case object GetWorkerProgress
 
   case class WorkerProgress(progress: Double)
 

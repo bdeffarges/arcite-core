@@ -112,6 +112,7 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
     case wc: WorkCompletionStatus ⇒ wc match {
       case ws: WorkSuccessFull ⇒
         log.info(s"Work is completed. feedback: ${ws.feedback}")
+        percentCompleted = 100.0
         sendToMaster(WorkerSuccess(workerId, transform, ws, utils.getDateAsString(time)))
         context.setReceiveTimeout(5.seconds)
         context.become(waitForWorkIsDoneAck(ws))
@@ -124,13 +125,13 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
         context.become(waitForWorkIsDoneAck(wf))
 
 
-      case WorkerProgress(prog) ⇒
-        percentCompleted = prog
+      case wp : WorkerProgress ⇒
+        percentCompleted = wp.progress
 
     }
 
 
-    case IsWorkerInProgress ⇒ // yes indeed if we are here
+    case GetWorkerProgress ⇒ // yes indeed if we are here
       sendToMaster(WorkerInProgress(workerId, transform, utils.getDateAsString(time), percentCompleted))
 
 
