@@ -50,8 +50,11 @@ class WorkExecLowerCase extends Actor with ActorLogging with ArciteJSONProtocol 
       log.info(s"transformDef: ${t.transfDefName} defLight=$transfDefId")
       require(t.transfDefName == transfDefId.fullName)
       log.info("starting work but will wait for fake...")
-      Thread.sleep(java.util.concurrent.ThreadLocalRandom.current().nextLong(200000))
-      log.info("waited enough time, doing the work now...")
+      (1 to java.util.concurrent.ThreadLocalRandom.current().nextInt(10, 100)).foreach {e ⇒
+        Thread.sleep(java.util.concurrent.ThreadLocalRandom.current().nextLong(10000))
+        sender() ! WorkP
+      }
+        log.info("waited enough time, doing the work now...")
 
       t.source match {
         case tfo: TransformSourceFromObject ⇒

@@ -32,6 +32,7 @@ object WorkState {
   def empty: WorkState = WorkState(
     pendingJobs = Queue.empty,
     jobsInProgress = Map.empty,
+    progress = Map.empty,
     jobsAccepted = Set.empty,
     jobsDone = Set.empty)
 
@@ -39,7 +40,7 @@ object WorkState {
 
   case class WorkAccepted(transform: Transform) extends WorkStatus
 
-  case class WorkInProgress(transform: Transform) extends WorkStatus
+  case class WorkInProgress(transform: Transform, progress: Double) extends WorkStatus
 
   case class WorkCompleted(transform: Transform) extends WorkStatus
 
@@ -50,16 +51,17 @@ object WorkState {
   case class WorkerTimedOut(transform: Transform) extends WorkStatus
 
 
-
   //the summary of the workState
   case class AllJobsFeedback(pendingJobs: Set[String], jobsInProgress: Set[String],
                              jobsDone: Set[String])
 
+  case class RunningJobsFeedback(jobsInProgress: Set[WorkInProgress])
 }
 
 //todo accepted contains everything, what about removing it?
 case class WorkState(pendingJobs: Queue[Transform],
                      jobsInProgress: Map[String, Transform],
+                     progress: Map[String, Double],
                      jobsAccepted: Set[Transform],
                      jobsDone: Set[Transform]) {
 
@@ -87,7 +89,7 @@ case class WorkState(pendingJobs: Queue[Transform],
     val jd = jobsDone.find(_.uid == transfID)
     if (jd.isDefined) return WorkCompleted(jd.get)
 
-    if (jobsInProgress.isDefinedAt(transfID)) return WorkInProgress(jobsInProgress(transfID))
+    if (jobsInProgress.isDefinedAt(transfID)) return WorkInProgress(jobsInProgress(transfID), progress(transfID))
 
     val pj = pendingJobs.find(_.uid == transfID)
     if (pj.isDefined) return WorkAccepted(pj.get)
@@ -101,13 +103,14 @@ case class WorkState(pendingJobs: Queue[Transform],
         pendingJobs = pendingJobs enqueue transf,
         jobsAccepted = jobsAccepted + transf)
 
-    case WorkInProgress(transf) ⇒
+    case WorkInProgress(transf, prog) ⇒
       pendingJobs.find(_.transfDefName == transf.transfDefName) match {
         case Some(t) ⇒
           val (work, rest) = (t, pendingJobs.filterNot(t == _))
           copy(
             pendingJobs = rest,
-            jobsInProgress = jobsInProgress + (transf.uid -> work))
+            jobsInProgress = jobsInProgress + (transf.uid -> work),
+            progress = progress + (transf.uid -> prog))
         case _ ⇒
           this
       }
@@ -115,6 +118,7 @@ case class WorkState(pendingJobs: Queue[Transform],
     case WorkCompleted(transf) ⇒
       copy(
         jobsInProgress = jobsInProgress - transf.uid,
+        progress = progress - transf.uid,
         jobsDone = jobsDone + transf)
 
     case WorkerFailed(t) ⇒
@@ -130,6 +134,9 @@ case class WorkState(pendingJobs: Queue[Transform],
 
   def workStateSummary(): AllJobsFeedback = AllJobsFeedback(pendingJobs.map(_.uid).toSet,
     jobsInProgress.values.map(_.uid).toSet, jobsDone.map(_.uid))
+
+  def runningJobsSummary(): RunningJobsFeedback = RunningJobsFeedback(
+    jobsInProgress.map(j ⇒ WorkInProgress(j._2, progress.getOrElse(j._1, 0.0))).toSet)
 
   def workStateSizeSummary(): String = s"acceptedJobs= ${jobsAccepted.size} jobsInProgress=${jobsInProgress.size} jobsDone=${jobsDone.size}"
 

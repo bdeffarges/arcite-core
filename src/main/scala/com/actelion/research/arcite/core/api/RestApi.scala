@@ -181,6 +181,10 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(GetTransforms(exp)).mapTo[TransformsForExperiment]
   }
 
+  private[api] def getRunningTransformsForExperiment(exp: String) = {
+    arciteService.ask(GetRunningTransforms(exp)).mapTo[TransformsForExperiment]
+  }
+
   private[api] def getAllTransforms() = {
     arciteService.ask(GetAllTransforms).mapTo[ManyTransforms]
   }
@@ -199,6 +203,10 @@ trait ArciteServiceApi extends LazyLogging {
 
   private[api] def jobsStatus() = {
     arciteService.ask(AllJobsStatus).mapTo[AllJobsFeedback]
+  }
+
+  private[api] def runningJobsStatus() = {
+    arciteService.ask(RunningJobsStatus).mapTo[RunningJobsFeedback]
   }
 
   private[api] def fileUploaded(experiment: String, filePath: Path, meta: Boolean) = {
@@ -253,6 +261,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       appLogs ~
       organizationRoute ~
       treeOfTransforms ~
+      runningJobsFeedbackRoute ~
       defaultRoute
   }
 
@@ -693,7 +702,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           onSuccess(jobStatus(QueryWorkStatus(workID))) {
             case WorkLost(uid) ⇒ complete(OK -> SuccessMessage(s"job $uid was lost"))
             case WorkCompleted(t) ⇒ complete(OK -> SuccessMessage(s"job is completed"))
-            case WorkInProgress(t) ⇒ complete(OK -> SuccessMessage(s"job is running"))
+            case WorkInProgress(t, p) ⇒ complete(OK -> SuccessMessage(s"job is running, $p % completed"))
             case WorkAccepted(t) ⇒ complete(OK -> SuccessMessage("job queued..."))
           }
         }
@@ -705,6 +714,16 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       logger.debug("ask for all job status...")
       onSuccess(jobsStatus()) {
         case jfb: AllJobsFeedback ⇒ complete(OK -> jfb)
+        case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning an usefull info."))
+      }
+    }
+  }
+
+  def runningJobsFeedbackRoute = path("running_jobs_status") {
+    get {
+      logger.debug("ask for all running job status...")
+      onSuccess(runningJobsStatus()) {
+        case jfb: RunningJobsFeedback ⇒ complete(OK -> jfb)
         case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning an usefull info."))
       }
     }

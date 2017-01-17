@@ -17,7 +17,7 @@ import com.actelion.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, 
 import com.actelion.research.arcite.core.transforms.TransformCompletionStatus.TransformCompletionStatus
 import com.actelion.research.arcite.core.transforms._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.Ok
-import com.actelion.research.arcite.core.transforms.cluster.WorkState.AllJobsFeedback
+import com.actelion.research.arcite.core.transforms.cluster.WorkState.{AllJobsFeedback, RunningJobsFeedback, WorkInProgress}
 import com.actelion.research.arcite.core.transforms.cluster.workers.fortest.WorkExecLowerCase.ToLowerCase
 import com.actelion.research.arcite.core.transforms.cluster.workers.fortest.WorkExecUpperCase.ToUpperCase
 import com.actelion.research.arcite.core.transftree.TreeOfTransfOutcome.TreeOfTransfOutcome
@@ -352,6 +352,8 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
 
   implicit val transformJSon: RootJsonFormat[Transform] = jsonFormat4(Transform)
   implicit val getAllJobsFeedbackJson: RootJsonFormat[AllJobsFeedback] = jsonFormat3(AllJobsFeedback)
+  implicit val workInProgressJson: RootJsonFormat[WorkInProgress] = jsonFormat2(WorkInProgress)
+  implicit val runningJobsFeedbackJson: RootJsonFormat[RunningJobsFeedback] = jsonFormat1(RunningJobsFeedback)
 
   implicit val feedbackSourceJsonFormat: RootJsonFormat[TransformDoneSource] = jsonFormat5(TransformDoneSource)
   implicit val transformfeedbackJsonFormat: RootJsonFormat[TransformCompletionFeedback] = jsonFormat10(TransformCompletionFeedback)

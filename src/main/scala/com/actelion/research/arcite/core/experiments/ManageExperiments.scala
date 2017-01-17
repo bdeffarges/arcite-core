@@ -59,8 +59,8 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
 
   private val path = Paths.get(filePath)
 
-  val actSys = config.getConfig("experiments-manager").getString("akka.uri")
-  val fileServiceActPath = s"${actSys}/user/exp_actors_manager/file_service"
+  private val actSys = config.getConfig("experiments-manager").getString("akka.uri")
+  private val fileServiceActPath = s"${actSys}/user/exp_actors_manager/file_service"
 
   private val fileServiceAct = context.actorSelection(ActorPath.fromString(fileServiceActPath))
   log.info(s"connect file service actor [$fileServiceActPath] actor: $fileServiceAct")
@@ -587,6 +587,8 @@ object ManageExperiments {
   case class Experiments(exps: Set[Experiment])
 
   case class GetTransforms(experiment: String)
+
+  case class GetRunningTransforms(experiment: String)
 
   case object GetAllTransforms
 

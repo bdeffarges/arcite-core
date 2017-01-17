@@ -19,6 +19,8 @@ object Frontend {
 
   case object AllJobsStatus
 
+  case object RunningJobsStatus
+
 }
 
 class Frontend extends Actor with ActorLogging {
@@ -39,12 +41,19 @@ class Frontend extends Actor with ActorLogging {
   def receive = {
 
     case qw: QueryWorkStatus ⇒
-      implicit val timeout = Timeout(2.seconds)
+      implicit val timeout = Timeout(2 seconds)
       (masterProxy ? qw) pipeTo sender()
 
+
     case AllJobsStatus ⇒
-      implicit val timeout = Timeout(10.seconds)
+      implicit val timeout = Timeout(10 seconds)
       (masterProxy ? AllJobsStatus) pipeTo sender()
+
+
+    case RunningJobsStatus ⇒
+      implicit val timeout = Timeout(20 seconds)
+      (masterProxy ? RunningJobsStatus) pipeTo sender()
+
 
     case transform: Transform ⇒
       log.info(s"got work message [$transform]")
@@ -56,21 +65,26 @@ class Frontend extends Actor with ActorLogging {
         }
       } recover { case _ => NotOk } pipeTo sender()
 
+
     case GetAllTransfDefs ⇒
       implicit val timeout = Timeout(5.seconds)
       (masterProxy ? GetAllTransfDefs) pipeTo sender()
+
 
     case ft: FindTransfDefs ⇒
       implicit val timeout = Timeout(3.seconds)
       (masterProxy ? ft) pipeTo sender()
 
+
     case gtd: GetTransfDef ⇒
       implicit val timeout = Timeout(3.seconds)
       (masterProxy ? gtd) pipeTo sender()
 
+
     case gtd: GetTransfDefFromName ⇒
       implicit val timeout = Timeout(3.seconds)
       (masterProxy ? gtd) pipeTo sender()
+
 
     case m: Any ⇒ log.error(s"don't know what to do with message $m")
   }
