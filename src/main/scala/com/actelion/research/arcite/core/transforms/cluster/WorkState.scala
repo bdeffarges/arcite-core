@@ -112,7 +112,7 @@ case class WorkState(pendingJobs: Queue[Transform],
             jobsInProgress = jobsInProgress + (transf.uid -> work),
             progress = progress + (transf.uid -> prog))
         case _ ⇒
-          this
+          copy(progress = progress + (transf.uid -> prog))
       }
 
     case WorkCompleted(transf) ⇒

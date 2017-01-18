@@ -54,8 +54,6 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
 
   private var time: Long = 0L
 
-  private var percentCompleted = 0.0D
-
   log.info(s"worker [$workerId] for work executor [$workExecutor] created.")
 
   def transform: Transform = currentTransform match {
@@ -112,7 +110,6 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
     case wc: WorkCompletionStatus ⇒ wc match {
       case ws: WorkSuccessFull ⇒
         log.info(s"Work is completed. feedback: ${ws.feedback}")
-        percentCompleted = 100.0
         sendToMaster(WorkerSuccess(workerId, transform, ws, utils.getDateAsString(time)))
         context.setReceiveTimeout(5.seconds)
         context.become(waitForWorkIsDoneAck(ws))
@@ -123,20 +120,20 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
         sendToMaster(WorkerFailed(workerId, transform, wf, utils.getDateAsString(time)))
         context.setReceiveTimeout(5.seconds)
         context.become(waitForWorkIsDoneAck(wf))
-
-
-      case wp : WorkerProgress ⇒
-        percentCompleted = wp.progress
-
     }
 
 
-    case GetWorkerProgress ⇒ // yes indeed if we are here
-      sendToMaster(WorkerInProgress(workerId, transform, utils.getDateAsString(time), percentCompleted))
+    case wp: WorkerProgress ⇒
+      log.info(s"worker making progress... ${wp.progress}% completed")
+      sendToMaster(WorkerInProgress(workerId, transform, utils.getDateAsString(time), wp.progress))
 
 
     case _: Transform ⇒
       log.info("Yikes. Master told me to do work, while I'm working.")
+
+
+    case a: Any ⇒
+      log.error(s"does not know how to process message $a")
   }
 
   def waitForWorkIsDoneAck(result: WorkCompletionStatus): Receive = {
@@ -167,21 +164,24 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
   }
 }
 
-object TransformWorker {//todo define timing
+object TransformWorker {
+  //todo define timing
   def props(clusterClient: ActorRef, transfDef: TransformDefinition,
             registerInterval: FiniteDuration = 1 minute): Props =
     Props(classOf[TransformWorker], clusterClient, transfDef, registerInterval)
 
 
   sealed trait WorkCompletionStatus {
-    def feedback:  String
+    def feedback: String
   }
 
   case class WorkSuccessFull(feedback: String = "", artifacts: List[String] = Nil) extends WorkCompletionStatus
 
-  case class WorkFailed(feedback: String = "", errors:  String = "") extends WorkCompletionStatus
+  case class WorkFailed(feedback: String = "", errors: String = "") extends WorkCompletionStatus
 
   case class WorkerException(cause: String)
+
+  case class WorkProgress(progress: Double)
 
 }
 

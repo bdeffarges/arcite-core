@@ -8,6 +8,7 @@ import akka.actor.{Actor, ActorLogging, Props}
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.experiments.ExperimentFolderVisitor
 import com.actelion.research.arcite.core.transforms._
+import com.actelion.research.arcite.core.transforms.cluster.MasterWorkerProtocol.WorkerProgress
 import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.{WorkFailed, WorkSuccessFull}
 import com.actelion.research.arcite.core.transforms.cluster.{GetTransfDefId, TransformType}
 import com.actelion.research.arcite.core.utils.{FullName, WriteFeedbackActor}
@@ -24,7 +25,11 @@ class WorkExecUpperCase extends Actor with ActorLogging with ArciteJSONProtocol 
       log.info(s"transformDef: ${t.transfDefName} defLight=$transfDefId")
       require(t.transfDefName == transfDefId.fullName)
       log.info("starting work but will wait for fake...")
-      Thread.sleep(java.util.concurrent.ThreadLocalRandom.current().nextLong(200000))
+      val end = java.util.concurrent.ThreadLocalRandom.current().nextInt(10, 100)
+      (1 to end).foreach { e ⇒
+        Thread.sleep(5000)
+        sender() ! WorkerProgress(e.toDouble * 100.0/end.toDouble)
+      }
       log.info("waited enough time, doing the work now...")
 
       t.source match {

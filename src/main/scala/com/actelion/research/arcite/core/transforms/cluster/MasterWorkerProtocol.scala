@@ -11,8 +11,6 @@ object MasterWorkerProtocol {
 
   case class WorkerRequestsWork(workerId: String)
 
-  case object GetWorkerProgress
-
   case class WorkerProgress(progress: Double)
 
   sealed trait WorkerIsDone {

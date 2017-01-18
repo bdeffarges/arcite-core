@@ -6,7 +6,6 @@ import akka.cluster.client.ClusterClientReceptionist
 import akka.persistence.PersistentActor
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend._
-import com.actelion.research.arcite.core.transforms.cluster.MasterWorkerProtocol.WorkerInProgress
 import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinitionIdentity}
 import com.actelion.research.arcite.core.utils.WriteFeedbackActor
 import com.actelion.research.arcite.core.utils.WriteFeedbackActor.WriteFeedback
@@ -144,9 +143,8 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
 
     case wp : MasterWorkerProtocol.WorkerInProgress ⇒
+      log.info(s"got Work in Progress update: ${wp.percentCompleted} % of worker ${wp.workerId}")
       workState = workState.updated(WorkState.WorkInProgress(wp.transf, wp.percentCompleted))
-
-
 
 
     case transf: Transform =>

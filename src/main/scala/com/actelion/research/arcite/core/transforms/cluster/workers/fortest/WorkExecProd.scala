@@ -1,6 +1,7 @@
 package com.actelion.research.arcite.core.transforms.cluster.workers.fortest
 
 import akka.actor.{Actor, ActorLogging, Props}
+import com.actelion.research.arcite.core.transforms.cluster.MasterWorkerProtocol.WorkerProgress
 import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.WorkSuccessFull
 import com.actelion.research.arcite.core.transforms.cluster.{GetTransfDefId, TransformType}
 import com.actelion.research.arcite.core.transforms.{TransformDefinition, TransformDefinitionIdentity, TransformDescription}
@@ -14,7 +15,13 @@ class WorkExecProd extends Actor with ActorLogging {
     case CalcProd(n) =>
       val n2 = n * n
       val result = s"workexecutor= $n * $n = $n2"
-      Thread.sleep(java.util.concurrent.ThreadLocalRandom.current().nextLong(100000))
+      val end = java.util.concurrent.ThreadLocalRandom.current().nextInt(10, 100)
+      (1 to end).foreach { e ⇒
+        Thread.sleep(5000)
+        sender() ! WorkerProgress(e.toDouble * 100.0/end.toDouble)
+      }
+      log.info("waited enough time, doing the work now...")
+
       sender() ! WorkSuccessFull(result)
 
     case GetTransfDefId(wi) ⇒

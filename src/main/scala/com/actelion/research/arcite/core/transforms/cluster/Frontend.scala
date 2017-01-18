@@ -30,7 +30,7 @@ class Frontend extends Actor with ActorLogging {
 
   //todo change dispatcher/Executor
 
-  val masterProxy = context.actorOf(
+  private val masterProxy = context.actorOf(
     ClusterSingletonProxy.props(
       settings = ClusterSingletonProxySettings(context.system).withRole("backend"),
       singletonManagerPath = "/user/master"), name = "masterProxy")
@@ -38,7 +38,7 @@ class Frontend extends Actor with ActorLogging {
   log.info(s"master proxy=$masterProxy")
 
   //todo change timeouts
-  def receive = {
+  def receive:Receive = {
 
     case qw: QueryWorkStatus ⇒
       implicit val timeout = Timeout(2 seconds)
