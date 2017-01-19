@@ -351,12 +351,13 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val runTransformFromTransformWExclusionsJson: RootJsonFormat[RunTransformOnTransformWithExclusion] = jsonFormat6(RunTransformOnTransformWithExclusion)
 
   implicit val transformJSon: RootJsonFormat[Transform] = jsonFormat4(Transform)
-  implicit val getAllJobsFeedbackJson: RootJsonFormat[AllJobsFeedback] = jsonFormat3(AllJobsFeedback)
+  implicit val getAllJobsFeedbackJson: RootJsonFormat[AllJobsFeedback] = jsonFormat4(AllJobsFeedback)
   implicit val workInProgressJson: RootJsonFormat[WorkInProgress] = jsonFormat2(WorkInProgress)
   implicit val runningJobsFeedbackJson: RootJsonFormat[RunningJobsFeedback] = jsonFormat1(RunningJobsFeedback)
 
   implicit val feedbackSourceJsonFormat: RootJsonFormat[TransformDoneSource] = jsonFormat5(TransformDoneSource)
   implicit val transformfeedbackJsonFormat: RootJsonFormat[TransformCompletionFeedback] = jsonFormat10(TransformCompletionFeedback)
+  implicit val runningTransformFeedbackJsonFormat: RootJsonFormat[RunningTransformFeedback] = jsonFormat5(RunningTransformFeedback)
 
   implicit val addPropertiesJSonFormat: RootJsonFormat[AddExpProps] = jsonFormat1(AddExpProps)
   implicit val rmPropertiesJSonFormat: RootJsonFormat[RmExpProps] = jsonFormat1(RmExpProps)

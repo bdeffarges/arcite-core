@@ -110,6 +110,9 @@ case class TransformCompletionFeedback(transform: String, transformDefinition: F
                                        artifacts: List[String], feedback: String, errors: String,
                                        startTime: String, endTime: String = utils.getCurrentDateAsString())
 
+case class RunningTransformFeedback(transform: String, transformDefinition: FullName, experiment: String,
+                                    parameters: Map[String, String], progress: Double)
+
 object TransformCompletionStatus extends scala.Enumeration {
   type TransformCompletionStatus = Value
   val SUCCESS, FAILED, COMPLETED_WITH_WARNINGS = Value
