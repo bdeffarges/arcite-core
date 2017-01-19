@@ -17,9 +17,9 @@ object Frontend {
 
   case class QueryWorkStatus(uid: String)
 
-  case object AllJobsStatus
+  case object GetAllJobsStatus
 
-  case object RunningJobsStatus
+  case object GetRunningJobsStatus
 
 }
 
@@ -45,14 +45,14 @@ class Frontend extends Actor with ActorLogging {
       (masterProxy ? qw) pipeTo sender()
 
 
-    case AllJobsStatus ⇒
+    case GetAllJobsStatus ⇒
       implicit val timeout = Timeout(10 seconds)
-      (masterProxy ? AllJobsStatus) pipeTo sender()
+      (masterProxy ? GetAllJobsStatus) pipeTo sender()
 
 
-    case RunningJobsStatus ⇒
+    case GetRunningJobsStatus ⇒
       implicit val timeout = Timeout(20 seconds)
-      (masterProxy ? RunningJobsStatus) pipeTo sender()
+      (masterProxy ? GetRunningJobsStatus) pipeTo sender()
 
 
     case transform: Transform ⇒

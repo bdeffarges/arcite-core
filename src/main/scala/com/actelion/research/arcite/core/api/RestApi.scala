@@ -181,10 +181,6 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(GetTransforms(exp)).mapTo[TransformsForExperiment]
   }
 
-  private[api] def getRunningTransformsForExperiment(exp: String) = {
-    arciteService.ask(GetRunningTransforms(exp)).mapTo[TransformsForExperiment]
-  }
-
   private[api] def getAllTransforms() = {
     arciteService.ask(GetAllTransforms).mapTo[ManyTransforms]
   }
@@ -201,12 +197,12 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(qws).mapTo[WorkStatus]
   }
 
-  private[api] def jobsStatus() = {
-    arciteService.ask(AllJobsStatus).mapTo[AllJobsFeedback]
+  private[api] def getAllJobsStatus() = {
+    arciteService.ask(GetAllJobsStatus).mapTo[AllJobsFeedback]
   }
 
-  private[api] def runningJobsStatus() = {
-    arciteService.ask(RunningJobsStatus).mapTo[RunningJobsFeedback]
+  private[api] def getRunningJobsStatus() = {
+    arciteService.ask(GetRunningJobsStatus).mapTo[RunningJobsFeedback]
   }
 
   private[api] def fileUploaded(experiment: String, filePath: Path, meta: Boolean) = {
@@ -712,7 +708,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
   def allTransformsFeedbackRoute = path("all_jobs_status") {
     get {
       logger.debug("ask for all job status...")
-      onSuccess(jobsStatus()) {
+      onSuccess(getAllJobsStatus()) {
         case jfb: AllJobsFeedback ⇒ complete(OK -> jfb)
         case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning an usefull info."))
       }
@@ -722,7 +718,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
   def runningJobsFeedbackRoute = path("running_jobs_status") {
     get {
       logger.debug("ask for all running job status...")
-      onSuccess(runningJobsStatus()) {
+      onSuccess(getRunningJobsStatus()) {
         case jfb: RunningJobsFeedback ⇒ complete(OK -> jfb)
         case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning an usefull info."))
       }

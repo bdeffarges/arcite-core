@@ -133,7 +133,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       feedbackActor ! WriteFeedback(wf)
 
       if (workState.isInProgress(wf.transf.uid)) {
-        log.info(s"Work ${wf.transf.uid} failed by worker ${wf.workerId}")
+        log.info(s"Work ${wf.transf.uid} failed in worker ${wf.workerId}")
         changeWorkerToIdle(wf.workerId, wf.transf)
         persist(WorkState.WorkerFailed(wf.transf)) { event ⇒
           workState = workState.updated(event)
@@ -188,11 +188,11 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       sender() ! workState.jobState(transfUID)
 
 
-    case AllJobsStatus ⇒
+    case GetAllJobsStatus ⇒
       sender() ! workState.workStateSummary()
 
 
-    case RunningJobsStatus ⇒
+    case GetRunningJobsStatus ⇒
       sender() ! workState.runningJobsSummary()
 
     case GetAllTransfDefs ⇒

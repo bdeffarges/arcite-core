@@ -40,6 +40,8 @@ package object core {
   val successFile = ".success"
   val failedFile = ".failed"
   val feedbackfile = "-feedback.json"
+  val immutableFile = ".immutable"
+
 
   // could be later on in config
   import scala.concurrent.duration._

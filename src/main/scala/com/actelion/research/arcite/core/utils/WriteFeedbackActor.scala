@@ -40,10 +40,10 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
 
   import WriteFeedbackActor._
 
-  val conf = ConfigFactory.load().getConfig("experiments-manager")
-  val actSys = conf.getString("akka.uri")
-  val eventInfoSelect = s"${actSys}/user/exp_actors_manager/event_logging_info"
-  val eventInfoAct = context.actorSelection(ActorPath.fromString(eventInfoSelect))
+  private val conf = ConfigFactory.load().getConfig("experiments-manager")
+  private val actSys = conf.getString("akka.uri")
+  private val eventInfoSelect = s"${actSys}/user/exp_actors_manager/event_logging_info"
+  private val eventInfoAct = context.actorSelection(ActorPath.fromString(eventInfoSelect))
 
   override def receive: Receive = {
     case WriteFeedback(wid) ⇒
@@ -51,55 +51,62 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
 
       val transfFolder = TransformHelper(wid.transf).getTransformFolder()
 
-      val exp = wid.transf.source.experiment.uid
+      val immutableF = transfFolder resolve core.immutableFile
+      if (immutableF.toFile.exists()) {
+        sender() ! GeneralMessages.ImmutablePath(transfFolder.toString)
+      } else {
+        Files.write(immutableF, "IMMUTABLE".getBytes(StandardCharsets.UTF_8), CREATE_NEW)
 
-      val fs: TransformDoneSource = wid.transf.source match {
-        case tsr: TransformSourceFromRaw ⇒
-          TransformDoneSource(exp, RAW, None, None, None)
-        case tsr: TransformSourceFromRawWithExclusion ⇒
-          TransformDoneSource(exp, RAW, None, Some(tsr.excludes), Some(tsr.excludesRegex))
-        case tst: TransformSourceFromTransform ⇒
-          TransformDoneSource(exp, TRANSFORM, Some(tst.srcTransformID), None, None)
-        case tst: TransformSourceFromTransformWithExclusion ⇒
-          TransformDoneSource(exp, TRANSFORM, Some(tst.srcTransformUID), Some(tst.excludes), Some(tst.excludesRegex))
-        case tob: TransformSourceFromObject ⇒
-          TransformDoneSource(exp, JSON, None, None, None)
-      }
+        val exp = wid.transf.source.experiment.uid
 
-      val digest = GetDigest.getFolderContentDigest(transfFolder.toFile)
-      val params = wid.transf.parameters
+        val fs: TransformDoneSource = wid.transf.source match {
+          case tsr: TransformSourceFromRaw ⇒
+            TransformDoneSource(exp, RAW, None, None, None)
+          case tsr: TransformSourceFromRawWithExclusion ⇒
+            TransformDoneSource(exp, RAW, None, Some(tsr.excludes), Some(tsr.excludesRegex))
+          case tst: TransformSourceFromTransform ⇒
+            TransformDoneSource(exp, TRANSFORM, Some(tst.srcTransformID), None, None)
+          case tst: TransformSourceFromTransformWithExclusion ⇒
+            TransformDoneSource(exp, TRANSFORM, Some(tst.srcTransformUID), Some(tst.excludes), Some(tst.excludesRegex))
+          case tob: TransformSourceFromObject ⇒
+            TransformDoneSource(exp, JSON, None, None, None)
+        }
 
-      import spray.json._
+        val digest = GetDigest.getFolderContentDigest(transfFolder.toFile)
+        val params = wid.transf.parameters
 
-      wid match {
-        case ws: WorkerSuccess ⇒
-          val fb = TransformCompletionFeedback(wid.transf.uid, wid.transf.transfDefName, fs, params,
-            TransformCompletionStatus.SUCCESS, ws.result.artifacts,
-            ws.result.feedback, "", wid.startTime)
+        import spray.json._
 
-          Files.write(Paths.get(transfFolder.toString, FILE_NAME),
-            fb.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
+        wid match {
+          case ws: WorkerSuccess ⇒
+            val fb = TransformCompletionFeedback(wid.transf.uid, wid.transf.transfDefName, fs, params,
+              TransformCompletionStatus.SUCCESS, ws.result.artifacts,
+              ws.result.feedback, "", wid.startTime)
 
-          Files.write(transfFolder resolve core.successFile, "SUCCESS".getBytes(StandardCharsets.UTF_8), CREATE_NEW)
+            Files.write(Paths.get(transfFolder.toString, FILE_NAME),
+              fb.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
 
-          eventInfoAct ! AddLog(wid.transf.source.experiment,
-            ExpLog(LogType.TRANSFORM, LogCategory.SUCCESS,
-              s"transform [${wid.transf.transfDefName.name}] successfully completed", Some(wid.transf.uid)))
+            Files.write(transfFolder resolve core.successFile, "SUCCESS".getBytes(StandardCharsets.UTF_8), CREATE_NEW)
+
+            eventInfoAct ! AddLog(wid.transf.source.experiment,
+              ExpLog(LogType.TRANSFORM, LogCategory.SUCCESS,
+                s"transform [${wid.transf.transfDefName.name}] successfully completed", Some(wid.transf.uid)))
 
 
-        case wf: WorkerFailed ⇒
-          val fb = TransformCompletionFeedback(wid.transf.uid, wid.transf.transfDefName, fs, params,
-            TransformCompletionStatus.FAILED, List(),
-            wf.result.feedback, wf.result.errors, wid.startTime)
+          case wf: WorkerFailed ⇒
+            val fb = TransformCompletionFeedback(wid.transf.uid, wid.transf.transfDefName, fs, params,
+              TransformCompletionStatus.FAILED, List(),
+              wf.result.feedback, wf.result.errors, wid.startTime)
 
-          Files.write(Paths.get(transfFolder.toString, FILE_NAME),
-            fb.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
+            Files.write(Paths.get(transfFolder.toString, FILE_NAME),
+              fb.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
 
-          Files.write(transfFolder resolve core.failedFile, "FAILED".getBytes(StandardCharsets.UTF_8), CREATE_NEW)
+            Files.write(transfFolder resolve core.failedFile, "FAILED".getBytes(StandardCharsets.UTF_8), CREATE_NEW)
 
-          eventInfoAct ! AddLog(wid.transf.source.experiment,
-            ExpLog(LogType.TRANSFORM, LogCategory.ERROR,
-              s"transform [${wid.transf.transfDefName.name}] failed", Some(wid.transf.uid)))
+            eventInfoAct ! AddLog(wid.transf.source.experiment,
+              ExpLog(LogType.TRANSFORM, LogCategory.ERROR,
+                s"transform [${wid.transf.transfDefName.name}] failed", Some(wid.transf.uid)))
+        }
       }
   }
 }

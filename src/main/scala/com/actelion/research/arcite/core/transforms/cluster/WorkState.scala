@@ -21,7 +21,7 @@
  */
 package com.actelion.research.arcite.core.transforms.cluster
 
-import com.actelion.research.arcite.core.transforms.{RunningTransformFeedback, Transform, TransformDoneSource}
+import com.actelion.research.arcite.core.transforms.{RunningTransformFeedback, Transform}
 import com.actelion.research.arcite.core.utils.FullName
 
 import scala.collection.immutable.Queue
@@ -55,6 +55,7 @@ object WorkState {
                              jobsInProgress: Set[String], jobsDone: Set[String])
 
   case class RunningJobsFeedback(jobsInProgress: Set[RunningTransformFeedback])
+
 }
 
 //todo accepted contains everything, what about removing it?
@@ -85,6 +86,7 @@ case class WorkState(pendingJobs: Queue[Transform],
   def isDone(workId: String): Boolean = jobsDone.exists(_.uid == workId)
 
   def jobState(transfID: String): WorkStatus = {
+    //todo improve option code
     val jd = jobsDone.find(_.uid == transfID)
     if (jd.isDefined) return WorkCompleted(jd.get)
 
@@ -103,41 +105,66 @@ case class WorkState(pendingJobs: Queue[Transform],
         acceptedJobs = acceptedJobs + transf)
 
     case WorkInProgress(transf, prog) ⇒
-      pendingJobs.find(_.transfDefName == transf.transfDefName) match {
-        case Some(t) ⇒
-          val (work, rest) = (t, pendingJobs.filterNot(t == _))
-          copy(
-            pendingJobs = rest,
-            jobsInProgress = jobsInProgress + (transf.uid -> work),
-            progress = progress + (transf.uid -> prog))
-        case _ ⇒
-          copy(progress = progress + (transf.uid -> prog))
+      val pj = pendingJobs.find(_.transfDefName == transf.transfDefName)
+      if (pj.isDefined) {
+        val t = pj.get
+        val (work, rest) = (t, pendingJobs.filterNot(t == _))
+        copy(
+          pendingJobs = rest,
+          jobsInProgress = jobsInProgress + (transf.uid -> work),
+          progress = progress + (transf.uid -> prog))
       }
 
-    case WorkCompleted(transf) ⇒
+      val inpj = jobsInProgress.get(transf.uid)
+      if (inpj.isDefined) {
+        val t = inpj.get
+          copy(progress = progress + (transf.uid -> prog))
+      }
+      this
+
+    case WorkCompleted(transf)    ⇒
       copy(
         jobsInProgress = jobsInProgress - transf.uid,
         progress = progress - transf.uid,
         jobsDone = jobsDone + transf)
 
-    case WorkerFailed(t) ⇒
+    case WorkerFailed(t)    ⇒
       copy(
         pendingJobs = pendingJobs enqueue jobsInProgress(t.uid),
         jobsInProgress = jobsInProgress - t.uid)
 
-    case WorkerTimedOut(workId) ⇒
+    case WorkerTimedOut(workId)    ⇒
       copy(
         pendingJobs = pendingJobs enqueue jobsInProgress(workId.uid),
         jobsInProgress = jobsInProgress - workId.uid)
   }
 
   def workStateSummary(): AllJobsFeedback = AllJobsFeedback(acceptedJobs.map(_.uid),
-    pendingJobs.map(_.uid).toSet,  jobsInProgress.values.map(_.uid).toSet, jobsDone.map(_.uid))
+    pendingJobs.map(_.uid).toSet, jobsInProgress.values.map(_.uid).toSet, jobsDone.map(_.uid))
 
-  def runningJobsSummary(): RunningJobsFeedback = RunningJobsFeedback(
-    jobsInProgress.map(j ⇒ RunningTransformFeedback(j._2.uid, j._2.transfDefName,
-      j._2.source.experiment.uid, j._2.parameters, progress.getOrElse(j._1, 0.0))).toSet)
+  def runningJobsSummary(): RunningJobsFeedback = {
+    val progressReport = jobsInProgress.map(j ⇒ RunningTransformFeedback(j._2.uid, j._2.transfDefName,
+      j._2.source.experiment.uid, j._2.parameters, progress.getOrElse(j._1, 0.0))).toSet
 
-  def workStateSizeSummary(): String = s"acceptedJobs= ${acceptedJobs.size} jobsInProgress=${jobsInProgress.size} jobsDone=${jobsDone.size}"
+    println(s"**** ${
+      progressReport
+    }")
+    println(s"##### ${
+      progress
+    }")
+    RunningJobsFeedback(progressReport)
+  }
+
+  def workStateSizeSummary(): String =
+    s"""acceptedJobs= ${
+      acceptedJobs.size
+    } pendingJobs= ${
+      pendingJobs.size
+    }
+       | jobsInProgress=${
+      jobsInProgress.size
+    } jobsDone=${
+      jobsDone.size
+    }""".stripMargin
 
 }
