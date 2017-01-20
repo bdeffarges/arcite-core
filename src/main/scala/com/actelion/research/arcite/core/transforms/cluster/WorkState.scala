@@ -26,14 +26,13 @@ import com.actelion.research.arcite.core.utils.FullName
 
 import scala.collection.immutable.Queue
 
-// todo the job id containers should also empty themselves after a while...
 object WorkState {
 
   def empty: WorkState = WorkState(
+    acceptedJobs = Set.empty,
     pendingJobs = Queue.empty,
     jobsInProgress = Map.empty,
     progress = Map.empty,
-    acceptedJobs = Set.empty,
     jobsDone = Set.empty)
 
   sealed trait WorkStatus
@@ -58,12 +57,9 @@ object WorkState {
 
 }
 
-//todo accepted contains everything, what about removing it?
-case class WorkState(pendingJobs: Queue[Transform],
+case class WorkState(acceptedJobs: Set[Transform], pendingJobs: Queue[Transform],
                      jobsInProgress: Map[String, Transform],
-                     progress: Map[String, Int],
-                     acceptedJobs: Set[Transform],
-                     jobsDone: Set[Transform]) {
+                     progress: Map[String, Int], jobsDone: Set[Transform]) {
 
   import WorkState._
 
@@ -85,17 +81,13 @@ case class WorkState(pendingJobs: Queue[Transform],
 
   def isDone(workId: String): Boolean = jobsDone.exists(_.uid == workId)
 
-  def jobState(transfID: String): WorkStatus = {
-    //todo improve option code
-    val jd = jobsDone.find(_.uid == transfID)
-    if (jd.isDefined) return WorkCompleted(jd.get)
-
-    if (jobsInProgress.isDefinedAt(transfID)) return WorkInProgress(jobsInProgress(transfID), progress(transfID))
-
-    val pj = pendingJobs.find(_.uid == transfID)
-    if (pj.isDefined) return WorkAccepted(pj.get)
-
-    WorkLost(transfID)
+  def jobState(transf: String): WorkStatus = {
+    jobsDone.find(_.uid == transf).fold(
+      jobsInProgress.get(transf).fold(
+        pendingJobs.find(_.uid == transf).fold[WorkStatus](
+          WorkLost(transf))(WorkAccepted))
+      (t ⇒ WorkInProgress(jobsInProgress(transf), progress(transf)))
+    )(WorkCompleted)
   }
 
   def updated(event: WorkStatus): WorkState = event match {
@@ -147,8 +139,8 @@ case class WorkState(pendingJobs: Queue[Transform],
     val progressReport = jobsInProgress.map(j ⇒ RunningTransformFeedback(j._2.uid, j._2.transfDefName,
       j._2.source.experiment.uid, j._2.parameters, progress.getOrElse(j._1, 0))).toSet
 
-//    println(s"**** ${progressReport}")
-//    println(s"##### ${progress}")
+    //    println(s"**** ${progressReport}")
+    //    println(s"##### ${progress}")
     RunningJobsFeedback(progressReport)
   }
 
