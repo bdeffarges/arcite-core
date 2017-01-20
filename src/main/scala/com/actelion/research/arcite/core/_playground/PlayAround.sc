@@ -7,13 +7,12 @@
 //println(m  l)
 //"\\S+(257236312158|257236312159)\\S+txt".r.findFirstIn("161125_br_257236312158_S01_GE2_1105_Oct12_1_3_MAGEML.txt")
 
-val m1 = Map("a" -> "aa", "b" -> "bb", "c" -> "cc", "d" -> "dd")
-val m2 = Map("a" -> "aaa", "b" -> "bbb", "c" -> "ccc", "d" -> "ddd")
+//val m1 = Map("a" -> "aa", "b" -> "bb", "c" -> "cc", "d" -> "dd")
+//val m2 = Map("a" -> "aaa", "b" -> "bbb", "c" -> "ccc", "d" -> "ddd")
 //
 //m1.zip(m2).map(a ⇒ ((a._1._2, a._2._2)))
 
-m1.map(a ⇒ (a._1 -> (a._2, m2.get(a._1))))
-
+//m1.map(a ⇒ (a._1 -> (a._2, m2.get(a._1))))
 
 
 //"aa/bb/cc/DD/at.txt".split("aa/bb/cc/DD")(1)

@@ -111,7 +111,7 @@ case class TransformCompletionFeedback(transform: String, transformDefinition: F
                                        startTime: String, endTime: String = utils.getCurrentDateAsString())
 
 case class RunningTransformFeedback(transform: String, transformDefinition: FullName, experiment: String,
-                                    parameters: Map[String, String], progress: Double)
+                                    parameters: Map[String, String], progress: Int)
 
 object TransformCompletionStatus extends scala.Enumeration {
   type TransformCompletionStatus = Value

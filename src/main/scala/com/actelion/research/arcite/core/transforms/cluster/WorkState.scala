@@ -40,7 +40,7 @@ object WorkState {
 
   case class WorkAccepted(transform: Transform) extends WorkStatus
 
-  case class WorkInProgress(transform: Transform, progress: Double) extends WorkStatus
+  case class WorkInProgress(transform: Transform, progress: Int) extends WorkStatus
 
   case class WorkCompleted(transform: Transform) extends WorkStatus
 
@@ -61,7 +61,7 @@ object WorkState {
 //todo accepted contains everything, what about removing it?
 case class WorkState(pendingJobs: Queue[Transform],
                      jobsInProgress: Map[String, Transform],
-                     progress: Map[String, Double],
+                     progress: Map[String, Int],
                      acceptedJobs: Set[Transform],
                      jobsDone: Set[Transform]) {
 
@@ -145,11 +145,11 @@ case class WorkState(pendingJobs: Queue[Transform],
 
   def runningJobsSummary(): RunningJobsFeedback = {
     val progressReport = jobsInProgress.map(j ⇒ RunningTransformFeedback(j._2.uid, j._2.transfDefName,
-      j._2.source.experiment.uid, j._2.parameters, progress.getOrElse(j._1, 0.0))).toSet
+      j._2.source.experiment.uid, j._2.parameters, progress.getOrElse(j._1, 0))).toSet
 
 //    println(s"**** ${progressReport}")
 //    println(s"##### ${progress}")
-    R unningJobsFeedback(progressReport)
+    RunningJobsFeedback(progressReport)
   }
 
   def workStateSizeSummary(): String =
