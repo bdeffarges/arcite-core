@@ -144,7 +144,9 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
     case wp : MasterWorkerProtocol.WorkerInProgress ⇒
       log.info(s"got Work in Progress update: ${wp.percentCompleted} % of worker ${wp.workerId}")
-      workState = workState.updated(WorkState.WorkInProgress(wp.transf, wp.percentCompleted))
+      persist(WorkInProgress(wp.transf, wp.percentCompleted)) { event ⇒
+        workState = workState.updated(event)
+      }
 
 
     case transf: Transform =>
@@ -193,6 +195,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
 
     case GetRunningJobsStatus ⇒
+      log.info("asking for Running job status...")
       sender() ! workState.runningJobsSummary()
 
     case GetAllTransfDefs ⇒

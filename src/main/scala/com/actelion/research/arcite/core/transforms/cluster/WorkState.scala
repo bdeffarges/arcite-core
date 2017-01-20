@@ -113,27 +113,28 @@ case class WorkState(pendingJobs: Queue[Transform],
           pendingJobs = rest,
           jobsInProgress = jobsInProgress + (transf.uid -> work),
           progress = progress + (transf.uid -> prog))
-      }
-
-      val inpj = jobsInProgress.get(transf.uid)
-      if (inpj.isDefined) {
-        val t = inpj.get
+      } else {
+        val inpj = jobsInProgress.get(transf.uid)
+        if (inpj.isDefined) {
+          val t = inpj.get
           copy(progress = progress + (transf.uid -> prog))
+        } else {
+          this
+        }
       }
-      this
 
-    case WorkCompleted(transf)    ⇒
+    case WorkCompleted(transf) ⇒
       copy(
         jobsInProgress = jobsInProgress - transf.uid,
         progress = progress - transf.uid,
         jobsDone = jobsDone + transf)
 
-    case WorkerFailed(t)    ⇒
+    case WorkerFailed(t) ⇒
       copy(
         pendingJobs = pendingJobs enqueue jobsInProgress(t.uid),
         jobsInProgress = jobsInProgress - t.uid)
 
-    case WorkerTimedOut(workId)    ⇒
+    case WorkerTimedOut(workId) ⇒
       copy(
         pendingJobs = pendingJobs enqueue jobsInProgress(workId.uid),
         jobsInProgress = jobsInProgress - workId.uid)
@@ -146,13 +147,9 @@ case class WorkState(pendingJobs: Queue[Transform],
     val progressReport = jobsInProgress.map(j ⇒ RunningTransformFeedback(j._2.uid, j._2.transfDefName,
       j._2.source.experiment.uid, j._2.parameters, progress.getOrElse(j._1, 0.0))).toSet
 
-    println(s"**** ${
-      progressReport
-    }")
-    println(s"##### ${
-      progress
-    }")
-    RunningJobsFeedback(progressReport)
+//    println(s"**** ${progressReport}")
+//    println(s"##### ${progress}")
+    R unningJobsFeedback(progressReport)
   }
 
   def workStateSizeSummary(): String =

@@ -719,7 +719,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
     get {
       logger.debug("ask for all running job status...")
       onSuccess(getRunningJobsStatus()) {
-        case jfb: RunningJobsFeedback ⇒ complete(OK -> jfb)
+        case jfb: RunningJobsFeedback ⇒ complete(OK -> jfb.jobsInProgress)
         case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning an usefull info."))
       }
     }
