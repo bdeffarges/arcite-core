@@ -88,7 +88,10 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
     case t: Transform =>
       time = System.currentTimeMillis()
 
-      log.info(s"Got a transform: ${t.transfDefName} / ${t.uid} / ${t.source.experiment.name} / ${t.source.getClass.getSimpleName}")
+      log.info(
+        s"""Got a transform: ${t.transfDefName} / ${t.uid}
+           |/ ${t.source.experiment.name} / ${t.source.getClass.getSimpleName}""".stripMargin)
+
 
       TransformHelper(t).getTransformFolder().toFile.mkdirs()
 

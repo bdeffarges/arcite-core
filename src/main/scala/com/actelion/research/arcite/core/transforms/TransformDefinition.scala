@@ -23,7 +23,8 @@ import spray.json.JsValue
   * @param consumes
   * @param produces
   */
-case class TransformDescription(summary: String, consumes: String, produces: String)
+case class TransformDescription(summary: String, consumes: String, produces: String,
+                                transformParameters: Set[TransformParameter] = Set.empty)
 
 /**
   * Basic definition of a transform. What it does and its unique name.
@@ -36,7 +37,7 @@ case class TransformDescription(summary: String, consumes: String, produces: Str
   * @param description
   * @param dependsOn
   */
-case class TransformDefinitionIdentity(fullName: FullName, shortName: String, // todo version
+case class TransformDefinitionIdentity(fullName: FullName, shortName: String,
                                        description: TransformDescription, dependsOn: Option[FullName] = None) {
   lazy val digestUID = GetDigest.getDigest(s"$fullName $description")
 }
@@ -80,11 +81,11 @@ case class TransformSourceFromObject(experiment: Experiment) extends TransformSo
   *
   * @param transfDefName
   * @param source
-  * @param parameters we keep it as a JsValue so the real transformer can decide at run time what to do with the parameters
+  * @param parameters a map of parameters passed on to the transform worker
   * @param uid
   */
 case class Transform(transfDefName: FullName, source: TransformSource,
-                     parameters: Map[String, String] = Map(), uid: String = UUID.randomUUID().toString)
+                     parameters: Map[String, String] = Map.empty, uid: String = UUID.randomUUID().toString)
 
 
 case class TransformHelper(transform: Transform) {
@@ -117,3 +118,19 @@ object TransformCompletionStatus extends scala.Enumeration {
   type TransformCompletionStatus = Value
   val SUCCESS, FAILED, COMPLETED_WITH_WARNINGS = Value
 }
+
+sealed trait TransformParameter {
+  def parameterName : String
+}
+
+case class FromAlistOfPredefinedValues(parameterName: String, values: List[String], defaultValue: Option[String] = None,
+                                       allowsNew: Boolean = false) extends TransformParameter
+
+case class IntNumber(parameterName: String, defaultValue: Long, minBoundary: Option[Long] = None,
+                     maxBoundary: Option[Long] = None) extends TransformParameter
+
+case class FloatNumber(parameterName: String, defaultValue: Option[Double] = None, minBoundary: Option[Double] = None,
+                       maxBoundary: Option[Double] = None) extends TransformParameter
+
+case class FreeText(parameterName: String, defaultValue: Option[String]) extends TransformParameter
+
