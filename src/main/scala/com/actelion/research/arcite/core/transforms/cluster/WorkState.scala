@@ -23,6 +23,7 @@ package com.actelion.research.arcite.core.transforms.cluster
 
 import com.actelion.research.arcite.core.transforms.{RunningTransformFeedback, Transform}
 import com.actelion.research.arcite.core.utils.FullName
+import com.typesafe.scalalogging.LazyLogging
 
 import scala.collection.immutable.Queue
 
@@ -39,7 +40,13 @@ object WorkState {
 
   case class WorkAccepted(transform: Transform) extends WorkStatus
 
-  case class WorkInProgress(transform: Transform, progress: Int) extends WorkStatus
+  /**
+    * worker can inform on how much progress has been done.
+    *
+    * @param transform
+    * @param progress , since the last update, so it will add up.
+    */
+  case class WorkInProgress(transform: Transform, progress: Int = 1) extends WorkStatus
 
   case class WorkCompleted(transform: Transform) extends WorkStatus
 
@@ -59,7 +66,7 @@ object WorkState {
 
 case class WorkState(acceptedJobs: Set[Transform], pendingJobs: Queue[Transform],
                      jobsInProgress: Map[String, Transform],
-                     progress: Map[String, Int], jobsDone: Set[Transform]) {
+                     progress: Map[String, Int], jobsDone: Set[Transform]) extends LazyLogging {
 
   import WorkState._
 
@@ -90,50 +97,85 @@ case class WorkState(acceptedJobs: Set[Transform], pendingJobs: Queue[Transform]
     )(WorkCompleted)
   }
 
+
   def updated(event: WorkStatus): WorkState = event match {
     case WorkAccepted(transf) ⇒
-      copy(
-        pendingJobs = pendingJobs enqueue transf,
-        acceptedJobs = acceptedJobs + transf)
+      if (!acceptedJobs.contains(transf)) {
+        copy(
+          pendingJobs = pendingJobs enqueue transf,
+          acceptedJobs = acceptedJobs + transf)
+      } else {
+        logger.debug(s"work ${transf.uid} has already been accepted...")
+        this
+      }
 
-    case WorkInProgress(transf, prog) ⇒
-      val pj = pendingJobs.find(_.transfDefName == transf.transfDefName)
+
+    case WorkInProgress(t, prog) ⇒
+      pendingJobs.find(_.uid == t.uid).fold {
+        if (jobsInProgress.isDefinedAt(t.uid)) {
+          copy(progress = progress + inProgress(t.uid, prog))
+        }else {
+          this
+        }
+      } { t ⇒
+        val (work, rest) = (t, pendingJobs.filterNot(t == _))
+        copy(
+          pendingJobs = rest,
+          jobsInProgress = jobsInProgress + (t.uid -> work),
+          progress = progress + inProgress(t.uid, prog))
+      }
+
+
+      val pj = pendingJobs.find(_.transfDefName == t.transfDefName)
       if (pj.isDefined) {
         val t = pj.get
         val (work, rest) = (t, pendingJobs.filterNot(t == _))
         copy(
           pendingJobs = rest,
-          jobsInProgress = jobsInProgress + (transf.uid -> work),
-          progress = progress + (transf.uid -> prog))
+          jobsInProgress = jobsInProgress + (t.uid -> work),
+          progress = progress + inProgress(t.uid, prog))
       } else {
-        val inpj = jobsInProgress.get(transf.uid)
+        val inpj = jobsInProgress.get(t.uid)
         if (inpj.isDefined) {
           val t = inpj.get
-          copy(progress = progress + (transf.uid -> prog))
+          copy(progress = progress + inProgress(t.uid, prog))
         } else {
           this
         }
       }
 
-    case WorkCompleted(transf) ⇒
+
+    case WorkCompleted(t) ⇒
       copy(
-        jobsInProgress = jobsInProgress - transf.uid,
-        progress = progress - transf.uid,
-        jobsDone = jobsDone + transf)
+        jobsInProgress = jobsInProgress - t.uid,
+        progress = progress - t.uid,
+        jobsDone = jobsDone + t)
+
 
     case WorkerFailed(t) ⇒
       copy(
         pendingJobs = pendingJobs enqueue jobsInProgress(t.uid),
-        jobsInProgress = jobsInProgress - t.uid)
+        jobsInProgress = jobsInProgress - t.uid,
+        progress = progress - t.uid)
 
-    case WorkerTimedOut(workId) ⇒
+
+    case WorkerTimedOut(t) ⇒
       copy(
-        pendingJobs = pendingJobs enqueue jobsInProgress(workId.uid),
-        jobsInProgress = jobsInProgress - workId.uid)
+        pendingJobs = pendingJobs enqueue jobsInProgress(t.uid),
+        jobsInProgress = jobsInProgress - t.uid,
+        progress = progress - t.uid)
   }
+
+  private def inProgress(transf: String, prog: Int): (String, Int) = {
+    val pr = prog max 0
+    val p = progress.get(transf).fold(pr)(_ + pr) min 100 max 0
+    (transf, p)
+  }
+
 
   def workStateSummary(): AllJobsFeedback = AllJobsFeedback(acceptedJobs.map(_.uid),
     pendingJobs.map(_.uid).toSet, jobsInProgress.values.map(_.uid).toSet, jobsDone.map(_.uid))
+
 
   def runningJobsSummary(): RunningJobsFeedback = {
     val progressReport = jobsInProgress.map(j ⇒ RunningTransformFeedback(j._2.uid, j._2.transfDefName,
@@ -155,5 +197,4 @@ case class WorkState(acceptedJobs: Set[Transform], pendingJobs: Queue[Transform]
     } jobsDone=${
       jobsDone.size
     }""".stripMargin
-
 }
