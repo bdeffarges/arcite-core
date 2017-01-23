@@ -126,25 +126,6 @@ case class WorkState(acceptedJobs: Set[Transform], pendingJobs: Queue[Transform]
       }
 
 
-      val pj = pendingJobs.find(_.transfDefName == t.transfDefName)
-      if (pj.isDefined) {
-        val t = pj.get
-        val (work, rest) = (t, pendingJobs.filterNot(t == _))
-        copy(
-          pendingJobs = rest,
-          jobsInProgress = jobsInProgress + (t.uid -> work),
-          progress = progress + inProgress(t.uid, prog))
-      } else {
-        val inpj = jobsInProgress.get(t.uid)
-        if (inpj.isDefined) {
-          val t = inpj.get
-          copy(progress = progress + inProgress(t.uid, prog))
-        } else {
-          this
-        }
-      }
-
-
     case WorkCompleted(t) ⇒
       copy(
         jobsInProgress = jobsInProgress - t.uid,

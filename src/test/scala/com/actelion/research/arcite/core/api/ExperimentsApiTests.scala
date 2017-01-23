@@ -45,8 +45,8 @@ import scala.concurrent.Future
   */
 class ExperimentsApiTests extends ApiTests {
 
-  val exp1 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment1)
-  val exp2 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment3)
+  private val exp1 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment1)
+  private val exp2 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment3)
 
   "Default get " should "return rest interface specification " in {
 

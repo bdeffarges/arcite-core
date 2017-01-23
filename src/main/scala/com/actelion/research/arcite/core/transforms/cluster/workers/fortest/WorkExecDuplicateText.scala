@@ -7,6 +7,7 @@ import java.nio.file.{Files, Paths}
 import akka.actor.{Actor, ActorLogging, Props}
 import com.actelion.research.arcite.core.experiments.ExperimentFolderVisitor
 import com.actelion.research.arcite.core.transforms._
+import com.actelion.research.arcite.core.transforms.cluster.MasterWorkerProtocol.WorkerProgress
 import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.WorkSuccessFull
 import com.actelion.research.arcite.core.transforms.cluster.{GetTransfDefId, TransformType}
 import com.actelion.research.arcite.core.utils.FullName
@@ -43,7 +44,14 @@ class WorkExecDuplicateText extends Actor with ActorLogging {
       log.info(s"transformDef: ${t.transfDefName} transfDef=$transfDefId")
       require(t.transfDefName == transfDefId.fullName)
       log.info("starting work but will wait for fake...")
-      Thread.sleep(java.util.concurrent.ThreadLocalRandom.current().nextInt(30000))
+      val end = java.util.concurrent.ThreadLocalRandom.current().nextInt(10, 100)
+      val increment = 100 / end
+      0 to end foreach { _ ⇒
+        Thread.sleep(5000)
+        sender() ! WorkerProgress(increment)
+      }
+      log.info("waited enough time, doing the work now...")
+
       t.source match {
         case tfo: TransformSourceFromTransform ⇒
           log.info("waited enough time, doing the work now...")

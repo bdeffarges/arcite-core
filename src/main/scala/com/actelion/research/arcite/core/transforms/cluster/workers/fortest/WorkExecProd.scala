@@ -16,9 +16,10 @@ class WorkExecProd extends Actor with ActorLogging {
       val n2 = n * n
       val result = s"workexecutor= $n * $n = $n2"
       val end = java.util.concurrent.ThreadLocalRandom.current().nextInt(10, 100)
-      (1 to end).foreach { e ⇒
+      val increment = 100 / end
+      0 to end foreach { _ ⇒
         Thread.sleep(5000)
-        sender() ! WorkerProgress(e * 100 / end)
+        sender() ! WorkerProgress(increment)
       }
       log.info("waited enough time, doing the work now...")
 
