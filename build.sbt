@@ -96,8 +96,7 @@ libraryDependencies ++= {
     "org.scalacheck" %% "scalacheck" % "1.13.0" % "test",
     "io.kamon" %% "kamon-core" % "0.6.0",
     "io.kamon" %% "kamon-statsd" % "0.6.0",
-    "io.kamon" %% "kamon-datadog" % "0.6.0"
-  )
+    "io.kamon" %% "kamon-datadog" % "0.6.0")
 }
 
 enablePlugins(JavaServerAppPackaging)
