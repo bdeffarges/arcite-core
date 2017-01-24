@@ -8,7 +8,7 @@ import com.actelion.research.arcite.core.api.ArciteService.{ExperimentFound, Exp
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, MsgFromTransfDefsManager, OneTransfDef}
-import com.actelion.research.arcite.core.transforms._
+import com.actelion.research.arcite.core.transforms.{TransformParameterHelper, _}
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.{NotOk, Ok}
 import com.actelion.research.arcite.core.transforms.cluster.ScatGathTransform.PrepareTransform
 
@@ -103,25 +103,29 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
 
     case PrepareTransform ⇒
       val td = transfDef.get
+
+      val parameters = TransformParameterHelper
+        .getParamsWithDefaults(procWTransf.get.parameters, td.description.transformParameters)
+
       val exp = expFound.get.exp
       log.debug(s"preparing for transform...")
 
       procWTransf.get match {
-        case RunTransformOnObject(_, _, params) ⇒
-          val t = Transform(td.fullName, TransformSourceFromObject(exp), params)
+        case RunTransformOnObject(_, _, _) ⇒
+          val t = Transform(td.fullName, TransformSourceFromObject(exp), parameters)
           ManageTransformCluster.getNextFrontEnd() ! t
 
-        case RunTransformOnRawData(_, _, params) ⇒
+        case RunTransformOnRawData(_, _, _) ⇒
           ManageTransformCluster.getNextFrontEnd() !
-            Transform(td.fullName, TransformSourceFromRaw(exp), params)
+            Transform(td.fullName, TransformSourceFromRaw(exp), parameters)
 
-        case RunTransformOnTransform(_, _, transfOrigin, params) ⇒
+        case RunTransformOnTransform(_, _, transfOrigin, _) ⇒
           if (transfUID.nonEmpty) {
             ManageTransformCluster.getNextFrontEnd() !
-              Transform(td.fullName, TransformSourceFromTransform(exp, transfOrigin), params, transfUID.get)
+              Transform(td.fullName, TransformSourceFromTransform(exp, transfOrigin), parameters, transfUID.get)
           } else {
             ManageTransformCluster.getNextFrontEnd() !
-              Transform(td.fullName, TransformSourceFromTransform(exp, transfOrigin), params)
+              Transform(td.fullName, TransformSourceFromTransform(exp, transfOrigin), parameters)
           }
 
         case _ ⇒

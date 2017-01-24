@@ -83,7 +83,8 @@ object WorkExecDuplicateText {
   val fullName: FullName = FullName("com.actelion.research.arcite.core", "duplicate-text")
 
   val transfDefId = TransformDefinitionIdentity(fullName, "dupText",
-    TransformDescription("duplicate-text", "upper-cased-text", "duplicated"),
+    TransformDescription("duplicate-text", "upper-cased-text", "duplicated",
+      transformParameters = Set(IntNumber("number.of.copies", Some(5), Some(2), Some(10000)))),
     dependsOn = Some(FullName("com.actelion.research.arcite.core", "to-uppercase")))
 
   val definition = TransformDefinition(transfDefId, props)

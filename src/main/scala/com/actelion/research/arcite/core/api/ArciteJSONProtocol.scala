@@ -12,6 +12,7 @@ import com.actelion.research.arcite.core.experiments._
 import com.actelion.research.arcite.core.fileservice.FileServiceActor._
 import com.actelion.research.arcite.core.rawdata.DefineRawData.{RawDataSet, RawDataSetRegex, SourceRawDataSet}
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments}
+import com.actelion.research.arcite.core.transforms.ParameterType.ParameterType
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, ManyTransfDefs, OneTransfDef}
 import com.actelion.research.arcite.core.transforms.TransformCompletionStatus.TransformCompletionStatus
@@ -24,8 +25,7 @@ import com.actelion.research.arcite.core.transftree.TreeOfTransfOutcome.TreeOfTr
 import com.actelion.research.arcite.core.transftree._
 import com.actelion.research.arcite.core.{ExperimentType, Organization, utils}
 import com.actelion.research.arcite.core.utils._
-import spray.json.DefaultJsonProtocol.jsonFormat1
-import spray.json.{DefaultJsonProtocol, _}
+import spray.json.{DefaultJsonProtocol, JsString, _}
 
 /**
   * arcite-core
@@ -62,6 +62,53 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
     override def write(date: Date): JsValue = JsString(utils.getDateAsStrg(date))
   }
 
+  implicit object TransfParamJsonFormat extends RootJsonFormat[ParameterType] {
+    override def write(obj: ParameterType): JsValue = obj match {
+      case ParameterType.PREDEFINED_VALUE ⇒
+        JsString("PREDEFINED_VALUE")
+      case ParameterType.FREE_TEXT ⇒
+        JsString("FREE_TEXT")
+      case ParameterType.INT_NUMBER ⇒
+        JsString("INT_NUMBER")
+      case ParameterType.FLOAT_NUMBER ⇒
+        JsString("FLOAT_NUMBER")
+    }
+
+    override def read(json: JsValue): ParameterType = {
+      ParameterType.withName(json.convertTo[String])
+    }
+  }
+
+  implicit val transfParamFreeTextJson: RootJsonFormat[FreeText] = jsonFormat3(FreeText)
+  implicit val transfParamIntNumberJson: RootJsonFormat[IntNumber] = jsonFormat5(IntNumber)
+  implicit val transfParamFloatNumberJson: RootJsonFormat[FloatNumber] = jsonFormat5(FloatNumber)
+  implicit val transfParamFloatPredefinedValsJson: RootJsonFormat[PredefinedValues] = jsonFormat5(PredefinedValues)
+
+  implicit object TransformParametersJsonFormat extends RootJsonFormat[TransformParameter] {
+    override def write(obj: TransformParameter): JsValue = obj match {
+      case ft: FreeText ⇒
+        ft.toJson
+      case in: IntNumber ⇒
+        in.toJson
+      case fn: FloatNumber ⇒
+        fn.toJson
+      case pv: PredefinedValues ⇒
+        pv.toJson
+    }
+
+    override def read(json: JsValue): TransformParameter = {
+      ParameterType.withName(json.asJsObject.fields("parameterType").toString()) match {
+        case ParameterType.FREE_TEXT ⇒
+          json.convertTo[FreeText]
+        case ParameterType.INT_NUMBER ⇒
+          json.convertTo[IntNumber]
+        case ParameterType.FLOAT_NUMBER ⇒
+          json.convertTo[FloatNumber]
+        case ParameterType.PREDEFINED_VALUE ⇒
+          json.convertTo[PredefinedValues]
+      }
+    }
+  }
 
   implicit object TransformDefinitionIdentityJsonFormat extends RootJsonFormat[TransformDefinitionIdentity] {
 
@@ -73,6 +120,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
         "description_summary" -> JsString(tdi.description.summary),
         "description_consumes" -> JsString(tdi.description.consumes),
         "description_produces" -> JsString(tdi.description.produces),
+        "description_parameters" -> tdi.description.transformParameters.toJson,
         "depends_on_organization" -> JsString(tdi.dependsOn.getOrElse(noDependsOn).organization),
         "depends_on_name" -> JsString(tdi.dependsOn.getOrElse(noDependsOn).name),
         "digest" -> JsString(tdi.digestUID)
@@ -484,4 +532,5 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
       }
     }
   }
+
 }

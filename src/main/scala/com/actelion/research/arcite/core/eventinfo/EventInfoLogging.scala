@@ -10,6 +10,7 @@ import com.actelion.research.arcite.core.experiments.ManageExperiments.{AllExper
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor}
 import com.actelion.research.arcite.core.utils
 import com.typesafe.config.ConfigFactory
+import spray.json._
 
 /**
   * arcite-core
@@ -48,7 +49,6 @@ class EventInfoLogging extends Actor with ActorLogging with ArciteJSONProtocol {
     context.actorSelection(ActorPath.fromString(s"${actSys}/user/exp_actors_manager/experiments_manager"))
 
   import EventInfoLogging._
-  import spray.json._
 
   override def receive = {
     case al: AddLog ⇒
@@ -129,7 +129,6 @@ object EventInfoLogging extends ArciteJSONProtocol {
 
   case class LatestLog(experiment: Experiment)
 
-  import spray.json._
 
   import scala.collection.convert.wrapAsScala._
 

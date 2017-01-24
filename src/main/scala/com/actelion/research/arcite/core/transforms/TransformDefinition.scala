@@ -6,10 +6,10 @@ import java.util.UUID
 
 import akka.actor.Props
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor}
+import com.actelion.research.arcite.core.transforms.ParameterType.ParameterType
 import com.actelion.research.arcite.core.transforms.TransformCompletionStatus.TransformCompletionStatus
 import com.actelion.research.arcite.core.utils
 import com.actelion.research.arcite.core.utils.{FullName, GetDigest}
-import spray.json.JsValue
 
 /**
   * Created by Bernard Deffarges on 19/04/16.
@@ -119,18 +119,49 @@ object TransformCompletionStatus extends scala.Enumeration {
   val SUCCESS, FAILED, COMPLETED_WITH_WARNINGS = Value
 }
 
-sealed trait TransformParameter {
-  def parameterName : String
+object ParameterType extends scala.Enumeration {
+  type ParameterType = Value
+  val PREDEFINED_VALUE, INT_NUMBER, FLOAT_NUMBER, FREE_TEXT = Value
 }
 
-case class FromAlistOfPredefinedValues(parameterName: String, values: List[String], defaultValue: Option[String] = None,
-                                       allowsNew: Boolean = false) extends TransformParameter
+sealed trait TransformParameter {
+  def parameterName: String
+  def defaultValue: Option[Any]
+  def parameterType: ParameterType
+}
 
-case class IntNumber(parameterName: String, defaultValue: Long, minBoundary: Option[Long] = None,
-                     maxBoundary: Option[Long] = None) extends TransformParameter
+case class PredefinedValues(parameterName: String, values: List[String],
+                            defaultValue: Option[String] = None, allowsNew: Boolean = false,
+                            parameterType: ParameterType = ParameterType.PREDEFINED_VALUE) extends TransformParameter {
+}
 
-case class FloatNumber(parameterName: String, defaultValue: Option[Double] = None, minBoundary: Option[Double] = None,
-                       maxBoundary: Option[Double] = None) extends TransformParameter
+case class IntNumber(parameterName: String, defaultValue: Option[Long],
+                     minBoundary: Option[Long] = None, maxBoundary: Option[Long] = None,
+                     parameterType: ParameterType = ParameterType.INT_NUMBER) extends TransformParameter {
+}
 
-case class FreeText(parameterName: String, defaultValue: Option[String]) extends TransformParameter
+case class FloatNumber(parameterName: String, defaultValue: Option[Double] = None,
+                       minBoundary: Option[Double] = None, maxBoundary: Option[Double] = None,
+                       parameterType: ParameterType = ParameterType.FLOAT_NUMBER) extends TransformParameter {
+}
+
+case class FreeText(parameterName: String, defaultValue: Option[String] = None,
+                    parameterType: ParameterType = ParameterType.FREE_TEXT) extends TransformParameter {
+}
+
+object TransformParameterHelper {
+
+  /**
+    * returns the params and the default values if provided for the expected params
+    *
+    * @param params
+    * @param paramsType
+    * @return
+    */
+  def getParamsWithDefaults(params: Map[String, String], paramsType: Set[TransformParameter]): Map[String, String] = {
+    params ++ paramsType.filterNot(pt ⇒ params.isDefinedAt(pt.parameterName))
+      .filter(_.defaultValue.isDefined)
+      .map(pt ⇒ (pt.parameterName, pt.defaultValue.get.toString)).toMap
+  }
+}
 
