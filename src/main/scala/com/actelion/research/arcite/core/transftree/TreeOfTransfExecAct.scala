@@ -51,14 +51,14 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
 
   private var expFound: Option[ExperimentFound] = None
 
-  private var transfDefIds: Map[String, TransformDefinitionIdentity] = Map()
+  private var transfDefIds: Map[String, TransformDefinitionIdentity] = Map.empty
 
   private var nextNodes: List[NextNode] = List()
 
   private var feedback: TreeOfTransfFeedback = TreeOfTransfFeedback(uid = uid,
     name = treeOfTransformDefinition.name, treeOfTransform = treeOfTransformDefinition.uid)
 
-  private var actualTransforms: Map[String, TreeOfTransfNodeOutcome] = Map()
+  private var actualTransforms: Map[String, TreeOfTransfNodeOutcome] = Map.empty
 
   override def receive: Receive = {
     case ptotr: ProceedWithTreeOfTransf ⇒
@@ -85,7 +85,7 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
       mftdm match {
         case otd: OneTransfDef ⇒
           transfDefIds += otd.transfDefId.digestUID -> otd.transfDefId
-          if (transfDefIds.keySet.contains(treeOfTransformDefinition.root.transfDefUID)) self ! StartTreeOfTransf
+          if (transfDefIds.isDefinedAt(treeOfTransformDefinition.root.transfDefUID)) self ! StartTreeOfTransf
       }
 
 
