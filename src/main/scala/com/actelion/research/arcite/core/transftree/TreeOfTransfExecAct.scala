@@ -54,14 +54,14 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
 
   private var expFound: Option[ExperimentFound] = None
 
-  private var transfDefIds: Map[String, TransformDefinitionIdentity] = Map()
+  private var transfDefIds: Map[String, TransformDefinitionIdentity] = Map.empty
 
   private var nextNodes: List[NextNode] = List()
 
   private var feedback: TreeOfTransfFeedback = TreeOfTransfFeedback(uid = uid,
     name = treeOfTransformDefinition.name, treeOfTransform = treeOfTransformDefinition.uid)
 
-  private var actualTransforms: Map[String, TreeOfTransfNodeOutcome] = Map()
+  private var actualTransforms: Map[String, TreeOfTransfNodeOutcome] = Map.empty
 
   self ! SetupTimeOut
 

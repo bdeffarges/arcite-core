@@ -16,6 +16,8 @@ import com.actelion.research.arcite.core.utils.{FullName, GetDigest}
   *
   */
 
+// todo what about transforms that inherit from many transforms...
+
 /**
   * description of a transform, its purpose, what it consumes and what it produces
   *
