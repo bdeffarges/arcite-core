@@ -34,14 +34,15 @@ case class TreeOfTransfFeedback(uid: String, name: FullName, treeOfTransform: St
                                 start: Long = System.currentTimeMillis, end: Long = System.currentTimeMillis,
                                 percentageSuccess: Double = 0.0, percentageCompleted: Double = 0.0,
                                 outcome: TreeOfTransfOutcome = TreeOfTransfOutcome.IN_PROGRESS,
-                                nodesFeedback: List[TreeOfTransfNodeFeedback] = List())
+                                nodesFeedback: List[TreeOfTransfNodeFeedback] = List(),
+                                comments: String = "")
 
 
 case class TreeOfTransfNodeFeedback(transfUID: String, outcome: TreeOfTransfNodeOutcome)
 
 object TreeOfTransfOutcome extends scala.Enumeration {
   type TreeOfTransfOutcome = Value
-  val SUCCESS, PARTIAL_SUCCESS, FAILED, IN_PROGRESS = Value
+  val SUCCESS, PARTIAL_SUCCESS, FAILED, IN_PROGRESS, TIME_OUT = Value
 }
 
 object TreeOfTransfNodeOutcome extends scala.Enumeration {

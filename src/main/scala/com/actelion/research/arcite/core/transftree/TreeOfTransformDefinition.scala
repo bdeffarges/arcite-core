@@ -27,7 +27,7 @@ import com.actelion.research.arcite.core.utils.{FullName, GetDigest}
   *
   */
 case class TreeOfTransformDefinition(name: FullName, description: String,
-                                     root: TreeOfTransformNode) {
+                                     root: TreeOfTransformNode, timeOutSeconds: Int = 300) {
 
   lazy val uid: String = GetDigest.getDigest(s"$name $description")
 
@@ -48,15 +48,14 @@ case class TreeOfTransformNode(transfDefUID: String, children: List[TreeOfTransf
 }
 
 
-
 case class TreeOfTransformInfo(name: String, organization: String,
                                version: String, description: String, uid: String)
 
 
 case class ProceedWithTreeOfTransf(experiment: String, treeOfTransformUID: String,
-                                              properties: Map[String, String] = Map(),
-                                              startingTransform: Option[String] = None,
-                                              exclusions: Set[String] = Set())
+                                   properties: Map[String, String] = Map(),
+                                   startingTransform: Option[String] = None,
+                                   exclusions: Set[String] = Set())
 
 
 sealed trait TreeOfTransfStartFeedback

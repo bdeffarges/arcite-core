@@ -15,7 +15,7 @@ class WorkExecProd extends Actor with ActorLogging {
     case CalcProd(n) =>
       val n2 = n * n
       val result = s"workexecutor= $n * $n = $n2"
-      val end = java.util.concurrent.ThreadLocalRandom.current().nextInt(10, 100)
+      val end = java.util.concurrent.ThreadLocalRandom.current().nextInt(10, 25)
       val increment = 100 / end
       0 to end foreach { _ ⇒
         Thread.sleep(5000)

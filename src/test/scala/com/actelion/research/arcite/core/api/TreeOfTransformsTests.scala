@@ -41,6 +41,7 @@ class TreeOfTransformsTests extends ApiTests {
   val exp1 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment1)
 
   var transfDef1: Option[TreeOfTransformInfo] = None
+  var transfDef2: Option[TreeOfTransformInfo] = None
 
   "Create a new experiment " should " that can then be used to test the tree of transform " in {
 
@@ -112,20 +113,20 @@ class TreeOfTransformsTests extends ApiTests {
         .parseJson.convertTo[Set[TreeOfTransformInfo]]
 
       transfDef1 = treeOfTransformInfos.find(_.name == DefaultTofT.testTofT1.name.name)
+      transfDef2 = treeOfTransformInfos.find(_.name == DefaultTofT.testTofT2.name.name)
       assert(treeOfTransformInfos.nonEmpty)
     }
   }
 
-  " starting a simple tree of transform (upper, lower, ...) " should " return the tree Of transform UID " in {
+
+  " starting the most simple tree of transform (upper and lower case) " should " return the tree Of transform UID " in {
 
     implicit val executionContext = system.dispatcher
-
 
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)
 
-
-    val transf1 = ProceedWithTreeOfTransf(exp1.uid, transfDef1.get.uid)
+    val transf1 = ProceedWithTreeOfTransf(exp1.uid, transfDef2.get.uid)
 
     val jsonRequest = ByteString(transf1.toJson.prettyPrint)
 
@@ -145,4 +146,34 @@ class TreeOfTransformsTests extends ApiTests {
       assert(result.nonEmpty)
     }
   }
+
+//  " starting a simple tree of transform (upper, lower, ...) " should " return the tree Of transform UID " in {
+//
+//    implicit val executionContext = system.dispatcher
+//
+//
+//    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+//      Http().outgoingConnection(host, port)
+//
+//
+//    val transf1 = ProceedWithTreeOfTransf(exp1.uid, transfDef1.get.uid)
+//
+//    val jsonRequest = ByteString(transf1.toJson.prettyPrint)
+//
+//    val postRequest = HttpRequest(
+//      HttpMethods.POST,
+//      uri = "/tree_of_transforms",
+//      entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
+//
+//    val responseFuture: Future[HttpResponse] =
+//      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
+//
+//    responseFuture.map { r ⇒
+//      logger.info(r.toString())
+//      assert(r.status == StatusCodes.OK)
+//
+//      val result = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+//      assert(result.nonEmpty)
+//    }
+//  }
 }
