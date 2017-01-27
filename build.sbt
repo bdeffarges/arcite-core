@@ -1,5 +1,4 @@
 import com.typesafe.sbt.SbtNativePackager.autoImport.NativePackagerHelper._
-import com.typesafe.sbt.packager.docker.{Cmd, ExecCmd}
 
 organization := "com.actelion.research.arcite"
 
@@ -7,7 +6,7 @@ name := "arcite-core"
 
 version := "1.16.0-SNAPSHOT"
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.12.1"
 
 scmInfo := Some(
   ScmInfo(
