@@ -138,6 +138,7 @@ object TreeOfTransformActorSystem {
   val treeOfTransfActPath = s"${actSys}/user/tree-of-transforms-parent/tree-of-transforms"
 
   treeOfTransfParentAct ! AddTofT(DefaultTofT.testTofT1)
+  treeOfTransfParentAct ! AddTofT(DefaultTofT.testTofT2)
 }
 
 

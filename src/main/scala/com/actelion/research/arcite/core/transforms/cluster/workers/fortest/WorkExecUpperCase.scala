@@ -25,10 +25,10 @@ class WorkExecUpperCase extends Actor with ActorLogging with ArciteJSONProtocol 
       log.info(s"transformDef: ${t.transfDefName} defLight=$transfDefId")
       require(t.transfDefName == transfDefId.fullName)
       log.info("starting work but will wait for fake...")
-      val end = java.util.concurrent.ThreadLocalRandom.current().nextInt(10, 100)
+      val end = java.util.concurrent.ThreadLocalRandom.current().nextInt(10, 300)
       val increment = 100 / end
       0 to end foreach { _ ⇒
-        Thread.sleep(5000)
+        Thread.sleep(500)
         sender() ! WorkerProgress(increment)
       }
       log.info("waited enough time, doing the work now...")

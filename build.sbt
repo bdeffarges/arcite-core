@@ -4,7 +4,7 @@ organization := "com.actelion.research.arcite"
 
 name := "arcite-core"
 
-version := "1.16.0-SNAPSHOT"
+version := "1.18.0-SNAPSHOT"
 
 scalaVersion := "2.12.1"
 
@@ -95,8 +95,7 @@ libraryDependencies ++= {
     "org.scalacheck" %% "scalacheck" % "1.13.0" % "test",
     "io.kamon" %% "kamon-core" % "0.6.0",
     "io.kamon" %% "kamon-statsd" % "0.6.0",
-    "io.kamon" %% "kamon-datadog" % "0.6.0"
-  )
+    "io.kamon" %% "kamon-datadog" % "0.6.0")
 }
 
 enablePlugins(JavaServerAppPackaging)
