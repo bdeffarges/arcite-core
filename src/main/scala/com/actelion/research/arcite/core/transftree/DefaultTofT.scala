@@ -33,11 +33,11 @@ object DefaultTofT {
     "multiple times upper, lower, etc. just for test",
     TreeOfTransformNode(WorkExecUpperCase.transfDefId.digestUID,
       TreeOfTransformNode(WorkExecLowerCase.transfDefId.digestUID,
-        TreeOfTransformNode(WorkExecUpperCase.transfDefId.digestUID, Nil) :: Nil) :: Nil))
+        TreeOfTransformNode(WorkExecUpperCase.transfDefId.digestUID, Nil) :: Nil) :: Nil), 600)
 
   val testTofT2: TreeOfTransformDefinition = TreeOfTransformDefinition(
     FullName("com.actelion.research.arcite.test", "upper-lower"),
     "upper and lower, etc. just for test",
     TreeOfTransformNode(WorkExecUpperCase.transfDefId.digestUID,
-      TreeOfTransformNode(WorkExecLowerCase.transfDefId.digestUID) :: Nil))
+      TreeOfTransformNode(WorkExecLowerCase.transfDefId.digestUID) :: Nil), 300)
 }

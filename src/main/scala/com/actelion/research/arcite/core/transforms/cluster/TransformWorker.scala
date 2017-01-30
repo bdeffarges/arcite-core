@@ -127,7 +127,7 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
 
 
     case wp: WorkerProgress ⇒
-      log.info(s"worker making progress... ${wp.progress}% completed")
+      log.info(s"worker making progress... ${wp.progress}%...")
       sendToMaster(WorkerInProgress(workerId, transform, utils.getDateAsString(time), wp.progress))
 
 

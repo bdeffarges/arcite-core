@@ -7,17 +7,19 @@ import java.util.UUID
 import akka.actor.{Actor, ActorLogging, ActorSelection, PoisonPill, Props}
 import com.actelion.research.arcite.core
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
-import com.actelion.research.arcite.core.api.ArciteService.{ExperimentFound, ExperimentFoundFeedback, GetExperiment}
+import com.actelion.research.arcite.core.api.ArciteService._
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.AddLog
-import com.actelion.research.arcite.core.eventinfo.{ExpLog, LogCategory, LogType}
+import com.actelion.research.arcite.core.eventinfo.LogCategory.LogCategory
+import com.actelion.research.arcite.core.eventinfo._
 import com.actelion.research.arcite.core.experiments.ExperimentFolderVisitor
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
-import com.actelion.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, MsgFromTransfDefsManager, OneTransfDef}
-import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinitionIdentity, TransformSourceFromRaw, TransformSourceFromTransform}
+import com.actelion.research.arcite.core.transforms.TransfDefMsg._
+import com.actelion.research.arcite.core.transforms._
 import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
 import com.actelion.research.arcite.core.transftree.TreeOfTransfExecAct._
 import com.actelion.research.arcite.core.transftree.TreeOfTransfNodeOutcome.TreeOfTransfNodeOutcome
-import com.actelion.research.arcite.core.transftree.TreeOfTransfOutcome.{FAILED, PARTIAL_SUCCESS, SUCCESS}
+import com.actelion.research.arcite.core.transftree.TreeOfTransfOutcome._
+import com.actelion.research.arcite.core.utils.LoggingHelper
 
 /**
   * arcite-core
@@ -50,6 +52,8 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
   private val allTofTNodes = treeOfTransformDefinition.allNodes
   private val allTofTDefID = treeOfTransformDefinition.allNodes.map(_.transfDefUID).toSet
 
+  private val logHelp = LoggingHelper(200)
+
   private var proceedWithTreeOfTransf: Option[ProceedWithTreeOfTransf] = None
 
   private var expFound: Option[ExperimentFound] = None
@@ -64,6 +68,8 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
   private var actualTransforms: Map[String, TreeOfTransfNodeOutcome] = Map.empty
 
   self ! SetupTimeOut
+
+  logHelp.addEntry(s"TreeOfTransform actor started for ${treeOfTransformDefinition.name}")
 
   override def receive: Receive = {
     case ptotr: ProceedWithTreeOfTransf ⇒
@@ -83,6 +89,7 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
       efr match {
         case ef: ExperimentFound ⇒
           expFound = Some(ef)
+          logHelp.addEntry(s"found an experiment: ${ef.toString}")
 
           context.become(startingTreeOfTransfPhase)
 
@@ -95,6 +102,7 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
 
         case _ ⇒
           val msg = "did not find experiment. stopping actor. "
+          logHelp.addEntry(msg)
           log.error(msg)
           feedback = feedback.copy(end = System.currentTimeMillis, outcome = TreeOfTransfOutcome.FAILED, comments = msg)
           context.become(finalPhase)
@@ -107,13 +115,21 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
       mftdm match {
         case otd: OneTransfDef ⇒
           transfDefIds += otd.transfDefId.digestUID -> otd.transfDefId
-          log.info(s"building up tree of transforms definitions, size=${transfDefIds.size}")
+          logHelp.addEntry(s"building up tree of transforms definitions, size=${transfDefIds.size}")
           if (transfDefIds.size == allTofTDefID.size) self ! StartTreeOfTransf
+
+
+        case _ ⇒
+          val msg = s"could not find ONE (either none or too many) definition for given transform. "
+          logHelp.addEntry(msg)
+          log.error(msg)
+          feedback = feedback.copy(end = System.currentTimeMillis, outcome = TreeOfTransfOutcome.FAILED, comments = msg)
+          context.become(finalPhase)
       }
 
 
     case StartTreeOfTransf ⇒
-      log.info("start tree of transform")
+      logHelp.addEntry("start tree of transform")
       val tuid = UUID.randomUUID().toString
       val td = transfDefIds(treeOfTransformDefinition.root.transfDefUID)
       val exp = expFound.get.exp
@@ -130,7 +146,7 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
           TransformSourceFromRaw(exp), pwtt.properties, tuid)
       }
 
-      log.info("starting the tree scheduler...")
+      logHelp.addEntry("starting the tree scheduler...")
       context.become(unrollTreePhase)
 
       import scala.concurrent.duration._
@@ -152,6 +168,7 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
     case TimeOutReached ⇒
       val msg = "timeout in preparation phase..."
       log.error(msg)
+      logHelp.addEntry(msg)
       feedback = feedback.copy(end = System.currentTimeMillis, outcome = TreeOfTransfOutcome.TIME_OUT, comments = msg)
       context.become(finalPhase)
       self ! TimeOutReached
@@ -160,11 +177,14 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
   def unrollTreePhase: Receive = {
 
     case UnrollTreeOfTransf ⇒
-      log.info("proceed with next set of nodes...")
       val nnodes = nextNodes
         .filter(nn ⇒ actualTransforms(nn.parentTransform) == TreeOfTransfNodeOutcome.SUCCESS)
 
-      nnodes.foreach { nn ⇒
+      val msg = s"proceed with next set of nodes...${nnodes}"
+      log.info(msg)
+      logHelp.addEntry(msg)
+
+      nnodes.foreach { nn ⇒ //todo replace by for comprehension
         val tuid = UUID.randomUUID().toString
         val exp = expFound.get.exp
         val td = transfDefIds.get(nn.treeOfTransformNode.transfDefUID)
@@ -180,12 +200,24 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
 
 
     case UpdateAllTransformStatus ⇒
-      log.info("updating all transform status. ")
-      actualTransforms.filter(_._2 == TreeOfTransfNodeOutcome.IN_PROGRESS)
-        .foreach(t ⇒ expManager ! GetTransfCompletionFromExpAndTransf(expFound.get.exp.uid, t._1))
+      val msg = "updating all transform status. "
+      log.info(msg)
+      logHelp.addEntry(msg)
+
+      val allUIDs = actualTransforms.filter(_._2 == TreeOfTransfNodeOutcome.IN_PROGRESS).keySet
+
+//      log.info(s"all uids= ${allUIDs.mkString("\t")}")
+
+      val exp = expFound.get.exp.uid
+
+      allUIDs.foreach(expManager ! GetTransfCompletionFromExpAndTransf(exp, _))
 
 
     case toc: TransformOutcome ⇒
+      val msg = s"received transform outcome: ${toc}"
+      log.info(msg)
+      logHelp.addEntry(msg)
+
       toc match {
         case SuccessTransform(tuid) ⇒
           actualTransforms += tuid -> TreeOfTransfNodeOutcome.SUCCESS
@@ -212,6 +244,7 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
       val completed = nextNodes.isEmpty
 
       import TreeOfTransfOutcome._
+
       val compStatus =
         if (success) SUCCESS
         else if (completed) {
@@ -221,19 +254,20 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
       feedback = feedback.copy(end = System.currentTimeMillis, percentageCompleted = perCompleted,
         percentageSuccess = perSuccess, outcome = compStatus,
         nodesFeedback = actualTransforms.map(atf ⇒ TreeOfTransfNodeFeedback(atf._1, atf._2)).toList)
-
-      log.info(s"current feedback: $feedback")
+      val msg = s"current feedback: $feedback"
+      logHelp.addEntry(msg)
 
       if (completed) context.become(finalPhase)
 
 
     case GetFeedback ⇒
-      sender() ! feedback
+      sender() ! feedback // todo add log feedback
 
 
     case TimeOutReached ⇒
       val msg = "timeout in unroll tree phase..."
       log.error(msg)
+      logHelp.addEntry(msg)
       feedback = feedback.copy(end = System.currentTimeMillis, outcome = TreeOfTransfOutcome.TIME_OUT, comments = msg)
       context.become(finalPhase)
       self ! TimeOutReached
@@ -243,42 +277,44 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
       log.error(s"don't know what to do with received message $msg")
   }
 
+  def logCat(toTOutC: TreeOfTransfOutcome): LogCategory = toTOutC match {
+    case SUCCESS ⇒ LogCategory.SUCCESS
+    case PARTIAL_SUCCESS ⇒ LogCategory.WARNING
+    case FAILED ⇒ LogCategory.ERROR
+    case IN_PROGRESS ⇒ LogCategory.ERROR
+    case TIME_OUT ⇒ LogCategory.ERROR
+    case _ ⇒ LogCategory.UNKNOWN
+  }
+
   def finalPhase: Receive = {
 
     case TimeOutReached ⇒
       saveFeedback
 
-      val succLog = feedback.outcome match {
-        case SUCCESS ⇒ LogCategory.SUCCESS
-        case PARTIAL_SUCCESS ⇒ LogCategory.WARNING
-        case FAILED ⇒ LogCategory.ERROR
-      }
+      val succLog = logCat(feedback.outcome)
+
       eventInfoMgr ! AddLog(expFound.get.exp,
         ExpLog(LogType.TREE_OF_TRANSFORM,
           succLog, "completed tree of transform. ", Some(uid)))
 
-      context.parent ! feedback
-      self ! PoisonPill
+      self ! Finish
 
 
     case TreeOfTransCompleted ⇒
       saveFeedback
 
-      val succLog = feedback.outcome match {
-        case SUCCESS ⇒ LogCategory.SUCCESS
-        case PARTIAL_SUCCESS ⇒ LogCategory.WARNING
-        case FAILED ⇒ LogCategory.ERROR
-      }
+      val succLog = logCat(feedback.outcome)
+
       eventInfoMgr ! AddLog(expFound.get.exp,
         ExpLog(LogType.TREE_OF_TRANSFORM,
           succLog, "completed tree of transform. ", Some(uid)))
 
-      context.parent ! feedback
-      self ! PoisonPill
+      self ! Finish
 
 
     case SomeFailure(reason) ⇒
       val msg = s"tree of transform failed: $reason"
+      logHelp.addEntry(msg)
       log.error(msg)
       feedback = feedback.copy(end = System.currentTimeMillis, outcome = TreeOfTransfOutcome.FAILED, comments = msg)
 
@@ -288,6 +324,11 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
         ExpLog(LogType.TREE_OF_TRANSFORM,
           LogCategory.ERROR, "completed tree of transform. ", Some(uid)))
 
+      self ! Finish
+
+
+    case Finish ⇒
+      log.info(logHelp.toString)
       context.parent ! feedback
       self ! PoisonPill
 
@@ -330,6 +371,8 @@ object TreeOfTransfExecAct {
   case object TreeOfTransCompleted
 
   case class NextNode(parentTransform: String, treeOfTransformNode: TreeOfTransformNode)
+
+  case object Finish
 
 }
 

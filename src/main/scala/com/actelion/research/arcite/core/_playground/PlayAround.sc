@@ -1,3 +1,4 @@
+import scala.collection.immutable.Queue
 //val m = Map("a" -> "b", "c" -> "d", "e" -> "f", "g" -> "h")
 //val l = List("c", "g")
 //
@@ -7,8 +8,26 @@
 //println(m  l)
 //"\\S+(257236312158|257236312159)\\S+txt".r.findFirstIn("161125_br_257236312158_S01_GE2_1105_Oct12_1_3_MAGEML.txt")
 
-val m1 = Map("a" -> "aa", "b" -> "bb", "c" -> "cc", "d" -> "dd")
-val m2 = Map("a" -> "aaa", "b" -> "bbb", "c" -> "ccc", "d" -> "ddd")
+//val m1 = Map("a" -> "aa", "b" -> "bb", "c" -> "cc", "d" -> "dd")
+//val m2 = Map("a" -> "aaa", "b" -> "bbb", "c" -> "ccc", "d" -> "ddd")
+//
+
+//var q = Queue[String]()
+//
+//q = q enqueue "hello1" takeRight 2
+//q = q enqueue "hello2" takeRight 2
+//q = q enqueue "hello3" takeRight 2
+//q = q enqueue "hello4" takeRight 2
+
+
+val s = "sdfsdaf"
+
+val t = `s`
+val f = s
+
+println(t == f)
+println(t eq f)
+
 
 
 //

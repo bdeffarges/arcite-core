@@ -513,14 +513,14 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
     if (transfP.toFile.exists()) {
       val files = transfP.toFile.listFiles()
       if (files.exists(_.getName == core.successFile)) {
-        SuccessTransform(experiment)
+        SuccessTransform(transform)
       } else if (files.exists(_.getName == core.failedFile)) {
-        FailedTransform(experiment)
+        FailedTransform(transform)
       } else {
-        NotYetCompletedTransform(experiment)
+        NotYetCompletedTransform(transform)
       }
     } else {
-      NotYetCompletedTransform(experiment)
+      NotYetCompletedTransform(transform)
     }
   }
 

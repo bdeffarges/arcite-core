@@ -66,7 +66,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
     case event: WorkStatus =>
       // only update current state by applying the event, no side effects
       workState = workState.updated(event)
-      log.info(s"Replayed ${event.getClass.getSimpleName}")
+      log.info(s"Replayed ${event}")
   }
 
   override def receiveCommand: Receive = {
@@ -83,7 +83,9 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
 
     case MasterWorkerProtocol.WorkerRequestsWork(workerId) ⇒
-      log.info(s"total pending jobs = ${workState.numberOfPendingJobs()} worker requesting work... do we have something to be done?")
+      log.info(
+        s"""total pending jobs = ${workState.numberOfPendingJobs()}
+           |worker requesting work... do we have something to be done?""".stripMargin)
       val td = workers(workerId).transDef
       if (td.isDefined && workState.hasWork(td.get.fullName)) {
         workers.get(workerId) match {
@@ -142,7 +144,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       }
 
 
-    case wp : MasterWorkerProtocol.WorkerInProgress ⇒
+    case wp: MasterWorkerProtocol.WorkerInProgress ⇒
       log.info(s"got Work in Progress update: ${wp.percentCompleted} % of worker ${wp.workerId}")
       persist(WorkInProgress(wp.transf, wp.percentCompleted)) { event ⇒
         workState = workState.updated(event)
@@ -169,7 +171,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
     case CleanupTick =>
       for ((workerId, s@WorkerState(_, Busy(workId, timeout), _)) ← workers) {
         if (timeout.isOverdue) {
-          log.info("Work timed out: {}", workId)
+          log.info(s"Work timed out: ${workId}")
           workers -= workerId
           persist(WorkerTimedOut(workId)) { event ⇒
             workState = workState.updated(event)
