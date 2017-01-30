@@ -57,8 +57,8 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
   import context.dispatcher
 
-  private val cleanupTask = context.system.scheduler.schedule(workTimeout / 2, workTimeout / 2,
-    self, CleanupTick)
+  private val cleanupTask = context.system.scheduler.schedule(
+    workTimeout / 2, workTimeout / 2, self, CleanupTick)
 
   override def postStop(): Unit = cleanupTask.cancel()
 
@@ -155,12 +155,11 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       log.info(s"master received transform [${transf.uid}]")
       // idempotent
       if (workState.isAccepted(transf.uid)) {
-        log.info(s"transform [${transf.uid}] is accepted, Ack is returned.")
+        log.info(s"transform [${transf.uid}] is already accepted, Ack is returned.")
         sender() ! Master.Ack(transf)
       } else {
         log.info(s"transform [${transf.uid}] accepted.")
         persist(WorkAccepted(transf)) { event ⇒
-          // Ack back to original sender
           sender() ! Master.Ack(transf)
           workState = workState.updated(event)
           notifyWorkers()

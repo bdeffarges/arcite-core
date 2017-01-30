@@ -114,7 +114,7 @@ case class WorkState(acceptedJobs: Set[Transform], pendingJobs: Queue[Transform]
       pendingJobs.find(_.uid == t.uid).fold {
         if (jobsInProgress.isDefinedAt(t.uid)) {
           copy(progress = progress + inProgress(t.uid, prog))
-        }else {
+        } else {
           this
         }
       } { t ⇒
@@ -168,14 +168,6 @@ case class WorkState(acceptedJobs: Set[Transform], pendingJobs: Queue[Transform]
   }
 
   def workStateSizeSummary(): String =
-    s"""acceptedJobs= ${
-      acceptedJobs.size
-    } pendingJobs= ${
-      pendingJobs.size
-    }
-       | jobsInProgress=${
-      jobsInProgress.size
-    } jobsDone=${
-      jobsDone.size
-    }""".stripMargin
+    s"""acceptedJobs= ${acceptedJobs.size} pendingJobs= ${pendingJobs.size}
+       | jobsInProgress=${jobsInProgress.size} jobsDone=${jobsDone.size}""".stripMargin
 }
