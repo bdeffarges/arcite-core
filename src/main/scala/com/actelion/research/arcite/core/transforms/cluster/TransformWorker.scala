@@ -101,7 +101,7 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
 
 
     case gtd: GetTransfDefId ⇒
-      log.info(s"asked for my [$self] workerType ")
+      log.info(s"asked for my workerType ")
       workExecutor ! gtd
 
 
@@ -133,6 +133,11 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
 
     case _: Transform ⇒
       log.info("Yikes. Master told me to do work, while I'm working.")
+
+
+    case gtd: GetTransfDefId ⇒
+      log.info(s"asked for my workerType ")
+      workExecutor ! gtd
 
 
     case a: Any ⇒

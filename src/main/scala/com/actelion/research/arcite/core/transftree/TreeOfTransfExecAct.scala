@@ -121,7 +121,6 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
             self ! StartTreeOfTransf
           }
 
-
         case _ ⇒
           val msg = s"could not find ONE (either none or too many) definition for given transform. "
           logHelp.addEntry(msg)
@@ -251,6 +250,7 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
 
     case UpdateFeedback ⇒
       log.info("updating feedback of tree of transforms.")
+      val inProgr = actualTransforms.count(_._2 == TreeOfTransfNodeOutcome.IN_PROGRESS)
       val comp = actualTransforms.count(_._2 != TreeOfTransfNodeOutcome.IN_PROGRESS)
       val succ = actualTransforms.count(_._2 == TreeOfTransfNodeOutcome.SUCCESS)
       val allNSize = allTofTNodes.size
@@ -260,7 +260,7 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
 
       val success = succ == allNSize
 
-      val completed = nextNodes.isEmpty
+      val completed = nextNodes.isEmpty && inProgr == 0
 
       import TreeOfTransfOutcome._
 
