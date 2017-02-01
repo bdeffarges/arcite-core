@@ -29,7 +29,7 @@ import com.actelion.research.arcite.core.utils.FullName
   */
 
 case class TreeOfTransfFeedback(uid: String, name: FullName, treeOfTransform: String = "",
-                                properties: Map[String, String] = Map(), startFromRaw: Boolean = false,
+                                properties: Map[String, String] = Map(), startFromRaw: Boolean = true,
                                 originTransform: Option[String] = None,
                                 start: Long = System.currentTimeMillis, end: Long = System.currentTimeMillis,
                                 percentageSuccess: Double = 0.0, percentageCompleted: Double = 0.0,

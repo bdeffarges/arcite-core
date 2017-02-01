@@ -6,6 +6,7 @@ import akka.cluster.client.ClusterClientReceptionist
 import akka.persistence.PersistentActor
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend._
+import com.actelion.research.arcite.core.transforms.cluster.MasterWorkerProtocol.WorkIsReady
 import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinitionIdentity}
 import com.actelion.research.arcite.core.utils.WriteFeedbackActor
 import com.actelion.research.arcite.core.utils.WriteFeedbackActor.WriteFeedback
@@ -86,6 +87,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       log.info(
         s"""total pending jobs = ${workState.numberOfPendingJobs()}
            |worker requesting work... do we have something to be done?""".stripMargin)
+
       val td = workers(workerId).transDef
       if (td.isDefined && workState.hasWork(td.get.fullName)) {
         workers.get(workerId) match {
@@ -95,15 +97,17 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
               if (w.nonEmpty) {
                 //todo maybe we don't need both checks
                 val transf = w.get
-                persist(WorkInProgress(transf, 0)) { event =>
-                  log.info(s"Giving worker [$workerId] something to do [${transf}]")
+                persist(WorkInProgress(transf)) { event =>
+                  log.info(s"Giving worker [$workerId] something to do [${transf.transfDefName.toString}]")
                   workState = workState.updated(event)
                   workers += (workerId -> s.copy(status = Busy(transf, Deadline.now + workTimeout)))
                   sender() ! transf
                 }
               }
             }
-          case _ =>
+
+          case m: Any =>
+            log.info(s"worker state= ${m.toString}")
         }
       }
 
@@ -184,7 +188,11 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       workers += (wid -> workers(wid).copy(transDef = Some(wt)))
       transformDefs += wt
       log.info(s"[${transformDefs.size}] workers transforms def. types")
-    //      log.info(s"workers transforms def. types: $transformDefs")
+      //      log.info(s"workers transforms def. types: $transformDefs")
+      if (workState.hasWork(wt.fullName)) {
+        log.info(s"work is already there for worker... ${wt.fullName}")
+        sender() ! WorkIsReady
+      }
 
 
     case QueryWorkStatus(transfUID) ⇒

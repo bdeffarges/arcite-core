@@ -511,7 +511,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
         "end" -> JsString(utils.getDateAsStringMS(ttfb.end)),
         "success" -> JsNumber(ttfb.percentageSuccess),
         "completed" -> JsNumber(ttfb.percentageCompleted),
-        "outcompe" -> ttfb.outcome.toJson,
+        "outcome" -> JsString(ttfb.outcome.toString),
         "nodesFeeback" -> ttfb.nodesFeedback.toJson
       )
     }

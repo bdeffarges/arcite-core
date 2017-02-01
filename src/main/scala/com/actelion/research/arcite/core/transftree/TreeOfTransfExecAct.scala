@@ -116,7 +116,10 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
         case otd: OneTransfDef ⇒
           transfDefIds += otd.transfDefId.digestUID -> otd.transfDefId
           logHelp.addEntry(s"building up tree of transforms definitions, size=${transfDefIds.size}")
-          if (transfDefIds.size == allTofTDefID.size) self ! StartTreeOfTransf
+          if (transfDefIds.size == allTofTDefID.size) {
+            logHelp.addEntry("we have all the transform definitions, we can start the toT")
+            self ! StartTreeOfTransf
+          }
 
 
         case _ ⇒
@@ -138,16 +141,17 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
 
       val pwtt = proceedWithTreeOfTransf.get
 
-      if (pwtt.startingTransform.isDefined) {
-        ManageTransformCluster.getNextFrontEnd() ! Transform(td.fullName,
-          TransformSourceFromTransform(exp, pwtt.startingTransform.get), pwtt.properties, tuid)
+      context.become(unrollTreePhase)
+
+      val transf = if (pwtt.startingTransform.isDefined) {
+        Transform(td.fullName, TransformSourceFromTransform(exp, pwtt.startingTransform.get), pwtt.properties, tuid)
       } else {
-        ManageTransformCluster.getNextFrontEnd() ! Transform(td.fullName,
-          TransformSourceFromRaw(exp), pwtt.properties, tuid)
+        Transform(td.fullName, TransformSourceFromRaw(exp), pwtt.properties, tuid)
       }
 
+      ManageTransformCluster.getNextFrontEnd() ! transf
+
       logHelp.addEntry("starting the tree scheduler...")
-      context.become(unrollTreePhase)
 
       import scala.concurrent.duration._
       import context.dispatcher
@@ -164,6 +168,11 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
         self ! UpdateFeedback
       }
 
+      context.system.scheduler.schedule(20 seconds, 30 seconds) {
+        log.info("********************** COLLECTED LOG STACK OUTPUT: ")
+        log.info(logHelp.toString)
+      }
+
 
     case TimeOutReached ⇒
       val msg = "timeout in preparation phase..."
@@ -178,23 +187,33 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
 
     case UnrollTreeOfTransf ⇒
       val nnodes = nextNodes
-        .filter(nn ⇒ actualTransforms(nn.parentTransform) == TreeOfTransfNodeOutcome.SUCCESS)
+        .filter(nn ⇒ TreeOfTransfNodeOutcome.SUCCESS == actualTransforms(nn.parentTransform))
 
       val msg = s"proceed with next set of nodes...${nnodes}"
       log.info(msg)
       logHelp.addEntry(msg)
 
-      nnodes.foreach { nn ⇒ //todo replace by for comprehension
+      val exp = expFound.get.exp
+
+      nnodes.foreach { nn ⇒
         val tuid = UUID.randomUUID().toString
-        val exp = expFound.get.exp
+
         val td = transfDefIds.get(nn.treeOfTransformNode.transfDefUID)
+
         if (td.isDefined) {
           actualTransforms += tuid -> TreeOfTransfNodeOutcome.IN_PROGRESS
           nextNodes ++= nn.treeOfTransformNode.children.map(n ⇒ NextNode(tuid, n))
           nextNodes = nextNodes.filterNot(_ == nn)
 
-          ManageTransformCluster.getNextFrontEnd() ! Transform(td.get.fullName,
+          val transf = Transform(td.get.fullName,
             TransformSourceFromTransform(exp, nn.parentTransform), proceedWithTreeOfTransf.get.properties, tuid)
+
+          ManageTransformCluster.getNextFrontEnd() ! transf
+
+        } else {
+          val msg = s"did not find transform definition for uid: ${nn.treeOfTransformNode.transfDefUID}"
+          log.error(msg)
+          logHelp.addEntry(msg)
         }
       }
 
@@ -206,7 +225,7 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
 
       val allUIDs = actualTransforms.filter(_._2 == TreeOfTransfNodeOutcome.IN_PROGRESS).keySet
 
-//      log.info(s"all uids= ${allUIDs.mkString("\t")}")
+      //      log.info(s"all uids= ${allUIDs.mkString("\t")}")
 
       val exp = expFound.get.exp.uid
 
@@ -254,6 +273,7 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
       feedback = feedback.copy(end = System.currentTimeMillis, percentageCompleted = perCompleted,
         percentageSuccess = perSuccess, outcome = compStatus,
         nodesFeedback = actualTransforms.map(atf ⇒ TreeOfTransfNodeFeedback(atf._1, atf._2)).toList)
+
       val msg = s"current feedback: $feedback"
       logHelp.addEntry(msg)
 

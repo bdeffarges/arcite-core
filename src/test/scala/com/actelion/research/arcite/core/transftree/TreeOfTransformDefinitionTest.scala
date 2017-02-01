@@ -46,5 +46,7 @@ class TreeOfTransformDefinitionTest extends FlatSpec with Matchers {
             TreeOfTransformNode(WorkExecUpperCase.transfDefId.digestUID))))
 
     assert(testTofT1.allNodes.size == 11)
+    assert(DefaultTofT.testTofT1.allNodes.size == 3)
+    assert(DefaultTofT.testTofT2.allNodes.size == 2)
   }
 }
