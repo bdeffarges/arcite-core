@@ -193,6 +193,14 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(ptt).mapTo[TreeOfTransfStartFeedback]
   }
 
+  private[api] def getAllTreeOfTransformsStatus() = {
+    arciteService.ask()
+  }
+
+  private[api] def getTreeOfTransformStatus(uid: String) = {
+    arciteService.ask()
+  }
+
   private[api] def jobStatus(qws: QueryWorkStatus) = {
     arciteService.ask(qws).mapTo[WorkStatus]
   }
@@ -798,6 +806,27 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
   }
 
   def treeOfTransforms = path("tree_of_transforms") {
+    path("status") {
+      path(Segment) { Segment ⇒
+        pathEnd {
+          get {
+            logger.info(s"getting status of treeOfTransform: $Segment")
+            onSuccess(getTreeOfTransformStatus(Segment)) {
+
+            }
+          }
+        }
+      }
+      pathEnd {
+        get {
+          logger.info("getting status of all treeOfTransforms. ")
+          onSuccess(getAllTreeOfTransformsStatus()) {
+
+          }
+
+        }
+      }
+    }~
     pathEnd {
       get {
         logger.info("return all tree of transforms")

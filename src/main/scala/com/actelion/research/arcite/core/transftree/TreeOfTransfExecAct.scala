@@ -53,6 +53,7 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
   private val allTofTDefID = treeOfTransformDefinition.allNodes.map(_.transfDefUID).toSet
 
   private val logHelp = LoggingHelper(200)
+  private val userLogHelp = LoggingHelper(100)
 
   private var proceedWithTreeOfTransf: Option[ProceedWithTreeOfTransf] = None
 
@@ -70,6 +71,7 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
   self ! SetupTimeOut
 
   logHelp.addEntry(s"TreeOfTransform actor started for ${treeOfTransformDefinition.name}")
+  userLogHelp.addEntry(s"Starting tree of transform [${treeOfTransformDefinition.name}], uid=${treeOfTransformDefinition.uid}")
 
   override def receive: Receive = {
     case ptotr: ProceedWithTreeOfTransf ⇒
@@ -103,11 +105,16 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
         case _ ⇒
           val msg = "did not find experiment. stopping actor. "
           logHelp.addEntry(msg)
+          userLogHelp.addEntry("did not find experiment for transforms. ")
           log.error(msg)
-          feedback = feedback.copy(end = System.currentTimeMillis, outcome = TreeOfTransfOutcome.FAILED, comments = msg)
+          feedback = feedback.copy(end = System.currentTimeMillis, outcome = TreeOfTransfOutcome.FAILED,
+            comments = userLogHelp.toString)
           context.become(finalPhase)
-
       }
+
+
+    case GetFeedbackOnToT ⇒
+      sender() ! feedback
   }
 
   def startingTreeOfTransfPhase: Receive = {
@@ -124,8 +131,10 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
         case _ ⇒
           val msg = s"could not find ONE (either none or too many) definition for given transform. "
           logHelp.addEntry(msg)
+          userLogHelp.addEntry(msg)
           log.error(msg)
-          feedback = feedback.copy(end = System.currentTimeMillis, outcome = TreeOfTransfOutcome.FAILED, comments = msg)
+          feedback = feedback.copy(end = System.currentTimeMillis, outcome = TreeOfTransfOutcome.FAILED,
+            comments = userLogHelp.toString)
           context.become(finalPhase)
       }
 
@@ -177,9 +186,14 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
       val msg = "timeout in preparation phase..."
       log.error(msg)
       logHelp.addEntry(msg)
-      feedback = feedback.copy(end = System.currentTimeMillis, outcome = TreeOfTransfOutcome.TIME_OUT, comments = msg)
+      feedback = feedback.copy(end = System.currentTimeMillis, outcome = TreeOfTransfOutcome.TIME_OUT,
+        comments = userLogHelp.toString)
       context.become(finalPhase)
       self ! TimeOutReached
+
+
+    case GetFeedbackOnToT ⇒
+      sender() ! feedback
   }
 
   def unrollTreePhase: Receive = {
@@ -213,6 +227,7 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
           val msg = s"did not find transform definition for uid: ${nn.treeOfTransformNode.transfDefUID}"
           log.error(msg)
           logHelp.addEntry(msg)
+          userLogHelp.addEntry(msg)
         }
       }
 
@@ -239,12 +254,14 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
       toc match {
         case SuccessTransform(tuid) ⇒
           actualTransforms += tuid -> TreeOfTransfNodeOutcome.SUCCESS
+          userLogHelp.addEntry(s"transform [${tuid}] completed successfully. ")
 
         case NotYetCompletedTransform(tuid) ⇒
           actualTransforms += tuid -> TreeOfTransfNodeOutcome.IN_PROGRESS
 
         case FailedTransform(tuid) ⇒
           actualTransforms += tuid -> TreeOfTransfNodeOutcome.FAILED
+          userLogHelp.addEntry(s"transform [${tuid}] failed. ")
       }
 
 
@@ -272,23 +289,26 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
 
       feedback = feedback.copy(end = System.currentTimeMillis, percentageCompleted = perCompleted,
         percentageSuccess = perSuccess, outcome = compStatus,
-        nodesFeedback = actualTransforms.map(atf ⇒ TreeOfTransfNodeFeedback(atf._1, atf._2)).toList)
+        nodesFeedback = actualTransforms.map(atf ⇒ TreeOfTransfNodeFeedback(atf._1, atf._2)).toList,
+        comments = userLogHelp.toString)
 
       val msg = s"current feedback: $feedback"
       logHelp.addEntry(msg)
-
+      userLogHelp.addEntry(s"current status: $compStatus, percentage completed= $perCompleted")
       if (completed) context.become(finalPhase)
 
 
-    case GetFeedback ⇒
-      sender() ! feedback // todo add log feedback
+    case GetFeedbackOnToT ⇒
+      sender() ! feedback
 
 
     case TimeOutReached ⇒
       val msg = "timeout in unroll tree phase..."
       log.error(msg)
       logHelp.addEntry(msg)
-      feedback = feedback.copy(end = System.currentTimeMillis, outcome = TreeOfTransfOutcome.TIME_OUT, comments = msg)
+      userLogHelp.addEntry("time out while processing the transforms. ")
+      feedback = feedback.copy(end = System.currentTimeMillis, outcome = TreeOfTransfOutcome.TIME_OUT,
+        comments = userLogHelp.toString)
       context.become(finalPhase)
       self ! TimeOutReached
 
@@ -337,6 +357,7 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
       logHelp.addEntry(msg)
       log.error(msg)
       feedback = feedback.copy(end = System.currentTimeMillis, outcome = TreeOfTransfOutcome.FAILED, comments = msg)
+      userLogHelp.addEntry(s"something failed: $reason")
 
       saveFeedback
 
@@ -380,7 +401,7 @@ object TreeOfTransfExecAct {
 
   case object UpdateFeedback
 
-  case object GetFeedback
+  case object GetFeedbackOnToT
 
   case object SetupTimeOut
 

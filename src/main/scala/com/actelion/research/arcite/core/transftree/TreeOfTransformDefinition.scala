@@ -57,6 +57,9 @@ case class ProceedWithTreeOfTransf(experiment: String, treeOfTransformUID: Strin
                                    startingTransform: Option[String] = None,
                                    exclusions: Set[String] = Set())
 
+case class GetFeedbackOnTreeOfTransf(uid: String)
+
+case class GetFeedbackOnAllRunningTreeOfTransf(uid: String)
 
 sealed trait TreeOfTransfStartFeedback
 

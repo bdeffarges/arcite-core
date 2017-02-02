@@ -101,6 +101,10 @@ class TreeOfTransformsManager extends Actor with ActorLogging {
       } else {
         sender() ! CouldNotFindTreeOfTransfDef
       }
+
+
+    case ttf: TreeOfTransfFeedback ⇒
+
   }
 }
 
