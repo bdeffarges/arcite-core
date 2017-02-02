@@ -63,7 +63,7 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
 
   private var nextNodes: List[NextNode] = List()
 
-  private var feedback: TreeOfTransfFeedback = TreeOfTransfFeedback(uid = uid,
+  private var feedback: ToTFeedbackDetails = ToTFeedbackDetails(uid = uid,
     name = treeOfTransformDefinition.name, treeOfTransform = treeOfTransformDefinition.uid)
 
   private var actualTransforms: Map[String, TreeOfTransfNodeOutcome] = Map.empty
@@ -114,7 +114,7 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
 
 
     case GetFeedbackOnToT ⇒
-      sender() ! feedback
+      sender() ! ToTFeedbackHelper.toForApi(feedback)
   }
 
   def startingTreeOfTransfPhase: Receive = {
@@ -193,7 +193,7 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
 
 
     case GetFeedbackOnToT ⇒
-      sender() ! feedback
+      sender() ! ToTFeedbackHelper.toForApi(feedback)
   }
 
   def unrollTreePhase: Receive = {
@@ -287,8 +287,8 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
           if (perSuccess > 0) PARTIAL_SUCCESS else FAILED
         } else IN_PROGRESS
 
-      feedback = feedback.copy(end = System.currentTimeMillis, percentageCompleted = perCompleted,
-        percentageSuccess = perSuccess, outcome = compStatus,
+      feedback = feedback.copy(end = System.currentTimeMillis, percentageCompleted = perCompleted.toInt,
+        percentageSuccess = perSuccess.toInt, outcome = compStatus,
         nodesFeedback = actualTransforms.map(atf ⇒ TreeOfTransfNodeFeedback(atf._1, atf._2)).toList,
         comments = userLogHelp.toString)
 
@@ -299,7 +299,7 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
 
 
     case GetFeedbackOnToT ⇒
-      sender() ! feedback
+      sender() ! ToTFeedbackHelper.toForApi(feedback)
 
 
     case TimeOutReached ⇒
@@ -340,6 +340,10 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
       self ! Finish
 
 
+    case GetFeedbackOnToT ⇒
+      sender() ! ToTFeedbackHelper.toForApi(feedback)
+
+
     case TreeOfTransCompleted ⇒
       saveFeedback
 
@@ -371,6 +375,7 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
     case Finish ⇒
       log.info(logHelp.toString)
       context.parent ! feedback
+      context.parent ! ImFinished(uid)
       self ! PoisonPill
 
   }
@@ -380,7 +385,6 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
     val file = ExperimentFolderVisitor(expFound.get.exp).treeOfTransfFolderPath resolve s"$uid${core.feedbackfile}"
     Files.write(file, feedback.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE_NEW)
   }
-
 }
 
 
@@ -410,6 +414,8 @@ object TreeOfTransfExecAct {
   case class SomeFailure(reason: String)
 
   case object TreeOfTransCompleted
+
+  case class ImFinished(uid: String)
 
   case class NextNode(parentTransform: String, treeOfTransformNode: TreeOfTransformNode)
 

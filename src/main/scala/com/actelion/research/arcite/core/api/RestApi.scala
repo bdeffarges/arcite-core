@@ -23,7 +23,7 @@ import com.actelion.research.arcite.core.transforms.TransfDefMsg._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.{NotOk, _}
 import com.actelion.research.arcite.core.transforms.cluster.WorkState._
 import com.actelion.research.arcite.core.transftree._
-import com.actelion.research.arcite.core.transftree.TreeOfTransformsManager.{AllTreeOfTransfInfos, GetTreeOfTransformInfo}
+import com.actelion.research.arcite.core.transftree.TreeOfTransformsManager._
 import com.actelion.research.arcite.core.utils._
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
@@ -194,11 +194,11 @@ trait ArciteServiceApi extends LazyLogging {
   }
 
   private[api] def getAllTreeOfTransformsStatus() = {
-    arciteService.ask()
+    arciteService.ask(GetAllRunningToT).mapTo[RunningToT]
   }
 
   private[api] def getTreeOfTransformStatus(uid: String) = {
-    arciteService.ask()
+    arciteService.ask(GetFeedbackOnTreeOfTransf(uid)).mapTo[ToTFeedback]
   }
 
   private[api] def jobStatus(qws: QueryWorkStatus) = {
@@ -805,47 +805,49 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
     }
   }
 
-  def treeOfTransforms = path("tree_of_transforms") {
-    path("status") {
+  def treeOfTransforms = pathPrefix("tree_of_transforms") {
+    pathPrefix("status") {
       path(Segment) { Segment ⇒
         pathEnd {
           get {
             logger.info(s"getting status of treeOfTransform: $Segment")
             onSuccess(getTreeOfTransformStatus(Segment)) {
-
+              case totFeedback: ToTFeedbackDetailsForApi ⇒ complete(OK -> totFeedback)
+              case totFb: ToTNoFeedback ⇒ complete(BadRequest, s"No info. about this ToT ${totFb.uid}")
             }
           }
         }
-      }
+      } ~
+        pathEnd {
+          get {
+            logger.info("getting status of all treeOfTransforms. ")
+            onSuccess(getAllTreeOfTransformsStatus()) {
+              case crtot: CurrentlyRunningToT ⇒ complete(OK -> crtot)
+              case NoRunningToT ⇒ complete(BadRequest, "something went wrong. ")
+            }
+
+          }
+        }
+    } ~
       pathEnd {
         get {
-          logger.info("getting status of all treeOfTransforms. ")
-          onSuccess(getAllTreeOfTransformsStatus()) {
-
+          logger.info("return all tree of transforms")
+          onSuccess(getTreeOfTransformInfo()) {
+            case AllTreeOfTransfInfos(tots) ⇒ complete(OK -> tots)
           }
-
-        }
-      }
-    }~
-    pathEnd {
-      get {
-        logger.info("return all tree of transforms")
-        onSuccess(getTreeOfTransformInfo()) {
-          case AllTreeOfTransfInfos(tots) ⇒ complete(OK -> tots)
-        }
-      }~
-      post {
-        logger.info("starting tree of transform...")
-        entity(as[ProceedWithTreeOfTransf]) { pwtt ⇒
-          val started: Future[TreeOfTransfStartFeedback] = startTreeOfTransform(pwtt)
-          onSuccess(started) {
-            case tofs : TreeOfTransformStarted ⇒ complete(OK, tofs)
-            case CouldNotFindTreeOfTransfDef ⇒ complete(BadRequest, "could not find tree of transform definition.")
-            case _ ⇒ complete(BadRequest, "unknown error or problem [*388&]")
+        } ~
+          post {
+            logger.info("starting tree of transform...")
+            entity(as[ProceedWithTreeOfTransf]) { pwtt ⇒
+              val started: Future[TreeOfTransfStartFeedback] = startTreeOfTransform(pwtt)
+              onSuccess(started) {
+                case tofs: TreeOfTransformStarted ⇒ complete(OK, tofs)
+                case CouldNotFindTreeOfTransfDef ⇒ complete(BadRequest, "could not find tree of transform definition.")
+                case _ ⇒ complete(BadRequest, "unknown error or problem [*388&]")
+              }
+            }
           }
-        }
       }
-    }
   }
 }
 

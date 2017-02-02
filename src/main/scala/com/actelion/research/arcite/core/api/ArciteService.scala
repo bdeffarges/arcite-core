@@ -10,9 +10,9 @@ import com.actelion.research.arcite.core.rawdata.DefineRawData._
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{SearchForXResults, SearchForXResultsWithRequester}
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
-import com.actelion.research.arcite.core.transforms.cluster.Frontend.{GetAllJobsStatus, QueryWorkStatus, GetRunningJobsStatus}
+import com.actelion.research.arcite.core.transforms.cluster.Frontend.{GetAllJobsStatus, GetRunningJobsStatus, QueryWorkStatus}
 import com.actelion.research.arcite.core.transforms.cluster.{ManageTransformCluster, ScatGathTransform}
-import com.actelion.research.arcite.core.transftree.{ProceedWithTreeOfTransf, TreeOfTransformActorSystem}
+import com.actelion.research.arcite.core.transftree.{GetAllRunningToT, GetFeedbackOnTreeOfTransf, ProceedWithTreeOfTransf, TreeOfTransformActorSystem}
 import com.actelion.research.arcite.core.transftree.TreeOfTransformsManager.GetTreeOfTransformInfo
 import com.actelion.research.arcite.core.utils.RemoveFile
 import com.typesafe.config.ConfigFactory
@@ -315,6 +315,15 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
     case pwtt: ProceedWithTreeOfTransf ⇒
       treeOfTransformActor forward pwtt
+
+
+    case GetAllRunningToT ⇒
+      treeOfTransformActor forward GetAllRunningToT
+
+
+    case getFeedback: GetFeedbackOnTreeOfTransf ⇒
+      treeOfTransformActor forward getFeedback
+
 
     //don't know what to do with this message...
     case msg: Any ⇒ log.error(s"don't know what to do with the passed message [$msg] in ${getClass}")

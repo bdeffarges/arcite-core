@@ -59,7 +59,7 @@ case class ProceedWithTreeOfTransf(experiment: String, treeOfTransformUID: Strin
 
 case class GetFeedbackOnTreeOfTransf(uid: String)
 
-case class GetFeedbackOnAllRunningTreeOfTransf(uid: String)
+case object GetAllRunningToT
 
 sealed trait TreeOfTransfStartFeedback
 
