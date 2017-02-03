@@ -151,9 +151,10 @@ object TreeOfTransformActorSystem {
 
   implicit val system = ActorSystem(actorSystemName, config)
 
-  val treeOfTransfParentAct: ActorRef = system.actorOf(Props(classOf[TreeOfTransformParentActor]), "tree-of-transforms-parent")
+  private val treeOfTransfParentAct: ActorRef = system
+    .actorOf(Props(classOf[TreeOfTransformParentActor]), "tree-of-transforms-parent")
 
-  val treeOfTransfParentActPath = s"${actSys}/user/tree-of-transforms-parent"
+  private val treeOfTransfParentActPath = s"${actSys}/user/tree-of-transforms-parent"
   val treeOfTransfActPath = s"${actSys}/user/tree-of-transforms-parent/tree-of-transforms"
 
   treeOfTransfParentAct ! AddTofT(DefaultTofT.testTofT1)

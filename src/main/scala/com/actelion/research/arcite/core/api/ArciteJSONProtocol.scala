@@ -10,6 +10,7 @@ import com.actelion.research.arcite.core.experiments.ExpState.ExpState
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.experiments._
 import com.actelion.research.arcite.core.fileservice.FileServiceActor._
+import com.actelion.research.arcite.core.meta.DesignCategories.SimpleCondition
 import com.actelion.research.arcite.core.rawdata.DefineRawData.{RawDataSet, RawDataSetRegex, SourceRawDataSet}
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments}
 import com.actelion.research.arcite.core.transforms.ParameterType.ParameterType
@@ -235,6 +236,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
 
 
   implicit val conditionJson: RootJsonFormat[Condition] = jsonFormat3(Condition)
+  implicit val simpleConditionJson: RootJsonFormat[SimpleCondition] = jsonFormat2(SimpleCondition)
   implicit val conditionForSampleJson: RootJsonFormat[ConditionsForSample] = jsonFormat1(ConditionsForSample)
   implicit val experimentalDesignJson: RootJsonFormat[ExperimentalDesign] = jsonFormat2(ExperimentalDesign)
 

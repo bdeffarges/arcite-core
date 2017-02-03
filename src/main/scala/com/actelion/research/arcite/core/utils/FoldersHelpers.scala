@@ -3,6 +3,8 @@ package com.actelion.research.arcite.core.utils
 import java.io.File
 import java.nio.file.{FileSystemException, Files, Path}
 
+import scala.util.matching.Regex
+
 /**
   * arcite-core
   *

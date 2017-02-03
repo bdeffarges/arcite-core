@@ -17,6 +17,7 @@ import com.actelion.research.arcite.core.eventinfo.ArciteAppLogs.GetAppLogs
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{InfoLogs, MostRecentLogs, ReadLogs, RecentAllLastUpdates}
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.fileservice.FileServiceActor._
+import com.actelion.research.arcite.core.meta.DesignCategories.{AllCategories, GetCategories}
 import com.actelion.research.arcite.core.rawdata.DefineRawData._
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
@@ -230,6 +231,10 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(MostRecentLogs).mapTo[InfoLogs]
   }
 
+  private[api] def getMetaInfoCategories() = {
+    arciteService.ask(GetCategories).mapTo[AllCategories]
+  }
+
   private[api] def getApplicationLogs() = {
     arciteService.ask(GetAppLogs).mapTo[InfoLogs]
   }
@@ -262,8 +267,9 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       runTransformRoute ~
       transformFeedbackRoute ~
       allTransformsFeedbackRoute ~
-      allLastUpdates ~
+      allLastUpdatesRoute ~
       allExperimentsRecentLogs ~
+      metaInfoRoute ~
       allTransforms ~
       dataSources ~
       appLogs ~
@@ -333,7 +339,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           }
         }
       } ~
-        path("tots") { // tree of transforms
+        path("tots") {
+          // tree of transforms
           get {
             logger.info(s"get all ToTs for experiment= $experiment")
             onSuccess(getAllToTForExperiment(experiment)) {
@@ -745,7 +752,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
     }
   }
 
-  def allLastUpdates = path("all_last_updates") {
+  def allLastUpdatesRoute = path("all_last_updates") {
     get {
       logger.debug("returns all last updates across the experiments")
       onSuccess(getRecentLastUpdatesLogs()) {
@@ -761,6 +768,20 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       onSuccess(getAllExperimentsRecentLogs()) {
         case ifl: InfoLogs ⇒ complete(OK -> ifl)
         case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning list of recent logs."))
+      }
+    }
+  }
+
+  def metaInfoRoute = pathPrefix("meta_info") {
+    pathPrefix("categories") {
+      pathEnd {
+        get {
+          logger.debug("return meta info, categories. ")
+          onSuccess(getMetaInfoCategories()) {
+            case categories: AllCategories ⇒ complete(OK -> categories.categories)
+            case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning list of recent logs."))
+          }
+        }
       }
     }
   }

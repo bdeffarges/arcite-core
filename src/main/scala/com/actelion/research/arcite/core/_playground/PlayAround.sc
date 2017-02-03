@@ -20,14 +20,13 @@ import scala.collection.immutable.Queue
 //q = q enqueue "hello4" takeRight 2
 
 
-val s = "sdfsdaf"
-
-val t = `s`
-val f = s
-
-println(t == f)
-println(t eq f)
-
+//val s = "sdfsdaf"
+//
+//val t = `s`
+//val f = s
+//
+//println(t == f)
+//println(t eq f)
 
 
 //

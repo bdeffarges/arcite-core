@@ -25,3 +25,7 @@ case class FileVisitor(file: File) {
   lazy val fileInformation = FileInformation(file.getName, sizeToString(file.length()))
 }
 
+
+
+
+

@@ -6,6 +6,8 @@ import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{MostRecentL
 import com.actelion.research.arcite.core.experiments.ManageExperiments.{GetAllTransforms, _}
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSummary}
 import com.actelion.research.arcite.core.fileservice.FileServiceActor.{GetExperimentFiles, GetFilesFromSource, GetSourceFolders}
+import com.actelion.research.arcite.core.meta.DesignCategories.GetCategories
+import com.actelion.research.arcite.core.meta.MetaInfoActors
 import com.actelion.research.arcite.core.rawdata.DefineRawData._
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{SearchForXResults, SearchForXResultsWithRequester}
 import com.actelion.research.arcite.core.transforms.RunTransform._
@@ -171,6 +173,11 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
     ActorPath.fromString(TreeOfTransformActorSystem.treeOfTransfActPath))
   log.info(s"****** connect to TreeOfTransform service actor: $treeOfTransformActor")
 
+  private val conf2 = ConfigFactory.load().getConfig("meta-info-actor-system")
+  private val metaActSys = conf2.getString("akka.uri")
+  private val metaActor = context.actorSelection(ActorPath.fromString(MetaInfoActors.getMetaInfoActorName))
+
+
   import ArciteService._
 
   // todo all with requester could be replaced by forward
@@ -327,6 +334,9 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
     case getFeedback: GetFeedbackOnTreeOfTransf ⇒
       treeOfTransformActor forward getFeedback
 
+
+    case GetCategories ⇒
+      metaActor forward GetCategories
 
     //don't know what to do with this message...
     case msg: Any ⇒ log.error(s"don't know what to do with the passed message [$msg] in ${getClass}")
