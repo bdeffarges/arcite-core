@@ -215,6 +215,10 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
       expManager forward gat
 
 
+    case getTots: GetToTs ⇒
+      expManager forward getTots
+
+
     case GetAllTransforms ⇒
       expManager forward GetAllTransforms
 
@@ -311,7 +315,6 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
     case GetTreeOfTransformInfo ⇒
       treeOfTransformActor forward GetTreeOfTransformInfo
-
 
     case pwtt: ProceedWithTreeOfTransf ⇒
       treeOfTransformActor forward pwtt

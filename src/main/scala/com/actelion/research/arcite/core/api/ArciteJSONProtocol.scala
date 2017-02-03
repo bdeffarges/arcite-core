@@ -507,13 +507,13 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
         "treeOfTransform" -> JsString(ttfb.treeOfTransform),
         "properties" -> ttfb.properties.toJson,
         "startFromRaw" -> JsBoolean(ttfb.startFromRaw),
-        "originTransf" -> (if (ttfb.originTransform.isDefined) JsString(ttfb.originTransform.get) else JsString("None")),
+        "originTransf" -> JsString(ttfb.originTransform.fold("None")(stg ⇒ stg)),
         "start" -> JsString(utils.getDateAsStringMS(ttfb.start)),
         "end" -> JsString(utils.getDateAsStringMS(ttfb.end)),
         "success" -> JsNumber(ttfb.percentageSuccess),
         "completed" -> JsNumber(ttfb.percentageCompleted),
         "outcome" -> JsString(ttfb.outcome.toString),
-        "nodesFeeback" -> ttfb.nodesFeedback.toJson
+        "nodesFeedback" -> ttfb.nodesFeedback.toJson
       )
     }
 
@@ -521,15 +521,18 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
       json.asJsObject.getFields("uid", "name", "treeOfTransform", "properties", "startFromRaw", "originTransf",
         "start", "end", "success", "completed", "outcome", "nodesFeedback") match {
         case Seq(JsString(uid), name, JsString(treeOfTrans), props, JsBoolean(startFromRaw), JsString(origin),
-        JsString(start), JsString(end), JsNumber(success), JsNumber(completed), outcome, nodesFeedback) ⇒
+        JsString(start), JsString(end), JsNumber(success), JsNumber(completed),
+        JsString(outcome), nodesFeedback) ⇒
           ToTFeedbackDetails(uid = uid, name = name.convertTo[FullName], treeOfTransform = treeOfTrans,
             properties = props.convertTo[Map[String, String]],
             startFromRaw = startFromRaw,
             originTransform = if (origin == "None") None else Some(origin),
             start = utils.getAsDateMS(start).getTime, end = utils.getAsDateMS(end).getTime,
             percentageSuccess = success.toInt, percentageCompleted = completed.toInt,
-            outcome = outcome.convertTo[TreeOfTransfOutcome],
+            outcome = TreeOfTransfOutcome.withName(outcome),
             nodesFeedback = nodesFeedback.convertTo[List[TreeOfTransfNodeFeedback]])
+
+        case _ => throw DeserializationException(s"could not deserialize $json")
       }
     }
 

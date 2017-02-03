@@ -135,7 +135,7 @@ object TreeOfTransformsManager {
 
   sealed trait RunningToT
 
-  case class CurrentlyRunningToT(uids: Set[String] = Set.empty) extends RunningToT
+  case class CurrentlyRunningToT(runningToTs: Set[String] = Set.empty) extends RunningToT
 
   case object NoRunningToT extends RunningToT
 

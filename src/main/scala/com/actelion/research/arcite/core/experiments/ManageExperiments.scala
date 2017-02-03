@@ -20,6 +20,7 @@ import com.actelion.research.arcite.core.rawdata.DefineRawData._
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperimentsWithRequester, IndexExperiment, RemoveFromIndex, SearchForXResultsWithRequester}
 import com.actelion.research.arcite.core.transforms.TransformCompletionFeedback
+import com.actelion.research.arcite.core.transftree.{ToTFeedbackDetails, ToTFeedbackDetailsForApi, ToTFeedbackHelper}
 import com.actelion.research.arcite.core.utils
 import com.actelion.research.arcite.core.utils._
 import com.typesafe.config.ConfigFactory
@@ -328,6 +329,11 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       sender ! TransformsForExperiment(allTransforms)
 
 
+    case GetToTs(experiment) ⇒
+      val allTots = getToTs(experiment)
+      sender ! ToTsForExperiment(allTots.map(ToTFeedbackHelper.toForApi))
+
+
     case GetAllTransforms ⇒
       sender ! ManyTransforms(getAllTransforms)
 
@@ -464,9 +470,18 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
 
     //todo what happen in case casting to feedback does not work...
     transfF.toFile.listFiles().filter(_.isDirectory)
-      .map(d ⇒ Paths.get(d.getAbsolutePath, WriteFeedbackActor.FILE_NAME))
+      .map(d ⇒ d.toPath resolve WriteFeedbackActor.FILE_NAME)
       .filter(p ⇒ p.toFile.exists())
       .map(p ⇒ Files.readAllLines(p).toList.mkString("\n").parseJson.convertTo[TransformCompletionFeedback]).toSet
+  }
+
+  private def getToTs(experiment: String): Set[ToTFeedbackDetails] = {
+    val exp = experiments(experiment)
+
+    val totF = ExperimentFolderVisitor(exp).treeOfTransfFolderPath
+
+    totF.toFile.listFiles.filter(_.getName.endsWith(core.feedbackfile))
+      .map(f ⇒ Files.readAllLines(f.toPath).toList.mkString("\n").parseJson.convertTo[ToTFeedbackDetails]).toSet
   }
 
   private def getAllTransforms: Set[TransformCompletionFeedback] = {
@@ -592,7 +607,11 @@ object ManageExperiments {
 
   case object GetAllTransforms
 
+  case class GetToTs(experiment: String)
+
   case class TransformsForExperiment(transforms: Set[TransformCompletionFeedback])
+
+  case class ToTsForExperiment(tots: Set[ToTFeedbackDetailsForApi])
 
   case class ManyTransforms(transforms: Set[TransformCompletionFeedback])
 

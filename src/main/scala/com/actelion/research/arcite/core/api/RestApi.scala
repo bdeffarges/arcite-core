@@ -181,6 +181,10 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(GetTransforms(exp)).mapTo[TransformsForExperiment]
   }
 
+  private[api] def getAllToTForExperiment(exp: String) = {
+    arciteService.ask(GetToTs(exp)).mapTo[ToTsForExperiment]
+  }
+
   private[api] def getAllTransforms() = {
     arciteService.ask(GetAllTransforms).mapTo[ManyTransforms]
   }
@@ -323,12 +327,20 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
     pathPrefix(Segment) { experiment ⇒
       path("transforms") {
         get {
-          logger.info(s"get all transforms for experiment: = $experiment")
+          logger.info(s"get all transforms for experiment= $experiment")
           onSuccess(getAllTransformsForExperiment(experiment)) {
             case TransformsForExperiment(tdis) ⇒ complete(OK -> tdis)
           }
         }
       } ~
+        path("tots") { // tree of transforms
+          get {
+            logger.info(s"get all ToTs for experiment= $experiment")
+            onSuccess(getAllToTForExperiment(experiment)) {
+              case ToTsForExperiment(tdis) ⇒ complete(OK -> tdis)
+            }
+          }
+        } ~
         pathPrefix("file_upload") {
           // todo could also do it this way https://github.com/knoldus/akka-http-file-upload.git
           // todo remove code duplicate
@@ -820,7 +832,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       } ~
         pathEnd {
           get {
-            logger.info("getting status of all treeOfTransforms. ")
+            logger.info("getting status of all treeOfTransforms...")
             onSuccess(getAllTreeOfTransformsStatus()) {
               case crtot: CurrentlyRunningToT ⇒ complete(OK -> crtot)
               case NoRunningToT ⇒ complete(BadRequest, "something went wrong. ")
