@@ -6,6 +6,7 @@ import akka.cluster.client.ClusterClientReceptionist
 import akka.persistence.PersistentActor
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend._
+import com.actelion.research.arcite.core.transforms.cluster.MasterWorkerProtocol.WorkIsReady
 import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinitionIdentity}
 import com.actelion.research.arcite.core.utils.WriteFeedbackActor
 import com.actelion.research.arcite.core.utils.WriteFeedbackActor.WriteFeedback
@@ -57,8 +58,8 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
   import context.dispatcher
 
-  private val cleanupTask = context.system.scheduler.schedule(workTimeout / 2, workTimeout / 2,
-    self, CleanupTick)
+  private val cleanupTask = context.system.scheduler.schedule(
+    workTimeout / 2, workTimeout / 2, self, CleanupTick)
 
   override def postStop(): Unit = cleanupTask.cancel()
 
@@ -66,7 +67,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
     case event: WorkStatus =>
       // only update current state by applying the event, no side effects
       workState = workState.updated(event)
-      log.info(s"Replayed ${event.getClass.getSimpleName}")
+      log.info(s"Replayed ${event}")
   }
 
   override def receiveCommand: Receive = {
@@ -83,7 +84,10 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
 
     case MasterWorkerProtocol.WorkerRequestsWork(workerId) ⇒
-      log.info(s"total pending jobs = ${workState.numberOfPendingJobs()} worker requesting work... do we have something to be done?")
+      log.info(
+        s"""total pending jobs = ${workState.numberOfPendingJobs()}
+           |worker requesting work... do we have something to be done?""".stripMargin)
+
       val td = workers(workerId).transDef
       if (td.isDefined && workState.hasWork(td.get.fullName)) {
         workers.get(workerId) match {
@@ -93,15 +97,17 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
               if (w.nonEmpty) {
                 //todo maybe we don't need both checks
                 val transf = w.get
-                persist(WorkInProgress(transf, 0)) { event =>
-                  log.info(s"Giving worker [$workerId] something to do [${transf}]")
+                persist(WorkInProgress(transf)) { event =>
+                  log.info(s"Giving worker [$workerId] something to do [${transf.transfDefName.toString}]")
                   workState = workState.updated(event)
                   workers += (workerId -> s.copy(status = Busy(transf, Deadline.now + workTimeout)))
                   sender() ! transf
                 }
               }
             }
-          case _ =>
+
+          case m: Any =>
+            log.info(s"worker state= ${m.toString}")
         }
       }
 
@@ -142,7 +148,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       }
 
 
-    case wp : MasterWorkerProtocol.WorkerInProgress ⇒
+    case wp: MasterWorkerProtocol.WorkerInProgress ⇒
       log.info(s"got Work in Progress update: ${wp.percentCompleted} % of worker ${wp.workerId}")
       persist(WorkInProgress(wp.transf, wp.percentCompleted)) { event ⇒
         workState = workState.updated(event)
@@ -153,12 +159,11 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       log.info(s"master received transform [${transf.uid}]")
       // idempotent
       if (workState.isAccepted(transf.uid)) {
-        log.info(s"transform [${transf.uid}] is accepted, Ack is returned.")
+        log.info(s"transform [${transf.uid}] is already accepted, Ack is returned.")
         sender() ! Master.Ack(transf)
       } else {
         log.info(s"transform [${transf.uid}] accepted.")
         persist(WorkAccepted(transf)) { event ⇒
-          // Ack back to original sender
           sender() ! Master.Ack(transf)
           workState = workState.updated(event)
           notifyWorkers()
@@ -169,7 +174,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
     case CleanupTick =>
       for ((workerId, s@WorkerState(_, Busy(workId, timeout), _)) ← workers) {
         if (timeout.isOverdue) {
-          log.info("Work timed out: {}", workId)
+          log.info(s"Work timed out: ${workId}")
           workers -= workerId
           persist(WorkerTimedOut(workId)) { event ⇒
             workState = workState.updated(event)
@@ -183,7 +188,11 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       workers += (wid -> workers(wid).copy(transDef = Some(wt)))
       transformDefs += wt
       log.info(s"[${transformDefs.size}] workers transforms def. types")
-    //      log.info(s"workers transforms def. types: $transformDefs")
+      //      log.info(s"workers transforms def. types: $transformDefs")
+      if (workState.hasWork(wt.fullName)) {
+        log.info(s"work is already there for worker... ${wt.fullName}")
+        sender() ! WorkIsReady
+      }
 
 
     case QueryWorkStatus(transfUID) ⇒

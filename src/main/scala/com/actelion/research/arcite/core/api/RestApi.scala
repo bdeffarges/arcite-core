@@ -17,13 +17,14 @@ import com.actelion.research.arcite.core.eventinfo.ArciteAppLogs.GetAppLogs
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{InfoLogs, MostRecentLogs, ReadLogs, RecentAllLastUpdates}
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.fileservice.FileServiceActor._
+import com.actelion.research.arcite.core.meta.DesignCategories.{AllCategories, GetCategories}
 import com.actelion.research.arcite.core.rawdata.DefineRawData._
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.{NotOk, _}
 import com.actelion.research.arcite.core.transforms.cluster.WorkState._
 import com.actelion.research.arcite.core.transftree._
-import com.actelion.research.arcite.core.transftree.TreeOfTransformsManager.{AllTreeOfTransfInfos, GetTreeOfTransformInfo}
+import com.actelion.research.arcite.core.transftree.TreeOfTransformsManager._
 import com.actelion.research.arcite.core.utils._
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
@@ -181,6 +182,10 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(GetTransforms(exp)).mapTo[TransformsForExperiment]
   }
 
+  private[api] def getAllToTForExperiment(exp: String) = {
+    arciteService.ask(GetToTs(exp)).mapTo[ToTsForExperiment]
+  }
+
   private[api] def getAllTransforms() = {
     arciteService.ask(GetAllTransforms).mapTo[ManyTransforms]
   }
@@ -191,6 +196,14 @@ trait ArciteServiceApi extends LazyLogging {
 
   private[api] def startTreeOfTransform(ptt: ProceedWithTreeOfTransf) = {
     arciteService.ask(ptt).mapTo[TreeOfTransfStartFeedback]
+  }
+
+  private[api] def getAllTreeOfTransformsStatus() = {
+    arciteService.ask(GetAllRunningToT).mapTo[RunningToT]
+  }
+
+  private[api] def getTreeOfTransformStatus(uid: String) = {
+    arciteService.ask(GetFeedbackOnTreeOfTransf(uid)).mapTo[ToTFeedback]
   }
 
   private[api] def jobStatus(qws: QueryWorkStatus) = {
@@ -216,6 +229,10 @@ trait ArciteServiceApi extends LazyLogging {
 
   private[api] def getAllExperimentsRecentLogs() = {
     arciteService.ask(MostRecentLogs).mapTo[InfoLogs]
+  }
+
+  private[api] def getMetaInfoCategories() = {
+    arciteService.ask(GetCategories).mapTo[AllCategories]
   }
 
   private[api] def getApplicationLogs() = {
@@ -250,8 +267,9 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       runTransformRoute ~
       transformFeedbackRoute ~
       allTransformsFeedbackRoute ~
-      allLastUpdates ~
+      allLastUpdatesRoute ~
       allExperimentsRecentLogs ~
+      metaInfoRoute ~
       allTransforms ~
       dataSources ~
       appLogs ~
@@ -315,12 +333,21 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
     pathPrefix(Segment) { experiment ⇒
       path("transforms") {
         get {
-          logger.info(s"get all transforms for experiment: = $experiment")
+          logger.info(s"get all transforms for experiment= $experiment")
           onSuccess(getAllTransformsForExperiment(experiment)) {
             case TransformsForExperiment(tdis) ⇒ complete(OK -> tdis)
           }
         }
       } ~
+        path("tots") {
+          // tree of transforms
+          get {
+            logger.info(s"get all ToTs for experiment= $experiment")
+            onSuccess(getAllToTForExperiment(experiment)) {
+              case ToTsForExperiment(tdis) ⇒ complete(OK -> tdis)
+            }
+          }
+        } ~
         pathPrefix("file_upload") {
           // todo could also do it this way https://github.com/knoldus/akka-http-file-upload.git
           // todo remove code duplicate
@@ -725,7 +752,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
     }
   }
 
-  def allLastUpdates = path("all_last_updates") {
+  def allLastUpdatesRoute = path("all_last_updates") {
     get {
       logger.debug("returns all last updates across the experiments")
       onSuccess(getRecentLastUpdatesLogs()) {
@@ -741,6 +768,20 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       onSuccess(getAllExperimentsRecentLogs()) {
         case ifl: InfoLogs ⇒ complete(OK -> ifl)
         case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning list of recent logs."))
+      }
+    }
+  }
+
+  def metaInfoRoute = pathPrefix("meta_info") {
+    pathPrefix("categories") {
+      pathEnd {
+        get {
+          logger.debug("return meta info, categories. ")
+          onSuccess(getMetaInfoCategories()) {
+            case categories: AllCategories ⇒ complete(OK -> categories.categories)
+            case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning list of recent logs."))
+          }
+        }
       }
     }
   }
@@ -797,26 +838,49 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
     }
   }
 
-  def treeOfTransforms = path("tree_of_transforms") {
-    pathEnd {
-      get {
-        logger.info("return all tree of transforms")
-        onSuccess(getTreeOfTransformInfo()) {
-          case AllTreeOfTransfInfos(tots) ⇒ complete(OK -> tots)
-        }
-      }~
-      post {
-        logger.info("starting tree of transform...")
-        entity(as[ProceedWithTreeOfTransf]) { pwtt ⇒
-          val started: Future[TreeOfTransfStartFeedback] = startTreeOfTransform(pwtt)
-          onSuccess(started) {
-            case tofs : TreeOfTransformStarted ⇒ complete(OK, tofs)
-            case CouldNotFindTreeOfTransfDef ⇒ complete(BadRequest, "could not find tree of transform definition.")
-            case _ ⇒ complete(BadRequest, "unknown error or problem [*388&]")
+  def treeOfTransforms = pathPrefix("tree_of_transforms") {
+    pathPrefix("status") {
+      path(Segment) { Segment ⇒
+        pathEnd {
+          get {
+            logger.info(s"getting status of treeOfTransform: $Segment")
+            onSuccess(getTreeOfTransformStatus(Segment)) {
+              case totFeedback: ToTFeedbackDetailsForApi ⇒ complete(OK -> totFeedback)
+              case totFb: ToTNoFeedback ⇒ complete(BadRequest, s"No info. about this ToT ${totFb.uid}")
+            }
           }
         }
+      } ~
+        pathEnd {
+          get {
+            logger.info("getting status of all treeOfTransforms...")
+            onSuccess(getAllTreeOfTransformsStatus()) {
+              case crtot: CurrentlyRunningToT ⇒ complete(OK -> crtot)
+              case NoRunningToT ⇒ complete(BadRequest, "something went wrong. ")
+            }
+
+          }
+        }
+    } ~
+      pathEnd {
+        get {
+          logger.info("return all tree of transforms")
+          onSuccess(getTreeOfTransformInfo()) {
+            case AllTreeOfTransfInfos(tots) ⇒ complete(OK -> tots)
+          }
+        } ~
+          post {
+            logger.info("starting tree of transform...")
+            entity(as[ProceedWithTreeOfTransf]) { pwtt ⇒
+              val started: Future[TreeOfTransfStartFeedback] = startTreeOfTransform(pwtt)
+              onSuccess(started) {
+                case tofs: TreeOfTransformStarted ⇒ complete(OK, tofs)
+                case CouldNotFindTreeOfTransfDef ⇒ complete(BadRequest, "could not find tree of transform definition.")
+                case _ ⇒ complete(BadRequest, "unknown error or problem [*388&]")
+              }
+            }
+          }
       }
-    }
   }
 }
 

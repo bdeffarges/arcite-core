@@ -101,7 +101,7 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
 
 
     case gtd: GetTransfDefId ⇒
-      log.info(s"asked for my [$self] workerType ")
+      log.info(s"asked for my workerType ")
       workExecutor ! gtd
 
 
@@ -127,12 +127,17 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
 
 
     case wp: WorkerProgress ⇒
-      log.info(s"worker making progress... ${wp.progress}% completed")
+      log.info(s"worker making progress... ${wp.progress}%...")
       sendToMaster(WorkerInProgress(workerId, transform, utils.getDateAsString(time), wp.progress))
 
 
     case _: Transform ⇒
       log.info("Yikes. Master told me to do work, while I'm working.")
+
+
+    case gtd: GetTransfDefId ⇒
+      log.info(s"asked for my workerType ")
+      workExecutor ! gtd
 
 
     case a: Any ⇒

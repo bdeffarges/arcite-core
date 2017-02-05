@@ -31,7 +31,7 @@ import org.scalatest.{FlatSpec, Matchers}
   * Created by Bernard Deffarges on 2016/12/01.
   *
   */
-class TestFoldersHelers extends FlatSpec with Matchers with LazyLogging {
+class FoldersHelersTest extends FlatSpec with Matchers with LazyLogging {
 
   "linking folder " should " link all files in the origin folder from the target folder " in {
 

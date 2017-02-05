@@ -6,13 +6,15 @@ import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{MostRecentL
 import com.actelion.research.arcite.core.experiments.ManageExperiments.{GetAllTransforms, _}
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSummary}
 import com.actelion.research.arcite.core.fileservice.FileServiceActor.{GetExperimentFiles, GetFilesFromSource, GetSourceFolders}
+import com.actelion.research.arcite.core.meta.DesignCategories.GetCategories
+import com.actelion.research.arcite.core.meta.MetaInfoActors
 import com.actelion.research.arcite.core.rawdata.DefineRawData._
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{SearchForXResults, SearchForXResultsWithRequester}
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
-import com.actelion.research.arcite.core.transforms.cluster.Frontend.{GetAllJobsStatus, QueryWorkStatus, GetRunningJobsStatus}
+import com.actelion.research.arcite.core.transforms.cluster.Frontend.{GetAllJobsStatus, GetRunningJobsStatus, QueryWorkStatus}
 import com.actelion.research.arcite.core.transforms.cluster.{ManageTransformCluster, ScatGathTransform}
-import com.actelion.research.arcite.core.transftree.{ProceedWithTreeOfTransf, TreeOfTransformActorSystem}
+import com.actelion.research.arcite.core.transftree.{GetAllRunningToT, GetFeedbackOnTreeOfTransf, ProceedWithTreeOfTransf, TreeOfTransformActorSystem}
 import com.actelion.research.arcite.core.transftree.TreeOfTransformsManager.GetTreeOfTransformInfo
 import com.actelion.research.arcite.core.utils.RemoveFile
 import com.typesafe.config.ConfigFactory
@@ -171,6 +173,11 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
     ActorPath.fromString(TreeOfTransformActorSystem.treeOfTransfActPath))
   log.info(s"****** connect to TreeOfTransform service actor: $treeOfTransformActor")
 
+  private val conf2 = ConfigFactory.load().getConfig("meta-info-actor-system")
+  private val metaActSys = conf2.getString("akka.uri")
+  private val metaActor = context.actorSelection(ActorPath.fromString(MetaInfoActors.getMetaInfoActorName))
+
+
   import ArciteService._
 
   // todo all with requester could be replaced by forward
@@ -213,6 +220,10 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
     case gat: GetTransforms ⇒
       expManager forward gat
+
+
+    case getTots: GetToTs ⇒
+      expManager forward getTots
 
 
     case GetAllTransforms ⇒
@@ -312,9 +323,20 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
     case GetTreeOfTransformInfo ⇒
       treeOfTransformActor forward GetTreeOfTransformInfo
 
-
     case pwtt: ProceedWithTreeOfTransf ⇒
       treeOfTransformActor forward pwtt
+
+
+    case GetAllRunningToT ⇒
+      treeOfTransformActor forward GetAllRunningToT
+
+
+    case getFeedback: GetFeedbackOnTreeOfTransf ⇒
+      treeOfTransformActor forward getFeedback
+
+
+    case GetCategories ⇒
+      metaActor forward GetCategories
 
     //don't know what to do with this message...
     case msg: Any ⇒ log.error(s"don't know what to do with the passed message [$msg] in ${getClass}")

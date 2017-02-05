@@ -147,33 +147,33 @@ class TreeOfTransformsTests extends ApiTests {
     }
   }
 
-//  " starting a simple tree of transform (upper, lower, ...) " should " return the tree Of transform UID " in {
-//
-//    implicit val executionContext = system.dispatcher
-//
-//
-//    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
-//      Http().outgoingConnection(host, port)
-//
-//
-//    val transf1 = ProceedWithTreeOfTransf(exp1.uid, transfDef1.get.uid)
-//
-//    val jsonRequest = ByteString(transf1.toJson.prettyPrint)
-//
-//    val postRequest = HttpRequest(
-//      HttpMethods.POST,
-//      uri = "/tree_of_transforms",
-//      entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
-//
-//    val responseFuture: Future[HttpResponse] =
-//      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
-//
-//    responseFuture.map { r ⇒
-//      logger.info(r.toString())
-//      assert(r.status == StatusCodes.OK)
-//
-//      val result = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
-//      assert(result.nonEmpty)
-//    }
-//  }
+  " starting a simple tree of transform (upper, lower, ...) " should " return the tree Of transform UID " in {
+
+    implicit val executionContext = system.dispatcher
+
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+
+    val transf1 = ProceedWithTreeOfTransf(exp1.uid, transfDef1.get.uid)
+
+    val jsonRequest = ByteString(transf1.toJson.prettyPrint)
+
+    val postRequest = HttpRequest(
+      HttpMethods.POST,
+      uri = "/tree_of_transforms",
+      entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
+
+    responseFuture.map { r ⇒
+      logger.info(r.toString())
+      assert(r.status == StatusCodes.OK)
+
+      val result = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+      assert(result.nonEmpty)
+    }
+  }
 }

@@ -4,7 +4,7 @@ import java.util.UUID
 
 import akka.actor.SupervisorStrategy.Escalate
 import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSystem, OneForOneStrategy, Props, SupervisorStrategy}
-import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.AddLog
+import com.actelion.research.arcite.core.transftree.TreeOfTransfExecAct.{GetFeedbackOnToT, ImFinished}
 import com.actelion.research.arcite.core.transftree.TreeOfTransformsManager.AddTofT
 import com.typesafe.config.ConfigFactory
 
@@ -101,6 +101,19 @@ class TreeOfTransformsManager extends Actor with ActorLogging {
       } else {
         sender() ! CouldNotFindTreeOfTransfDef
       }
+
+
+    case getFeedback : GetFeedbackOnTreeOfTransf ⇒
+      treeOfTransform.get(getFeedback.uid).fold(sender() !
+        ToTNoFeedback(getFeedback.uid))(_ forward GetFeedbackOnToT)
+
+
+    case GetAllRunningToT ⇒
+      sender() ! CurrentlyRunningToT(treeOfTransform.keySet)
+
+
+    case ImFinished(uid) ⇒
+      treeOfTransform -= uid
   }
 }
 
@@ -120,6 +133,12 @@ object TreeOfTransformsManager {
   case class FoundTreeOfTransfInfo(tot: Option[TreeOfTransformInfo])
 
 
+  sealed trait RunningToT
+
+  case class CurrentlyRunningToT(runningToTs: Set[String] = Set.empty) extends RunningToT
+
+  case object NoRunningToT extends RunningToT
+
 }
 
 
@@ -132,9 +151,10 @@ object TreeOfTransformActorSystem {
 
   implicit val system = ActorSystem(actorSystemName, config)
 
-  val treeOfTransfParentAct: ActorRef = system.actorOf(Props(classOf[TreeOfTransformParentActor]), "tree-of-transforms-parent")
+  private val treeOfTransfParentAct: ActorRef = system
+    .actorOf(Props(classOf[TreeOfTransformParentActor]), "tree-of-transforms-parent")
 
-  val treeOfTransfParentActPath = s"${actSys}/user/tree-of-transforms-parent"
+  private val treeOfTransfParentActPath = s"${actSys}/user/tree-of-transforms-parent"
   val treeOfTransfActPath = s"${actSys}/user/tree-of-transforms-parent/tree-of-transforms"
 
   treeOfTransfParentAct ! AddTofT(DefaultTofT.testTofT1)
@@ -160,5 +180,11 @@ class TreeOfTransformParentActor extends Actor with ActorLogging {
 
     case ptt: ProceedWithTreeOfTransf ⇒
       treeOfTransforms forward ptt
+
+    case getFeedback: GetFeedbackOnTreeOfTransf ⇒
+      treeOfTransforms forward getFeedback
+
+    case GetAllRunningToT ⇒
+      treeOfTransforms forward GetAllRunningToT
   }
 }

@@ -10,6 +10,7 @@ import com.actelion.research.arcite.core.experiments.ExpState.ExpState
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.experiments._
 import com.actelion.research.arcite.core.fileservice.FileServiceActor._
+import com.actelion.research.arcite.core.meta.DesignCategories.SimpleCondition
 import com.actelion.research.arcite.core.rawdata.DefineRawData.{RawDataSet, RawDataSetRegex, SourceRawDataSet}
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments}
 import com.actelion.research.arcite.core.transforms.ParameterType.ParameterType
@@ -22,10 +23,11 @@ import com.actelion.research.arcite.core.transforms.cluster.WorkState.{AllJobsFe
 import com.actelion.research.arcite.core.transforms.cluster.workers.fortest.WorkExecLowerCase.ToLowerCase
 import com.actelion.research.arcite.core.transforms.cluster.workers.fortest.WorkExecUpperCase.ToUpperCase
 import com.actelion.research.arcite.core.transftree.TreeOfTransfOutcome.TreeOfTransfOutcome
-import com.actelion.research.arcite.core.transftree._
+import com.actelion.research.arcite.core.transftree.TreeOfTransformsManager.CurrentlyRunningToT
+import com.actelion.research.arcite.core.transftree.{ToTNoFeedback, _}
 import com.actelion.research.arcite.core.{ExperimentType, Organization, utils}
 import com.actelion.research.arcite.core.utils._
-import spray.json.{DefaultJsonProtocol, JsString, _}
+import spray.json.{DefaultJsonProtocol, JsString, RootJsonFormat, _}
 
 /**
   * arcite-core
@@ -234,6 +236,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
 
 
   implicit val conditionJson: RootJsonFormat[Condition] = jsonFormat3(Condition)
+  implicit val simpleConditionJson: RootJsonFormat[SimpleCondition] = jsonFormat2(SimpleCondition)
   implicit val conditionForSampleJson: RootJsonFormat[ConditionsForSample] = jsonFormat1(ConditionsForSample)
   implicit val experimentalDesignJson: RootJsonFormat[ExperimentalDesign] = jsonFormat2(ExperimentalDesign)
 
@@ -441,7 +444,6 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
 
   implicit val treeOFTransfStartedJson: RootJsonFormat[TreeOfTransformStarted] = jsonFormat1(TreeOfTransformStarted)
 
-
   implicit object TreeFoTransfOutcomeJson extends RootJsonFormat[TreeOfTransfOutcome] {
     override def write(obj: TreeOfTransfOutcome): JsValue = {
       JsObject("outcome" -> JsString(obj.toString))
@@ -498,39 +500,48 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
     }
   }
 
-  implicit object TreeOfTransFeedbackJson extends RootJsonFormat[TreeOfTransfFeedback] {
-    override def write(ttfb: TreeOfTransfFeedback): JsValue = {
+  //todo needed?
+  implicit object TreeOfTransFeedbackJson extends RootJsonFormat[ToTFeedbackDetails] {
+    override def write(ttfb: ToTFeedbackDetails): JsValue = {
       JsObject(
         "uid" -> JsString(ttfb.uid),
         "name" -> ttfb.name.toJson,
         "treeOfTransform" -> JsString(ttfb.treeOfTransform),
         "properties" -> ttfb.properties.toJson,
         "startFromRaw" -> JsBoolean(ttfb.startFromRaw),
-        "originTransf" -> (if (ttfb.originTransform.isDefined) JsString(ttfb.originTransform.get) else JsString("None")),
+        "originTransf" -> JsString(ttfb.originTransform.fold("None")(stg ⇒ stg)),
         "start" -> JsString(utils.getDateAsStringMS(ttfb.start)),
         "end" -> JsString(utils.getDateAsStringMS(ttfb.end)),
         "success" -> JsNumber(ttfb.percentageSuccess),
         "completed" -> JsNumber(ttfb.percentageCompleted),
-        "outcompe" -> ttfb.outcome.toJson,
-        "nodesFeeback" -> ttfb.nodesFeedback.toJson
+        "outcome" -> JsString(ttfb.outcome.toString),
+        "nodesFeedback" -> ttfb.nodesFeedback.toJson
       )
     }
 
-    override def read(json: JsValue): TreeOfTransfFeedback = {
+    override def read(json: JsValue): ToTFeedbackDetails = {
       json.asJsObject.getFields("uid", "name", "treeOfTransform", "properties", "startFromRaw", "originTransf",
         "start", "end", "success", "completed", "outcome", "nodesFeedback") match {
         case Seq(JsString(uid), name, JsString(treeOfTrans), props, JsBoolean(startFromRaw), JsString(origin),
-        JsString(start), JsString(end), JsNumber(success), JsNumber(completed), outcome, nodesFeedback) ⇒
-          TreeOfTransfFeedback(uid = uid, name = name.convertTo[FullName], treeOfTransform = treeOfTrans,
+        JsString(start), JsString(end), JsNumber(success), JsNumber(completed),
+        JsString(outcome), nodesFeedback) ⇒
+          ToTFeedbackDetails(uid = uid, name = name.convertTo[FullName], treeOfTransform = treeOfTrans,
             properties = props.convertTo[Map[String, String]],
             startFromRaw = startFromRaw,
             originTransform = if (origin == "None") None else Some(origin),
             start = utils.getAsDateMS(start).getTime, end = utils.getAsDateMS(end).getTime,
-            percentageSuccess = success.toDouble, percentageCompleted = completed.toDouble,
-            outcome = outcome.convertTo[TreeOfTransfOutcome],
+            percentageSuccess = success.toInt, percentageCompleted = completed.toInt,
+            outcome = TreeOfTransfOutcome.withName(outcome),
             nodesFeedback = nodesFeedback.convertTo[List[TreeOfTransfNodeFeedback]])
+
+        case _ => throw DeserializationException(s"could not deserialize $json")
       }
     }
+
   }
+
+  implicit val toTNoFeedbackJson: RootJsonFormat[ToTNoFeedback] = jsonFormat1(ToTNoFeedback)
+  implicit val toTFeedbackDetailsJson: RootJsonFormat[ToTFeedbackDetailsForApi] = jsonFormat12(ToTFeedbackDetailsForApi)
+  implicit val currentlyRunningToTJson: RootJsonFormat[CurrentlyRunningToT] = jsonFormat1(CurrentlyRunningToT)
 
 }

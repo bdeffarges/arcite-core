@@ -9,7 +9,7 @@ import org.scalatest.{FlatSpec, Matchers}
 /**
   * Created by deffabe1 on 3/8/16.
   */
-class TestGetDigest extends FlatSpec with Matchers {
+class GetDigestTest extends FlatSpec with Matchers {
 
   val config = ConfigFactory.load()
 

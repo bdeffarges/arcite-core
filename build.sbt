@@ -4,7 +4,7 @@ organization := "com.actelion.research.arcite"
 
 name := "arcite-core"
 
-version := "1.18.0-SNAPSHOT"
+version := "1.19.0-SNAPSHOT"
 
 scalaVersion := "2.12.1"
 

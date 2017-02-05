@@ -1,6 +1,8 @@
 package com.actelion.research.arcite.core.api
 
 import com.actelion.research.arcite.core.transforms._
+import com.actelion.research.arcite.core.transftree.ToTFeedbackDetails
+import com.actelion.research.arcite.core.utils.FullName
 import org.scalatest.{FlatSpec, Matchers}
 
 /**
@@ -73,5 +75,22 @@ class JsonProtocolTests extends FlatSpec with Matchers with ArciteJSONProtocol {
     val toJson4 = predefValues.toJson
     val fromJson4 = toJson4.convertTo[PredefinedValues]
     assert(predefValues == fromJson4)
+  }
+
+
+  "TreeOfTransFeedbackJson back and forth to json... " should " produce json and read json " in {
+
+    val totfd = ToTFeedbackDetails(uid = "dddddeeeeaa333234234324",
+      name = FullName(organization = "hello.world", name = "earth", version = "1.2.2"),
+      treeOfTransform = "dsfwerqwer",
+      properties = Map("ddd" -> "ddsd", "aaa" -> "bdfds"),
+      startFromRaw = false,
+      originTransform = Some("hello"))
+
+    val toJson = totfd.toJson
+
+    val fromJson = toJson.convertTo[ToTFeedbackDetails]
+
+    assert(totfd == fromJson)
   }
 }
