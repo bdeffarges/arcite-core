@@ -13,8 +13,8 @@ import com.actelion.research.arcite.core.eventinfo.{ExpLog, LogCategory, LogType
 import com.actelion.research.arcite.core.experiments.ExperimentFolderVisitor
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, MsgFromTransfDefsManager, OneTransfDef}
-import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinitionIdentity, TransformSourceFromRaw, TransformSourceFromTransform}
 import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
+import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinitionIdentity, TransformSourceFromRaw, TransformSourceFromTransform}
 import com.actelion.research.arcite.core.transftree.TreeOfTransfExecAct._
 import com.actelion.research.arcite.core.transftree.TreeOfTransfNodeOutcome.TreeOfTransfNodeOutcome
 import com.actelion.research.arcite.core.transftree.TreeOfTransfOutcome.{FAILED, PARTIAL_SUCCESS, SUCCESS}
@@ -63,16 +63,15 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
 
   private var actualTransforms: Map[String, TreeOfTransfNodeOutcome] = Map.empty
 
-  self ! SetupTimeOut
-
   override def receive: Receive = {
     case ptotr: ProceedWithTreeOfTransf ⇒
       proceedWithTreeOfTransf = Some(ptotr)
       expManager ! GetExperiment(ptotr.experiment)
+      self ! SetupTimeOut
+
 
     case SetupTimeOut ⇒
       import scala.concurrent.duration._
-      import context.dispatcher
 
       context.system.scheduler.scheduleOnce(treeOfTransformDefinition.timeOutSeconds seconds) {
         self ! TimeOutReached
@@ -132,9 +131,9 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
 
       log.info("starting the tree scheduler...")
       context.become(unrollTreePhase)
+      import context.dispatcher
 
       import scala.concurrent.duration._
-      import context.dispatcher
 
       context.system.scheduler.schedule(4 seconds, 15 seconds) {
         self ! UpdateAllTransformStatus
