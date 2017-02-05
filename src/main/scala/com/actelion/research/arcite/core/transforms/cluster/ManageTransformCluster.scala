@@ -60,7 +60,7 @@ object ManageTransformCluster {
   def getNextFrontEnd(): ActorRef = {
     // todo random for now, instead it should pick-up those that are available
     //
-    val i = ThreadLocalRandom.current().nextInt(frontEnds.size)
+    val i = java.util.concurrent.ThreadLocalRandom.current().nextInt(frontEnds.size)
     val ar = frontEnds(i)
     logger.info(s"pickup id[$i] => $ar}")
 

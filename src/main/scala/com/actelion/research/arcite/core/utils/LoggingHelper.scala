@@ -31,7 +31,7 @@ class LoggingHelper(length: Int) {
 
   def addEntry(log: String) = logs = logs enqueue LogEntry(log) takeRight length
 
-  def clear = logs = Queue.empty
+  def clear() = logs = Queue.empty
 
   override def toString: String = s"[${logs.mkString("\n")}]"
 }

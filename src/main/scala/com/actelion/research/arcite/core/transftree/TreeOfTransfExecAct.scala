@@ -14,7 +14,6 @@ import com.actelion.research.arcite.core.eventinfo._
 import com.actelion.research.arcite.core.experiments.ExperimentFolderVisitor
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
-import com.actelion.research.arcite.core.transforms._
 import com.actelion.research.arcite.core.transforms.cluster.ManageTransformCluster
 import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinitionIdentity, TransformSourceFromRaw, TransformSourceFromTransform}
 import com.actelion.research.arcite.core.transftree.TreeOfTransfExecAct._
@@ -83,6 +82,7 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
 
     case SetupTimeOut ⇒
       import scala.concurrent.duration._
+      import context.dispatcher
 
       context.system.scheduler.scheduleOnce(treeOfTransformDefinition.timeOutSeconds seconds) {
         self ! TimeOutReached
@@ -164,6 +164,8 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
       logHelp.addEntry("starting the tree scheduler...")
 
       import scala.concurrent.duration._
+      import context.dispatcher
+
 
       context.system.scheduler.schedule(4 seconds, 15 seconds) {
         self ! UpdateAllTransformStatus

@@ -175,8 +175,8 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
   private val conf2 = ConfigFactory.load().getConfig("meta-info-actor-system")
   private val metaActSys = conf2.getString("akka.uri")
-  private val metaActor = context.actorSelection(ActorPath.fromString(MetaInfoActors.getMetaInfoActorName))
-
+  private val metaInfoActPath = s"${metaActSys}/user/${MetaInfoActors.getMetaInfoActorName}"
+  private val metaActor = context.actorSelection(metaInfoActPath)
 
   import ArciteService._
 

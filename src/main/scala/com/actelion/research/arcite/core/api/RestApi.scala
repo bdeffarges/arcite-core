@@ -437,7 +437,6 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
               logger.info(s"returning all META files for experiment: $experiment")
               onSuccess(getAllMetaFiles(experiment)) {
                 case FolderFilesInformation(ffi) ⇒ complete(OK -> ffi)
-                case a: Any ⇒ complete(BadRequest -> ErrorMessage(s"could not find files ${a.toString}"))
               }
             }
           } ~
@@ -446,7 +445,6 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
                 logger.info(s"returning all user uploaded RAW files for experiment: $experiment")
                 onSuccess(getAllRawFiles(experiment)) {
                   case FolderFilesInformation(ffi) ⇒ complete(OK -> ffi)
-                  case a: Any ⇒ complete(BadRequest -> ErrorMessage(s"could not find files ${a.toString}"))
                 }
               }
             } ~
@@ -455,7 +453,6 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
                 logger.info(s"returning all files for experiment: $experiment")
                 onSuccess(getAllFiles(experiment)) {
                   case afi: AllFilesInformation ⇒ complete(OK -> afi)
-                  case a: Any ⇒ complete(BadRequest -> ErrorMessage(s"could not find files ${a.toString}"))
                 }
               }
             }
@@ -846,7 +843,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             logger.info(s"getting status of treeOfTransform: $Segment")
             onSuccess(getTreeOfTransformStatus(Segment)) {
               case totFeedback: ToTFeedbackDetailsForApi ⇒ complete(OK -> totFeedback)
-              case totFb: ToTNoFeedback ⇒ complete(BadRequest, s"No info. about this ToT ${totFb.uid}")
+              case totFb: ToTNoFeedback ⇒ complete(BadRequest -> s"No info. about this ToT ${totFb.uid}")
             }
           }
         }

@@ -83,7 +83,7 @@ object Main extends App {
         options {
           complete(s"Supported methods : $names.")
         } ~
-          complete(MethodNotAllowed, s"HTTP method not allowed, supported methods: $names!")
+          complete(MethodNotAllowed -> s"HTTP method not allowed, supported methods: $names!")
       }
     }.result()
 
