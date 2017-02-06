@@ -6,7 +6,7 @@ name := "arcite-core"
 
 version := "1.19.0-SNAPSHOT"
 
-scalaVersion := "2.12.1"
+scalaVersion := "2.11.8" // todo move to 2.12 once spark has moved available
 
 scmInfo := Some(
   ScmInfo(
@@ -52,9 +52,9 @@ resolvers ++= Seq(
 
 
 libraryDependencies ++= {
-  val akkaVersion = "2.4.12"
+  val akkaVersion = "2.4.16"
   val sparkVersion = "1.6.2"
-  val luceneVersion = "5.0.0"
+  val luceneVersion = "6.4.0"
 
   Seq(
     "org.specs2" %% "specs2-core" % "3.7" % "test",
