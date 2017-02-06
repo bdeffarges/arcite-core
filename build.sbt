@@ -129,6 +129,8 @@ javaOptions in Universal ++= Seq(
   //  s"-version=${version.value}"
 )
 
+dockerExecCommand := Seq("sudo", "docker")
+
 //dockerCommands += Cmd("RUN", "echo Europe/Berlin > /etc/timezone && dpkg-reconfigure --frontend noninteractive tzdata")
 
 dockerExposedPorts := Seq(8084, 2551, 2552, 2553, 2554, 2555, 2556, 2557, 2558)
