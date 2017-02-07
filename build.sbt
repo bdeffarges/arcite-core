@@ -104,6 +104,7 @@ enablePlugins(JavaAppPackaging)
 
 enablePlugins(DockerPlugin)
 
+
 enablePlugins(DockerSpotifyClientPlugin)
 
 maintainer in Docker := "Bernard Deffarges bernard.deffarges@actelion.com"
@@ -123,13 +124,14 @@ javaOptions in Universal ++= Seq(
   //  "-J-Xms64m",
 
   //   others will be added as app parameters
-  "-Dconfig.resource=docker_test.conf"
+//  "-Dconfig.resource=docker_test.conf"
+  "-Dconfig.resource=docker_smicro2.conf"
 
   // you can access any build setting/task here
   //  s"-version=${version.value}"
 )
 
-dockerExecCommand := Seq("sudo", "docker")
+dockerExecCommand := Seq("sudo", "dockers")
 
 //dockerCommands += Cmd("RUN", "echo Europe/Berlin > /etc/timezone && dpkg-reconfigure --frontend noninteractive tzdata")
 
