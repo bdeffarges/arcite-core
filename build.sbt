@@ -1,5 +1,4 @@
 import com.typesafe.sbt.SbtNativePackager.autoImport.NativePackagerHelper._
-import com.typesafe.sbt.packager.docker.ExecCmd
 
 organization := "com.actelion.research.arcite"
 
@@ -104,7 +103,6 @@ enablePlugins(JavaServerAppPackaging)
 enablePlugins(JavaAppPackaging)
 
 enablePlugins(DockerPlugin)
-
 
 enablePlugins(DockerSpotifyClientPlugin)
 
