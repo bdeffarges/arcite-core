@@ -6,7 +6,7 @@ name := "arcite-core"
 
 version := "1.19.0-SNAPSHOT"
 
-scalaVersion := "2.12.1"
+scalaVersion := "2.11.8"
 
 scmInfo := Some(
   ScmInfo(

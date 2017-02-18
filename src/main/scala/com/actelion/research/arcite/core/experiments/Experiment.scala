@@ -2,6 +2,7 @@ package com.actelion.research.arcite.core.experiments
 
 import java.nio.file.{Path, Paths}
 
+import breeze.numerics.exp
 import com.actelion.research.arcite.core
 import com.actelion.research.arcite.core.experiments.ExpState.ExpState
 import com.actelion.research.arcite.core.utils
@@ -22,6 +23,8 @@ case class Experiment(name: String, description: String, owner: Owner, state: Ex
                       design: ExperimentalDesign = ExperimentalDesign(), properties: Map[String, String] = Map()) {
 
   lazy val uid = GetDigest.getDigest(s"${owner.organization}$name")
+
+  lazy val defaultURIHelper = ExpUriHelper(owner.organization, uid)
 }
 
 object DefaultExperiment {
@@ -154,4 +157,19 @@ case class ExperimentUID(uid: String)
 
 // for api feedback
 
+case class ExpUriHelper(organization: String, expUID: String) {
 
+  private val elts = organization.split('.')
+
+  require(elts.size > 1)
+
+  private lazy val localPart = elts.mkString("/","/","/")
+
+  lazy val uRIPrefixwithArciteSubdomain: String = s"arcite.${elts(1)}.${elts(0)}$localPart"
+  lazy val uRIPrefixwithSlashArcite: String = s"www.${elts(1)}.${elts(0)}/arcite$localPart"
+
+  lazy val expURIWithSubdomain: String = s"$uRIPrefixwithArciteSubdomain$expUID"
+
+  lazy val expURIWithSlashArcite: String = s"$uRIPrefixwithSlashArcite$expUID"
+
+}

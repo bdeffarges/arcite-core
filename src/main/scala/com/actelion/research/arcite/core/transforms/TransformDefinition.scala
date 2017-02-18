@@ -17,6 +17,8 @@ import com.actelion.research.arcite.core.utils.{FullName, GetDigest}
   */
 
 // todo what about transforms that inherit from many transforms...
+// todo transforms should have a stamp/digest to make sure they cannot be changed without changing their version after having being used at least once
+// todo in the transform completion data we should also keep some digest from the produced artifact, to avoid changes
 
 /**
   * description of a transform, its purpose, what it consumes and what it produces

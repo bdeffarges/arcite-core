@@ -2,6 +2,8 @@ package com.actelion.research.arcite.core.utils
 
 import java.io.File
 
+import com.actelion.research.arcite.core.experiments.Experiment
+
 /**
   * Created by deffabe1 on 3/8/16.
   * An owner is the combination of an organization (e.g. com.actelion.research.microarray,
@@ -23,4 +25,3 @@ object DefaultOwner {
 }
 
 case class FullName(organization: String, name: String, version: String = "1.0.0")
-
