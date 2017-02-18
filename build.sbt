@@ -6,7 +6,7 @@ name := "arcite-core"
 
 version := "1.19.0-SNAPSHOT"
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.11.8" // todo move to 2.12 once spark has moved available
 
 scmInfo := Some(
   ScmInfo(
@@ -52,9 +52,9 @@ resolvers ++= Seq(
 
 
 libraryDependencies ++= {
-  val akkaVersion = "2.4.12"
+  val akkaVersion = "2.4.16"
   val sparkVersion = "1.6.2"
-  val luceneVersion = "5.0.0"
+  val luceneVersion = "6.4.0"
 
   Seq(
     "org.specs2" %% "specs2-core" % "3.7" % "test",
@@ -119,15 +119,17 @@ mappings in Universal ++= {
 
 javaOptions in Universal ++= Seq(
   // -J params will be added as jvm parameters
-  //  "-J-Xmx64m",
-  //  "-J-Xms64m",
+    "-J-Xmx1G",
+    "-J-Xms256m"
 
   //   others will be added as app parameters
-  "-Dconfig.resource=docker_test.conf"
+  // should be given as variable by docker run
 
   // you can access any build setting/task here
   //  s"-version=${version.value}"
 )
+
+//dockerExecCommand := Seq("docker")
 
 //dockerCommands += Cmd("RUN", "echo Europe/Berlin > /etc/timezone && dpkg-reconfigure --frontend noninteractive tzdata")
 
@@ -135,4 +137,6 @@ dockerExposedPorts := Seq(8084, 2551, 2552, 2553, 2554, 2555, 2556, 2557, 2558)
 
 licenses := Seq(("CC0", url("http://creativecommons.org/publicdomain/zero/1.0")))
 
-//dockerCommands ++= Seq(ExecCmd("CMD", "ENV=$environment"))
+//dockerCommands ++= Seq(ExecCmd("CMD", "-Dconfig.resource=$ARCITE_CONF"))
+
+bashScriptExtraDefines += """addJava "-Dconfig.resource=$ARCITE_CONF""""

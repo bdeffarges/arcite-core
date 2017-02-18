@@ -770,14 +770,11 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
   }
 
   def metaInfoRoute = pathPrefix("meta_info") {
-    pathPrefix("categories") {
-      pathEnd {
-        get {
-          logger.debug("return meta info, categories. ")
-          onSuccess(getMetaInfoCategories()) {
-            case categories: AllCategories ⇒ complete(OK -> categories.categories)
-            case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning list of recent logs."))
-          }
+    path("categories") {
+      get {
+        logger.debug("return meta info, categories.")
+        onSuccess(getMetaInfoCategories()) { cats ⇒
+          complete(OK -> cats)
         }
       }
     }
