@@ -2,7 +2,6 @@ package com.actelion.research.arcite.core.experiments
 
 import java.nio.file.{Path, Paths}
 
-import breeze.numerics.exp
 import com.actelion.research.arcite.core
 import com.actelion.research.arcite.core.experiments.ExpState.ExpState
 import com.actelion.research.arcite.core.utils
@@ -163,7 +162,7 @@ case class ExpUriHelper(organization: String, expUID: String) {
 
   require(elts.size > 1)
 
-  private lazy val localPart = elts.mkString("/","/","/")
+  private lazy val localPart = elts.mkString("/", "/", "/")
 
   lazy val uRIPrefixwithArciteSubdomain: String = s"arcite.${elts(1)}.${elts(0)}$localPart"
   lazy val uRIPrefixwithSlashArcite: String = s"www.${elts(1)}.${elts(0)}/arcite$localPart"
@@ -172,4 +171,11 @@ case class ExpUriHelper(organization: String, expUID: String) {
 
   lazy val expURIWithSlashArcite: String = s"$uRIPrefixwithSlashArcite$expUID"
 
+  lazy val uris = URIs(expURIWithSlashArcite, expURIWithSubdomain)
+
+  def transformURI(transformUID: String): URIs = {
+    URIs(s"$expURIWithSlashArcite/transforms/$transformUID",s"$expURIWithSubdomain/transforms/$transformUID")
+  }
 }
+
+case class URIs(withSlash: String, withSubDomain: String)
