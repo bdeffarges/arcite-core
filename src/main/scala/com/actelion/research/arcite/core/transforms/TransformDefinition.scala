@@ -112,7 +112,7 @@ case class TransformDoneSource(experiment: String, kindOfSource: String, fromTra
 
 case class TransformCompletionFeedback(transform: String, transformDefinition: FullName, source: TransformDoneSource,
                                        parameters: Map[String, String], status: TransformCompletionStatus,
-                                       artifacts: List[String], feedback: String, errors: String,
+                                       artifacts: Map[String, String], feedback: String, errors: String,
                                        startTime: String, endTime: String = utils.getCurrentDateAsString())
 
 case class RunningTransformFeedback(transform: String, transformDefinition: FullName, experiment: String,

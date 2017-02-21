@@ -66,7 +66,7 @@ class WorkExecLowerCase extends Actor with ActorLogging with ArciteJSONProtocol 
           val lowerCased = toBeTransformed.stgToLowerCase.toLowerCase()
           val p = Paths.get(TransformHelper(t).getTransformFolder().toString, "lowercase.txt")
           Files.write(p, lowerCased.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
-          sender() ! WorkSuccessFull("to lower case completed", p.getFileName.toString :: Nil)
+          sender() ! WorkSuccessFull("to lower case completed", Map("fileName" -> p.getFileName.toString))
 
 
         case tfFtf: TransformSourceFromTransform ⇒
@@ -77,7 +77,7 @@ class WorkExecLowerCase extends Actor with ActorLogging with ArciteJSONProtocol 
           if (feedbF.toFile.exists()) {
             val tdi = Files.readAllLines(feedbF).toList.mkString("\n").parseJson.convertTo[TransformCompletionFeedback]
             var listFiles: List[String] = Nil
-            tdi.artifacts.map { f ⇒
+            tdi.artifacts.values.map { f ⇒
               val fileP = path resolve f
               if (fileP.toFile.exists) {
                 val textLowerC = Files.readAllLines(fileP).mkString("\n").toLowerCase()
@@ -86,7 +86,7 @@ class WorkExecLowerCase extends Actor with ActorLogging with ArciteJSONProtocol 
                 Files.write(p, textLowerC.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
               }
             }
-            sender() ! WorkSuccessFull("to lower case completed", listFiles)
+            sender() ! WorkSuccessFull("to lower case completed", Map("fileList" -> listFiles.mkString("\n")))
           } else {
             sender() ! WorkFailed("to lower case failed ", "did not find previous transform output file.")
           }
@@ -103,7 +103,7 @@ class WorkExecLowerCase extends Actor with ActorLogging with ArciteJSONProtocol 
             val p = Paths.get(TransformHelper(t).getTransformFolder().toString, listFiles.head)
             Files.write(p, textLowerC.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
           }
-          sender() ! WorkSuccessFull("to lower case completed", listFiles)
+          sender() ! WorkSuccessFull("to lower case completed", Map("fileList" -> listFiles.mkString("\n")))
       }
 
 

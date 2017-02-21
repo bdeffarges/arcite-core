@@ -39,7 +39,7 @@ class RWrapperWorker extends Actor with ActorLogging {
 
       val status = process.!(ProcessLogger(output append _, error append _))
 
-      val rreturn = if (status == 0) WorkSuccessFull(s"returned status: $status" , (output.toString takeRight 500) :: Nil)
+      val rreturn = if (status == 0) WorkSuccessFull(s"returned status: $status" , Map("output" -> (output.toString takeRight 500)))
       else WorkFailed(output.toString takeRight 500, error.toString takeRight 1000)
 
       log.info(s"rscript result is: $rreturn")

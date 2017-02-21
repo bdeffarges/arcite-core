@@ -95,7 +95,7 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
 
           case wf: WorkerFailed ⇒
             val fb = TransformCompletionFeedback(wid.transf.uid, wid.transf.transfDefName, fs, params,
-              TransformCompletionStatus.FAILED, List(),
+              TransformCompletionStatus.FAILED, Map.empty,
               wf.result.feedback, wf.result.errors, wid.startTime)
 
             Files.write(Paths.get(transfFolder.toString, FILE_NAME),

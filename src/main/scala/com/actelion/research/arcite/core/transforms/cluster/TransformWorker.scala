@@ -183,7 +183,7 @@ object TransformWorker {
     def feedback: String
   }
 
-  case class WorkSuccessFull(feedback: String = "", artifacts: List[String] = Nil) extends WorkCompletionStatus
+  case class WorkSuccessFull(feedback: String = "", artifacts: Map[String, String] = Map.empty) extends WorkCompletionStatus
 
   case class WorkFailed(feedback: String = "", errors: String = "") extends WorkCompletionStatus
 

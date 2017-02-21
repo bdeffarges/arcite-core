@@ -39,7 +39,7 @@ class WorkExecUpperCase extends Actor with ActorLogging with ArciteJSONProtocol 
           val upperCased = toBeTransformed.stgToUpperCase.toUpperCase()
           val p = Paths.get(TransformHelper(t).getTransformFolder().toString, "uppercase.txt")
           Files.write(p, upperCased.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
-          sender() ! WorkSuccessFull("to upper case completed", p.getFileName.toString :: Nil)
+          sender() ! WorkSuccessFull("to upper case completed", Map("fileName" -> p.getFileName.toString))
 
 
         case tfFtf: TransformSourceFromTransform ⇒
@@ -49,7 +49,7 @@ class WorkExecUpperCase extends Actor with ActorLogging with ArciteJSONProtocol 
           if (feedbF.toFile.exists()) {
             val tdi = Files.readAllLines(feedbF).toList.mkString("\n").parseJson.convertTo[TransformCompletionFeedback]
             var listFiles: List[String] = Nil
-            tdi.artifacts.map { f ⇒
+            tdi.artifacts.values.map { f ⇒
               val fileP = path resolve f
               if (fileP.toFile.exists) {
                 val textUpperC = Files.readAllLines(fileP).mkString("\n").toUpperCase()
@@ -58,7 +58,7 @@ class WorkExecUpperCase extends Actor with ActorLogging with ArciteJSONProtocol 
                 Files.write(p, textUpperC.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
               }
             }
-            sender() ! WorkSuccessFull("to Upper case completed", listFiles)
+            sender() ! WorkSuccessFull("to Upper case completed", Map("fileList" -> listFiles.mkString("\n")))
           } else {
             sender() ! WorkFailed("to Upper case failed ", "did not find previous transform output file.")
           }
@@ -75,7 +75,7 @@ class WorkExecUpperCase extends Actor with ActorLogging with ArciteJSONProtocol 
             val p = Paths.get(TransformHelper(t).getTransformFolder().toString, listFiles.head)
             Files.write(p, textUpperC.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
           }
-          sender() ! WorkSuccessFull("to Upper case completed", listFiles)
+          sender() ! WorkSuccessFull("to Upper case completed", Map("fileList" -> listFiles.mkString("\n")))
       }
 
     case GetTransfDefId(wi) ⇒

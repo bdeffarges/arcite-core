@@ -493,15 +493,19 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
   }
 
   private def getTransforms(experiment: String): Set[TransformCompletionFeedback] = {
-    val exp = experiments(experiment)
+    val exp = experiments.get(experiment)
 
-    val transfF = ExperimentFolderVisitor(exp).transformFolderPath
+    if (exp.isDefined) {
+      val transfF = ExperimentFolderVisitor(exp.get).transformFolderPath
 
-    //todo what happen in case casting to feedback does not work...
-    transfF.toFile.listFiles().filter(_.isDirectory)
-      .map(d ⇒ d.toPath resolve WriteFeedbackActor.FILE_NAME)
-      .filter(p ⇒ p.toFile.exists())
-      .map(p ⇒ Files.readAllLines(p).toList.mkString("\n").parseJson.convertTo[TransformCompletionFeedback]).toSet
+      //todo what happen in case casting to feedback does not work...
+      transfF.toFile.listFiles().filter(_.isDirectory)
+        .map(d ⇒ d.toPath resolve WriteFeedbackActor.FILE_NAME)
+        .filter(p ⇒ p.toFile.exists())
+        .map(p ⇒ Files.readAllLines(p).toList.mkString("\n").parseJson.convertTo[TransformCompletionFeedback]).toSet
+    } else {
+      Set.empty
+    }
   }
 
   private def getToTs(experiment: String): Set[ToTFeedbackDetails] = {
@@ -677,7 +681,7 @@ class ExperimentActorsManager extends Actor with ActorLogging {
   import scala.concurrent.duration._
 
   override val supervisorStrategy: OneForOneStrategy =
-    OneForOneStrategy(maxNrOfRetries = 50, withinTimeRange = 1 minute) {
+    OneForOneStrategy(maxNrOfRetries = 50, withinTimeRange = 1 minute) { //todo replace with oneForMany strategy because of depending actors
       case _: FileSystemException ⇒ Restart // todo in both case should log
       case _: Exception ⇒ Restart // todo should eventually escalate
     }
