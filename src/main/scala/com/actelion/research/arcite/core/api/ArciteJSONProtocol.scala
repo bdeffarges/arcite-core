@@ -11,7 +11,7 @@ import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.experiments._
 import com.actelion.research.arcite.core.fileservice.FileServiceActor._
 import com.actelion.research.arcite.core.meta.DesignCategories.{AllCategories, SimpleCondition}
-import com.actelion.research.arcite.core.publish.PublishActor.{PublishInfo, PublishedInfo, RemovePublished}
+import com.actelion.research.arcite.core.publish.PublishActor.{PublishInfo, PublishInfoLight, PublishedInfo, RemovePublished}
 import com.actelion.research.arcite.core.rawdata.DefineRawData.{RawDataSet, RawDataSetRegex, SourceRawDataSet}
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments}
 import com.actelion.research.arcite.core.transforms.ParameterType.ParameterType
@@ -57,6 +57,8 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   //todo split up JSON marshalling by domain (like the routes)
 
   val noDependsOn = FullName("none", "none")
+
+  implicit val uidJson: RootJsonFormat[UniqueID] = jsonFormat1(UniqueID)
 
   implicit object DateJsonFormat extends RootJsonFormat[Date] {
 
@@ -546,6 +548,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val toTFeedbackDetailsJson: RootJsonFormat[ToTFeedbackDetailsForApi] = jsonFormat12(ToTFeedbackDetailsForApi)
   implicit val currentlyRunningToTJson: RootJsonFormat[CurrentlyRunningToT] = jsonFormat1(CurrentlyRunningToT)
 
+  implicit val publishInfoLiJson: RootJsonFormat[PublishInfoLight] = jsonFormat3(PublishInfoLight)
   implicit val publishInfoJson: RootJsonFormat[PublishInfo] = jsonFormat4(PublishInfo)
   implicit val publishedInfoJson: RootJsonFormat[PublishedInfo] = jsonFormat3(PublishedInfo)
   implicit val rmpublishedInfoJson: RootJsonFormat[RemovePublished] = jsonFormat2(RemovePublished)

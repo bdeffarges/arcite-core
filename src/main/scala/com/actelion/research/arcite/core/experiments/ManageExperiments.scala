@@ -4,7 +4,7 @@ import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file._
 
-import akka.actor.SupervisorStrategy.Restart
+import akka.actor.SupervisorStrategy.{Escalate, Restart}
 import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSystem, OneForOneStrategy, Props}
 import com.actelion.research.arcite.core
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
@@ -81,6 +81,13 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
   import spray.json._
 
   import scala.collection.convert.wrapAsScala._
+
+  import scala.concurrent.duration._
+  override val supervisorStrategy =
+    OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 20 seconds) {
+      case _: FileSystemException ⇒ Restart
+      case _: Exception ⇒ Escalate
+    }
 
 
   override def receive = {
@@ -711,3 +718,5 @@ object ExperimentActorsManager {
 
   def startExperimentActorSystem(): Unit = topActor ! StartExperimentsServiceActors
 }
+
+

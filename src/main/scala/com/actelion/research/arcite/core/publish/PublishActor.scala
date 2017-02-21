@@ -7,6 +7,7 @@ import java.util.UUID
 
 import akka.actor.{Actor, ActorLogging, ActorRef}
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
+import com.actelion.research.arcite.core.api.ArciteService.{ArtifactPublished, DefaultSuccess}
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.AddLog
 import com.actelion.research.arcite.core.eventinfo.{ExpLog, LogCategory, LogType}
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor}
@@ -44,6 +45,7 @@ class PublishActor(eventInfoAct: ActorRef) extends Actor with ActorLogging with 
   override def receive: Receive = {
 
     case GetPublished4Exp(experiment) ⇒
+      log.info(s"asking for published artifacts for experiment: ${experiment.name}")
       val visit = ExperimentFolderVisitor(experiment)
       val allFiles = visit.publishedFolderPath.toFile.listFiles()
 
@@ -51,14 +53,15 @@ class PublishActor(eventInfoAct: ActorRef) extends Actor with ActorLogging with 
         .map(f ⇒ f.getName.substring(0, f.getName.length - ExperimentFolderVisitor.publishedRemovedFileExtension.length))
 
       val published = allFiles.filter(_.getName.endsWith(ExperimentFolderVisitor.publishedFileExtension))
-        .filterNot(f ⇒ removed.forall(s ⇒ !f.getName.contains(s)))
+        .filterNot(f ⇒ removed.exists(s ⇒ f.getName.contains(s)))
         .map(f ⇒ Files.readAllLines(f.toPath).mkString(" ").parseJson.convertTo[PublishedInfo])
-        .toList.sortBy(pi ⇒ utils.getAsDate(pi.date).getTime)
+        .toList.sortBy(pi ⇒ utils.getAsDate(pi.date).getTime)(Ordering.Long.reverse)
 
       sender() ! Published(published)
 
 
     case pi: PublishInfo4Exp ⇒
+      log.info(s"publishing artifact for experiment ${pi.exp.name}")
       val pubInfo = PublishedInfo(pi.publish)
 
       val file = ExperimentFolderVisitor(pi.exp).publishedFolderPath
@@ -66,39 +69,51 @@ class PublishActor(eventInfoAct: ActorRef) extends Actor with ActorLogging with 
 
       Files.write(file, pubInfo.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
 
+      sender() ! ArtifactPublished(pubInfo.uid)
+
       eventInfoAct ! AddLog(pi.exp, ExpLog(LogType.PUBLISHED, LogCategory.SUCCESS, s"published a transform result: ${pubInfo}"))
 
 
     case rmPub: RemovePublished4Exp ⇒
+      log.info(s"removing published message ${rmPub.uid} from experiment ${rmPub.exp.name}")
       val file = ExperimentFolderVisitor(rmPub.exp).publishedFolderPath
         .resolve(s"${rmPub.uid}${ExperimentFolderVisitor.publishedRemovedFileExtension}")
 
-      Files.write(file, "removed".getBytes(StandardCharsets.UTF_8), CREATE_NEW)
+      if (!file.toFile.exists()) {
+        Files.write(file, "removed".getBytes(StandardCharsets.UTF_8), CREATE_NEW)
+        eventInfoAct ! AddLog(rmPub.exp, ExpLog(LogType.PUBLISHED, LogCategory.SUCCESS, s"removed published: ${rmPub.uid}"))
+      }
 
-      eventInfoAct ! AddLog(rmPub.exp, ExpLog(LogType.PUBLISHED, LogCategory.SUCCESS, s"removed published: ${rmPub.uid}"))
+      sender() ! DefaultSuccess(s"published ${rmPub.uid} removed")
+
 
     case msg: Any ⇒
-      log.debug("don't know what to do with message. ")
+      log.debug(s"don't know what to do with message $msg... ")
   }
 }
 
 object PublishActor {
 
+  case class PublishInfoLight(transform: String, description: String, artifacts: List[String])
+
+
   sealed trait PublishApi {
     def exp: String
   }
 
-  case class PublishInfo(exp: String, transformUID: String, description: String, artifact: List[String]) extends PublishApi
+  case class PublishInfo(exp: String, transform: String, description: String, artifacts: List[String]) extends PublishApi
 
   case class GetPublished(exp: String) extends PublishApi
 
   case class RemovePublished(exp: String, uid: String) extends PublishApi
+
 
   case class Published(published: List[PublishedInfo])
 
   case class PublishedInfo(pubInfo: PublishInfo,
                            uid: String = UUID.randomUUID().toString,
                            date: String = utils.getCurrentDateAsString())
+
 
   sealed trait PublishActorApi {
     def exp: Experiment
