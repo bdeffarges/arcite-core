@@ -166,7 +166,6 @@ class TransformApiTests extends ApiTests {
 
     implicit val executionContext = system.dispatcher
 
-
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)
 

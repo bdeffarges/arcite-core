@@ -8,6 +8,7 @@ import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentSumm
 import com.actelion.research.arcite.core.fileservice.FileServiceActor.{GetExperimentFiles, GetFilesFromSource, GetSourceFolders}
 import com.actelion.research.arcite.core.meta.DesignCategories.GetCategories
 import com.actelion.research.arcite.core.meta.MetaInfoActors
+import com.actelion.research.arcite.core.publish.PublishActor.PublishApi
 import com.actelion.research.arcite.core.rawdata.DefineRawData._
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{SearchForXResults, SearchForXResultsWithRequester}
 import com.actelion.research.arcite.core.transforms.RunTransform._
@@ -143,6 +144,16 @@ object ArciteService {
 
   case class InfoAboutAllFiles(experiment: String)
 
+
+  sealed trait PublishFeedback
+  case class ArtifactPublished(uid: String) extends PublishFeedback
+  case class ArtifactPublishedFailed(reason: String) extends PublishFeedback
+
+
+  sealed trait DefaultFeedback
+  case class DefaultSuccess(msg: String = "") extends DefaultFeedback
+  case class DefaultFailure(msg: String = "") extends DefaultFeedback
+
 }
 
 
@@ -252,6 +263,10 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
     case changeDesc: ChangeDescriptionOfExperiment ⇒
       expManager forward changeDesc
+
+
+    case pi: PublishApi ⇒
+      expManager forward pi
 
 
     case rds: RawDataSet ⇒

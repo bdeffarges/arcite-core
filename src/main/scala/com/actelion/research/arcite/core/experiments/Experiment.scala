@@ -127,6 +127,8 @@ case class ExperimentFolderVisitor(exp: Experiment) {
 object ExperimentFolderVisitor {
   val defaultMetaFileName = "meta.json"
   val metaFileInPublicFolder = s"${core.arciteFilePrefix}meta.json"
+  val publishedFileExtension = "_published.json"
+  val publishedRemovedFileExtension = "_removed.json"
 
   def isInternalFile(name: String): Boolean = name == defaultMetaFileName || name == metaFileInPublicFolder
 }

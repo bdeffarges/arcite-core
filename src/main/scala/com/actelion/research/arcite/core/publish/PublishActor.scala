@@ -1,0 +1,114 @@
+package com.actelion.research.arcite.core.publish
+
+import java.nio.charset.StandardCharsets
+import java.nio.file.StandardOpenOption.CREATE_NEW
+import java.nio.file.Files
+import java.util.UUID
+
+import akka.actor.{Actor, ActorLogging, ActorRef}
+import com.actelion.research.arcite.core.api.ArciteJSONProtocol
+import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.AddLog
+import com.actelion.research.arcite.core.eventinfo.{ExpLog, LogCategory, LogType}
+import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor}
+import com.actelion.research.arcite.core.publish.PublishActor._
+import com.actelion.research.arcite.core.utils
+import spray.json._
+
+import scala.collection.convert.wrapAsScala._
+
+/**
+  * arcite-core
+  *
+  * Copyright (C) 2016 Actelion Pharmaceuticals Ltd.
+  * Gewerbestrasse 16
+  * CH-4123 Allschwil, Switzerland.
+  *
+  * This program is free software: you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+  * the Free Software Foundation, either version 3 of the License, or
+  * (at your option) any later version.
+  *
+  * This program is distributed in the hope that it will be useful,
+  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  * GNU General Public License for more details.
+  *
+  * You should have received a copy of the GNU General Public License
+  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  *
+  * Created by Bernard Deffarges on 2017/02/20.
+  *
+  */
+class PublishActor(eventInfoAct: ActorRef) extends Actor with ActorLogging with ArciteJSONProtocol {
+
+  override def receive: Receive = {
+
+    case GetPublished4Exp(experiment) ⇒
+      val visit = ExperimentFolderVisitor(experiment)
+      val allFiles = visit.publishedFolderPath.toFile.listFiles()
+
+      val removed = allFiles.filter(_.getName.endsWith(ExperimentFolderVisitor.publishedRemovedFileExtension))
+        .map(f ⇒ f.getName.substring(0, f.getName.length - ExperimentFolderVisitor.publishedRemovedFileExtension.length))
+
+      val published = allFiles.filter(_.getName.endsWith(ExperimentFolderVisitor.publishedFileExtension))
+        .filterNot(f ⇒ removed.forall(s ⇒ !f.getName.contains(s)))
+        .map(f ⇒ Files.readAllLines(f.toPath).mkString(" ").parseJson.convertTo[PublishedInfo])
+        .toList.sortBy(pi ⇒ utils.getAsDate(pi.date).getTime)
+
+      sender() ! Published(published)
+
+
+    case pi: PublishInfo4Exp ⇒
+      val pubInfo = PublishedInfo(pi.publish)
+
+      val file = ExperimentFolderVisitor(pi.exp).publishedFolderPath
+        .resolve(s"${pubInfo.uid}${ExperimentFolderVisitor.publishedFileExtension}")
+
+      Files.write(file, pubInfo.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
+
+      eventInfoAct ! AddLog(pi.exp, ExpLog(LogType.PUBLISHED, LogCategory.SUCCESS, s"published a transform result: ${pubInfo}"))
+
+
+    case rmPub: RemovePublished4Exp ⇒
+      val file = ExperimentFolderVisitor(rmPub.exp).publishedFolderPath
+        .resolve(s"${rmPub.uid}${ExperimentFolderVisitor.publishedRemovedFileExtension}")
+
+      Files.write(file, "removed".getBytes(StandardCharsets.UTF_8), CREATE_NEW)
+
+      eventInfoAct ! AddLog(rmPub.exp, ExpLog(LogType.PUBLISHED, LogCategory.SUCCESS, s"removed published: ${rmPub.uid}"))
+
+    case msg: Any ⇒
+      log.debug("don't know what to do with message. ")
+  }
+}
+
+object PublishActor {
+
+  sealed trait PublishApi {
+    def exp: String
+  }
+
+  case class PublishInfo(exp: String, transformUID: String, description: String, artifact: List[String]) extends PublishApi
+
+  case class GetPublished(exp: String) extends PublishApi
+
+  case class RemovePublished(exp: String, uid: String) extends PublishApi
+
+  case class Published(published: List[PublishedInfo])
+
+  case class PublishedInfo(pubInfo: PublishInfo,
+                           uid: String = UUID.randomUUID().toString,
+                           date: String = utils.getCurrentDateAsString())
+
+  sealed trait PublishActorApi {
+    def exp: Experiment
+  }
+
+  case class GetPublished4Exp(exp: Experiment) extends PublishActorApi
+
+  case class PublishInfo4Exp(exp: Experiment, publish: PublishInfo) extends PublishActorApi
+
+  case class RemovePublished4Exp(exp: Experiment, uid: String,
+                                 date: String = utils.getCurrentDateAsString()) extends PublishActorApi
+
+}

@@ -11,6 +11,7 @@ import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.experiments._
 import com.actelion.research.arcite.core.fileservice.FileServiceActor._
 import com.actelion.research.arcite.core.meta.DesignCategories.{AllCategories, SimpleCondition}
+import com.actelion.research.arcite.core.publish.PublishActor.{PublishInfo, PublishedInfo, RemovePublished}
 import com.actelion.research.arcite.core.rawdata.DefineRawData.{RawDataSet, RawDataSetRegex, SourceRawDataSet}
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments}
 import com.actelion.research.arcite.core.transforms.ParameterType.ParameterType
@@ -18,7 +19,7 @@ import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, ManyTransfDefs, OneTransfDef}
 import com.actelion.research.arcite.core.transforms.TransformCompletionStatus.TransformCompletionStatus
 import com.actelion.research.arcite.core.transforms._
-import com.actelion.research.arcite.core.transforms.cluster.Frontend.Ok
+import com.actelion.research.arcite.core.transforms.cluster.Frontend.OkTransfReceived
 import com.actelion.research.arcite.core.transforms.cluster.WorkState.{AllJobsFeedback, RunningJobsFeedback, WorkInProgress}
 import com.actelion.research.arcite.core.transforms.cluster.workers.fortest.WorkExecLowerCase.ToLowerCase
 import com.actelion.research.arcite.core.transforms.cluster.workers.fortest.WorkExecUpperCase.ToUpperCase
@@ -364,7 +365,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val cloneExperimentNewPropsJson: RootJsonFormat[CloneExperimentNewProps] = jsonFormat3(CloneExperimentNewProps)
   implicit val addedExpJson: RootJsonFormat[AddedExperiment] = jsonFormat1(AddedExperiment)
   implicit val addDesignJson: RootJsonFormat[AddDesign] = jsonFormat2(AddDesign)
-  implicit val okJson: RootJsonFormat[Ok] = jsonFormat1(Ok)
+  implicit val okJson: RootJsonFormat[OkTransfReceived] = jsonFormat1(OkTransfReceived)
 
 
   implicit object FullNameJsonFormat extends RootJsonFormat[FullName] {
@@ -545,4 +546,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val toTFeedbackDetailsJson: RootJsonFormat[ToTFeedbackDetailsForApi] = jsonFormat12(ToTFeedbackDetailsForApi)
   implicit val currentlyRunningToTJson: RootJsonFormat[CurrentlyRunningToT] = jsonFormat1(CurrentlyRunningToT)
 
+  implicit val publishInfoJson: RootJsonFormat[PublishInfo] = jsonFormat4(PublishInfo)
+  implicit val publishedInfoJson: RootJsonFormat[PublishedInfo] = jsonFormat3(PublishedInfo)
+  implicit val rmpublishedInfoJson: RootJsonFormat[RemovePublished] = jsonFormat2(RemovePublished)
 }

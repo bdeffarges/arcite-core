@@ -12,8 +12,8 @@ import scala.concurrent.duration._
 object Frontend {
 
   sealed trait TransformJobReceived
-  case class Ok(transfUID: String) extends TransformJobReceived
-  case class NotOk(reason: String) extends TransformJobReceived
+  case class OkTransfReceived(transfUID: String) extends TransformJobReceived
+  case class TransfNotReceived(reason: String) extends TransformJobReceived
 
   case class QueryWorkStatus(uid: String)
 
@@ -61,9 +61,9 @@ class Frontend extends Actor with ActorLogging {
       (masterProxy ? transform) map {
         case Master.Ack(transf) => {
           log.info(s"transform accepted: ${transf.uid}/${transf.transfDefName.name}")
-          Ok(transf.uid)
+          OkTransfReceived(transf.uid)
         }
-      } recover { case _ => NotOk } pipeTo sender()
+      } recover { case _ => TransfNotReceived } pipeTo sender()
 
 
     case GetAllTransfDefs ⇒

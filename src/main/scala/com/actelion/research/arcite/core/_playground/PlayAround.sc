@@ -28,6 +28,9 @@ import scala.collection.immutable.Queue
 //println(t == f)
 //println(t eq f)
 
+val reg = "(.)+_published.json".r
+
+reg.findFirstIn("adsfjk234234_published.json")
 
 //
 //m1.zip(m2).map(a ⇒ ((a._1._2, a._2._2)))

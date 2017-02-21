@@ -9,7 +9,7 @@ import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, MsgFromTransfDefsManager, OneTransfDef}
 import com.actelion.research.arcite.core.transforms.{TransformParameterHelper, _}
-import com.actelion.research.arcite.core.transforms.cluster.Frontend.{NotOk, Ok}
+import com.actelion.research.arcite.core.transforms.cluster.Frontend.{TransfNotReceived, OkTransfReceived}
 import com.actelion.research.arcite.core.transforms.cluster.ScatGathTransform.PrepareTransform
 
 
@@ -68,7 +68,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
           ManageTransformCluster.getNextFrontEnd() ! GetTransfDef(procWTransf.get.transfDefUID)
 
         case _ ⇒
-          requester ! NotOk("could not find experiment for given id.")
+          requester ! TransfNotReceived("could not find experiment for given id.")
       }
 
 
@@ -82,7 +82,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
                 context.become(waitForDependingTransformToComplete)
                 transfUID = Some(UUID.randomUUID().toString)
                 expManager ! GetTransfCompletionFromExpAndTransf(ptft.experiment, ptft.transformOrigin)
-                requester ! Ok(transfUID.get)
+                requester ! OkTransfReceived(transfUID.get)
               case _ ⇒
                 self ! PrepareTransform
             }
@@ -92,12 +92,12 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
               s"""transforms uid don't seem to match [${otd.transfDefId.digestUID}] with
                  |[${procWTransf.get.transfDefUID}]""".stripMargin
             log.error(error)
-            requester ! NotOk(error)
+            requester ! TransfNotReceived(error)
           }
 
 
         case _ ⇒
-          requester ! NotOk("could not find ONE transform definition for given id.")
+          requester ! TransfNotReceived("could not find ONE transform definition for given id.")
       }
 
 
@@ -129,7 +129,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
           }
 
         case _ ⇒
-          requester ! NotOk("Transform not implemented yet")
+          requester ! TransfNotReceived("Transform not implemented yet")
       }
 
 
@@ -164,7 +164,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
       }
 
     case FailedTransform(_) ⇒
-      requester ! NotOk("Depending transform apparently failed.")
+      requester ! TransfNotReceived("Depending transform apparently failed.")
   }
 }
 

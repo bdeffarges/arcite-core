@@ -18,10 +18,11 @@ import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{InfoLogs, M
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.fileservice.FileServiceActor._
 import com.actelion.research.arcite.core.meta.DesignCategories.{AllCategories, GetCategories}
+import com.actelion.research.arcite.core.publish.PublishActor.{GetPublished, PublishInfo, Published, RemovePublished}
 import com.actelion.research.arcite.core.rawdata.DefineRawData._
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
-import com.actelion.research.arcite.core.transforms.cluster.Frontend.{NotOk, _}
+import com.actelion.research.arcite.core.transforms.cluster.Frontend.{TransfNotReceived, _}
 import com.actelion.research.arcite.core.transforms.cluster.WorkState._
 import com.actelion.research.arcite.core.transftree._
 import com.actelion.research.arcite.core.transftree.TreeOfTransformsManager._
@@ -246,6 +247,19 @@ trait ArciteServiceApi extends LazyLogging {
   private[api] def getFolderAndFilesFromSource(getFiles: GetFilesFromSource): Future[FoundFoldersAndFiles] = {
     arciteService.ask(getFiles).mapTo[FoundFoldersAndFiles]
   }
+
+  private[api] def publish(pubInf: PublishInfo): Future[PublishFeedback] = {
+    arciteService.ask(PublishInfo).mapTo[PublishFeedback]
+  }
+
+  private[api] def getPublished(experiment: String): Future[Published] = {
+    arciteService.ask(GetPublished(experiment)).mapTo[Published]
+  }
+
+  private[api] def deletePublished(experiment: String, publishUID: String) = {
+    arciteService.ask(RemovePublished(experiment, publishUID)).mapTo[DefaultFeedback]
+  }
+
 }
 
 //todo split up routes by domain
@@ -345,6 +359,37 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             logger.info(s"get all ToTs for experiment= $experiment")
             onSuccess(getAllToTForExperiment(experiment)) {
               case ToTsForExperiment(tdis) ⇒ complete(OK -> tdis)
+            }
+          }
+        } ~
+        pathPrefix("published") {
+          path(Segment) { p ⇒
+             delete {
+                logger.info(s"delete published artifacts. $experiment / $p")
+                onSuccess(deletePublished(experiment, p)) {
+                  case DefaultSuccess(msg) ⇒ complete(OK -> msg)
+                  case DefaultFailure(msg) ⇒ complete(BadRequest -> msg)
+                }
+              }
+          } ~
+            pathEnd {
+              get {
+                logger.info(s"get all published for experiment: $experiment")
+                onSuccess(getPublished(experiment)) {
+                  case Published(published) ⇒ complete(OK -> published)
+                  case _ ⇒ complete(NotFound)
+                }
+              }
+            }
+        } ~
+        path("publish") {
+          post {
+            logger.info("adding published artifact. ")
+            entity(as[PublishInfo]) { pubInf ⇒
+              onSuccess(publish(pubInf)) {
+                case pis: ArtifactPublished ⇒ complete(Created -> pis.uid)
+                case f: ArtifactPublishedFailed   ⇒ complete(BadRequest -> ErrorMessage(f.reason))
+              }
             }
           }
         } ~
@@ -654,8 +699,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           rtf ⇒
             val saved: Future[TransformJobReceived] = runTransformFromRaw(rtf)
             onSuccess(saved) {
-              case ok: Ok ⇒ complete(OK -> ok)
-              case NotOk(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
+              case ok: OkTransfReceived ⇒ complete(OK -> ok)
+              case TransfNotReceived(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
             }
         }
       }
@@ -666,8 +711,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           entity(as[RunTransformOnTransform]) { rtf ⇒
             val saved: Future[TransformJobReceived] = runTransformFromTransform(rtf)
             onSuccess(saved) {
-              case ok: Ok ⇒ complete(OK -> ok)
-              case NotOk(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
+              case ok: OkTransfReceived ⇒ complete(OK -> ok)
+              case TransfNotReceived(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
             }
           }
         }
@@ -679,8 +724,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             rtf ⇒
               val saved: Future[TransformJobReceived] = runTransformFromRaw(rtf)
               onSuccess(saved) {
-                case ok: Ok ⇒ complete(OK -> ok)
-                case NotOk(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
+                case ok: OkTransfReceived ⇒ complete(OK -> ok)
+                case TransfNotReceived(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
               }
           }
         }
@@ -692,8 +737,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             rtf ⇒
               val saved: Future[TransformJobReceived] = runTransformFromTransform(rtf)
               onSuccess(saved) {
-                case ok: Ok ⇒ complete(OK -> ok)
-                case NotOk(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
+                case ok: OkTransfReceived ⇒ complete(OK -> ok)
+                case TransfNotReceived(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
               }
           }
         }
@@ -705,8 +750,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             rtf ⇒
               val saved: Future[TransformJobReceived] = runTransformFromObject(rtf)
               onSuccess(saved) {
-                case ok: Ok ⇒ complete(OK -> ok)
-                case NotOk(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
+                case ok: OkTransfReceived ⇒ complete(OK -> ok)
+                case TransfNotReceived(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
               }
           }
         }

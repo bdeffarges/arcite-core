@@ -15,6 +15,8 @@ import com.actelion.research.arcite.core.experiments.ExperimentActorsManager.Sta
 import com.actelion.research.arcite.core.experiments.LocalExperiments.{LoadExperiment, SaveExperimentFailed, SaveExperimentSuccessful}
 import com.actelion.research.arcite.core.fileservice.FileServiceActor
 import com.actelion.research.arcite.core.fileservice.FileServiceActor.{getClass => _, _}
+import com.actelion.research.arcite.core.publish.PublishActor
+import com.actelion.research.arcite.core.publish.PublishActor._
 import com.actelion.research.arcite.core.rawdata.DefineRawData
 import com.actelion.research.arcite.core.rawdata.DefineRawData._
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex
@@ -72,11 +74,14 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
 
   experiments.values.foreach(exp ⇒ luceneRAMSearchAct ! IndexExperiment(exp))
 
+  private val managePublished = context.actorOf(Props(classOf[PublishActor], eventInfoLoggingAct), "publish_actor")
+
   import StandardOpenOption._
 
   import spray.json._
 
   import scala.collection.convert.wrapAsScala._
+
 
   override def receive = {
 
@@ -457,6 +462,23 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
 
         Files.write(ExperimentFolderVisitor(exper.get).immutableStateFile,
           "IMMUTABLE".getBytes(StandardCharsets.UTF_8), CREATE)
+      }
+
+
+    case pa: PublishApi ⇒
+      val exp = experiments.get(pa.exp)
+
+      if (exp.isDefined) {
+        pa match {
+          case pi: PublishInfo ⇒
+            managePublished forward PublishInfo4Exp(exp.get, pi)
+
+          case rp: RemovePublished ⇒
+            managePublished forward RemovePublished4Exp(exp.get, rp.uid)
+
+          case gp: GetPublished ⇒
+            managePublished forward GetPublished4Exp(exp.get)
+        }
       }
 
 
