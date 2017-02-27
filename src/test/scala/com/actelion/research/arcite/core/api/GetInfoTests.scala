@@ -45,7 +45,7 @@ class GetInfoTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri =s"${core.urlPrefix}/recent_logs")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri =s"$urlPrefix/recent_logs")).via(connectionFlow).runWith(Sink.head)
 
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
@@ -67,7 +67,7 @@ class GetInfoTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri =s"${core.urlPrefix}/all_transforms")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri =s"$urlPrefix/all_transforms")).via(connectionFlow).runWith(Sink.head)
 
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
@@ -88,7 +88,7 @@ class GetInfoTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri =s"${core.urlPrefix}/data_sources")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri =s"$urlPrefix/data_sources")).via(connectionFlow).runWith(Sink.head)
 
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
@@ -112,7 +112,7 @@ class GetInfoTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri =s"${core.urlPrefix}/data_sources",
+      uri =s"$urlPrefix/data_sources",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =

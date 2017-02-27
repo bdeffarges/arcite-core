@@ -60,7 +60,7 @@ class DefineRawDataApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri =s"${core.urlPrefix}${core.urlPrefix}/experiment",
+      uri =s"$urlPrefix/experiment",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -85,7 +85,7 @@ class DefineRawDataApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri =s"${core.urlPrefix}/raw_data/from_source",
+      uri =s"$urlPrefix/raw_data/from_source",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
 
@@ -110,7 +110,7 @@ class DefineRawDataApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri =s"${core.urlPrefix}/experiment/${exp1.uid}/clone",
+      uri =s"$urlPrefix/experiment/${exp1.uid}/clone",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =

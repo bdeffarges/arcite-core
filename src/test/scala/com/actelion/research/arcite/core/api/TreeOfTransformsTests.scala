@@ -57,7 +57,7 @@ class TreeOfTransformsTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri =s"${core.urlPrefix}/experiment",
+      uri =s"$urlPrefix/experiment",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -86,7 +86,7 @@ class TreeOfTransformsTests extends ApiTests {
 
     def createRequest(target: Uri, file: File): HttpRequest = HttpRequest(HttpMethods.POST, uri = target, entity = createEntity(file))
 
-    val req = createRequest(s"/experiment/${exp1.uid}/file_upload/raw",
+    val req = createRequest(s"$urlPrefix/experiment/${exp1.uid}/file_upload/raw",
       new File("./for_testing/for_unit_testing/of_paramount_importance.txt"))
 
     val res: Future[HttpResponse] = Source.single(req).via(connectionFlow).runWith(Sink.head)
@@ -105,7 +105,7 @@ class TreeOfTransformsTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri =s"${core.urlPrefix}/tree_of_transforms")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri =s"$urlPrefix/tree_of_transforms")).via(connectionFlow).runWith(Sink.head)
 
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
@@ -133,7 +133,7 @@ class TreeOfTransformsTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri =s"${core.urlPrefix}/tree_of_transforms",
+      uri =s"$urlPrefix/tree_of_transforms",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -163,7 +163,7 @@ class TreeOfTransformsTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri =s"${core.urlPrefix}/tree_of_transforms",
+      uri =s"$urlPrefix/tree_of_transforms",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =

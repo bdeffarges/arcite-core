@@ -62,7 +62,7 @@ class FilesUploadApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri =s"${core.urlPrefix}/experiment",
+      uri =s"$urlPrefix/experiment",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -91,7 +91,7 @@ class FilesUploadApiTests extends ApiTests {
 
     def createRequest(target: Uri, file: File): HttpRequest = HttpRequest(HttpMethods.POST, uri = target, entity = createEntity(file))
 
-    val req = createRequest(s"/experiment/${exp1.uid}/file_upload/meta",
+    val req = createRequest(s"$urlPrefix/experiment/${exp1.uid}/file_upload/meta",
       new File("./for_testing/for_unit_testing/of_paramount_importance.txt"))
 
     val res: Future[HttpResponse] = Source.single(req).via(connectionFlow).runWith(Sink.head)
@@ -118,7 +118,7 @@ class FilesUploadApiTests extends ApiTests {
 
     def createRequest(target: Uri, file: File): HttpRequest = HttpRequest(HttpMethods.POST, uri = target, entity = createEntity(file))
 
-    val req = createRequest(s"/experiment/${exp1.uid}/file_upload/raw",
+    val req = createRequest(s"$urlPrefix/experiment/${exp1.uid}/file_upload/raw",
       new File("./for_testing/for_unit_testing/raw_data_measurements.tsv"))
 
     val res: Future[HttpResponse] = Source.single(req).via(connectionFlow).runWith(Sink.head)
@@ -141,7 +141,7 @@ class FilesUploadApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri =s"${core.urlPrefix}/experiment/${exp1.uid}/clone",
+      uri =s"$urlPrefix/experiment/${exp1.uid}/clone",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -165,7 +165,7 @@ class FilesUploadApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri =s"${core.urlPrefix}/experiment/${exp1.uid}/files/meta")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri =s"$urlPrefix/experiment/${exp1.uid}/files/meta")).via(connectionFlow).runWith(Sink.head)
 
 
     responseFuture.map { r ⇒
@@ -187,7 +187,7 @@ class FilesUploadApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri =s"${core.urlPrefix}/experiment/${clonedExp.get}/files/meta")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri =s"$urlPrefix/experiment/${clonedExp.get}/files/meta")).via(connectionFlow).runWith(Sink.head)
 
 
     responseFuture.map { r ⇒
@@ -213,7 +213,7 @@ class FilesUploadApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.DELETE,
-      uri =s"${core.urlPrefix}/experiment/${exp1.uid}/file_upload/meta",
+      uri =s"$urlPrefix/experiment/${exp1.uid}/file_upload/meta",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -237,7 +237,7 @@ class FilesUploadApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.DELETE,
-      uri =s"${core.urlPrefix}/experiment/${clonedExp.get}/file_upload/meta",
+      uri =s"$urlPrefix/experiment/${clonedExp.get}/file_upload/meta",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -257,7 +257,7 @@ class FilesUploadApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri =s"${core.urlPrefix}/experiment/${exp1.uid}")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri =s"$urlPrefix/experiment/${exp1.uid}")).via(connectionFlow).runWith(Sink.head)
 
 
     responseFuture.map { r ⇒
@@ -281,7 +281,7 @@ class FilesUploadApiTests extends ApiTests {
     assert(clonedExp.isDefined)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri =s"${core.urlPrefix}/experiment/${clonedExp.get}")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri =s"$urlPrefix/experiment/${clonedExp.get}")).via(connectionFlow).runWith(Sink.head)
 
 
     responseFuture.map { r ⇒
@@ -305,7 +305,7 @@ class FilesUploadApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.DELETE,
-      uri =s"${core.urlPrefix}/experiment/${exp1.uid}",
+      uri =s"$urlPrefix/experiment/${exp1.uid}",
       entity = HttpEntity(MediaTypes.`application/json`, ""))
 
     val responseFuture: Future[HttpResponse] =
@@ -326,7 +326,7 @@ class FilesUploadApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.DELETE,
-      uri =s"${core.urlPrefix}/experiment/${clonedExp.get}",
+      uri =s"$urlPrefix/experiment/${clonedExp.get}",
       entity = HttpEntity(MediaTypes.`application/json`, ""))
 
     val responseFuture: Future[HttpResponse] =

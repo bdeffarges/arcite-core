@@ -46,7 +46,7 @@ class MetaInfoApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri =s"${core.urlPrefix}/meta_info/categories")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri =s"$urlPrefix/meta_info/categories")).via(connectionFlow).runWith(Sink.head)
 
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)

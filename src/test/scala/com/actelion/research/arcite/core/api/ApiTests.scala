@@ -37,6 +37,8 @@ class ApiTests extends AsyncFlatSpec with Matchers with ArciteJSONProtocol with 
   val host = config.getString("http.host")
   val port = config.getInt("http.port")
 
+  val urlPrefix = "/api/v1"
+
   implicit var system: ActorSystem = null
   implicit var materializer: ActorMaterializer = null
 

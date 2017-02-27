@@ -57,7 +57,7 @@ class ExperimentsApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri =s"${core.urlPrefix}/")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri =s"$urlPrefix/")).via(connectionFlow).runWith(Sink.head)
 
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
@@ -72,7 +72,7 @@ class ExperimentsApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri =s"${core.urlPrefix}/experiments")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri =s"$urlPrefix/experiments")).via(connectionFlow).runWith(Sink.head)
 
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
@@ -94,7 +94,7 @@ class ExperimentsApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri =s"${core.urlPrefix}/experiments?page=0&max=200")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri =s"$urlPrefix/experiments?page=0&max=200")).via(connectionFlow).runWith(Sink.head)
 
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
@@ -122,7 +122,7 @@ class ExperimentsApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri =s"${core.urlPrefix}/experiment",
+      uri =s"$urlPrefix/experiment",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -147,7 +147,7 @@ class ExperimentsApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri =s"${core.urlPrefix}/experiment",
+      uri =s"$urlPrefix/experiment",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -172,7 +172,7 @@ class ExperimentsApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri =s"${core.urlPrefix}/experiment/${exp1.uid}/properties",
+      uri =s"$urlPrefix/experiment/${exp1.uid}/properties",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -195,7 +195,7 @@ class ExperimentsApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.DELETE,
-      uri =s"${core.urlPrefix}/experiment/${exp1.uid}/properties",
+      uri =s"$urlPrefix/experiment/${exp1.uid}/properties",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -215,7 +215,7 @@ class ExperimentsApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri =s"${core.urlPrefix}/experiment/${exp1.uid}")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri =s"$urlPrefix/experiment/${exp1.uid}")).via(connectionFlow).runWith(Sink.head)
 
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
@@ -242,7 +242,7 @@ class ExperimentsApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.PUT,
-      uri =s"${core.urlPrefix}/experiment/${exp1.uid}/description",
+      uri =s"$urlPrefix/experiment/${exp1.uid}/description",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -263,7 +263,7 @@ class ExperimentsApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri =s"${core.urlPrefix}/experiment/${exp1.uid}")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri =s"$urlPrefix/experiment/${exp1.uid}")).via(connectionFlow).runWith(Sink.head)
 
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
@@ -286,7 +286,7 @@ class ExperimentsApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.DELETE,
-      uri =s"${core.urlPrefix}/experiment/${exp1.uid}",
+      uri =s"$urlPrefix/experiment/${exp1.uid}",
       entity = HttpEntity(MediaTypes.`application/json`, ""))
 
     val responseFuture: Future[HttpResponse] =

@@ -46,7 +46,6 @@ package object core {
 
   val urlPrefix = s"/api/v$apiVersion"
 
-
   // could be later on in config
   import scala.concurrent.duration._
 
