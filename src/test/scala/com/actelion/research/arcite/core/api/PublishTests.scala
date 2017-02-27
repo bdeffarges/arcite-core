@@ -4,6 +4,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.util.ByteString
+import com.actelion.research.arcite.core
 import com.actelion.research.arcite.core.experiments.ManageExperiments.ManyTransforms
 import com.actelion.research.arcite.core.publish.PublishActor.{PublishInfo, PublishedInfo}
 import com.actelion.research.arcite.core.transforms.{TransformCompletionFeedback, TransformCompletionStatus}
@@ -49,7 +50,7 @@ class PublishTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri = "/all_transforms")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri =s"${core.urlPrefix}/all_transforms")).via(connectionFlow).runWith(Sink.head)
 
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
@@ -76,7 +77,7 @@ class PublishTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri = s"/experiment/${transf1.get.source.experiment}/publish",
+      uri =s"${core.urlPrefix}/experiment/${transf1.get.source.experiment}/publish",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -95,7 +96,7 @@ class PublishTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri = s"/experiment/${transf1.get.source.experiment}/published"))
+      Source.single(HttpRequest(uri =s"${core.urlPrefix}/experiment/${transf1.get.source.experiment}/published"))
         .via(connectionFlow).runWith(Sink.head)
 
     responseFuture.map { r ⇒
@@ -122,7 +123,7 @@ class PublishTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri = s"/experiment/${transf1.get.source.experiment}/publish",
+      uri =s"${core.urlPrefix}/experiment/${transf1.get.source.experiment}/publish",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -147,7 +148,7 @@ class PublishTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri = s"/experiment/${transf1.get.source.experiment}/published"))
+      Source.single(HttpRequest(uri =s"${core.urlPrefix}/experiment/${transf1.get.source.experiment}/published"))
         .via(connectionFlow).runWith(Sink.head)
 
     responseFuture.map { r ⇒
@@ -172,7 +173,7 @@ class PublishTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.DELETE,
-      uri = s"/experiment/${transf1.get.source.experiment}/published/${publishedUID.get.uid}",
+      uri =s"${core.urlPrefix}/experiment/${transf1.get.source.experiment}/published/${publishedUID.get.uid}",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -192,7 +193,7 @@ class PublishTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri = s"/experiment/${transf1.get.source.experiment}/published"))
+      Source.single(HttpRequest(uri =s"${core.urlPrefix}/experiment/${transf1.get.source.experiment}/published"))
         .via(connectionFlow).runWith(Sink.head)
 
     responseFuture.map { r ⇒

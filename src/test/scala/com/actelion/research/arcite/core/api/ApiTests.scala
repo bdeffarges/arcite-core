@@ -32,7 +32,7 @@ import org.scalatest.{AsyncFlatSpec, BeforeAndAfter, Matchers}
 class ApiTests extends AsyncFlatSpec with Matchers with ArciteJSONProtocol with LazyLogging {
 
   val config = ConfigFactory.load()
-  val refApi = config.getString("api.specification").stripMargin
+  val refApi = config.getString("arcite.api.specification").stripMargin
 
   val host = config.getString("http.host")
   val port = config.getInt("http.port")

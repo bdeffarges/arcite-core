@@ -15,6 +15,8 @@ package object core {
 
   val home: Path = Paths.get(config.getString("arcite.home"))
 
+  val apiVersion: String = config.getString("arcite.api.version")
+
   val archivePath: Path = home resolve "_archives"
 
   if (!archivePath.toFile.exists) archivePath.toFile.mkdirs()
@@ -41,6 +43,8 @@ package object core {
   val failedFile = ".failed"
   val feedbackfile = "-feedback.json"
   val immutableFile = ".immutable"
+
+  val urlPrefix = s"/api/v$apiVersion"
 
 
   // could be later on in config

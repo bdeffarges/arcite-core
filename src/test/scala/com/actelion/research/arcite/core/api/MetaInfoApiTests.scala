@@ -3,6 +3,7 @@ package com.actelion.research.arcite.core.api
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpEntity, HttpRequest, HttpResponse, StatusCodes}
 import akka.stream.scaladsl.{Flow, Sink, Source}
+import com.actelion.research.arcite.core
 import com.actelion.research.arcite.core.api.ArciteService.AllExperiments
 import com.actelion.research.arcite.core.meta.DesignCategories.{AllCategories, SimpleCondition}
 import com.actelion.research.arcite.core.utils.FileInformationWithSubFolder
@@ -45,7 +46,7 @@ class MetaInfoApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri = "/meta_info/categories")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri =s"${core.urlPrefix}/meta_info/categories")).via(connectionFlow).runWith(Sink.head)
 
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)

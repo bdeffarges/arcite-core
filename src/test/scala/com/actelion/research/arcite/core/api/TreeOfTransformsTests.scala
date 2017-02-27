@@ -6,6 +6,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpEntity, _}
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.util.ByteString
+import com.actelion.research.arcite.core
 import com.actelion.research.arcite.core.TestHelpers
 import com.actelion.research.arcite.core.experiments.ManageExperiments.AddExperiment
 import com.actelion.research.arcite.core.transftree.{DefaultTofT, ProceedWithTreeOfTransf, TreeOfTransformInfo}
@@ -56,7 +57,7 @@ class TreeOfTransformsTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri = "/experiment",
+      uri =s"${core.urlPrefix}/experiment",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -104,7 +105,7 @@ class TreeOfTransformsTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri = "/tree_of_transforms")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri =s"${core.urlPrefix}/tree_of_transforms")).via(connectionFlow).runWith(Sink.head)
 
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
@@ -132,7 +133,7 @@ class TreeOfTransformsTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri = "/tree_of_transforms",
+      uri =s"${core.urlPrefix}/tree_of_transforms",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -162,7 +163,7 @@ class TreeOfTransformsTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri = "/tree_of_transforms",
+      uri =s"${core.urlPrefix}/tree_of_transforms",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =

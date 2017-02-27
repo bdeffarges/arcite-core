@@ -9,6 +9,7 @@ import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.{HttpEntity, RequestEntity, _}
 import akka.stream.scaladsl._
 import akka.util.ByteString
+import com.actelion.research.arcite.core
 import com.actelion.research.arcite.core.TestHelpers
 import com.actelion.research.arcite.core.api.ArciteService.AllExperiments
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentUID}
@@ -61,7 +62,7 @@ class FilesUploadApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri = "/experiment",
+      uri =s"${core.urlPrefix}/experiment",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -140,7 +141,7 @@ class FilesUploadApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri = s"/experiment/${exp1.uid}/clone",
+      uri =s"${core.urlPrefix}/experiment/${exp1.uid}/clone",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -164,7 +165,7 @@ class FilesUploadApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri = s"/experiment/${exp1.uid}/files/meta")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri =s"${core.urlPrefix}/experiment/${exp1.uid}/files/meta")).via(connectionFlow).runWith(Sink.head)
 
 
     responseFuture.map { r ⇒
@@ -186,7 +187,7 @@ class FilesUploadApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri = s"/experiment/${clonedExp.get}/files/meta")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri =s"${core.urlPrefix}/experiment/${clonedExp.get}/files/meta")).via(connectionFlow).runWith(Sink.head)
 
 
     responseFuture.map { r ⇒
@@ -212,7 +213,7 @@ class FilesUploadApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.DELETE,
-      uri = s"/experiment/${exp1.uid}/file_upload/meta",
+      uri =s"${core.urlPrefix}/experiment/${exp1.uid}/file_upload/meta",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -236,7 +237,7 @@ class FilesUploadApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.DELETE,
-      uri = s"/experiment/${clonedExp.get}/file_upload/meta",
+      uri =s"${core.urlPrefix}/experiment/${clonedExp.get}/file_upload/meta",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -256,7 +257,7 @@ class FilesUploadApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri = s"/experiment/${exp1.uid}")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri =s"${core.urlPrefix}/experiment/${exp1.uid}")).via(connectionFlow).runWith(Sink.head)
 
 
     responseFuture.map { r ⇒
@@ -280,7 +281,7 @@ class FilesUploadApiTests extends ApiTests {
     assert(clonedExp.isDefined)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri = s"/experiment/${clonedExp.get}")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri =s"${core.urlPrefix}/experiment/${clonedExp.get}")).via(connectionFlow).runWith(Sink.head)
 
 
     responseFuture.map { r ⇒
@@ -304,7 +305,7 @@ class FilesUploadApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.DELETE,
-      uri = s"/experiment/${exp1.uid}",
+      uri =s"${core.urlPrefix}/experiment/${exp1.uid}",
       entity = HttpEntity(MediaTypes.`application/json`, ""))
 
     val responseFuture: Future[HttpResponse] =
@@ -325,7 +326,7 @@ class FilesUploadApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.DELETE,
-      uri = s"/experiment/${clonedExp.get}",
+      uri =s"${core.urlPrefix}/experiment/${clonedExp.get}",
       entity = HttpEntity(MediaTypes.`application/json`, ""))
 
     val responseFuture: Future[HttpResponse] =

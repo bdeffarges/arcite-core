@@ -7,6 +7,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpEntity, RequestEntity, _}
 import akka.stream.scaladsl._
 import akka.util.ByteString
+import com.actelion.research.arcite.core
 import com.actelion.research.arcite.core.TestHelpers
 import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddExperiment, CloneExperimentNewProps}
 import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentUID}
@@ -59,7 +60,7 @@ class DefineRawDataApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri = "/experiment",
+      uri =s"${core.urlPrefix}${core.urlPrefix}/experiment",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -84,7 +85,7 @@ class DefineRawDataApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri = s"/raw_data/from_source",
+      uri =s"${core.urlPrefix}/raw_data/from_source",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
 
@@ -109,7 +110,7 @@ class DefineRawDataApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri = s"/experiment/${exp1.uid}/clone",
+      uri =s"${core.urlPrefix}/experiment/${exp1.uid}/clone",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =

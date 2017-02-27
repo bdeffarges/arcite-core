@@ -310,16 +310,18 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
   }
 
   private def directExpRoute = pathPrefix("experiment") {
-    logger.info("direct route returning files. ")
+    logger.info("direct route returning files or directory listing.")
     pathPrefix(Segment) { experiment ⇒
       pathPrefix("transform") {
         pathPrefix(Segment) { transf ⇒
-          pathPrefix(Segment) { artifact ⇒
+          path(Segment) { artifact ⇒
             onSuccess(getExperiment(experiment)) {
               case NoExperimentFound ⇒ complete(BadRequest -> ErrorMessage("no experiment found. "))
               case ExperimentFound(exp) ⇒ {
                 val visit = ExperimentFolderVisitor(exp)
-                getFromFile(visit.transformFolderPath.resolve(transf).resolve(artifact).toString)
+                val fil = visit.transformFolderPath.resolve(transf).resolve(artifact).toString
+                logger.info(s"returning file ${fil}")
+                getFromFile(fil)
               }
             }
           } ~
@@ -350,7 +352,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           case ExperimentFound(exp) ⇒ {
             val visit = ExperimentFolderVisitor(exp)
             logger.info(s"returning raw data for exp: ${exp.name}")
-            getFromBrowseableDirectory(visit.userRawFolderPath.toString)
+            getFromBrowseableDirectory(visit.rawFolderPath.toString)
           }
         }
       }
