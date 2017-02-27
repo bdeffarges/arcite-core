@@ -6,7 +6,7 @@ import java.util.UUID
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.headers.RawHeader
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directives.{getFromFile, _}
 import akka.http.scaladsl.server._
 import akka.pattern.ask
 import akka.stream.scaladsl.FileIO
@@ -15,6 +15,7 @@ import com.actelion.research.arcite.core
 import com.actelion.research.arcite.core.api.ArciteService._
 import com.actelion.research.arcite.core.eventinfo.ArciteAppLogs.GetAppLogs
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.{InfoLogs, MostRecentLogs, ReadLogs, RecentAllLastUpdates}
+import com.actelion.research.arcite.core.experiments.ExperimentFolderVisitor
 import com.actelion.research.arcite.core.experiments.ManageExperiments._
 import com.actelion.research.arcite.core.fileservice.FileServiceActor._
 import com.actelion.research.arcite.core.meta.DesignCategories.{AllCategories, GetCategories}
@@ -60,7 +61,9 @@ trait ArciteServiceApi extends LazyLogging {
 
   private[api] val config = ConfigFactory.load()
 
-  private[api] val apiSpec = config.getString("api.specification")
+  private[api] val apiSpec = config.getString("arcite.api.specification")
+
+  private[api] val apiVersion = config.getString("arcite.api.version")
 
   def createArciteApi(): ActorRef
 
@@ -263,8 +266,8 @@ trait ArciteServiceApi extends LazyLogging {
 }
 
 //todo split up routes by domain
-trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSONProtocol with LazyLogging {
-  //todo refactor routes into different files by category
+trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSONProtocol {
+  //todo refactor routes into different classes by category
   import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 
   //todo try cors again with lomigmegard/akka-http-cors
@@ -272,26 +275,88 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
     RawHeader("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS, DELETE"),
     RawHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization"))
 
+
   def routes: Route = respondWithHeaders(corsHeaders) {
-    experimentsRoute ~
-      experimentRoute ~
-      rawDataRoute ~
-      getTransformsRoute ~
-      getOneTransformRoute ~
-      runTransformRoute ~
-      transformFeedbackRoute ~
-      allTransformsFeedbackRoute ~
-      allLastUpdatesRoute ~
-      allExperimentsRecentLogs ~
-      metaInfoRoute ~
-      allTransforms ~
-      dataSources ~
-      appLogs ~
-      organizationRoute ~
-      treeOfTransforms ~
-      runningJobsFeedbackRoute ~
-      defaultRoute
+    directExpRoute ~
+    pathPrefix("api") {
+      pathPrefix(s"v$apiVersion") {
+        experimentsRoute ~
+          experimentRoute ~
+          rawDataRoute ~
+          getTransformsRoute ~
+          getOneTransformRoute ~
+          runTransformRoute ~
+          transformFeedbackRoute ~
+          allTransformsFeedbackRoute ~
+          allLastUpdatesRoute ~
+          allExperimentsRecentLogs ~
+          metaInfoRoute ~
+          allTransforms ~
+          dataSources ~
+          appLogs ~
+          organizationRoute ~
+          treeOfTransforms ~
+          runningJobsFeedbackRoute ~
+          defaultRoute
+      }
+    } ~
+      defaultError
   }
+
+  private def defaultError = {
+    get {
+      complete(BadRequest -> "Nothing on this url.")
+    }
+  }
+
+  private def directExpRoute = pathPrefix("experiment") {
+    logger.info("direct route returning files. ")
+    pathPrefix(Segment) { experiment ⇒
+      pathPrefix("transform") {
+        pathPrefix(Segment) { transf ⇒
+          pathPrefix(Segment) { artifact ⇒
+            onSuccess(getExperiment(experiment)) {
+              case NoExperimentFound ⇒ complete(BadRequest -> ErrorMessage("no experiment found. "))
+              case ExperimentFound(exp) ⇒ {
+                val visit = ExperimentFolderVisitor(exp)
+                getFromFile(visit.transformFolderPath.resolve(transf).resolve(artifact).toString)
+              }
+            }
+          } ~
+            pathEnd {
+              onSuccess(getExperiment(experiment)) {
+                case NoExperimentFound ⇒ complete(BadRequest -> ErrorMessage("no experiment found. "))
+                case ExperimentFound(exp) ⇒ {
+                  val visit = ExperimentFolderVisitor(exp)
+                  getFromBrowseableDirectory(visit.transformFolderPath.resolve(transf).toString)
+                }
+              }
+            }
+        }
+      }~
+      path("user_raw") {
+        onSuccess(getExperiment(experiment)) {
+          case NoExperimentFound ⇒ complete(BadRequest -> ErrorMessage("no experiment found. "))
+          case ExperimentFound(exp) ⇒ {
+            val visit = ExperimentFolderVisitor(exp)
+            logger.info(s"returning user raw data for exp: ${exp.name}")
+            getFromBrowseableDirectory(visit.userRawFolderPath.toString)
+          }
+        }
+      }~
+      path("raw") {
+        onSuccess(getExperiment(experiment)) {
+          case NoExperimentFound ⇒ complete(BadRequest -> ErrorMessage("no experiment found. "))
+          case ExperimentFound(exp) ⇒ {
+            val visit = ExperimentFolderVisitor(exp)
+            logger.info(s"returning raw data for exp: ${exp.name}")
+            getFromBrowseableDirectory(visit.userRawFolderPath.toString)
+          }
+        }
+      }
+    }
+  }
+
 
   def defaultRoute = {
     get {
