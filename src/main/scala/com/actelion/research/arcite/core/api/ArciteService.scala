@@ -10,7 +10,6 @@ import com.actelion.research.arcite.core.meta.DesignCategories.GetCategories
 import com.actelion.research.arcite.core.meta.MetaInfoActors
 import com.actelion.research.arcite.core.publish.PublishActor.PublishApi
 import com.actelion.research.arcite.core.rawdata.DefineRawData._
-import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{SearchForXResults, SearchForXResultsWithRequester}
 import com.actelion.research.arcite.core.transforms.RunTransform._
 import com.actelion.research.arcite.core.transforms.TransfDefMsg._
 import com.actelion.research.arcite.core.transforms.cluster.Frontend.{GetAllJobsStatus, GetRunningJobsStatus, QueryWorkStatus}
@@ -52,9 +51,9 @@ object ArciteService {
   // available json services
   case class GetAllExperiments(page: Int = 0, max: Int = 100)
 
-  case class GetAllExperimentsWithRequester(requester: ActorRef, page: Int = 0, max: Int = 100)
-
   case class SearchExperiments(search: String, maxHits: Int)
+
+  case class SearchExperimentsWithReq(search: SearchExperiments, forWhom: ActorRef)
 
   case class GetExperiment(digest: String)
 
@@ -118,7 +117,6 @@ object ArciteService {
 
   case class DeleteExperiment(digest: String)
 
-  case class DeleteExperimentWithRequester(digest: String, requester: ActorRef)
 
   sealed trait DeleteExperimentFeedback
 
@@ -194,39 +192,38 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
   // todo all with requester could be replaced by forward
   override def receive = {
     case gae: GetAllExperiments ⇒
-      expManager ! GetAllExperimentsWithRequester(sender(), gae.page, gae.max)
+      expManager forward GetAllExperiments(gae.page, gae.max)
 
 
-    case SearchExperiments(search, maxHits) ⇒
-      expManager ! SearchForXResultsWithRequester(SearchForXResults(search, maxHits), sender())
+    case se : SearchExperiments ⇒
+      expManager forward  se
+
+    case ge: GetExperiment ⇒
+      expManager forward ge
 
 
-    case GetExperiment(digest) ⇒
-      expManager ! GetExperimentWithRequester(digest, sender())
-
-
-    case AddExperiment(exp) ⇒
-      expManager ! AddExperimentWithRequester(exp, sender())
+    case ae: AddExperiment ⇒
+      expManager forward ae
 
 
     case ce: CloneExperiment ⇒
-      expManager ! CloneExperimentWithRequester(ce, sender())
+      expManager forward ce
 
 
-    case DeleteExperiment(exp) ⇒
-      expManager ! DeleteExperimentWithRequester(exp, sender())
+    case de: DeleteExperiment ⇒
+      expManager forward de
 
 
     case d: AddDesign ⇒
-      expManager ! AddDesignWithRequester(d, sender())
+      expManager forward d
 
 
     case p: AddExpProperties ⇒
-      expManager ! AddExpPropertiesWithRequester(p, sender())
+      expManager forward p
 
 
     case p: RemoveExpProperties ⇒
-      expManager ! RemoveExpPropertiesWithRequester(p, sender())
+      expManager forward p
 
 
     case gat: GetTransforms ⇒

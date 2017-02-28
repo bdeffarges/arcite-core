@@ -20,7 +20,7 @@ import com.actelion.research.arcite.core.publish.PublishActor._
 import com.actelion.research.arcite.core.rawdata.DefineRawData
 import com.actelion.research.arcite.core.rawdata.DefineRawData._
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex
-import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperimentsWithRequester, IndexExperiment, RemoveFromIndex, SearchForXResultsWithRequester}
+import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex._
 import com.actelion.research.arcite.core.transforms.TransformCompletionFeedback
 import com.actelion.research.arcite.core.transftree.{ToTFeedbackDetails, ToTFeedbackDetailsForApi, ToTFeedbackHelper}
 import com.actelion.research.arcite.core.utils
@@ -93,10 +93,6 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
   override def receive = {
 
     case AddExperiment(exp) ⇒
-      self ! AddExperimentWithRequester(exp, sender())
-
-
-    case AddExperimentWithRequester(exp, requester) ⇒
       if (!experiments.contains(exp.uid)) {
         if (core.organization.experimentTypes.exists(_.packagePath == exp.owner.organization)) {
 
@@ -106,27 +102,27 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
 
             case SaveExperimentSuccessful(expLog) ⇒
               eventInfoLoggingAct ! AddLog(exp, ExpLog(LogType.CREATED, LogCategory.SUCCESS, "experiment created. ", Some(exp.uid)))
-              requester ! AddedExperiment(exp.uid)
+              sender() ! AddedExperiment(exp.uid)
 
             case SaveExperimentFailed(error) ⇒
-              requester ! FailedAddingExperiment(error)
+              sender() ! FailedAddingExperiment(error)
           }
 
           luceneRAMSearchAct ! IndexExperiment(exp)
         } else {
-          requester ! FailedAddingExperiment(
+          sender() ! FailedAddingExperiment(
             s"""experiment owner organization ${exp.owner.organization} does not conform with
                |authorized organizations for this installation of Arcite, see API/organization """.stripMargin)
         }
       } else {
-        requester ! FailedAddingExperiment(s"same experiment ${exp.owner.organization}/${exp.name} already exists. ")
+        sender() ! FailedAddingExperiment(s"same experiment ${exp.owner.organization}/${exp.name} already exists. ")
       }
 
 
-    case CloneExperimentWithRequester(cexp, requester) ⇒
+    case cexp: CloneExperiment ⇒
       val origExp = experiments.get(cexp.originExp)
       if (origExp.isEmpty) {
-        requester ! FailedAddingExperiment(s"could not find original experiment ")
+        sender() ! FailedAddingExperiment(s"could not find original experiment ")
       } else {
         val newExp = origExp.get.copy(name = cexp.cloneExpProps.name,
           description = cexp.cloneExpProps.description, owner = cexp.cloneExpProps.owner, state = ExpState.NEW)
@@ -146,10 +142,10 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
             eventInfoLoggingAct ! AddLog(newExp, ExpLog(LogType.CREATED, LogCategory.SUCCESS,
               s"cloned experiment [${origExp.get.uid}] ", Some(newExp.uid)))
 
-            requester ! AddedExperiment(newExp.uid)
+            sender() ! AddedExperiment(newExp.uid)
 
           case SaveExperimentFailed(error) ⇒
-            requester ! FailedAddingExperiment(error)
+            sender() ! FailedAddingExperiment(error)
         }
 
         luceneRAMSearchAct ! IndexExperiment(newExp)
@@ -157,21 +153,21 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       }
 
 
-    case DeleteExperimentWithRequester(digest, requester) ⇒
+    case DeleteExperiment(digest) ⇒
       val exp = experiments.get(digest)
 
       if (exp.isEmpty) {
-        requester ! ExperimentDeleteFailed(s"experiment [$digest] does not exist.")
+        sender() ! ExperimentDeleteFailed(s"experiment [$digest] does not exist.")
       } else if (exp.get.state.eq(ExpState.NEW) && !ExperimentFolderVisitor(exp.get).isImmutableExperiment) {
         experiments -= digest
         luceneRAMSearchAct ! RemoveFromIndex(exp.get)
-        requester ! LocalExperiments.safeDeleteExperiment(exp.get)
+        sender() ! LocalExperiments.safeDeleteExperiment(exp.get)
       } else {
-        requester ! ExperimentDeleteFailed(s"experiment [$digest] can not be deleted, it's immutable. ")
+        sender() ! ExperimentDeleteFailed(s"experiment [$digest] can not be deleted, it's immutable. ")
       }
 
 
-    case AddDesignWithRequester(design, requester) ⇒
+    case design: AddDesign ⇒
       val uid = design.experiment
 
       val exp = experiments.get(uid)
@@ -182,18 +178,18 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
         LocalExperiments.saveExperiment(nexp) match {
 
           case SaveExperimentSuccessful(expL) ⇒
-            requester ! AddedDesignSuccess
+            sender() ! AddedDesignSuccess
             luceneRAMSearchAct ! IndexExperiment(nexp)
 
           case SaveExperimentFailed(error) ⇒
-            requester ! FailedAddingDesign(error)
+            sender() ! FailedAddingDesign(error)
         }
       } else {
-        requester ! FailedAddingDesign("It seems the experiment does not exist.")
+        sender() ! FailedAddingDesign("It seems the experiment does not exist.")
       }
 
 
-    case AddExpPropertiesWithRequester(addProps, requester) ⇒
+    case addProps: AddExpProperties ⇒
       val uid = addProps.exp
 
       val exp = experiments.get(uid)
@@ -205,13 +201,13 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
 
           case SaveExperimentSuccessful(expL) ⇒
             luceneRAMSearchAct ! IndexExperiment(nex)
-            requester ! AddedPropertiesSuccess
+            sender() ! AddedPropertiesSuccess
 
           case SaveExperimentFailed(error) ⇒
-            requester ! FailedAddingProperties(error)
+            sender() ! FailedAddingProperties(error)
         }
       } else {
-        requester ! FailedAddingProperties("It seems the experiment does not exist.")
+        sender() ! FailedAddingProperties("It seems the experiment does not exist.")
       }
 
 
@@ -236,7 +232,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       }
 
 
-    case RemoveExpPropertiesWithRequester(rmProps, requester) ⇒
+    case rmProps: RemoveExpProperties ⇒
       val uid = rmProps.exp
 
       val exp = experiments.get(uid)
@@ -248,18 +244,18 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
 
           case SaveExperimentSuccessful(expL) ⇒
             luceneRAMSearchAct ! IndexExperiment(nex)
-            requester ! RemovePropertiesSuccess
+            sender() ! RemovePropertiesSuccess
 
           case SaveExperimentFailed(error) ⇒
-            requester ! FailedRemovingProperties(error)
+            sender() ! FailedRemovingProperties(error)
         }
       } else {
-        requester ! FailedRemovingProperties("Experiment does not exist")
+        sender() ! FailedRemovingProperties("Experiment does not exist")
       }
 
 
-    case galex: GetAllExperimentsWithRequester ⇒
-      log.info(s"asking ManageExperiments for ${galex.max} experiments starting page ${galex.page}... to ${galex.requester}")
+    case galex: GetAllExperiments ⇒
+      log.info(s"asking ManageExperiments for ${galex.max} experiments starting page ${galex.page}...")
 
       val start = galex.page * galex.max
       val end = start + galex.max
@@ -270,7 +266,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
         .map(e ⇒ ExperimentSummary(e._1.name, e._1.description, e._1.owner,
           e._1.uid, utils.getDateAsStrg(e._2.date), e._1.state))
 
-      galex.requester ! AllExperiments(allExps)
+      sender() ! AllExperiments(allExps)
 
 
     case LoadExperiment(folder: String) ⇒
@@ -278,11 +274,12 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       sender() ! expCon
 
 
-    case s: SearchForXResultsWithRequester ⇒
-      luceneRAMSearchAct ! s
+    case se: SearchExperiments ⇒
+      val forWhom = sender()
+      luceneRAMSearchAct ! SearchExperimentsWithReq(se, forWhom)
 
 
-    case FoundExperimentsWithRequester(foundExperiments, requester) ⇒
+    case FoundExperimentsWithReq(foundExperiments, requester) ⇒
       log.debug(s"found ${foundExperiments.experiments.size} experiments ")
       val resp = foundExperiments.experiments.map(f ⇒ experiments(f.digest))
         .map(f ⇒ ExperimentSummary(f.name, f.description, f.owner,
@@ -290,19 +287,8 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       requester ! SomeExperiments(resp.size, resp)
 
 
-    case GetExperimentWithRequester(digest, requester) ⇒
-      log.debug(s"retrieving experiment with digest: $digest")
-      val exp = experiments.get(digest)
-      if (exp.isDefined) {
-        val ex = LocalExperiments.loadExperiment(ExperimentFolderVisitor(exp.get).experimentFilePath)
-        if (ex.isDefined) requester ! ExperimentFound(ex.get)
-        else requester ! NoExperimentFound
-      } else {
-        requester ! NoExperimentFound
-      }
-
-
     case GetExperiment(digest) ⇒
+      log.debug(s"retrieving experiment with digest: $digest")
       val exp = experiments.get(digest)
       if (exp.isDefined) {
         val ex = LocalExperiments.loadExperiment(ExperimentFolderVisitor(exp.get).experimentFilePath)
@@ -601,20 +587,12 @@ object ManageExperiments {
 
   case class AddExperiment(experiment: Experiment)
 
-  case class AddExperimentWithRequester(experiment: Experiment, requester: ActorRef)
-
   //todo enable cloning with our without copying raw/meta data
   case class CloneExperimentNewProps(name: String, description: String, owner: Owner)
 
   case class CloneExperiment(originExp: String, cloneExpProps: CloneExperimentNewProps)
 
-  case class CloneExperimentWithRequester(cloneExperiment: CloneExperiment, requester: ActorRef)
-
-
   case class AddDesign(experiment: String, design: ExperimentalDesign)
-
-  case class AddDesignWithRequester(addDesign: AddDesign, requester: ActorRef)
-
 
   case class AddExpProps(properties: Map[String, String])
 
@@ -626,11 +604,7 @@ object ManageExperiments {
 
   case class AddExpProperties(exp: String, properties: Map[String, String])
 
-  case class AddExpPropertiesWithRequester(addProps: AddExpProperties, requester: ActorRef)
-
   case class RemoveExpProperties(exp: String, properties: List[String])
-
-  case class RemoveExpPropertiesWithRequester(addProps: RemoveExpProperties, requester: ActorRef)
 
   case class Experiments(exps: Set[Experiment])
 

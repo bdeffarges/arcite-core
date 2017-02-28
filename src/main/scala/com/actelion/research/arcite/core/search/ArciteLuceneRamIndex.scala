@@ -3,6 +3,7 @@ package com.actelion.research.arcite.core.search
 import java.util.concurrent.Executors
 
 import akka.actor.{Actor, ActorLogging, ActorRef}
+import com.actelion.research.arcite.core.api.ArciteService.{SearchExperiments, SearchExperimentsWithReq}
 import com.actelion.research.arcite.core.experiments.{Condition, Experiment}
 import com.actelion.research.arcite.core.search.ArciteLuceneRamIndex._
 import org.apache.lucene.analysis.Analyzer
@@ -57,9 +58,9 @@ class ArciteLuceneRamIndex extends Actor with ActorLogging {
       indexWriter.close()
 
 
-    case s: SearchForXResultsWithRequester ⇒
-      val searchR = search(s.searchForXResults.text, s.searchForXResults.size)
-      sender() ! FoundExperimentsWithRequester(searchR, s.requester)
+    case se: SearchExperimentsWithReq ⇒
+      val searchR = search(se.search.search, se.search.maxHits)
+      sender() ! FoundExperimentsWithReq(searchR, se.forWhom)
   }
 
   /**
@@ -143,10 +144,6 @@ object ArciteLuceneRamIndex {
 
   case class Search(text: String) extends TalkToLuceneRamDir
 
-  case class SearchForXResults(text: String, size: Int) extends TalkToLuceneRamDir
-
-  case class SearchForXResultsWithRequester(searchForXResults: SearchForXResults, requester: ActorRef)
-
   case class FoundExperiment(digest: String, where: String, order: Int)
 
   //todo where means in which field it was found.... useful?
@@ -155,8 +152,7 @@ object ArciteLuceneRamIndex {
 
   //todo only for testing?
   case class FoundExperiments(experiments: List[FoundExperiment])
-
-  case class FoundExperimentsWithRequester(foundExperiments: FoundExperiments, requester: ActorRef)
+  case class FoundExperimentsWithReq(foundExps: FoundExperiments, req: ActorRef)
 
   // sends back the number of results
   case class SearchResult(size: Int)
