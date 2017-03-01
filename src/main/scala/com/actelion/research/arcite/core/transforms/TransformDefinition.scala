@@ -77,6 +77,9 @@ case class TransformSourceFromTransformWithExclusion(experiment: Experiment, src
 
 case class TransformSourceFromObject(experiment: Experiment) extends TransformSource
 
+case class TransformSourceFromTransformsAndRaw(experiment: Experiment,
+                                               srcTransfomrIDs: Set[String]) extends TransformSource
+
 //todo introduce transform from data structure. We could persist the transform results but at the same time use the in memory structure for the next transform.
 
 
