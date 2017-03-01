@@ -152,7 +152,7 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
       context.become(idle)
 
     case ReceiveTimeout =>
-      log.info("No ack from master, retrying")
+      log.info(s"received timeout from ${sender().toString()}")
       result match {
         case ws: WorkSuccessFull ⇒
           sendToMaster(WorkerSuccess(workerId, transform, ws, utils.getDateAsString(time)))
