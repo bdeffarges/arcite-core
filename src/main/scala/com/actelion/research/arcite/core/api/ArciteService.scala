@@ -266,6 +266,10 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
       expManager forward pi
 
 
+    case gs: GetSelectable ⇒
+      expManager forward gs
+
+
     case rds: RawDataSet ⇒
       defineRawDataAct ! RawDataSetWithRequester(rds, sender())
 

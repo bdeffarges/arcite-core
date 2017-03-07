@@ -43,6 +43,7 @@ package object core {
   val failedFile = ".failed"
   val feedbackfile = "-feedback.json"
   val immutableFile = ".immutable"
+  val selectable = s"${arciteFilePrefix}selectable.json"
 
   val urlPrefix = s"/api/v$apiVersion"
 
@@ -121,7 +122,6 @@ package object core {
       }
     }
   }
-
 
   def getFirstAndLastLinesOfAVeryLongString(string: String, maxnbrOfLines: Int): String = {
     val nbrOfLF = "\\n".r.findAllIn(string).length

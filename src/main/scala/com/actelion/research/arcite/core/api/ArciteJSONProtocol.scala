@@ -7,7 +7,7 @@ import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.InfoLogs
 import com.actelion.research.arcite.core.eventinfo.LogCategory.LogCategory
 import com.actelion.research.arcite.core.eventinfo.{ArciteAppLog, ExpLog, LogCategory, LogType}
 import com.actelion.research.arcite.core.experiments.ExpState.ExpState
-import com.actelion.research.arcite.core.experiments.ManageExperiments._
+import com.actelion.research.arcite.core.experiments.ManageExperiments.{BunchOfSelectable, _}
 import com.actelion.research.arcite.core.experiments._
 import com.actelion.research.arcite.core.fileservice.FileServiceActor._
 import com.actelion.research.arcite.core.meta.DesignCategories.{AllCategories, SimpleCondition}
@@ -552,4 +552,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val publishInfoJson: RootJsonFormat[PublishInfo] = jsonFormat4(PublishInfo)
   implicit val publishedInfoJson: RootJsonFormat[PublishedInfo] = jsonFormat3(PublishedInfo)
   implicit val rmpublishedInfoJson: RootJsonFormat[RemovePublished] = jsonFormat2(RemovePublished)
+
+  implicit val selectableJson: RootJsonFormat[Selectable] = jsonFormat2(Selectable)
+  implicit val bunchOfSelectableJson: RootJsonFormat[BunchOfSelectable] = jsonFormat1(BunchOfSelectable)
 }

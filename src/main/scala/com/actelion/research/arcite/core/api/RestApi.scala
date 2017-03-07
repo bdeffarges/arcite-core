@@ -186,6 +186,10 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(GetTransforms(exp)).mapTo[TransformsForExperiment]
   }
 
+  private[api] def getSelectableForTransform(exp: String, transf: String) = {
+    arciteService.ask(GetSelectable(exp, transf)).mapTo[Option[BunchOfSelectable]]
+  }
+
   private[api] def getAllToTForExperiment(exp: String) = {
     arciteService.ask(GetToTs(exp)).mapTo[ToTsForExperiment]
   }
@@ -278,28 +282,28 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
 
   def routes: Route = respondWithHeaders(corsHeaders) {
     directExpRoute ~
-    pathPrefix("api") {
-      pathPrefix(s"v$apiVersion") {
-        experimentsRoute ~
-          experimentRoute ~
-          rawDataRoute ~
-          getTransformsRoute ~
-          getOneTransformRoute ~
-          runTransformRoute ~
-          transformFeedbackRoute ~
-          allTransformsFeedbackRoute ~
-          allLastUpdatesRoute ~
-          allExperimentsRecentLogs ~
-          metaInfoRoute ~
-          allTransforms ~
-          dataSources ~
-          appLogs ~
-          organizationRoute ~
-          treeOfTransforms ~
-          runningJobsFeedbackRoute ~
-          defaultRoute
-      }
-    } ~
+      pathPrefix("api") {
+        pathPrefix(s"v$apiVersion") {
+          experimentsRoute ~
+            experimentRoute ~
+            rawDataRoute ~
+            getTransformsRoute ~
+            getOneTransformRoute ~
+            runTransformRoute ~
+            transformFeedbackRoute ~
+            allTransformsFeedbackRoute ~
+            allLastUpdatesRoute ~
+            allExperimentsRecentLogs ~
+            metaInfoRoute ~
+            allTransforms ~
+            dataSources ~
+            appLogs ~
+            organizationRoute ~
+            treeOfTransforms ~
+            runningJobsFeedbackRoute ~
+            defaultRoute
+        }
+      } ~
       defaultError
   }
 
@@ -335,27 +339,27 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
               }
             }
         }
-      }~
-      path("user_raw") {
-        onSuccess(getExperiment(experiment)) {
-          case NoExperimentFound ⇒ complete(BadRequest -> ErrorMessage("no experiment found. "))
-          case ExperimentFound(exp) ⇒ {
-            val visit = ExperimentFolderVisitor(exp)
-            logger.info(s"returning user raw data for exp: ${exp.name}")
-            getFromBrowseableDirectory(visit.userRawFolderPath.toString)
+      } ~
+        path("user_raw") {
+          onSuccess(getExperiment(experiment)) {
+            case NoExperimentFound ⇒ complete(BadRequest -> ErrorMessage("no experiment found. "))
+            case ExperimentFound(exp) ⇒ {
+              val visit = ExperimentFolderVisitor(exp)
+              logger.info(s"returning user raw data for exp: ${exp.name}")
+              getFromBrowseableDirectory(visit.userRawFolderPath.toString)
+            }
+          }
+        } ~
+        path("raw") {
+          onSuccess(getExperiment(experiment)) {
+            case NoExperimentFound ⇒ complete(BadRequest -> ErrorMessage("no experiment found. "))
+            case ExperimentFound(exp) ⇒ {
+              val visit = ExperimentFolderVisitor(exp)
+              logger.info(s"returning raw data for exp: ${exp.name}")
+              getFromBrowseableDirectory(visit.rawFolderPath.toString)
+            }
           }
         }
-      }~
-      path("raw") {
-        onSuccess(getExperiment(experiment)) {
-          case NoExperimentFound ⇒ complete(BadRequest -> ErrorMessage("no experiment found. "))
-          case ExperimentFound(exp) ⇒ {
-            val visit = ExperimentFolderVisitor(exp)
-            logger.info(s"returning raw data for exp: ${exp.name}")
-            getFromBrowseableDirectory(visit.rawFolderPath.toString)
-          }
-        }
-      }
     }
   }
 
@@ -420,6 +424,18 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           }
         }
       } ~
+        pathPrefix("transform") {
+          pathPrefix(Segment) { transform ⇒
+            path("selectable") {
+              get {
+                logger.debug("GET selectable for exp/transform if exist")
+                onSuccess(getSelectableForTransform(experiment, transform)) { selectable ⇒
+                  complete(OK -> selectable)
+                }
+              }
+            }
+          }
+        } ~
         path("tots") {
           // tree of transforms
           get {

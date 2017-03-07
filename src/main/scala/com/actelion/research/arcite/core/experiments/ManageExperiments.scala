@@ -475,6 +475,11 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       }
 
 
+    case GetSelectable(exp: String, transf: String) ⇒
+      val gs = getSelectableFromTransfResults(exp, transf)
+      sender ! gs
+
+
     case any: Any ⇒ log.debug(s"don't know what to do with this message $any")
   }
 
@@ -484,7 +489,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
     if (exp.isDefined) {
       val transfF = ExperimentFolderVisitor(exp.get).transformFolderPath
 
-      //todo what happen in case casting to feedback does not work...
+      //todo case casting to feedback does not work...
       transfF.toFile.listFiles().filter(_.isDirectory)
         .map(d ⇒ d.toPath resolve WriteFeedbackActor.FILE_NAME)
         .filter(p ⇒ p.toFile.exists())
@@ -571,6 +576,21 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
     }
   }
 
+  private def getSelectableFromTransfResults(exp: String, transf: String): Option[BunchOfSelectable] ={
+    val ex = experiments.get(exp)
+    if (ex.isDefined) {
+      val transfP = ExperimentFolderVisitor(ex.get).transformFolderPath resolve transf
+      val succF = transfP resolve core.successFile
+      if (succF.toFile.exists()) {
+        val selectF = transfP resolve core.selectable
+        if (selectF.toFile.exists()) {
+          return Some(Files.readAllLines(selectF).mkString(" ").parseJson.convertTo[BunchOfSelectable])
+        }
+      }
+    }
+    None
+  }
+
 }
 
 
@@ -648,6 +668,12 @@ object ManageExperiments {
 
   case class MakeImmutable(experiment: String)
 
+
+  case class GetSelectable(exp: String, transf: String)
+
+  case class Selectable(selectableType: String, items: Set[String])
+
+  case class BunchOfSelectable(selectables: Set[Selectable])
 }
 
 class ExperimentActorsManager extends Actor with ActorLogging {
