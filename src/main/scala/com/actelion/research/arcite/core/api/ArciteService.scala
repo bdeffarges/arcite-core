@@ -238,6 +238,10 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
       expManager forward GetAllTransforms
 
 
+    case got: GetOneTransform ⇒
+      expManager forward got
+
+
     case fileUp: MoveUploadedFile ⇒
       expManager forward fileUp
 

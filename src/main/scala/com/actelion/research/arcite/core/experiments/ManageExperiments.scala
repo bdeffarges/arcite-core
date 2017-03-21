@@ -336,6 +336,10 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       sender ! ManyTransforms(getAllTransforms)
 
 
+    case got: GetOneTransform ⇒
+      sender ! OneTransformFeedback(getOneTransform(got.transf))
+
+
     case GetTransfDefFromExpAndTransf(experiment, transform) ⇒
       val transDef = getTransfDefFromExpAndTransf(experiment, transform)
       sender() ! transDef
@@ -530,6 +534,11 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       .map(convertToTransfComFeed).filter(_.isDefined).map(_.get).toSet
   }
 
+
+  private def getOneTransform(transf: String): Option[TransformCompletionFeedback] = {
+    getAllTransforms.find(_.transform == transf)
+  }
+
   private def getTransfDefFromExpAndTransf(experiment: String, transform: String): FoundTransformDefinition = {
 
     val exp = experiments(experiment)
@@ -634,6 +643,8 @@ object ManageExperiments {
 
   case object GetAllTransforms
 
+  case class GetOneTransform(transf: String)
+
   case class GetToTs(experiment: String)
 
   case class TransformsForExperiment(transforms: Set[TransformCompletionFeedback])
@@ -641,6 +652,8 @@ object ManageExperiments {
   case class ToTsForExperiment(tots: Set[ToTFeedbackDetailsForApi])
 
   case class ManyTransforms(transforms: Set[TransformCompletionFeedback])
+
+  case class OneTransformFeedback(feedback: Option[TransformCompletionFeedback])
 
   case class GetTransfDefFromExpAndTransf(experiment: String, transform: String)
 

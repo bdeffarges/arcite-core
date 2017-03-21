@@ -198,6 +198,10 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(GetAllTransforms).mapTo[ManyTransforms]
   }
 
+  private[api] def getOneTransformFeedback(transf: String) = {
+    arciteService.ask(GetOneTransform(transf)).mapTo[OneTransformFeedback]
+  }
+
   private[api] def getTreeOfTransformInfo() = {
     arciteService.ask(GetTreeOfTransformInfo).mapTo[AllTreeOfTransfInfos]
   }
@@ -295,7 +299,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             allLastUpdatesRoute ~
             allExperimentsRecentLogs ~
             metaInfoRoute ~
-            allTransforms ~
+            allTransformsRoute ~
+            oneTransformRoute ~
             dataSources ~
             appLogs ~
             organizationRoute ~
@@ -950,12 +955,24 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       }
   }
 
-  def allTransforms = path("all_transforms") {
+  def allTransformsRoute = path("all_transforms") {
     get {
       logger.info("get all transforms for all experiments ")
       onSuccess(getAllTransforms()) {
         case ManyTransforms(tdis) ⇒ complete(OK -> tdis)
         case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning all transforms."))
+      }
+    }
+  }
+
+  def oneTransformRoute = pathPrefix("transform") {
+    path(Segment) { transf ⇒
+      get {
+        logger.info("get one transform feedback ")
+        onSuccess(getOneTransformFeedback(transf)) {
+          case OneTransformFeedback(tfb) ⇒ complete(OK -> tfb)
+          case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning all transforms."))
+        }
       }
     }
   }

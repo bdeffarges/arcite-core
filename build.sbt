@@ -1,10 +1,11 @@
 import com.typesafe.sbt.SbtNativePackager.autoImport.NativePackagerHelper._
+import com.typesafe.sbt.packager.docker.Cmd
 
 organization := "com.actelion.research.arcite"
 
 name := "arcite-core"
 
-version := "1.24.0-SNAPSHOT"
+version := "1.25.0-SNAPSHOT"
 
 scalaVersion := "2.11.8" // todo move to 2.12 once spark has moved available
 
@@ -106,8 +107,6 @@ enablePlugins(DockerPlugin)
 
 enablePlugins(DockerSpotifyClientPlugin)
 
-maintainer in Docker := "Bernard Deffarges bernard.deffarges@actelion.com"
-
 mainClass in Compile := Some("com.actelion.research.arcite.core.api.Main")
 
 mappings in Universal ++= {
@@ -128,15 +127,17 @@ javaOptions in Universal ++= Seq(
   // you can access any build setting/task here
   //  s"-version=${version.value}"
 )
-
-//dockerExecCommand := Seq("docker")
-
-//dockerCommands += Cmd("RUN", "echo Europe/Berlin > /etc/timezone && dpkg-reconfigure --frontend noninteractive tzdata")
-
-dockerExposedPorts := Seq(8084, 2551, 2552, 2553, 2554, 2555, 2556, 2557, 2558)
+dockerCommands := Seq(
+  Cmd("FROM", "openjdk:latest"),
+  Cmd("MAINTAINER", "Bernard Deffarges bernard.deffarges@actelion.com"),
+  Cmd("RUN", "echo Europe/Berlin > /etc/timezone && dpkg-reconfigure --frontend noninteractive tzdata"),
+  Cmd("WORKDIR", "/opt/docker"),
+  Cmd("COPY", "opt /opt"),
+  Cmd("RUN", """chown -R daemon:daemon ."""),
+  Cmd("EXPOSE", "8084 2551 2552 2553 2554 2555 2556 2557 2558"),
+  Cmd("USER", "daemon"),
+  Cmd("ENTRYPOINT","bin/arcite-core"))
 
 licenses := Seq(("CC0", url("http://creativecommons.org/publicdomain/zero/1.0")))
-
-//dockerCommands ++= Seq(ExecCmd("CMD", "-Dconfig.resource=$ARCITE_CONF"))
 
 bashScriptExtraDefines += """addJava "-Dconfig.resource=$ARCITE_CONF""""
