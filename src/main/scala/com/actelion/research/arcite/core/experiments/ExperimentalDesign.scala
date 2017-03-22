@@ -27,5 +27,43 @@ case class Condition(name: String, description: String, category: String)
   *
   * @param conditions
   */
-case class ConditionsForSample(conditions: Set[Condition]) //todo list to set?
+case class ConditionsForSample(conditions: Set[Condition])
 
+//todo list to set?
+
+
+object ExperimentalDesignSearch {
+
+  def conditionsByCategory(cat: String, expDesign: ExperimentalDesign): Set[Condition] = {
+    expDesign.sampleConditions.flatMap(cs ⇒ cs.conditions.filter(c ⇒ c.category.equals(cat)))
+  }
+
+  def allCategories(expDesign: ExperimentalDesign): Set[String] = {
+    expDesign.sampleConditions.flatMap(cs ⇒ cs.conditions.map(_.category))
+  }
+
+  def allValuesForCats(expDes: ExperimentalDesign, cat: String*): Set[Set[Condition]] = {
+    val av4c = expDes.sampleConditions.map(cs ⇒ cs.conditions.filter(c ⇒ cat.contains(c.category)))
+    //    println(s"cat=${cat} (${av4c.size}) => $av4c\n\n")
+    av4c
+  }
+
+  def uniqueCombinedCats(expDes: ExperimentalDesign): List[List[String]] = {
+
+    val size = expDes.sampleConditions.size
+
+    val allCats = allCategories(expDes).toList.sorted
+
+    val allDiffCats = allCats.toSet.subsets.map(_.toList).filter(_.nonEmpty)
+
+    //    println(allCats)
+    //    println(allDiffCats.toList.mkString("\n"))
+
+    allDiffCats.filter(c ⇒
+      allValuesForCats(expDes, c: _*)
+        .map(sc ⇒ sc.toList.sortBy(_.category).mkString).size == size).toList
+  }
+
+  def uniqueCategories(expDes: ExperimentalDesign): List[String] =
+    uniqueCombinedCats(expDes).filter(_.size == 1).flatten
+}
