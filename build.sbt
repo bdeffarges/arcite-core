@@ -54,12 +54,12 @@ resolvers ++= Seq(
 
 libraryDependencies ++= {
   val akkaVersion = "2.4.16"
-  val sparkVersion = "1.6.2"
+  val sparkVersion = "2.1.0"
   val luceneVersion = "6.4.0"
 
   Seq(
     "org.specs2" %% "specs2-core" % "3.7" % "test",
-    "org.scalatest" %% "scalatest" % "3.0.0" % "test",
+    "org.scalatest" %% "scalatest" % "3.0.1" % "test",
     "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",
     "com.typesafe.akka" %% "akka-multi-node-testkit" % akkaVersion % "test",
     "com.github.agourlay" %% "cornichon" % "0.9.3" % "test",
