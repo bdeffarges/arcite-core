@@ -84,10 +84,10 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
     }
   }
 
-  implicit val transfParamFreeTextJson: RootJsonFormat[FreeText] = jsonFormat3(FreeText)
-  implicit val transfParamIntNumberJson: RootJsonFormat[IntNumber] = jsonFormat5(IntNumber)
-  implicit val transfParamFloatNumberJson: RootJsonFormat[FloatNumber] = jsonFormat5(FloatNumber)
-  implicit val transfParamFloatPredefinedValsJson: RootJsonFormat[PredefinedValues] = jsonFormat5(PredefinedValues)
+  implicit val transfParamFreeTextJson: RootJsonFormat[FreeText] = jsonFormat4(FreeText)
+  implicit val transfParamIntNumberJson: RootJsonFormat[IntNumber] = jsonFormat6(IntNumber)
+  implicit val transfParamFloatNumberJson: RootJsonFormat[FloatNumber] = jsonFormat6(FloatNumber)
+  implicit val transfParamFloatPredefinedValsJson: RootJsonFormat[PredefinedValues] = jsonFormat6(PredefinedValues)
 
   implicit object TransformParametersJsonFormat extends RootJsonFormat[TransformParameter] {
     override def write(obj: TransformParameter): JsValue = obj match {

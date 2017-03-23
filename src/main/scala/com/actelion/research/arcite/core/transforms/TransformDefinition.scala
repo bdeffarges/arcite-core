@@ -132,27 +132,28 @@ object ParameterType extends scala.Enumeration {
 }
 
 sealed trait TransformParameter {
+  def parameterID: String
   def parameterName: String
   def defaultValue: Option[Any]
   def parameterType: ParameterType
 }
 
-case class PredefinedValues(parameterName: String, values: List[String],
+case class PredefinedValues(parameterID: String, parameterName: String, values: List[String],
                             defaultValue: Option[String] = None, allowsNew: Boolean = false,
                             parameterType: ParameterType = ParameterType.PREDEFINED_VALUE) extends TransformParameter {
 }
 
-case class IntNumber(parameterName: String, defaultValue: Option[Long],
+case class IntNumber(parameterID: String, parameterName: String, defaultValue: Option[Long],
                      minBoundary: Option[Long] = None, maxBoundary: Option[Long] = None,
                      parameterType: ParameterType = ParameterType.INT_NUMBER) extends TransformParameter {
 }
 
-case class FloatNumber(parameterName: String, defaultValue: Option[Double] = None,
+case class FloatNumber(parameterID: String, parameterName: String, defaultValue: Option[Double] = None,
                        minBoundary: Option[Double] = None, maxBoundary: Option[Double] = None,
                        parameterType: ParameterType = ParameterType.FLOAT_NUMBER) extends TransformParameter {
 }
 
-case class FreeText(parameterName: String, defaultValue: Option[String] = None,
+case class FreeText(parameterID: String, parameterName: String, defaultValue: Option[String] = None,
                     parameterType: ParameterType = ParameterType.FREE_TEXT) extends TransformParameter {
 }
 
