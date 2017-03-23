@@ -1,5 +1,10 @@
 package com.actelion.research.arcite.core.experiments
 
+import java.io.File
+import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, Paths}
+import java.util.UUID
+
 import org.scalatest.{FlatSpec, Matchers}
 
 /**
@@ -29,10 +34,10 @@ class DesignTest extends FlatSpec with Matchers {
 
   "importing a design from a file " should " produce a list of categories " in {
 
-    val expDes = ImportDesign.importFromCSVFileWithHeader(path = "./for_testing/exp_designs/AMS098_design.csv",
+    val expDes = ExperimentalDesignHelpers.importFromCSVFileWithHeader(path = "./for_testing/exp_designs/microarray/AMS0098_design.csv",
       description = "design for AMS098", separator = ";")
 
-    val cats = ExperimentalDesignSearch.allCategories(expDes)
+    val cats = ExperimentalDesignHelpers.allCategories(expDes)
 
     assert(cats.contains("SampleID"))
     assert(cats.contains("CombinedConditions"))
@@ -42,28 +47,28 @@ class DesignTest extends FlatSpec with Matchers {
 
   "importing a design from a file and requesting val for cat " should " produce a list of all val for categories " in {
 
-    val expDes = ImportDesign.importFromCSVFileWithHeader(path = "./for_testing/exp_designs/AMS098_design.csv",
+    val expDes = ExperimentalDesignHelpers.importFromCSVFileWithHeader(path = "./for_testing/exp_designs/microarray/AMS0098_design.csv",
       description = "design for AMS098", separator = ";")
 
-    assert(ExperimentalDesignSearch.allValuesForCats(expDes, "Batch").contains(Set(Condition("1", "1", "Batch"))))
-    assert(ExperimentalDesignSearch.allValuesForCats(expDes, "Wash").contains(Set(Condition("1", "1", "Wash"))))
-    assert(ExperimentalDesignSearch.allValuesForCats(expDes, "Wash").contains(Set(Condition("2", "2", "Wash"))))
+    assert(ExperimentalDesignHelpers.allValuesForCats(expDes, "Batch").contains(Set(Condition("1", "1", "Batch"))))
+    assert(ExperimentalDesignHelpers.allValuesForCats(expDes, "Wash").contains(Set(Condition("1", "1", "Wash"))))
+    assert(ExperimentalDesignHelpers.allValuesForCats(expDes, "Wash").contains(Set(Condition("2", "2", "Wash"))))
 
-    assert(ExperimentalDesignSearch.allValuesForCats(expDes, "Batch", "Wash")
+    assert(ExperimentalDesignHelpers.allValuesForCats(expDes, "Batch", "Wash")
       .contains(Set(Condition("1", "1", "Batch"), Condition("1", "1", "Wash"))))
 
-    assert(ExperimentalDesignSearch.allValuesForCats(expDes, "Batch", "Wash")
+    assert(ExperimentalDesignHelpers.allValuesForCats(expDes, "Batch", "Wash")
       .contains(Set(Condition("1", "1", "Batch"), Condition("2", "2", "Wash"))))
 
   }
 
-  "importing a desing from a file " should " produce a list of unique combination of categories " in {
+  "importing a design from a file " should " produce a list of unique combination of categories " in {
 
-    val expDes = ImportDesign.importFromCSVFileWithHeader("./for_testing/exp_designs/AMS098_design.csv", separator = ";")
+    val expDes = ExperimentalDesignHelpers.importFromCSVFileWithHeader("./for_testing/exp_designs/microarray/AMS0098_design.csv", separator = ";")
 
     assert(expDes.sampleConditions.size == 120)
 
-    val uniqCats = ExperimentalDesignSearch.uniqueCombinedCats(expDes)
+    val uniqCats = ExperimentalDesignHelpers.uniqueCombinedCats(expDes)
 
     assert(!uniqCats.contains(List("Wash")))
     assert(!uniqCats.contains(List("Batch")))
@@ -73,9 +78,25 @@ class DesignTest extends FlatSpec with Matchers {
     assert(!uniqCats.contains(List("Slide")))
     assert(uniqCats.contains(List("SampleID")))
     assert(uniqCats.contains(List("CombinedConditions")))
-    assert(uniqCats.contains(List("Slide", "Array")) || uniqCats.contains(List("Array","Slide")))
+    assert(uniqCats.contains(List("Slide", "Array")) || uniqCats.contains(List("Array", "Slide")))
 
-    assert(ExperimentalDesignSearch.uniqueCategories(expDes).contains("SampleID"))
-    assert(ExperimentalDesignSearch.uniqueCategories(expDes).contains("CombinedConditions"))
+    assert(ExperimentalDesignHelpers.uniqueCategories(expDes).contains("SampleID"))
+    assert(ExperimentalDesignHelpers.uniqueCategories(expDes).contains("CombinedConditions"))
+  }
+
+  "importing a design and exporting it" should "produce the same design " in {
+    val expDes = ExperimentalDesignHelpers.importFromCSVFileWithHeader("./for_testing/exp_designs/microarray/AMS0100_design.csv", separator = ";")
+
+    import scala.collection.convert.wrapAsScala._
+    val rFile = Files.readAllLines(Paths.get("./for_testing/exp_designs/microarray/AMS0100_design.csv")).toList
+    val rawFileContent = rFile.mkString("", "\n", "\n")
+
+    val exported = ExperimentalDesignHelpers.exportToDelimitedWithHeader(expDes, rFile.head.split(";").toList, ";")
+    val f = new File(s"/tmp/${UUID.randomUUID().toString}.csv")
+    Files.write(f.toPath, exported.getBytes(StandardCharsets.UTF_8))
+
+    val expDes2 = ExperimentalDesignHelpers.importFromCSVFileWithHeader(f.getAbsolutePath, separator = ";")
+
+    assert(expDes == expDes2)
   }
 }

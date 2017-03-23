@@ -1,5 +1,7 @@
 package com.actelion.research.arcite.core.experiments
 
+import java.nio.file.{Files, Paths}
+
 
 /**
   * Created by deffabe1 on 4/25/16.
@@ -29,24 +31,25 @@ case class Condition(name: String, description: String, category: String)
   */
 case class ConditionsForSample(conditions: Set[Condition])
 
-//todo list to set?
+object ExperimentalDesignHelpers {
 
-
-object ExperimentalDesignSearch {
 
   def conditionsByCategory(cat: String, expDesign: ExperimentalDesign): Set[Condition] = {
     expDesign.sampleConditions.flatMap(cs ⇒ cs.conditions.filter(c ⇒ c.category.equals(cat)))
   }
 
+
   def allCategories(expDesign: ExperimentalDesign): Set[String] = {
     expDesign.sampleConditions.flatMap(cs ⇒ cs.conditions.map(_.category))
   }
+
 
   def allValuesForCats(expDes: ExperimentalDesign, cat: String*): Set[Set[Condition]] = {
     val av4c = expDes.sampleConditions.map(cs ⇒ cs.conditions.filter(c ⇒ cat.contains(c.category)))
     //    println(s"cat=${cat} (${av4c.size}) => $av4c\n\n")
     av4c
   }
+
 
   def uniqueCombinedCats(expDes: ExperimentalDesign): List[List[String]] = {
 
@@ -64,6 +67,44 @@ object ExperimentalDesignSearch {
         .map(sc ⇒ sc.toList.sortBy(_.category).mkString).size == size).toList
   }
 
+
   def uniqueCategories(expDes: ExperimentalDesign): List[String] =
     uniqueCombinedCats(expDes).filter(_.size == 1).flatten
+
+
+  def importFromCSVFileWithHeader(path: String,
+                                  description: String = "design from CSV file",
+                                  separator: String = "\t"): ExperimentalDesign = {
+
+    import scala.collection.convert.wrapAsScala._
+    val designFile = Files.readAllLines(Paths.get(path)).toList
+
+    val headers = designFile.head.split(separator)
+
+    ExperimentalDesign(description,
+      designFile.tail.map(l ⇒
+        ConditionsForSample(l.split(separator)
+          .zipWithIndex.map(wi ⇒ Condition(wi._1, wi._1, headers(wi._2))).toSet)
+      ).toSet)
+  }
+
+
+  def exportToDelimitedWithHeader(expDesign: ExperimentalDesign,
+                                  categories: List[String],
+                                  separator: String = "\t"): String = {
+
+    val sb = new StringBuilder
+
+    sb append categories.mkString(separator) append "\n"
+
+    expDesign.sampleConditions.foreach{s ⇒
+      categories.zipWithIndex.foreach { c ⇒
+        sb append s.conditions.find(_.category == c._1).fold(separator)(_.name)
+        if (c._2 - 1 < categories.size) sb append separator
+      }
+      sb append "\n"
+    }
+
+    sb.toString()
+  }
 }
