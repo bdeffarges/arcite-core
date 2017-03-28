@@ -1,18 +1,17 @@
 package com.actelion.research.arcite.core.api
 
-import java.io.File
 import java.util.UUID
 
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{HttpEntity, RequestEntity, _}
+import akka.http.scaladsl.model._
 import akka.stream.scaladsl._
 import akka.util.ByteString
-import com.actelion.research.arcite.core
+
 import com.actelion.research.arcite.core.TestHelpers
 import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddExperiment, CloneExperimentNewProps}
-import com.actelion.research.arcite.core.experiments.{Experiment, ExperimentUID}
+import com.actelion.research.arcite.core.experiments.ExperimentUID
 import com.actelion.research.arcite.core.rawdata.DefineRawData.SourceRawDataSet
-import com.actelion.research.arcite.core.utils.FileInformationWithSubFolder
+
 import spray.json._
 
 import scala.concurrent.Future
@@ -46,15 +45,16 @@ class DefineRawDataApiTests extends ApiTests {
   val exp1 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment1)
   var clonedExp: Option[String] = None
 
+  def addSoon(addends: Int*): Future[Int] = Future { addends.sum }
 
-  "Create a new experiment " should " return the uid of the new experiment " in {
+  behavior of "Create a new experiment"
+  it should "eventually return the uid of the new experiment " in {
 
     implicit val executionContext = system.dispatcher
     import spray.json._
 
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)
-
 
     val jsonRequest = ByteString(AddExperiment(exp1).toJson.prettyPrint)
 
@@ -87,7 +87,6 @@ class DefineRawDataApiTests extends ApiTests {
       HttpMethods.POST,
       uri =s"$urlPrefix/raw_data/from_source",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
-
 
     val res: Future[HttpResponse] = Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
 

@@ -5,9 +5,9 @@ organization := "com.actelion.research.arcite"
 
 name := "arcite-core"
 
-version := "1.26.0-SNAPSHOT"
+version := "1.27.0-SNAPSHOT"
 
-scalaVersion := "2.11.8" // todo move to 2.12 once spark has moved available
+scalaVersion := "2.12.1"
 
 scmInfo := Some(
   ScmInfo(
@@ -23,8 +23,8 @@ scalacOptions ++= Seq(
   , "-unchecked"
   , "-encoding", "UTF-8"
   , "-Xlint"
-  , "-Yclosure-elim"
-  , "-Yinline"
+  //  , "-Yclosure-elim"
+  //  , "-Yinline"
   , "-Xverify"
   , "-feature"
   , "-language:postfixOps"
@@ -49,54 +49,62 @@ resolvers ++= Seq(
   Resolver.jcenterRepo,
   Resolver.sonatypeRepo("public"),
   Resolver.sonatypeRepo("releases"),
-  Resolver.sonatypeRepo("snapshots"))
+  Resolver.sonatypeRepo("snapshots"),
+  MavenRepository("mvn-repository", "https://mvnrepository.com/artifact/"),
+  MavenRepository("bioinfo-3rd-parties", "http://bioinfo.it.actelion.com:8081/nexus/content/repositories/thirdparty/"),
+  MavenRepository("bioinfo-releases", "http://bioinfo.it.actelion.com/nexus/content/repositories/releases/"),
+  MavenRepository("bioinfo-snapshots", "http://bioinfo.it.actelion.com/nexus/content/repositories/snapshots/"),
+  MavenRepository("Artima Maven Repository", "http://repo.artima.com/releases/"))
 
 
 libraryDependencies ++= {
-  val akkaVersion = "2.4.16"
-  val sparkVersion = "2.1.0"
-  val luceneVersion = "6.4.0"
+  val akkaVersion = "2.4.17"
+  val akkaHttpVersion = "10.0.5"
+  val luceneVersion = "6.5.0"
 
   Seq(
-    "org.specs2" %% "specs2-core" % "3.7" % "test",
-    "org.scalatest" %% "scalatest" % "3.0.1" % "test",
-    "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",
-    "com.typesafe.akka" %% "akka-multi-node-testkit" % akkaVersion % "test",
-    "com.github.agourlay" %% "cornichon" % "0.9.3" % "test",
-    "org.json4s" %% "json4s-jackson" % "3.3.0" % "test",
-    "com.typesafe.akka" %% "akka-kernel" % akkaVersion,
     "com.typesafe.akka" %% "akka-actor" % akkaVersion,
-    "com.typesafe.akka" %% "akka-remote" % akkaVersion,
+    "com.typesafe.akka" %% "akka-agent" % akkaVersion,
+    "com.typesafe.akka" %% "akka-camel" % akkaVersion,
     "com.typesafe.akka" %% "akka-cluster" % akkaVersion,
     "com.typesafe.akka" %% "akka-cluster-metrics" % akkaVersion,
+    "com.typesafe.akka" %% "akka-cluster-sharding" % akkaVersion,
+    "com.typesafe.akka" %% "akka-cluster-tools" % akkaVersion,
     "com.typesafe.akka" %% "akka-contrib" % akkaVersion,
-    "com.typesafe.akka" %% "akka-kernel" % akkaVersion,
-    "com.typesafe.akka" %% "akka-stream" % akkaVersion,
-    "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
-    "com.typesafe.akka" %% "akka-http" % "3.0.0-RC1", // core, test, etc. should come as well as dependencies
-    "com.typesafe.akka" %% "akka-http-testkit" % "3.0.0-RC1",
-    "com.typesafe.akka" %% "akka-http-spray-json" % "3.0.0-RC1",
+    "com.typesafe.akka" %% "akka-multi-node-testkit" % akkaVersion,
+    "com.typesafe.akka" %% "akka-osgi" % akkaVersion,
     "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
-    "com.typesafe.scala-logging" %% "scala-logging" % "3.1.0",
-    "com.iheart" %% "ficus" % "1.4.0",
-    "org.apache.spark" %% "spark-core" % sparkVersion,
-    "org.apache.spark" %% "spark-graphx" % sparkVersion,
-    "org.apache.spark" %% "spark-mllib" % sparkVersion,
-    "com.databricks" %% "spark-csv" % "1.4.0",
-    "org.scalanlp" % "breeze_2.11" % "0.11.2",
-    "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4",
+    "com.typesafe.akka" %% "akka-persistence-tck" % akkaVersion,
+    "com.typesafe.akka" %% "akka-remote" % akkaVersion,
+    "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
+    "com.typesafe.akka" %% "akka-stream" % akkaVersion,
+    "com.typesafe.akka" %% "akka-stream-testkit" % akkaVersion,
+    "com.typesafe.akka" %% "akka-testkit" % akkaVersion,
+    "com.typesafe.akka" %% "akka-distributed-data-experimental" % akkaVersion,
+    "com.typesafe.akka" %% "akka-typed-experimental" % akkaVersion,
+    "com.typesafe.akka" %% "akka-persistence-query-experimental" % akkaVersion,
+    "com.typesafe.akka" %% "akka-http-core" % akkaHttpVersion,
+    "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
+    "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion,
+    "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
+    "com.typesafe.akka" %% "akka-http-jackson" % akkaHttpVersion,
+    "com.typesafe.akka" %% "akka-http-xml" % akkaHttpVersion,
     "org.apache.lucene" % "lucene-core" % luceneVersion,
     "org.apache.lucene" % "lucene-suggest" % luceneVersion,
     "org.apache.lucene" % "lucene-analyzers-common" % luceneVersion,
     "org.apache.lucene" % "lucene-queries" % luceneVersion,
     "org.apache.lucene" % "lucene-queryparser" % luceneVersion,
-    "commons-io" % "commons-io" % "2.4" % "test",
-    "org.iq80.leveldb" % "leveldb" % "0.7",
+    "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0",
+    "org.scalanlp" %% "breeze" % "0.13",
+    "org.iq80.leveldb" % "leveldb" % "0.9",
     "org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8",
-    "org.scalacheck" %% "scalacheck" % "1.13.0" % "test",
-    "io.kamon" %% "kamon-core" % "0.6.0",
-    "io.kamon" %% "kamon-statsd" % "0.6.0",
-    "io.kamon" %% "kamon-datadog" % "0.6.0")
+    "commons-io" % "commons-io" % "2.5",
+    "org.scalacheck" %% "scalacheck" % "1.13.5" % "test",
+    "org.specs2" %% "specs2-core" % "3.8.9" % "test",
+    "org.scalactic" %% "scalactic" % "3.0.1",
+    "org.scalatest" %% "scalatest" % "3.0.1" % "test",
+    "com.github.agourlay" %% "cornichon" % "0.11.2" % "test",
+    "org.json4s" %% "json4s-jackson" % "3.5.1" % "test")
 }
 
 enablePlugins(JavaServerAppPackaging)
@@ -118,8 +126,8 @@ mappings in Universal ++= {
 
 javaOptions in Universal ++= Seq(
   // -J params will be added as jvm parameters
-    "-J-Xmx1G",
-    "-J-Xms256m"
+  "-J-Xmx1G",
+  "-J-Xms256m"
 
   //   others will be added as app parameters
   // should be given as variable by docker run
@@ -136,7 +144,7 @@ dockerCommands := Seq(
   Cmd("RUN", """chown -R daemon:daemon ."""),
   Cmd("EXPOSE", "8084 2551 2552 2553 2554 2555 2556 2557 2558"),
   Cmd("USER", "daemon"),
-  Cmd("ENTRYPOINT","bin/arcite-core"))
+  Cmd("ENTRYPOINT", "bin/arcite-core"))
 
 licenses := Seq(("CC0", url("http://creativecommons.org/publicdomain/zero/1.0")))
 

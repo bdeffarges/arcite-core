@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
-import org.scalatest.{AsyncFlatSpec, BeforeAndAfter, Matchers}
+import org.scalatest._
 
 /**
   * arcite-core
@@ -29,7 +29,8 @@ import org.scalatest.{AsyncFlatSpec, BeforeAndAfter, Matchers}
   * Created by Bernard Deffarges on 2016/11/10.
   *
   */
-class ApiTests extends AsyncFlatSpec with Matchers with ArciteJSONProtocol with LazyLogging {
+class ApiTests extends AsyncFlatSpec with Matchers with ArciteJSONProtocol
+  with LazyLogging with TestSuite {
 
   val config = ConfigFactory.load()
   val refApi = config.getString("arcite.api.specification").stripMargin

@@ -25,7 +25,7 @@ import com.actelion.research.arcite.core.api.Main
   * Created by Bernard Deffarges on 2016/11/09.
   *
   */
-class MainApiTest extends APIintegrationSpec {
+abstract class MainApiTest extends APIintegrationSpec {
 
   val apiSpec = conf.getString("api.specification")
 
@@ -37,6 +37,7 @@ class MainApiTest extends APIintegrationSpec {
   "Default get " should "return rest interface specification " in {
     Get() ~> routes ~> check {
       responseAs[String] shouldEqual apiSpec.stripMargin
+
     }
   }
 }
