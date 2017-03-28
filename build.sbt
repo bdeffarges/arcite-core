@@ -9,6 +9,8 @@ version := "1.27.0-SNAPSHOT"
 
 scalaVersion := "2.12.1"
 
+crossScalaVersions := Seq(scalaVersion.value,"2.11.8")
+
 scmInfo := Some(
   ScmInfo(
     url("https://chiron.europe.actelion.com/stash/projects/ARC/repos/arcite-core/browse"),
@@ -51,9 +53,6 @@ resolvers ++= Seq(
   Resolver.sonatypeRepo("releases"),
   Resolver.sonatypeRepo("snapshots"),
   MavenRepository("mvn-repository", "https://mvnrepository.com/artifact/"),
-  MavenRepository("bioinfo-3rd-parties", "http://bioinfo.it.actelion.com:8081/nexus/content/repositories/thirdparty/"),
-  MavenRepository("bioinfo-releases", "http://bioinfo.it.actelion.com/nexus/content/repositories/releases/"),
-  MavenRepository("bioinfo-snapshots", "http://bioinfo.it.actelion.com/nexus/content/repositories/snapshots/"),
   MavenRepository("Artima Maven Repository", "http://repo.artima.com/releases/"))
 
 
