@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.StatusCodes._
 import com.actelion.research.arcite.core.experiments.ExperimentalDesign
 import com.actelion.research.arcite.core.utils.Owner
 import com.github.agourlay.cornichon.CornichonFeature
-import com.github.agourlay.cornichon.steps.regular.assertStep.{AssertStep, CustomMessageAssertion}
+import com.github.agourlay.cornichon.steps.regular.assertStep.{AssertStep}
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 
@@ -27,14 +27,6 @@ case class experimentsSize(source: String) {
 
   private def szError(v: Int, ms: Int): Boolean ⇒ String = b ⇒ s"$v is not bigger than $ms"
 
-  def isBigger(minSize: Int) =
-    AssertStep(
-      title = s"size of json array $source is bigger than $minSize",
-      action = s ⇒ {
-        val v = s.get(source).toInt
-        CustomMessageAssertion(true, v > minSize, szError(v, minSize))
-      }
-    )
 }
 
 /**
