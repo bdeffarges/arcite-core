@@ -24,7 +24,6 @@ abstract class ApiTestingWithCornichon extends CornichonFeature {
 }
 
 case class experimentsSize(source: String) {
-
   private def szError(v: Int, ms: Int): Boolean ⇒ String = b ⇒ s"$v is not bigger than $ms"
 
 }
