@@ -5,11 +5,11 @@ organization := "com.actelion.research.arcite"
 
 name := "arcite-core"
 
-version := "1.27.0-SNAPSHOT"
+version := "1.28.0-SNAPSHOT"
 
-scalaVersion := "2.12.1"
+scalaVersion := "2.11.8"
 
-crossScalaVersions := Seq(scalaVersion.value,"2.11.8")
+crossScalaVersions := Seq(scalaVersion.value,"2.12.1")
 
 scmInfo := Some(
   ScmInfo(
