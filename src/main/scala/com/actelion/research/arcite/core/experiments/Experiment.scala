@@ -102,7 +102,6 @@ case class ExperimentFolderVisitor(exp: Experiment) {
 
   val immutableStateFile: Path = metaFolderPath resolve ".immutable"
 
-
   def ensureFolderStructure(): Unit = {
     expFolderPath.toFile.mkdirs()
     rawFolderPath.toFile.mkdir()
@@ -129,6 +128,8 @@ object ExperimentFolderVisitor {
   val metaFileInPublicFolder = s"${core.arciteFilePrefix}meta.json"
   val publishedFileExtension = "_published.json"
   val publishedRemovedFileExtension = "_removed.json"
+
+  def apply(exp: Experiment): ExperimentFolderVisitor = new ExperimentFolderVisitor(exp)
 
   def isInternalFile(name: String): Boolean = name == defaultMetaFileName || name == metaFileInPublicFolder
 }
