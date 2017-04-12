@@ -42,12 +42,16 @@ class ExperimentHelpers(experiment: Experiment) extends ArciteJSONProtocol {
       .map(f ⇒ Files.readAllLines(f.get.toPath).mkString(" ").parseJson.convertTo[TransformCompletionFeedback]).toSet
   }
 
-  def getParentTransform(transfUID: String): Option[TransformCompletionFeedback] = {
+  def getParentTransformCompFeedback(transfUID: String): Option[TransformCompletionFeedback] = {
     val t = successfullTransforms.find(tf ⇒ tf.transform == transfUID)
 
     if (t.isDefined && t.get.source.fromTransform.isDefined)
       successfullTransforms.find(_.transform == t.get.source.fromTransform.get)
     else None
+  }
+
+  def getTransformCompFeedback(transfUID: String): Option[TransformCompletionFeedback] = {
+    successfullTransforms.find(tf ⇒ tf.transform == transfUID)
   }
 }
 
