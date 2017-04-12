@@ -129,8 +129,6 @@ object ExperimentFolderVisitor {
   val publishedFileExtension = "_published.json"
   val publishedRemovedFileExtension = "_removed.json"
 
-  def apply(exp: Experiment): ExperimentFolderVisitor = new ExperimentFolderVisitor(exp)
-
   def isInternalFile(name: String): Boolean = name == defaultMetaFileName || name == metaFileInPublicFolder
 }
 
