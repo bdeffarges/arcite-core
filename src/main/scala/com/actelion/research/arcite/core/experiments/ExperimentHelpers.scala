@@ -3,6 +3,7 @@ package com.actelion.research.arcite.core.experiments
 import java.nio.file.Files
 
 import com.actelion.research.arcite.core
+import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.transforms.TransformCompletionFeedback
 import com.actelion.research.arcite.core.utils.WriteFeedbackActor
 
@@ -30,15 +31,12 @@ import com.actelion.research.arcite.core.utils.WriteFeedbackActor
   *
   *
   */
-class ExperimentHelpers(experiment: Experiment) {
+class ExperimentHelpers(experiment: Experiment) extends ArciteJSONProtocol {
 
   lazy val successfullTransforms: Set[TransformCompletionFeedback] = {
     import spray.json._
-
     import scala.collection.convert.wrapAsScala._
-
-    val visitor = ExperimentFolderVisitor(experiment)
-    val allTransforms = visitor.transformFolderPath.toFile
+    ExperimentFolderVisitor(experiment).transformFolderPath.toFile
       .listFiles.filter(f ⇒ f.listFiles.exists(ff ⇒ ff.getName == core.successFile))
       .map(_.listFiles.find(f ⇒ f.getName == WriteFeedbackActor.FILE_NAME))
       .map(f ⇒ Files.readAllLines(f.get.toPath).mkString(" ").parseJson.convertTo[TransformCompletionFeedback]).toSet
