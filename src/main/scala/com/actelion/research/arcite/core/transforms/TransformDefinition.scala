@@ -112,7 +112,6 @@ case class TransformHelper(transform: Transform) {
 case class TransformDoneSource(experiment: String, kindOfSource: String, fromTransform: Option[String],
                                excludes: Option[Set[String]], excludesRegex: Option[Set[String]])
 
-
 case class TransformCompletionFeedback(transform: String, transformDefinition: FullName, source: TransformDoneSource,
                                        parameters: Map[String, String], status: TransformCompletionStatus,
                                        artifacts: Map[String, String], feedback: String, errors: String,
