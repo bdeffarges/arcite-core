@@ -24,7 +24,7 @@ object TransfDefMsg {
 
   sealed trait MsgFromTransfDefsManager
 
-  case class ManyTransfDefs(transfDefIds: Set[TransformDefinitionIdentity]) extends MsgFromTransfDefsManager
+  case class ManyTransfDefs(transfDefIds: List[TransformDefinitionIdentity]) extends MsgFromTransfDefsManager
 
   case class OneTransfDef(transfDefId: TransformDefinitionIdentity) extends MsgFromTransfDefsManager
 

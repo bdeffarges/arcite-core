@@ -52,7 +52,6 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
   private var workers = Map[String, WorkerState]()
   private var transformDefs = Set[TransformDefinitionIdentity]()
 
-
   // workState is event sourced
   private var workState = WorkState.empty
 
@@ -208,7 +207,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       sender() ! workState.runningJobsSummary()
 
     case GetAllTransfDefs ⇒
-      sender() ! ManyTransfDefs(transformDefs)
+      sender() ! ManyTransfDefs(transformDefs.toList)
 
 
     case ft: FindTransfDefs ⇒
@@ -240,13 +239,8 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
   }
 
 
-  def findTransformers(search: String): Set[TransformDefinitionIdentity] = {
-
-    transformDefs.filter(td ⇒ td.fullName.name.toLowerCase.contains(search)).take(10) ++
-      transformDefs.filter(td ⇒ td.fullName.organization.toLowerCase.contains(search)).take(5) ++
-      transformDefs.filter(td ⇒ td.description.summary.toLowerCase.contains(search)) ++
-      transformDefs.filter(td ⇒ td.description.consumes.toLowerCase.contains(search)) ++
-      transformDefs.filter(td ⇒ td.description.produces.toLowerCase.contains(search))
+  def findTransformers(search: String): List[TransformDefinitionIdentity] = {
+    new TransfDefHelpers(transformDefs).findTransformers(search, 10)
   }
 
 
