@@ -89,7 +89,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
 
           } else {
             val error =
-              s"""transforms uid don't seem to match [${otd.transfDefId.digestUID}] with
+              s"""transform uid does not seem to match [${otd.transfDefId.digestUID}] with
                  |[${procWTransf.get.transfDefUID}]""".stripMargin
             log.error(error)
             requester ! TransfNotReceived(error)

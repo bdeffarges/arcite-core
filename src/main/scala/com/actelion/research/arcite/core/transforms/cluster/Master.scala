@@ -83,9 +83,12 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
 
     case MasterWorkerProtocol.WorkerRequestsWork(workerId) ⇒
-      log.info(
-        s"""total pending jobs = ${workState.numberOfPendingJobs()}
-           |worker requesting work... do we have something to be done?""".stripMargin)
+      if (workState.numberOfPendingJobs() > 0) {
+        log.info(
+          s"""total pending jobs = ${workState.numberOfPendingJobs()}
+             |worker requesting work... do we have something to be done?""".
+            stripMargin)
+      }
 
       val td = workers(workerId).transDef
       if (td.isDefined && workState.hasWork(td.get.fullName)) {
