@@ -116,9 +116,9 @@ class WorkExecLowerCase extends Actor with ActorLogging with ArciteJSONProtocol 
 }
 
 object WorkExecLowerCase {
-  val fullName = FullName("com.actelion.research.arcite.core", "to-lowercase")
+  val fullName = FullName("com.actelion.research.arcite.core", "to-lowercase", "to-lowercase")
 
-  val transfDefId = TransformDefinitionIdentity(fullName, "to-lowercase",
+  val transfDefId = TransformDefinitionIdentity(fullName,
     TransformDescription("to-lowercase", "text", "lowercase-text"))
 
   val definition = TransformDefinition(transfDefId, props)

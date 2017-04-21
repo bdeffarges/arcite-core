@@ -35,12 +35,12 @@ class WorkStateTest extends FlatSpec with Matchers {
   private val exp2 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment2)
   private val exp3 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment3)
 
-  private val t11 = Transform(FullName("com.actelion.research.transform", "t1"), TransformSourceFromRaw(exp1))
-  private val t12 = Transform(FullName("com.actelion.research.transform", "t2"), TransformSourceFromRaw(exp1))
-  private val t21 = Transform(FullName("com.actelion.research.transform", "t3"), TransformSourceFromRaw(exp2))
-  private val t22 = Transform(FullName("com.actelion.research.transform", "t4"), TransformSourceFromRaw(exp2))
-  private val t31 = Transform(FullName("com.actelion.research.transform", "t5"), TransformSourceFromRaw(exp3))
-  private val t32 = Transform(FullName("com.actelion.research.transform", "t6"), TransformSourceFromRaw(exp3))
+  private val t11 = Transform(FullName("com.actelion.research.transform", "t1", "t1"), TransformSourceFromRaw(exp1))
+  private val t12 = Transform(FullName("com.actelion.research.transform", "t2", "t2"), TransformSourceFromRaw(exp1))
+  private val t21 = Transform(FullName("com.actelion.research.transform", "t3", "t3"), TransformSourceFromRaw(exp2))
+  private val t22 = Transform(FullName("com.actelion.research.transform", "t4", "t4"), TransformSourceFromRaw(exp2))
+  private val t31 = Transform(FullName("com.actelion.research.transform", "t5", "t5"), TransformSourceFromRaw(exp3))
+  private val t32 = Transform(FullName("com.actelion.research.transform", "t6", "t6"), TransformSourceFromRaw(exp3))
 
   private var ws = WorkState.empty
 

@@ -31,19 +31,19 @@ class TreeOfTransformDefinitionTest extends FlatSpec with Matchers {
 
   "creating a tree of transform" should " end up with the right number of transforms " in {
     val testTofT1: TreeOfTransformDefinition = TreeOfTransformDefinition(
-      FullName("com.actelion.research.arcite.test", "upper-lowerXtimes"),
+      FullName("com.actelion.research.arcite.test", "upper-lowerXtimes", "upper-lowerXtimes"),
       "multiple times upper, lower, etc. just for test",
-      TreeOfTransformNode(WorkExecUpperCase.transfDefId.digestUID,
-        TreeOfTransformNode(WorkExecLowerCase.transfDefId.digestUID,
-          TreeOfTransformNode(WorkExecUpperCase.transfDefId.digestUID,
-            TreeOfTransformNode(WorkExecLowerCase.transfDefId.digestUID) ::
-              List(TreeOfTransformNode(WorkExecUpperCase.transfDefId.digestUID),
-                TreeOfTransformNode(WorkExecLowerCase.transfDefId.digestUID))) ::
-            List(TreeOfTransformNode(WorkExecLowerCase.transfDefId.digestUID),
-              TreeOfTransformNode(WorkExecUpperCase.transfDefId.digestUID),
-              TreeOfTransformNode(WorkExecUpperCase.transfDefId.digestUID))) ::
-          List(TreeOfTransformNode(WorkExecLowerCase.transfDefId.digestUID),
-            TreeOfTransformNode(WorkExecUpperCase.transfDefId.digestUID))))
+      TreeOfTransformNode(WorkExecUpperCase.transfDefId.fullName.asUID,
+        TreeOfTransformNode(WorkExecLowerCase.transfDefId.fullName.asUID,
+          TreeOfTransformNode(WorkExecUpperCase.transfDefId.fullName.asUID,
+            TreeOfTransformNode(WorkExecLowerCase.transfDefId.fullName.asUID) ::
+              List(TreeOfTransformNode(WorkExecUpperCase.transfDefId.fullName.asUID),
+                TreeOfTransformNode(WorkExecLowerCase.transfDefId.fullName.asUID))) ::
+            List(TreeOfTransformNode(WorkExecLowerCase.transfDefId.fullName.asUID),
+              TreeOfTransformNode(WorkExecUpperCase.transfDefId.fullName.asUID),
+              TreeOfTransformNode(WorkExecUpperCase.transfDefId.fullName.asUID))) ::
+          List(TreeOfTransformNode(WorkExecLowerCase.transfDefId.fullName.asUID),
+            TreeOfTransformNode(WorkExecUpperCase.transfDefId.fullName.asUID))))
 
     assert(testTofT1.allNodes.size == 11)
     assert(DefaultTofT.testTofT1.allNodes.size == 3)

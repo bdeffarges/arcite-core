@@ -218,7 +218,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
 
     case GetTransfDef(d) ⇒
-      transformDefs.find(_.digestUID == d) match {
+      transformDefs.find(_.fullName.asUID == d) match {
         case Some(x) ⇒ sender() ! OneTransfDef(x)
         case _ ⇒ sender() ! NoTransfDefFound
       }

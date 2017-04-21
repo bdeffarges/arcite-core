@@ -29,21 +29,21 @@ import org.scalatest.{FlatSpec, Matchers}
   */
 class TransfDefHelpersTest extends FlatSpec with Matchers {
 
-  val transfDefs = TransformDefinitionIdentity(FullName("com.hello.world", "Brilliant data normalization"), "brillNorm",
+  val transfDefs = TransformDefinitionIdentity(FullName("com.hello.world", "Brilliant data normalization", "brillNorm"),
     TransformDescription("very interesting z scoring", "some raw matrix", "a normalized matrix")) ::
-    TransformDefinitionIdentity(FullName("com.hello.world", "Microarray QC"), "MicQC",
+    TransformDefinitionIdentity(FullName("com.hello.world", "Microarray QC", "MicQC"),
       TransformDescription("produces the default microarray qcs", "normalized matrix", "QC reports")) ::
-    TransformDefinitionIdentity(FullName("com.hello.world", "Nanostring analysis"), "NanostringA",
+    TransformDefinitionIdentity(FullName("com.hello.world", "Nanostring analysis", "NanostringA"),
       TransformDescription("default nanostring analysis", "raw nanostring files", "a working web application")) ::
-    TransformDefinitionIdentity(FullName("org.bye.earth", "Deeplearning for NGS"), "DeepLearnNGS",
+    TransformDefinitionIdentity(FullName("org.bye.earth", "Deeplearning for NGS", "DeepLearnNGS"),
       TransformDescription("deeplearning network for NGS", "a training set", "a great prediction")) ::
-    TransformDefinitionIdentity(FullName("org.bye.earth", "space shuttle launch"), "spaceShuttleLaunch",
+    TransformDefinitionIdentity(FullName("org.bye.earth", "space shuttle launch", "spaceShuttleLaunch"),
       TransformDescription("space shuttle launch", "takes the space shuttle", "produces the launch of the shuttle")) ::
-    TransformDefinitionIdentity(FullName("org.bye.earth", "free ride to mars"), "ride2mars",
+    TransformDefinitionIdentity(FullName("org.bye.earth", "free ride to mars", "ride2mars"),
       TransformDescription("takes anybody who wants to mars", "somebody", "a nice ride to Mars")) ::
-    TransformDefinitionIdentity(FullName("ch.hello.world", "truth teller"), "TrutH",
+    TransformDefinitionIdentity(FullName("ch.hello.world", "truth teller", "TrutH"),
       TransformDescription("will always tell you the truth", "start from anything, even not true", "returns ThE TrUtH")) ::
-    TransformDefinitionIdentity(FullName("ch.hello.world", "Schrödinger cat"), "SchrCAt",
+    TransformDefinitionIdentity(FullName("ch.hello.world", "Schrödinger cat", "SchrCAt"),
       TransformDescription("Is the cat alive or dead?", "will take any cat", "tells whether the cat is alive or dead")) :: Nil
 
   val transfDefHelpers = new TransfDefHelpers(transfDefs.toSet)

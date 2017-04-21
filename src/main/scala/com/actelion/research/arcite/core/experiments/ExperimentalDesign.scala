@@ -31,6 +31,8 @@ case class Condition(name: String, description: String, category: String)
   */
 case class ConditionsForSample(conditions: Set[Condition])
 
+case class ExperimentConditionsMatrix(headers: List[String], conditions: List[List[String]])
+
 object ExperimentalDesignHelpers {
 
 
@@ -107,4 +109,8 @@ object ExperimentalDesignHelpers {
 
     sb.toString()
   }
+
+  def fromDesignToConditionMatrix(exp: ExperimentalDesign): ExperimentConditionsMatrix = ???
 }
+
+

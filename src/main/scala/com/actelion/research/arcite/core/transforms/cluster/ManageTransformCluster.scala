@@ -100,7 +100,7 @@ object ManageTransformCluster {
 
   def addWorker(td: TransformDefinition): Unit = {
 
-    val name = s"${td.transDefIdent.shortName}-${UUID.randomUUID().toString}"
+    val name = s"${td.transDefIdent.fullName.asUID}-${UUID.randomUUID().toString}"
 
     val clusterClient = workSystem.actorOf(
       ClusterClient.props(

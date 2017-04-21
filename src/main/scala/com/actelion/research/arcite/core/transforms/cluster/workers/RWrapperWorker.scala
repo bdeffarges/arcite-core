@@ -62,8 +62,8 @@ class RWrapperWorker extends Actor with ActorLogging {
 
 object RWrapperWorker {
 
-  val fullName = FullName("com.actelion.research.arcite.core", "Simple-R-wrapper")
-  val defIdent = TransformDefinitionIdentity(fullName, "r-wrapper",
+  val fullName = FullName("com.actelion.research.arcite.core", "Simple-R-wrapper", "R-wrapper")
+  val defIdent = TransformDefinitionIdentity(fullName,
     TransformDescription("A simple wrapper to run a r process wrapped in an akka actor",
       "takes several arguments to start a R script",
       "returns a status code, output and error Strings, R output (PDF, dataframe) have to be returned somewhere else"))

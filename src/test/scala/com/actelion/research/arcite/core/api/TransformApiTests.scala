@@ -88,7 +88,7 @@ class TransformApiTests extends ApiTests {
 
       transfDef1 = Some(transfDefs.toSeq.head)
 
-      assert(transfDef1.get.shortName == "to-uppercase")
+      assert(transfDef1.get.fullName.shortName == "to-uppercase")
     }
   }
 
@@ -113,7 +113,7 @@ class TransformApiTests extends ApiTests {
 
       transfDef2 = Some(transfDefs.toSeq.head)
 
-      assert(transfDef2.get.shortName == "to-lowercase")
+      assert(transfDef2.get.fullName.shortName == "to-lowercase")
     }
   }
 
@@ -171,7 +171,7 @@ class TransformApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     import spray.json._
-    val transf1 = RunTransformOnObject(exp1.uid, transfDef1.get.digestUID,
+    val transf1 = RunTransformOnObject(exp1.uid, transfDef1.get.fullName.asUID,
       Map("ToUpperCase" -> "transform me to upper case"))
 
     val jsonRequest = ByteString(transf1.toJson.prettyPrint)
@@ -203,7 +203,7 @@ class TransformApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     import spray.json._
-    val transf1 = RunTransformOnObject(exp1.uid, transfDef2.get.digestUID,
+    val transf1 = RunTransformOnObject(exp1.uid, transfDef2.get.fullName.asUID,
       Map("ToLowerCase" -> "transform me to lower case"))
 
     val jsonRequest = ByteString(transf1.toJson.prettyPrint)

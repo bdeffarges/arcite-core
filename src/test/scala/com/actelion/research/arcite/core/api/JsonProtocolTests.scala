@@ -81,7 +81,7 @@ class JsonProtocolTests extends FlatSpec with Matchers with ArciteJSONProtocol {
   "TreeOfTransFeedbackJson back and forth to json... " should " produce json and read json " in {
 
     val totfd = ToTFeedbackDetails(uid = "dddddeeeeaa333234234324",
-      name = FullName(organization = "hello.world", name = "earth", version = "1.2.2"),
+      name = FullName(organization = "hello.world", name = "earth", shortName = "earth", version = "1.2.2"),
       treeOfTransform = "dsfwerqwer",
       properties = Map("ddd" -> "ddsd", "aaa" -> "bdfds"),
       startFromRaw = false,
@@ -92,5 +92,16 @@ class JsonProtocolTests extends FlatSpec with Matchers with ArciteJSONProtocol {
     val fromJson = toJson.convertTo[ToTFeedbackDetails]
 
     assert(totfd == fromJson)
+  }
+
+  "to json for transform parameters " should " produce json and read json converting to the right type " in {
+
+    val pdv = PredefinedValues("pdef1", "pre def val", "val1" :: "val2" :: "val3":: Nil)
+
+    val pdvToJ = pdv.toJson
+    val pdvFromJ = pdvToJ.convertTo[TransformParameter]
+
+    assert(pdvFromJ.isInstanceOf[PredefinedValues])
+    assert(pdvFromJ == pdv)
   }
 }

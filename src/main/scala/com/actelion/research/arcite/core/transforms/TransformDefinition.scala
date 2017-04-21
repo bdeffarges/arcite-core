@@ -37,14 +37,11 @@ case class TransformDescription(summary: String, consumes: String, produces: Str
   * is the actual input (e.g. transformation result) available to the next transform.
   *
   * @param fullName
-  * @param shortName
   * @param description
   * @param dependsOn
   */
-case class TransformDefinitionIdentity(fullName: FullName, shortName: String,
-                                       description: TransformDescription, dependsOn: Option[FullName] = None) {
-  lazy val digestUID = GetDigest.getDigest(s"$fullName $description")
-}
+case class TransformDefinitionIdentity(fullName: FullName, description: TransformDescription,
+                                       dependsOn: Option[FullName] = None)
 
 /**
   * Transforms are started from an actor, so here we add  a props to be able
@@ -132,8 +129,11 @@ object ParameterType extends scala.Enumeration {
 
 sealed trait TransformParameter {
   def parameterID: String
+
   def parameterName: String
+
   def defaultValue: Option[Any]
+
   def parameterType: ParameterType
 }
 

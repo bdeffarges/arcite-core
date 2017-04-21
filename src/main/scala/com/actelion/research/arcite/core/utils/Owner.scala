@@ -24,4 +24,17 @@ object DefaultOwner {
   val systemOwner = Owner("system", "arcite")
 }
 
-case class FullName(organization: String, name: String, version: String = "1.0.0")
+/**
+  *
+  * @param organization
+  * @param name
+  * @param shortName should not contain spaces (if it's the case, they will be replaced with '_')
+  * @param version
+  */
+case class FullName(organization: String, name: String, shortName: String, version: String = "1.0.0") {
+  private lazy val sName = shortName.replaceAll("\\s", "_")
+  lazy val asUID: String = s"$organization@@$sName@@$version"
+}
+
+
+

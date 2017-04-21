@@ -87,9 +87,9 @@ class WorkExecUpperCase extends Actor with ActorLogging with ArciteJSONProtocol 
 }
 
 object WorkExecUpperCase {
-  val fullName = FullName("com.actelion.research.arcite.core", "to-uppercase")
+  val fullName = FullName("com.actelion.research.arcite.core", "to-uppercase", "to-uppercase")
 
-  val transfDefId = TransformDefinitionIdentity(fullName, "to-uppercase",
+  val transfDefId = TransformDefinitionIdentity(fullName,
     TransformDescription("to-uppercase", "text", "uppercase-text"))
 
   val definition = TransformDefinition(transfDefId, props)

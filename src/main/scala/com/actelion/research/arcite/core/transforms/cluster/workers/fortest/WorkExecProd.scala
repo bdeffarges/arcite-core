@@ -37,8 +37,8 @@ class WorkExecProd extends Actor with ActorLogging {
 object WorkExecProd {
   def props(): Props = Props(classOf[WorkExecProd])
 
-  val fullName = FullName("com.actelion.research.arcite.core", "product1")
-  val defIdent = TransformDefinitionIdentity(fullName, "product1",
+  val fullName = FullName("com.actelion.research.arcite.core", "product1", "product1")
+  val defIdent = TransformDefinitionIdentity(fullName,
     TransformDescription("product1", "number", "number"))
 
   val definition = TransformDefinition(defIdent, props)

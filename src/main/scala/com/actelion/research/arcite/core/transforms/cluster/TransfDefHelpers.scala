@@ -30,7 +30,7 @@ class TransfDefHelpers(transformDefs: Set[TransformDefinitionIdentity]) {
 
   def findTransformers(search: String, maxResults: Int): List[TransformDefinitionIdentity] = {
 
-    (transformDefs.filter(td ⇒ comp2String(td.shortName, search) > 0).toList ++
+    (transformDefs.filter(td ⇒ comp2String(td.fullName.shortName, search) > 0).toList ++
       transformDefs.filter(td ⇒ comp2String(td.fullName.name, search) > 0).toList ++
       transformDefs.filter(td ⇒ comp2String(td.fullName.organization, search) > 0).toList ++
       transformDefs.filter(td ⇒ comp2String(td.description.summary, search) > 0).toList ++

@@ -75,7 +75,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
     case mftdm: MsgFromTransfDefsManager ⇒
       mftdm match {
         case otd: OneTransfDef ⇒
-          if (otd.transfDefId.digestUID == procWTransf.get.transfDefUID) {
+          if (otd.transfDefId.fullName.asUID == procWTransf.get.transfDefUID) {
             transfDef = Some(otd.transfDefId)
             procWTransf.get match {
               case ptft: ProcTransfFromTransf ⇒
@@ -89,7 +89,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
 
           } else {
             val error =
-              s"""transform uid does not seem to match [${otd.transfDefId.digestUID}] with
+              s"""transform uid does not seem to match [${otd.transfDefId.fullName.asUID}] with
                  |[${procWTransf.get.transfDefUID}]""".stripMargin
             log.error(error)
             requester ! TransfNotReceived(error)

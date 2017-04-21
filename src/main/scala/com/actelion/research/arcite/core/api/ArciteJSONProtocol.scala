@@ -56,8 +56,6 @@ import spray.json.{DefaultJsonProtocol, JsString, RootJsonFormat, _}
 trait ArciteJSONProtocol extends DefaultJsonProtocol {
   //todo split up JSON marshalling by domain (like the routes)
 
-  val noDependsOn = FullName("none", "none")
-
   implicit val uidJson: RootJsonFormat[UniqueID] = jsonFormat1(UniqueID)
 
   implicit object DateJsonFormat extends RootJsonFormat[Date] {
@@ -102,7 +100,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
     }
 
     override def read(json: JsValue): TransformParameter = {
-      ParameterType.withName(json.asJsObject.fields("parameterType").toString()) match {
+      json.asJsObject.getFields("parameterType").head.convertTo[ParameterType] match {
         case ParameterType.FREE_TEXT ⇒
           json.convertTo[FreeText]
         case ParameterType.INT_NUMBER ⇒
@@ -114,45 +112,6 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
       }
     }
   }
-
-  implicit object TransformDefinitionIdentityJsonFormat extends RootJsonFormat[TransformDefinitionIdentity] {
-
-    def write(tdi: TransformDefinitionIdentity) = {
-      JsObject(
-        "organization" -> JsString(tdi.fullName.organization),
-        "name" -> JsString(tdi.fullName.name),
-        "short_name" -> JsString(tdi.shortName),
-        "description_summary" -> JsString(tdi.description.summary),
-        "description_consumes" -> JsString(tdi.description.consumes),
-        "description_produces" -> JsString(tdi.description.produces),
-        "description_parameters" -> tdi.description.transformParameters.toJson,
-        "depends_on_organization" -> JsString(tdi.dependsOn.getOrElse(noDependsOn).organization),
-        "depends_on_name" -> JsString(tdi.dependsOn.getOrElse(noDependsOn).name),
-        "digest" -> JsString(tdi.digestUID)
-      )
-    }
-
-    def read(value: JsValue) = {
-      // todo actually read should not be necessary
-      value.asJsObject.getFields("organization", "name", "short_name", "description_summary",
-        "description_consumes", "description_produces",
-        "digest", "depends_on_name", "depends_on_description") match {
-        case Seq(JsString(organization), JsString(name), JsString(shortName),
-        JsString(descSummary), JsString(descConsumes),
-        JsString(descProduces), JsString(deponName), JsString(deponOrga)) =>
-          TransformDefinitionIdentity(FullName(organization, name), shortName,
-            TransformDescription(descSummary, descConsumes, descProduces), Some(FullName(deponOrga, deponName)))
-
-        case Seq(JsString(organization), JsString(name), JsString(shortName),
-        JsString(descSummary), JsString(descConsumes), JsString(descProduces)) =>
-          TransformDefinitionIdentity(FullName(organization, name), shortName,
-            TransformDescription(descSummary, descConsumes, descProduces))
-
-        case _ => throw DeserializationException("could not deserialize.")
-      }
-    }
-  }
-
 
   implicit object expLogJsonFormat extends RootJsonFormat[ExpLog] {
 
@@ -376,17 +335,19 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
       JsObject(
         "organization" -> JsString(fn.organization),
         "name" -> JsString(fn.name),
-        "version" -> JsString(fn.version)
+        "short_name" -> JsString(fn.shortName),
+        "version" -> JsString(fn.version),
+        "uid" -> JsString(fn.asUID)
       )
     }
 
     override def read(json: JsValue): FullName = {
-      json.asJsObject.getFields("organization", "name", "version") match {
-        case Seq(JsString(organization), JsString(name), JsString(version)) ⇒
-          FullName(organization, name, version)
+      json.asJsObject.getFields("organization", "name", "short_name", "version") match {
+        case Seq(JsString(organization), JsString(name),  JsString(shortName), JsString(version)) ⇒
+          FullName(organization, name, shortName, version)
 
-        case Seq(JsString(organization), JsString(name)) ⇒
-          FullName(organization, name)
+        case Seq(JsString(organization), JsString(name), JsString(shortName)) ⇒
+          FullName(organization, name, shortName)
 
         case _ => throw DeserializationException(
           """could not deserialize to FullName, expected {organization : String,
@@ -394,6 +355,9 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
       }
     }
   }
+
+  implicit val transformDescJsonFormat: RootJsonFormat[TransformDescription] = jsonFormat4(TransformDescription)
+  implicit val transformDefIdentJsonFormat: RootJsonFormat[TransformDefinitionIdentity] = jsonFormat3(TransformDefinitionIdentity)
 
   implicit val rmFileJson: RootJsonFormat[RmFile] = jsonFormat1(RmFile)
 

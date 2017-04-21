@@ -123,7 +123,7 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
     case mftdm: MsgFromTransfDefsManager ⇒
       mftdm match {
         case otd: OneTransfDef ⇒
-          transfDefIds += otd.transfDefId.digestUID -> otd.transfDefId
+          transfDefIds += otd.transfDefId.fullName.asUID -> otd.transfDefId
           logHelp.addEntry(s"building up tree of transforms definitions, size=${transfDefIds.size}")
           if (transfDefIds.size == allTofTDefID.size) {
             logHelp.addEntry("we have all the transform definitions, we can start the toT")

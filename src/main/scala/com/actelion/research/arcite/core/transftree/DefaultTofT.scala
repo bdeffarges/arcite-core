@@ -29,15 +29,15 @@ import com.actelion.research.arcite.core.utils.FullName
 object DefaultTofT {
 
   val testTofT1: TreeOfTransformDefinition = TreeOfTransformDefinition(
-    FullName("com.actelion.research.arcite.test", "upper-lowerXtimes"),
+    FullName("com.actelion.research.arcite.test", "upper-lowerXtimes", "upper-lowerXtimes"),
     "multiple times upper, lower, etc. just for test",
-    TreeOfTransformNode(WorkExecUpperCase.transfDefId.digestUID,
-      TreeOfTransformNode(WorkExecLowerCase.transfDefId.digestUID,
-        TreeOfTransformNode(WorkExecUpperCase.transfDefId.digestUID, Nil) :: Nil) :: Nil), 700)
+    TreeOfTransformNode(WorkExecUpperCase.transfDefId.fullName.asUID,
+      TreeOfTransformNode(WorkExecLowerCase.transfDefId.fullName.asUID,
+        TreeOfTransformNode(WorkExecUpperCase.transfDefId.fullName.asUID, Nil) :: Nil) :: Nil), 700)
 
   val testTofT2: TreeOfTransformDefinition = TreeOfTransformDefinition(
-    FullName("com.actelion.research.arcite.test", "upper-lower"),
+    FullName("com.actelion.research.arcite.test", "upper-lower", "upper-lower"),
     "upper and lower, etc. just for test",
-    TreeOfTransformNode(WorkExecUpperCase.transfDefId.digestUID,
-      TreeOfTransformNode(WorkExecLowerCase.transfDefId.digestUID) :: Nil), 400)
+    TreeOfTransformNode(WorkExecUpperCase.transfDefId.fullName.asUID,
+      TreeOfTransformNode(WorkExecLowerCase.transfDefId.fullName.asUID) :: Nil), 400)
 }
