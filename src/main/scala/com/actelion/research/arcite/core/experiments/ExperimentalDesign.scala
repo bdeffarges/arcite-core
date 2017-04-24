@@ -64,6 +64,7 @@ object CombinedCondition {
 }
 
 /**
+  * helpers to be able to deal easily with an experimental design.
   *
   */
 object ExperimentalDesignHelpers {
