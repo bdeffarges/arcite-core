@@ -1,6 +1,6 @@
 package com.actelion.research.arcite.core.shared
 
-import com.actelion.research.arcite.core.experiments.ConditionsForSample
+import com.actelion.research.arcite.core.experiments.Sample
 import com.actelion.research.arcite.core.shared.Stars.Stars
 import com.actelion.research.arcite.core.utils.Owner
 
@@ -32,7 +32,7 @@ import com.actelion.research.arcite.core.utils.Owner
 sealed trait ShareExpEvent
 
 case class ShareExperiment(uid: String, name: String, description: String = "", owner: Owner,
-                           designDescription: String = "", sampleConditions: Set[ConditionsForSample] = Set(),
+                           designDescription: String = "", sampleConditions: Set[Sample] = Set(),
                            properties: Map[String, String] = Map()) extends ShareExpEvent
 
 

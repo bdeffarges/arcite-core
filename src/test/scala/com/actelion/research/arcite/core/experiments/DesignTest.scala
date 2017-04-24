@@ -66,7 +66,7 @@ class DesignTest extends FlatSpec with Matchers {
 
     val expDes = ExperimentalDesignHelpers.importFromCSVFileWithHeader("./for_testing/exp_designs/microarray/AMS0098_design.csv", separator = ";")
 
-    assert(expDes.sampleConditions.size == 120)
+    assert(expDes.samples.size == 120)
 
     val uniqCats = ExperimentalDesignHelpers.uniqueCombinedCats(expDes)
 
@@ -99,4 +99,43 @@ class DesignTest extends FlatSpec with Matchers {
 
     assert(expDes == expDes2)
   }
+
+  " get sample " should " return the sample for the passed key/values pairs " in {
+    val expDes = ExperimentalDesignHelpers.importFromCSVFileWithHeader("./for_testing/exp_designs/microarray/AMS0100_design.csv", separator = ";")
+
+    val sample1 = ExperimentalDesignHelpers.getSample(expDes, Map("Cell_Type" -> "CC_M0", "Replicate" -> "R2", "Treatment" -> "VEH"))
+    assert(sample1.isDefined)
+    assert(sample1.get.conditions.find(_.category == "CombinedConditions").get.name == "CC_M0-R2-VEH")
+
+    val sample2 = ExperimentalDesignHelpers.getSample(expDes, Map("Cell_Type" -> "CC_MD", "Replicate" -> "R1", "Treatment" -> "ACT"))
+    assert(sample2.isDefined)
+    assert(sample2.get.conditions.find(_.category == "CombinedConditions").get.name == "CC_MD-R1-ACT")
+  }
+
+  " producing combined conditions " should " take conditions and combine them in one word " in {
+
+    val expDes = ExperimentalDesignHelpers.importFromCSVFileWithHeader("./for_testing/exp_designs/microarray/AMS0100_design.csv", separator = ";")
+
+    val combCond = CombinedCondition("Cell_Type", "Replicate", "Treatment")
+
+    val sample1 = ExperimentalDesignHelpers.getSample(expDes, Map("Cell_Type" -> "CC_M0", "Replicate" -> "R2", "Treatment" -> "VEH"))
+
+    assert(combCond.getCombined(sample1.get) === "CC_M0_R2_VEH")
+
+  }
+
+  " producing combined conditions using a special separator " should " take conditions and combine them in one word using implicit separator " in {
+
+    val expDes = ExperimentalDesignHelpers.importFromCSVFileWithHeader("./for_testing/exp_designs/microarray/AMS0100_design.csv", separator = ";")
+
+    val combCond = CombinedCondition("Cell_Type", "Replicate", "Treatment")
+
+    val sample1 = ExperimentalDesignHelpers.getSample(expDes, Map("Cell_Type" -> "CC_M0", "Replicate" -> "R2", "Treatment" -> "VEH"))
+
+    implicit val separator = CombinedCondition.Separator("=@=")
+
+    assert(combCond.getCombined(sample1.get) === "CC_M0=@=R2=@=VEH")
+
+  }
+
 }

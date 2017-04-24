@@ -200,7 +200,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val conditionJson: RootJsonFormat[Condition] = jsonFormat3(Condition)
   implicit val simpleConditionJson: RootJsonFormat[SimpleCondition] = jsonFormat2(SimpleCondition)
   implicit val allCategoriesJson:  RootJsonFormat[AllCategories] = jsonFormat1(AllCategories)
-  implicit val conditionForSampleJson: RootJsonFormat[ConditionsForSample] = jsonFormat1(ConditionsForSample)
+  implicit val conditionForSampleJson: RootJsonFormat[Sample] = jsonFormat1(Sample)
   implicit val experimentalDesignJson: RootJsonFormat[ExperimentalDesign] = jsonFormat2(ExperimentalDesign)
 
 

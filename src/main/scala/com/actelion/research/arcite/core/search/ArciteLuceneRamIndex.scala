@@ -40,7 +40,7 @@ class ArciteLuceneRamIndex extends Actor with ActorLogging {
 
       val content =
         s"""${exp.name} ${exp.description} ${exp.design.description}
-           |${exp.design.sampleConditions.mkString(" ")} ${exp.owner}""".toLowerCase
+           |${exp.design.samples.mkString(" ")} ${exp.owner}""".toLowerCase
 
       d.add(new TextField(luc_content, content, Field.Store.NO))
       d.add(new StringField(luc_digest, exp.uid, Field.Store.YES))

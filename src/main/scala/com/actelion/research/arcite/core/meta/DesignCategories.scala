@@ -63,7 +63,7 @@ class CategoriesRebuilder extends Actor with ActorLogging with ArciteJSONProtoco
     case RebuildDesignCategories ⇒
       val byCategories = getExpFiles(core.dataPath)
         .map(f ⇒ Files.readAllLines(f).toList.mkString("\n").parseJson.convertTo[Experiment])
-      .map(_.design).flatMap(_.sampleConditions).flatMap(_.conditions).groupBy(_.category)
+      .map(_.design).flatMap(_.samples).flatMap(_.conditions).groupBy(_.category)
       .map(c ⇒ (c._1, c._2.map(co ⇒ SimpleCondition(co.name, co.description)))).toMap
 
       sender() ! AllCategories(byCategories)
