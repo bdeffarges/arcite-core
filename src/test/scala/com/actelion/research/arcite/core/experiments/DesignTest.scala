@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
 import java.util.UUID
 
+import com.actelion.research.arcite.core.experiments.CombinedCondition.NameTransform
 import org.scalatest.{FlatSpec, Matchers}
 
 /**
@@ -135,7 +136,34 @@ class DesignTest extends FlatSpec with Matchers {
     implicit val separator = CombinedCondition.Separator("=@=")
 
     assert(combCond.getCombined(sample1.get) === "CC_M0=@=R2=@=VEH")
-
   }
+
+
+  " producing combined conditions cutting length to 2" should " take substring of conditions and combine them in one word " in {
+
+    val expDes = ExperimentalDesignHelpers.importFromCSVFileWithHeader("./for_testing/exp_designs/microarray/AMS0100_design.csv", separator = ";")
+
+    val combCond = CombinedCondition("Cell_Type", "Replicate", "Treatment")
+
+    val sample1 = ExperimentalDesignHelpers.getSample(expDes, Map("Cell_Type" -> "CC_M0", "Replicate" -> "R2", "Treatment" -> "VEH"))
+
+    implicit val nameTransform = NameTransform(Some(2), true)
+
+    assert(combCond.getCombined(sample1.get) === "CC_R2_VE")
+  }
+
+  " producing combined conditions cutting length to 1" should " take substring of conditions and combine them in one word " in {
+
+    val expDes = ExperimentalDesignHelpers.importFromCSVFileWithHeader("./for_testing/exp_designs/microarray/AMS0100_design.csv", separator = ";")
+
+    val combCond = CombinedCondition("Cell_Type", "Replicate", "Treatment")
+
+    val sample1 = ExperimentalDesignHelpers.getSample(expDes, Map("Cell_Type" -> "CC_M0", "Replicate" -> "R2", "Treatment" -> "VEH"))
+
+    implicit val nameTransform = NameTransform(Some(1), true)
+
+    assert(combCond.getCombined(sample1.get) === "C_R_V")
+  }
+
 
 }

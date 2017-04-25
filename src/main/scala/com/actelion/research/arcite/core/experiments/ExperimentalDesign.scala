@@ -2,7 +2,7 @@ package com.actelion.research.arcite.core.experiments
 
 import java.nio.file.{Files, Paths}
 
-import com.actelion.research.arcite.core.experiments.CombinedCondition.Separator
+import com.actelion.research.arcite.core.experiments.CombinedCondition.{NameTransform, Separator}
 
 
 /**
@@ -50,17 +50,27 @@ case class ExperimentConditionsMatrix(headers: List[String], conditions: List[Li
   */
 case class CombinedCondition(categories: String*) {
 
-  def getCombined(sample: Sample)(implicit ordering: Ordering[String], separator: Separator): String = {
-    sample.conditions.filter(c ⇒ categories.contains(c.category)).toList.sortBy(_.category).map(_.name).mkString(separator.sep)
+  def getCombined(sample: Sample)(implicit ordering: Ordering[String],
+                                  separator: Separator, nameTransform: NameTransform): String = {
+
+    sample.conditions
+      .filter(c ⇒ categories.contains(c.category))
+      .toList.sortBy(_.category)
+      .map(_.name)
+      .map(n ⇒ if (nameTransform.toUpper) n.toUpperCase else n)
+      .map(n ⇒ nameTransform.len.fold(n)(len ⇒ if (n.length > len) n.substring(0,len) else n))
+      .mkString(separator.sep)
   }
 }
 
 object CombinedCondition {
 
+  case class NameTransform(len: Option[Int], toUpper: Boolean)
   case class Separator(sep: String)
 
   implicit val separator: Separator = Separator("_")
   implicit val ordering: Ordering[String] = Ordering[String]
+  implicit val nameTransform: NameTransform = NameTransform(None, false)
 }
 
 /**
