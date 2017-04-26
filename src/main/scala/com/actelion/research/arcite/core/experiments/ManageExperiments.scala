@@ -484,6 +484,16 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       sender ! gs
 
 
+    case saveSelect: SaveSelectable ⇒
+      val exp = experiments.get(saveSelect.exp)
+      if (exp.isDefined) {
+        val f = ExperimentFolderVisitor(exp.get).transformFolderPath resolve saveSelect.transf resolve core.selectable
+        val bunchOf = saveSelect.bunchOfSelectable.toJson.prettyPrint
+        Files.write(f, bunchOf.getBytes(StandardCharsets.UTF_8))
+      }
+
+
+
     case any: Any ⇒ log.debug(s"don't know what to do with this message $any")
   }
 
@@ -680,6 +690,8 @@ object ManageExperiments {
 
   case class MakeImmutable(experiment: String)
 
+
+  case class SaveSelectable(exp: String, transf: String, bunchOfSelectable: BunchOfSelectable)
 
   case class GetSelectable(exp: String, transf: String)
 
