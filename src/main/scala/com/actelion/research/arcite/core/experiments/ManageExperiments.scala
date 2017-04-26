@@ -599,7 +599,6 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
     }
     None
   }
-
 }
 
 

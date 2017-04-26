@@ -28,9 +28,17 @@ import scala.collection.immutable.Queue
 //println(t == f)
 //println(t eq f)
 
-val reg = "(.)+_published.json".r
+//val reg = "(.)+_published.json".r
+//reg.findFirstIn("adsfjk234234_published.json")
 
-reg.findFirstIn("adsfjk234234_published.json")
+val reg = "(C|c)ombine(.{0,3})(C|c)ondition(.{0,2})".r
+reg.findFirstIn("CombinedConditions")
+reg.findFirstIn("Combined conditions")
+reg.findFirstIn("Combine condition")
+reg.findFirstIn("combine condition")
+reg.findFirstIn("combine conditions")
+reg.findFirstIn("combined conditions")
+reg.findFirstIn("aacombined_Conditionsddc")
 
 //
 //m1.zip(m2).map(a ⇒ ((a._1._2, a._2._2)))

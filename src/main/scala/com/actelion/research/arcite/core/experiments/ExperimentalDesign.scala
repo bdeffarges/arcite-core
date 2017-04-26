@@ -54,7 +54,7 @@ case class CombinedCondition(categories: String*) {
                                   separator: Separator, nameTransform: NameTransform): String = {
 
     sample.conditions
-      .filter(c ⇒ categories.contains(c.category))
+      .filter(c ⇒ categories.map(_.toLowerCase).contains(c.category.toLowerCase))
       .toList.sortBy(_.category)
       .map(_.name)
       .map(n ⇒ if (nameTransform.toUpper) n.toUpperCase else n)

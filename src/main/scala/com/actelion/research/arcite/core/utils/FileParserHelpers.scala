@@ -33,13 +33,17 @@ object FileParserHelpers {
 
   def findMostLikelySeparatorInMatrixFile(file: Path): String = {
     import scala.collection.convert.wrapAsScala._
-
     val header = Files.readAllLines(file).toList.head.mkString //todo to be improved
+    findMostLikelySeparator(header)
+  }
 
-    (("\t", "\\t".r.findAllIn(header).size) ::
-      (";", ";".r.findAllIn(header).size) ::
-      (",", ",".r.findAllIn(header).size) ::
-      (":", ":".r.findAllIn(header).size) :: Nil).maxBy(_._2)._1
+  def findMostLikelySeparator(stg: String): String = {
+    (("\t", "\\t".r.findAllIn(stg).size) ::
+      (";", ";".r.findAllIn(stg).size) ::
+      ("-", "\\-".r.findAllIn(stg).size) ::
+      ("_", "\\_".r.findAllIn(stg).size) ::
+      (",", ",".r.findAllIn(stg).size) ::
+      (":", ":".r.findAllIn(stg).size) :: Nil).maxBy(_._2)._1
   }
 
 }
