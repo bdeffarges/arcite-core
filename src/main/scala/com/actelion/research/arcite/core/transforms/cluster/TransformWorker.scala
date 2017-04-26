@@ -114,14 +114,14 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
       case ws: WorkSuccessFull ⇒
         log.info(s"Work is completed. feedback: ${ws.feedback}")
         sendToMaster(WorkerSuccess(workerId, transform, ws, utils.getDateAsString(time)))
-        context.setReceiveTimeout(5.seconds)
+        context.setReceiveTimeout(10.seconds)
         context.become(waitForWorkIsDoneAck(ws))
 
 
       case wf: WorkFailed ⇒
         log.info(s"Work failed. feedback: ${wf.feedback}")
         sendToMaster(WorkerFailed(workerId, transform, wf, utils.getDateAsString(time)))
-        context.setReceiveTimeout(5.seconds)
+        context.setReceiveTimeout(10.seconds)
         context.become(waitForWorkIsDoneAck(wf))
     }
 

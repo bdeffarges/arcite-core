@@ -27,7 +27,7 @@ object ManageTransformCluster {
 
   val arcWorkerActSys = "ArcWorkerActSys"
 
-  def workTimeout = 500.seconds
+  val workTimeout = 5000.seconds // default max timeOut
 
   val config = ConfigFactory.load()
 

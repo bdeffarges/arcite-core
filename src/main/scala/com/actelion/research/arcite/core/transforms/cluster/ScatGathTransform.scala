@@ -147,7 +147,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
 
     case SuccessTransform(_) ⇒
       context.unbecome()
-      log.info(s"was waiting for [$time] for transform to complete, done now, can proceed with next step get transfdef....")
+      log.info(s"was waiting for [$time] for transform to complete, done now, can proceed with next step get transform definition....")
       procWTransf.get match {
         case ptft: ProcTransfFromTransf ⇒
           expManager ! GetTransfDefFromExpAndTransf(ptft.experiment, ptft.transformOrigin)

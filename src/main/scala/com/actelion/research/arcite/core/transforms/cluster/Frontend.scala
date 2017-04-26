@@ -51,7 +51,7 @@ class Frontend extends Actor with ActorLogging {
 
 
     case GetRunningJobsStatus ⇒
-      implicit val timeout = Timeout(20 seconds)
+      implicit val timeout = Timeout(10 seconds)
       (masterProxy ? GetRunningJobsStatus) pipeTo sender()
 
 
