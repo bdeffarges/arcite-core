@@ -69,7 +69,7 @@ class WorkExecDuplicateText extends Actor with ActorLogging {
           Files.write(p, dup.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
 
           sender() ! WorkSuccessFull(s"text has been duplicated", artifacts = Map("output" -> "duplicated.txt"),
-          Set(Selectable("generatedFiles", Set(p.toString))))
+          Set(Selectable("generatedFiles", Set("duplicated.txt"))))
       }
 
     case GetTransfDefId(wi) ⇒

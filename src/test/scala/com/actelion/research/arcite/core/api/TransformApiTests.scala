@@ -80,7 +80,7 @@ class TransformApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri = s"$urlPrefix/transform_definitions?search=to-uppercase")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri = s"$urlPrefix/transform_definitions?search=uppercase")).via(connectionFlow).runWith(Sink.head)
 
     import spray.json._
     responseFuture.map { r ⇒
@@ -105,7 +105,7 @@ class TransformApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri = s"$urlPrefix/transform_definitions?search=to-lowercase")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri = s"$urlPrefix/transform_definitions?search=lowercase")).via(connectionFlow).runWith(Sink.head)
 
     import spray.json._
     responseFuture.map { r ⇒
@@ -130,7 +130,7 @@ class TransformApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri = s"$urlPrefix/transform_definitions?search=duplicate-text")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri = s"$urlPrefix/transform_definitions?search=duplicate")).via(connectionFlow).runWith(Sink.head)
 
     import spray.json._
     responseFuture.map { r ⇒

@@ -39,6 +39,8 @@ class TransfDefHelpersTest extends FlatSpec with Matchers {
       TransformDescription("deeplearning network for NGS", "a training set", "a great prediction")) ::
     TransformDefinitionIdentity(FullName("org.bye.earth", "space shuttle launch", "spaceShuttleLaunch"),
       TransformDescription("space shuttle launch", "takes the space shuttle", "produces the launch of the shuttle")) ::
+    TransformDefinitionIdentity(FullName("org.bye.earth", "fast-free-ride_to-mars", "fast-ride2mars"),
+      TransformDescription("takes anybody who wants to mars", "somebody", "a nice ride to Mars")) ::
     TransformDefinitionIdentity(FullName("org.bye.earth", "free ride to mars", "ride2mars"),
       TransformDescription("takes anybody who wants to mars", "somebody", "a nice ride to Mars")) ::
     TransformDefinitionIdentity(FullName("ch.hello.world", "truth teller", "TrutH"),
@@ -56,8 +58,11 @@ class TransfDefHelpersTest extends FlatSpec with Matchers {
     assert(transfDefHelpers.findTransformers("hello world brillNorm", 10).head == transfDefs.head)
     assert(transfDefHelpers.findTransformers("hello world brillNorm", 10).size == 5)
     assert(transfDefHelpers.findTransformers("hello world", 10).size == 5)
+    assert(transfDefHelpers.findTransformers("fast-ride", 10).size == 2)
+    assert(transfDefHelpers.findTransformers("fast-ride", 1).head.fullName.shortName == "fast-ride2mars")
 
     assert(transfDefHelpers.findTransformers("qcs", 10).size == 1)
+    assert(transfDefHelpers.findTransformers("fast", 10).size == 1)
     assert(transfDefHelpers.findTransformers("qcs", 10).head == transfDefs.tail.head)
   }
 }
