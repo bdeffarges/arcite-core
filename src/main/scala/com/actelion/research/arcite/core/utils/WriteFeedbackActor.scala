@@ -9,6 +9,7 @@ import com.actelion.research.arcite.core
 import com.actelion.research.arcite.core.api.ArciteJSONProtocol
 import com.actelion.research.arcite.core.eventinfo.EventInfoLogging.AddLog
 import com.actelion.research.arcite.core.eventinfo.{ExpLog, LogCategory, LogType}
+import com.actelion.research.arcite.core.experiments.ManageExperiments.{BunchOfSelectable, SaveSelectable}
 import com.actelion.research.arcite.core.transforms._
 import com.actelion.research.arcite.core.transforms.cluster.MasterWorkerProtocol.{WorkerFailed, WorkerIsDone, WorkerSuccess}
 import com.typesafe.config.ConfigFactory
@@ -44,6 +45,8 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
   private val actSys = conf.getString("akka.uri")
   private val eventInfoSelect = s"${actSys}/user/exp_actors_manager/event_logging_info"
   private val eventInfoAct = context.actorSelection(ActorPath.fromString(eventInfoSelect))
+  private val expManager =
+    context.actorSelection(ActorPath.fromString(s"${actSys}/user/exp_actors_manager/experiments_manager"))
 
   override def receive: Receive = {
     case WriteFeedback(wid) ⇒
@@ -87,6 +90,11 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
               fb.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
 
             Files.write(transfFolder resolve core.successFile, "SUCCESS".getBytes(StandardCharsets.UTF_8), CREATE_NEW)
+
+            if (ws.result.selectable.nonEmpty) {
+              expManager ! SaveSelectable(wid.transf.source.experiment.uid, wid.transf.uid,
+              BunchOfSelectable(ws.result.selectable))
+            }
 
             eventInfoAct ! AddLog(wid.transf.source.experiment,
               ExpLog(LogType.TRANSFORM, LogCategory.SUCCESS,
