@@ -6,6 +6,7 @@ import java.nio.file.{Files, Paths}
 
 import akka.actor.{Actor, ActorLogging, Props}
 import com.actelion.research.arcite.core.experiments.ExperimentFolderVisitor
+import com.actelion.research.arcite.core.experiments.ManageExperiments.Selectable
 import com.actelion.research.arcite.core.transforms._
 import com.actelion.research.arcite.core.transforms.cluster.MasterWorkerProtocol.WorkerProgress
 import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.WorkSuccessFull
@@ -67,7 +68,8 @@ class WorkExecDuplicateText extends Actor with ActorLogging {
 
           Files.write(p, dup.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
 
-          sender() ! WorkSuccessFull(s"text has been duplicated")
+          sender() ! WorkSuccessFull(s"text has been duplicated", artifacts = Map("output" -> "duplicated.txt"),
+          Set(Selectable("generatedFiles", Set(p.toString))))
       }
 
     case GetTransfDefId(wi) ⇒

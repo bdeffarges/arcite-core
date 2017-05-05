@@ -7,9 +7,11 @@ import akka.util.ByteString
 import com.actelion.research.arcite.core
 import com.actelion.research.arcite.core.TestHelpers
 import com.actelion.research.arcite.core.experiments.Experiment
-import com.actelion.research.arcite.core.experiments.ManageExperiments.AddExperiment
-import com.actelion.research.arcite.core.transforms.RunTransform.RunTransformOnObject
+import com.actelion.research.arcite.core.experiments.ManageExperiments.{AddExperiment, BunchOfSelectable}
+import com.actelion.research.arcite.core.transforms.RunTransform.{RunTransformOnObject, RunTransformOnTransform}
 import com.actelion.research.arcite.core.transforms.TransformDefinitionIdentity
+import com.actelion.research.arcite.core.transforms.cluster.Frontend.OkTransfReceived
+import com.actelion.research.arcite.core.transforms.cluster.workers.fortest.WorkExecDuplicateText
 
 import scala.concurrent.Future
 
@@ -41,10 +43,13 @@ class TransformApiTests extends ApiTests {
 
   val exp1 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment1)
 
-  var transfDef1: Option[TransformDefinitionIdentity] = None
-  var transfDef2: Option[TransformDefinitionIdentity] = None
+  private var transfDef1: Option[TransformDefinitionIdentity] = None
+  private var transfDef2: Option[TransformDefinitionIdentity] = None
+  private var transfDefDuplicate: Option[TransformDefinitionIdentity] = None
 
-  var transJobID: Option[String] = None
+  private var upperCaseJobID: Option[String] = None
+  private var dupliJobID: Option[String] = None
+
 
   "Get all transform definitions " should "return all possible transforms " in {
 
@@ -54,7 +59,7 @@ class TransformApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri =s"$urlPrefix/transform_definitions")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri = s"$urlPrefix/transform_definitions")).via(connectionFlow).runWith(Sink.head)
 
     import spray.json._
     responseFuture.map { r ⇒
@@ -75,7 +80,7 @@ class TransformApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri =s"$urlPrefix/transform_definitions?search=uppercase")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri = s"$urlPrefix/transform_definitions?search=to-uppercase")).via(connectionFlow).runWith(Sink.head)
 
     import spray.json._
     responseFuture.map { r ⇒
@@ -100,7 +105,7 @@ class TransformApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri =s"$urlPrefix/transform_definitions?search=lowercase")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri = s"$urlPrefix/transform_definitions?search=to-lowercase")).via(connectionFlow).runWith(Sink.head)
 
     import spray.json._
     responseFuture.map { r ⇒
@@ -117,6 +122,31 @@ class TransformApiTests extends ApiTests {
     }
   }
 
+  "Get duplicate transform definition " should " return one transform definition " in {
+
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(HttpRequest(uri = s"$urlPrefix/transform_definitions?search=duplicate-text")).via(connectionFlow).runWith(Sink.head)
+
+    import spray.json._
+    responseFuture.map { r ⇒
+      assert(r.status == StatusCodes.OK)
+
+      val transfDefs = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+        .parseJson.convertTo[Set[TransformDefinitionIdentity]]
+
+      assert(transfDefs.size == 1)
+
+      transfDefDuplicate = Some(transfDefs.toSeq.head)
+
+      assert(transfDefDuplicate.get.fullName == WorkExecDuplicateText.fullName)
+    }
+  }
+
   "Create a new experiment " should " return the uid of the new experiment which we can then delete " in {
 
     implicit val executionContext = system.dispatcher
@@ -130,7 +160,7 @@ class TransformApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri =s"$urlPrefix/experiment",
+      uri = s"$urlPrefix/experiment",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -149,7 +179,7 @@ class TransformApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri =s"$urlPrefix/experiment/${exp1.uid}")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri = s"$urlPrefix/experiment/${exp1.uid}")).via(connectionFlow).runWith(Sink.head)
 
     import spray.json._
     responseFuture.map { r ⇒
@@ -162,6 +192,7 @@ class TransformApiTests extends ApiTests {
       assert(experiment.description == experiment.description)
     }
   }
+
 
   "start upper case transform on experiment " should " return the transform job uid " in {
 
@@ -178,7 +209,7 @@ class TransformApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri =s"$urlPrefix/run_transform",
+      uri = s"$urlPrefix/run_transform",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -187,9 +218,10 @@ class TransformApiTests extends ApiTests {
     responseFuture.map { r ⇒
       logger.info(r.toString())
       assert(r.status == StatusCodes.OK)
-      val result = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+      val result = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8").parseJson.convertTo[OkTransfReceived]
 
-      assert(result.nonEmpty)
+      upperCaseJobID = Some(result.transfUID)
+      assert(result.transfUID.length > 5)
     }
   }
 
@@ -210,7 +242,7 @@ class TransformApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri =s"$urlPrefix/run_transform",
+      uri = s"$urlPrefix/run_transform",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -219,12 +251,46 @@ class TransformApiTests extends ApiTests {
     responseFuture.map { r ⇒
       logger.info(r.toString())
       assert(r.status == StatusCodes.OK)
-      val result = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+      val result = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8").parseJson.convertTo[OkTransfReceived]
 
-      assert(result.nonEmpty)
+      assert(result.transfUID.length > 5)
     }
   }
 
+
+  "start duplicate transform on experiment " should " return the transform job uid " in {
+
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    import spray.json._
+    val transf1 = RunTransformOnTransform(exp1.uid, transfDefDuplicate.get.fullName.asUID, upperCaseJobID.get)
+
+    val jsonRequest = ByteString(transf1.toJson.prettyPrint)
+
+    val postRequest = HttpRequest(
+      HttpMethods.POST,
+      uri = s"$urlPrefix/run_transform/on_transform",
+      entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
+
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
+
+    responseFuture.map { r ⇒
+      logger.info(r.toString())
+      assert(r.status == StatusCodes.OK)
+      val result = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8").parseJson.convertTo[OkTransfReceived]
+
+      dupliJobID = Some(result.transfUID)
+
+      println(s"duplicJob=${dupliJobID.get}")
+
+      assert(result.transfUID.length > 5)
+    }
+  }
 
   "Delete an experiment " should " NOT move the experiment to the deleted folder because it's immutable now!" in {
 
@@ -235,7 +301,7 @@ class TransformApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.DELETE,
-      uri =s"$urlPrefix/experiment/${exp1.uid}",
+      uri = s"$urlPrefix/experiment/${exp1.uid}",
       entity = HttpEntity(MediaTypes.`application/json`, ""))
 
     val responseFuture: Future[HttpResponse] =
@@ -244,6 +310,42 @@ class TransformApiTests extends ApiTests {
     responseFuture.map { r ⇒
       logger.info(r.toString())
       assert(r.status == StatusCodes.Locked) // the experiment cannot be deleted anymore
+    }
+  }
+
+  " duplicate transform " should " eventually complete and produce duplicated text and selectable " in {
+    implicit val executionContext = system.dispatcher
+    import scala.concurrent.duration._
+
+    transStatus += (dupliJobID.get -> false)
+    eventually(timeout(10 minutes), interval(30 seconds)) {
+      println("checking whether duplicate is completed...")
+      checkTransformStatus(dupliJobID.get)
+      transStatus(dupliJobID.get) should be(true)
+    }
+  }
+
+
+  "Retrieving selectable for one experiment/transform " should " return all selectables " in {
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(HttpRequest(uri = s"$urlPrefix/experiment/${exp1.uid}/transform/${dupliJobID.get}/selectable"))
+        .via(connectionFlow).runWith(Sink.head)
+
+    import spray.json._
+    responseFuture.map { r ⇒
+      assert(r.status == StatusCodes.OK)
+
+      val selectables = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+        .parseJson.convertTo[BunchOfSelectable]
+
+      println(selectables)
+
+      assert(selectables.selectables.nonEmpty)
     }
   }
 }

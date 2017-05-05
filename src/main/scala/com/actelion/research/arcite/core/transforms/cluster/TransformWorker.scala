@@ -5,6 +5,7 @@ import java.util.UUID
 import akka.actor.SupervisorStrategy.{Restart, Stop}
 import akka.actor.{Actor, ActorInitializationException, ActorLogging, ActorRef, DeathPactException, OneForOneStrategy, Props, ReceiveTimeout, Terminated}
 import akka.cluster.client.ClusterClient.SendToAll
+import com.actelion.research.arcite.core.experiments.ManageExperiments.Selectable
 import com.actelion.research.arcite.core.transforms.cluster.TransformWorker.{WorkCompletionStatus, WorkFailed, WorkSuccessFull}
 import com.actelion.research.arcite.core.transforms.{Transform, TransformDefinition, TransformHelper}
 import com.actelion.research.arcite.core.utils
@@ -183,7 +184,9 @@ object TransformWorker {
     def feedback: String
   }
 
-  case class WorkSuccessFull(feedback: String = "", artifacts: Map[String, String] = Map.empty) extends WorkCompletionStatus
+  case class WorkSuccessFull(feedback: String = "",
+                             artifacts: Map[String, String] = Map.empty,
+                            selectable: Set[Selectable] = Set.empty) extends WorkCompletionStatus
 
   case class WorkFailed(feedback: String = "", errors: String = "") extends WorkCompletionStatus
 

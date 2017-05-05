@@ -40,7 +40,8 @@ class TransfDefHelpers(transformDefs: Set[TransformDefinitionIdentity]) {
   }
 
   def comp2String(strg1: String, strg2: String): Int = {
-    comp2StringList(strg1.toLowerCase().split("(\\s|\\.)").toList, strg2.toLowerCase().split("(\\s|\\.)").toList)
+    comp2StringList(strg1.toLowerCase() +: strg1.toLowerCase().split("(\\s|\\.|\\-|\\_)").toList,
+      strg2.toLowerCase() +: strg2.toLowerCase().split("(\\s|\\.|\\-|\\_)").toList)
   }
 
   def comp2StringList(list1: List[String], list2: List[String]): Int = {
