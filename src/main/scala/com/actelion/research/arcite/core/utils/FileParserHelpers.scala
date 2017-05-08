@@ -33,8 +33,8 @@ object FileParserHelpers {
 
   def findMostLikelySeparatorInMatrixFile(file: Path): String = {
     import scala.collection.convert.wrapAsScala._
-    val header = Files.readAllLines(file).toList.head.mkString //todo to be improved
-    findMostLikelySeparator(header)
+    val wholeFile = Files.readAllLines(file).toList.map(_.mkString).mkString("\n")
+    findMostLikelySeparator(wholeFile)
   }
 
   def findMostLikelySeparator(stg: String): String = {

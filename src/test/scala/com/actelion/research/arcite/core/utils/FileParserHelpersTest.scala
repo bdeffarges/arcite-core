@@ -27,12 +27,17 @@ import org.scalatest.{FlatSpec, Matchers}
   *
   */
 class FileParserHelpersTest extends FlatSpec with Matchers with LazyLogging {
+  import FileParserHelpers._
 
   "finding best separator character " should " return most used separator char in a file " in {
 
-    val best1 = FileParserHelpers
-      .findMostLikelySeparatorInMatrixFile("for_testing/exp_designs/microarray/AMS0098_design.csv")
-
+    val best1 =findMostLikelySeparatorInMatrixFile("for_testing/exp_designs/microarray/AMS0098_design.csv")
     assert(best1 == ";")
+
+    val best2 =findMostLikelySeparatorInMatrixFile("for_testing/for_unit_testing/ALS007_results_corrected.csv")
+    assert(best2 == ";")
+
+    val best3 =findMostLikelySeparatorInMatrixFile("for_testing/for_unit_testing/testALS-009.csv")
+    assert(best3 == ",")
   }
 }
