@@ -15,7 +15,7 @@ object TransfDefMsg {
 
   case object GetAllTransfDefs extends Msg2TransfDefsManager
 
-  case class FindTransfDefs(search: String) extends Msg2TransfDefsManager
+  case class FindTransfDefs(search: String, maxHits: Int = 10) extends Msg2TransfDefsManager
 
   case class GetTransfDef(digest: String) extends Msg2TransfDefsManager
 

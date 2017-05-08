@@ -214,7 +214,8 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
 
     case ft: FindTransfDefs ⇒
-      sender() ! ManyTransfDefs(findTransformers(ft.search))
+      sender() ! ManyTransfDefs(
+        new TransfDefHelpers(transformDefs).findTransformers(ft.search, ft.maxHits))
 
 
     case GetTransfDef(d) ⇒
@@ -239,11 +240,6 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       case (_, WorkerState(ref, Idle, _)) => ref ! MasterWorkerProtocol.WorkIsReady
       case _ => log.info("worker is busy. ")
     }
-  }
-
-
-  def findTransformers(search: String): List[TransformDefinitionIdentity] = {
-    new TransfDefHelpers(transformDefs).findTransformers(search, 10)
   }
 
 

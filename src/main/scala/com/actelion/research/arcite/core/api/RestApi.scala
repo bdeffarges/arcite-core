@@ -142,8 +142,8 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(GetAllTransfDefs).mapTo[MsgFromTransfDefsManager]
   }
 
-  def findTransfDefs(search: String) = {
-    arciteService.ask(FindTransfDefs(search)).mapTo[MsgFromTransfDefsManager]
+  def findTransfDefs(search: String, maxHits: Int = 10) = {
+    arciteService.ask(FindTransfDefs(search, maxHits)).mapTo[MsgFromTransfDefsManager]
   }
 
   def getTransfDef(digest: String) = {
@@ -696,12 +696,12 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
   }
 
   def getTransformsRoute = path("transform_definitions") {
-    parameter('search) {
-      search ⇒
+    parameter('search, 'maxHits ? 10) {
+      (search, maxHits) ⇒
         logger.debug(
           s"""GET on /transform_definitions,
                  should return all transform definitions searching for ${search}""")
-        onSuccess(findTransfDefs(search)) {
+        onSuccess(findTransfDefs(search, maxHits)) {
           case ManyTransfDefs(tdis) ⇒ complete(OK -> tdis)
           case NoTransfDefFound ⇒ complete(NotFound -> ErrorMessage("empty"))
         }

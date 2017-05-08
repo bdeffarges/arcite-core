@@ -1,6 +1,7 @@
 package com.actelion.research.arcite.core.transforms.cluster
 
 import com.actelion.research.arcite.core.transforms.TransformDefinitionIdentity
+import com.actelion.research.arcite.core.utils.DamerauLevenshtein
 
 /**
   * arcite-core
@@ -27,10 +28,17 @@ import com.actelion.research.arcite.core.transforms.TransformDefinitionIdentity
   */
 class TransfDefHelpers(transformDefs: Set[TransformDefinitionIdentity]) {
 
+  import DamerauLevenshtein._
 
   def findTransformers(search: String, maxResults: Int): List[TransformDefinitionIdentity] = {
 
-    (transformDefs.filter(td ⇒ comp2String(td.fullName.shortName, search) > 0).toList ++
+    (transformDefs.find(_.fullName.shortName == search).toList ++
+      transformDefs.find(_.fullName.name == search).toList ++
+      transformDefs.find(_.fullName.shortName.toLowerCase == search.toLowerCase).toList ++
+      transformDefs.find(_.fullName.name.toLowerCase == search.toLowerCase).toList ++
+      transformDefs.filter(td ⇒ distBelowThreshold(td.fullName.shortName, search, 1)).toList ++
+      transformDefs.filter(td ⇒ distBelowThreshold(td.fullName.name, search, 3)).toList ++
+      transformDefs.filter(td ⇒ comp2String(td.fullName.shortName, search) > 0).toList ++
       transformDefs.filter(td ⇒ comp2String(td.fullName.name, search) > 0).toList ++
       transformDefs.filter(td ⇒ comp2String(td.fullName.organization, search) > 0).toList ++
       transformDefs.filter(td ⇒ comp2String(td.description.summary, search) > 0).toList ++
