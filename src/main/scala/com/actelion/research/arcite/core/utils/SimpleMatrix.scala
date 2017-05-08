@@ -45,7 +45,7 @@ object SimpleMatrixHelper {
   }
 
   def saveSimpleMatrix(matrix: SimpleMatrix, targetFile: String, separator: String = "\t"): Unit = {
-    val asStrg = matrix.headers.mkString("", separator, "\n") + matrix.lines.map(l ⇒ l.mkString("\t")).mkString("\n")
+    val asStrg = matrix.headers.mkString("", separator, "\n") + matrix.lines.map(l ⇒ l.mkString(separator)).mkString("\n")
     Files.write(Paths.get(targetFile), asStrg.getBytes(StandardCharsets.UTF_8))
   }
 
