@@ -62,7 +62,7 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
     case None => throw new IllegalStateException("Not working")
   }
 
-  override def supervisorStrategy = OneForOneStrategy() {
+  override def supervisorStrategy = OneForOneStrategy() { //todo introduce Arcie exception
     case _: ActorInitializationException => Stop
 
     case _: DeathPactException => Stop

@@ -40,8 +40,6 @@ object FileParserHelpers {
   def findMostLikelySeparator(stg: String): String = {
     (("\t", "\\t".r.findAllIn(stg).size) ::
       (";", ";".r.findAllIn(stg).size) ::
-      ("-", "\\-".r.findAllIn(stg).size) ::
-      ("_", "\\_".r.findAllIn(stg).size) ::
       (",", ",".r.findAllIn(stg).size) ::
       (":", ":".r.findAllIn(stg).size) :: Nil).maxBy(_._2)._1
   }
