@@ -26,12 +26,34 @@ import java.nio.file.{Files, Paths}
   * Created by Bernard Deffarges on 2017/04/21.
   *
   */
-case class SimpleMatrix(headers: List[String], lines: List[List[String]]) {
-  override def toString: String = headers.mkString("", "\t", "\n") + lines.map(l ⇒ l.mkString("\t")).mkString("\n")
+case class SimpleMatrix(headers: List[String], lines: List[List[String]],
+                        separator: String = ",", addEndMissingValues: Boolean = true) {
+
+  require(lines.map(_.size).max <= headers.size)
+
+  override def toString: String = {
+    val colSize = headers.size
+
+    val h = if (addEndMissingValues) {
+      headers.mkString("", separator, s"$separator\n")
+    } else {
+      headers.mkString("", separator, "\n")
+    }
+
+    val ls =
+      lines.map { l ⇒
+        if (addEndMissingValues) (l.mkString("", separator, separator), l.size)
+        else (l.mkString(separator), l.size)
+      }.map { ll ⇒
+        if (addEndMissingValues) ll._1 + separator * (colSize - ll._2) else ll._1
+      }.mkString("\n")
+
+    h+ls
+  }
 }
 
 object SimpleMatrixHelper {
-  def loadMatrix(file: String, separator: String = ";", header: Boolean = true): SimpleMatrix = {
+  def loadMatrix(file: String, separator: String = ",", header: Boolean = true): SimpleMatrix = {
 
     import scala.collection.convert.wrapAsScala._
 
@@ -40,15 +62,17 @@ object SimpleMatrixHelper {
     if (header) SimpleMatrix(f.head, f.tail) else SimpleMatrix(List(), f)
   }
 
+
   def loadMatrixGuessingSeparator(file: String): SimpleMatrix = {
     loadMatrix(file, FileParserHelpers.findMostLikelySeparatorInMatrixFile(file))
   }
 
-  def saveSimpleMatrix(matrix: SimpleMatrix, targetFile: String, separator: String = "\t"): Unit = {
-    val asStrg = matrix.headers.mkString("", separator, "\n") + matrix.lines.map(l ⇒ l.mkString(separator)).mkString("\n")
-    Files.write(Paths.get(targetFile), asStrg.getBytes(StandardCharsets.UTF_8))
-  }
 
+  def saveSimpleMatrix(matrix: SimpleMatrix, targetFile: String,
+                       separator: String = ",", addMissingValues: Boolean = true): Unit = {
+
+    Files.write(Paths.get(targetFile), matrix.toString.getBytes(StandardCharsets.UTF_8))
+  }
 }
 
 
