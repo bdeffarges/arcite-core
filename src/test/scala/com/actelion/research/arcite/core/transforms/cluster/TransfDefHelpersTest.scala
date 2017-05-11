@@ -64,5 +64,6 @@ class TransfDefHelpersTest extends FlatSpec with Matchers {
     assert(transfDefHelpers.findTransformers("qcs", 10).size == 1)
     assert(transfDefHelpers.findTransformers("fast", 10).size == 1)
     assert(transfDefHelpers.findTransformers("qcs", 10).head == transfDefs.tail.head)
+    assert(transfDefHelpers.findTransformers("hello.world@@schrcat", 1).head == transfDefs.last)
   }
 }

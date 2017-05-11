@@ -36,6 +36,7 @@ class TransfDefHelpers(transformDefs: Set[TransformDefinitionIdentity]) {
       transformDefs.find(_.fullName.name == search).toList ++
       transformDefs.find(_.fullName.shortName.toLowerCase == search.toLowerCase).toList ++
       transformDefs.find(_.fullName.name.toLowerCase == search.toLowerCase).toList ++
+      transformDefs.filter(td ⇒ acceptableDameLevenDist(td.fullName.asUID, search)).toList ++
       transformDefs.filter(td ⇒ distBelowThreshold(td.fullName.shortName, search, 1)).toList ++
       transformDefs.filter(td ⇒ distBelowThreshold(td.fullName.name, search, 3)).toList ++
       transformDefs.filter(td ⇒ comp2String(td.fullName.shortName, search) > 0).toList ++

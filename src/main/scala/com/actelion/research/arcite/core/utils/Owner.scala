@@ -33,7 +33,7 @@ object DefaultOwner {
   */
 case class FullName(organization: String, name: String, shortName: String, version: String = "1.0.0") {
   private lazy val sName = shortName.replaceAll("\\s", "_")
-  lazy val asUID: String = s"$organization@@$sName@@$version"
+  lazy val asUID: String = s"$organization@@$sName@@$version".toLowerCase
 }
 
 
