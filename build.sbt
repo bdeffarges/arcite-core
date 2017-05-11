@@ -1,7 +1,7 @@
 import com.typesafe.sbt.SbtNativePackager.autoImport.NativePackagerHelper._
 import com.typesafe.sbt.packager.docker.Cmd
 
-organization := "com.actelion.research.arcite"
+organization := "com.idorsia.research.arcite"
 
 name := "arcite-core"
 
@@ -114,7 +114,7 @@ enablePlugins(DockerPlugin)
 
 enablePlugins(DockerSpotifyClientPlugin)
 
-mainClass in Compile := Some("com.actelion.research.arcite.core.api.Main")
+mainClass in Compile := Some("com.idorsia.research.arcite.core.api.Main")
 
 mappings in Universal ++= {
   // optional example illustrating how to copy additional directory

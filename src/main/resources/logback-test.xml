@@ -14,7 +14,7 @@
         </encoder>
     </appender>
 
-    <logger name="com.actelion.research" level="debug"/>
+    <logger name="com.idorsia.research" level="debug"/>
 
     <root level="debug">
         <appender-ref ref="STDOUT" />
