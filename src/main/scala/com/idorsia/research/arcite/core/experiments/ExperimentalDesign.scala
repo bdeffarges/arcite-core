@@ -3,6 +3,7 @@ package com.idorsia.research.arcite.core.experiments
 import java.nio.file.{Files, Paths}
 
 import com.idorsia.research.arcite.core.experiments.CombinedCondition.{NameTransform, Separator}
+import com.idorsia.research.arcite.core.utils.SimpleMatrix
 
 
 /**
@@ -35,14 +36,6 @@ case class Condition(name: String, description: String, category: String)
 case class Sample(conditions: Set[Condition])
 
 /**
-  * an experiment design seen as a matrix of conditions.
-  *
-  * @param headers
-  * @param conditions
-  */
-case class ExperimentConditionsMatrix(headers: List[String], conditions: List[List[String]])
-
-/**
   * sometimes it's useful to combine some conditions to name samples in an up coming step.
   * Here we can define the list of categories of the conditions and produce the output for a sample.
   *
@@ -58,7 +51,7 @@ case class CombinedCondition(categories: String*) {
       .toList.sortBy(_.category)
       .map(_.name)
       .map(n ⇒ if (nameTransform.toUpper) n.toUpperCase else n)
-      .map(n ⇒ nameTransform.len.fold(n)(len ⇒ if (n.length > len) n.substring(0,len) else n))
+      .map(n ⇒ nameTransform.len.fold(n)(len ⇒ if (n.length > len) n.substring(0, len) else n))
       .mkString(separator.sep)
   }
 }
@@ -66,6 +59,7 @@ case class CombinedCondition(categories: String*) {
 object CombinedCondition {
 
   case class NameTransform(len: Option[Int], toUpper: Boolean)
+
   case class Separator(sep: String)
 
   implicit val separator: Separator = Separator("_")
@@ -126,6 +120,14 @@ object ExperimentalDesignHelpers {
       ).toSet)
   }
 
+  /**
+    *
+    * @param expDesign
+    * @param categories
+    * @param separator
+    * @return
+    */
+  @deprecated("should use the export from the SimpleMatrix. ")
   def exportToDelimitedWithHeader(expDesign: ExperimentalDesign,
                                   categories: List[String],
                                   separator: String = "\t"): String = {
@@ -155,7 +157,19 @@ object ExperimentalDesignHelpers {
           .fold(false)(v ⇒ v == c.name)))
   }
 
-  def fromDesignToConditionMatrix(exp: ExperimentalDesign): ExperimentConditionsMatrix = ???
+
+  def fromDesignToConditionMatrix(exp: ExperimentalDesign, addEndMissingValues: Boolean = true,
+                                  headersSorted: Boolean = false): SimpleMatrix = {
+
+    val allHeaders = exp.samples.flatMap(_.conditions).map(_.category).toList
+
+    val lines: List[List[String]] = exp.samples.toList.map { s ⇒
+      val conds = s.conditions
+      allHeaders.map(h ⇒ conds.find(_.category == h)).map(c ⇒ if (c.isDefined) c.get.name else "")
+    }
+
+    SimpleMatrix(allHeaders, lines, ",", addEndMissingValues, headersSorted)
+  }
 }
 
 

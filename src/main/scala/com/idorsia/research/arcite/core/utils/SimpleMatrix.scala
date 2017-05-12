@@ -27,17 +27,19 @@ import java.nio.file.{Files, Paths}
   *
   */
 case class SimpleMatrix(headers: List[String], lines: List[List[String]],
-                        separator: String = ",", addEndMissingValues: Boolean = true) {
+                        separator: String = ",", addEndMissingValues: Boolean = true,
+                       headersSorted: Boolean = false) {
 
   require(lines.map(_.size).max <= headers.size)
 
-  override def toString: String = {
+  lazy val toStrg: String = {
     val colSize = headers.size
+    val heads = if (headersSorted) headers.sorted else headers
 
     val h = if (addEndMissingValues) {
-      headers.mkString("", separator, s"$separator\n")
+      heads.mkString("", separator, s"$separator\n")
     } else {
-      headers.mkString("", separator, "\n")
+      heads.mkString("", separator, "\n")
     }
 
     val ls =
@@ -50,7 +52,12 @@ case class SimpleMatrix(headers: List[String], lines: List[List[String]],
 
     h+ls
   }
+
+  override def toString: String = {
+    toStrg
+  }
 }
+
 
 object SimpleMatrixHelper {
   def loadMatrix(file: String, separator: String = ",", header: Boolean = true): SimpleMatrix = {

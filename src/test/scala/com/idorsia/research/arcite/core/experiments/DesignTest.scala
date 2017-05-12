@@ -6,6 +6,7 @@ import java.nio.file.{Files, Paths}
 import java.util.UUID
 
 import com.idorsia.research.arcite.core.experiments.CombinedCondition.NameTransform
+import com.typesafe.scalalogging.LazyLogging
 import org.scalatest.{FlatSpec, Matchers}
 
 /**
@@ -31,7 +32,9 @@ import org.scalatest.{FlatSpec, Matchers}
   * Created by Bernard Deffarges on 2017/03/21.
   *
   */
-class DesignTest extends FlatSpec with Matchers {
+class DesignTest extends FlatSpec with Matchers with LazyLogging {
+
+  val someDefaultDesign = ExperimentalDesignHelpers.importFromCSVFileWithHeader("./for_testing/exp_designs/microarray/AMS0100_design.csv", separator = ";")
 
   "importing a design from a file " should " produce a list of categories " in {
 
@@ -152,6 +155,7 @@ class DesignTest extends FlatSpec with Matchers {
     assert(combCond.getCombined(sample1.get) === "CC_R2_VE")
   }
 
+
   " producing combined conditions cutting length to 1" should " take substring of conditions and combine them in one word " in {
 
     val expDes = ExperimentalDesignHelpers.importFromCSVFileWithHeader("./for_testing/exp_designs/microarray/AMS0100_design.csv", separator = ";")
@@ -166,4 +170,19 @@ class DesignTest extends FlatSpec with Matchers {
   }
 
 
+  "exporting design to matrix " should " produce a simple matrix object with all the conditions " in {
+
+    val sm = ExperimentalDesignHelpers.fromDesignToConditionMatrix(someDefaultDesign, true, true)
+
+    logger.debug(sm.toString)
+
+    assert(sm.headers.contains("Cell_Type"))
+    assert(sm.headers.contains("Replicate"))
+    assert(sm.headers.contains("CombinedConditions"))
+    assert(sm.headers.contains("Array"))
+
+    assert(sm.toString.contains("CC_M0-R3-ACT,CC_M0,2,ACT,R3,257236312159,exp,1,1,135,"))
+    assert(sm.toString.contains("CC_MD-R4-ACT,CC_MD,8,ACT,R4,257236312159,exp,1,1,128,"))
+    assert(sm.toString.contains("CC_MD-R2-ACT,CC_MD,3,ACT,R2,257236312159,exp,1,1,126,"))
+  }
 }
