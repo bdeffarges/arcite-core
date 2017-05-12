@@ -174,8 +174,6 @@ class DesignTest extends FlatSpec with Matchers with LazyLogging {
 
     val sm = ExperimentalDesignHelpers.fromDesignToConditionMatrix(someDefaultDesign, true, true)
 
-    logger.debug(sm.toString)
-
     assert(sm.headers.contains("Cell_Type"))
     assert(sm.headers.contains("Replicate"))
     assert(sm.headers.contains("CombinedConditions"))
@@ -184,5 +182,13 @@ class DesignTest extends FlatSpec with Matchers with LazyLogging {
     assert(sm.toString.contains("CC_M0-R3-ACT,CC_M0,2,ACT,R3,257236312159,exp,1,1,135,"))
     assert(sm.toString.contains("CC_MD-R4-ACT,CC_MD,8,ACT,R4,257236312159,exp,1,1,128,"))
     assert(sm.toString.contains("CC_MD-R2-ACT,CC_MD,3,ACT,R2,257236312159,exp,1,1,126,"))
+  }
+
+  "exporting an empty design to simple matrix " should " produce a empty simple matrix " in {
+
+    val d = ExperimentalDesign("",Set[Sample]())
+    val sm = ExperimentalDesignHelpers.fromDesignToConditionMatrix(d,true,true)
+    assert(sm.headers.isEmpty)
+    assert(sm.lines.isEmpty)
   }
 }

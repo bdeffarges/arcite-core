@@ -30,7 +30,7 @@ case class SimpleMatrix(headers: List[String], lines: List[List[String]],
                         separator: String = ",", addEndMissingValues: Boolean = true,
                        headersSorted: Boolean = false) {
 
-  require(lines.map(_.size).max <= headers.size)
+  require(if (lines.nonEmpty) lines.map(_.size).max <= headers.size else true)
 
   lazy val toStrg: String = {
     val colSize = headers.size
@@ -52,6 +52,9 @@ case class SimpleMatrix(headers: List[String], lines: List[List[String]],
 
     h+ls
   }
+
+  def isEmpty(): Boolean = headers.isEmpty || lines.isEmpty
+
 
   override def toString: String = {
     toStrg
