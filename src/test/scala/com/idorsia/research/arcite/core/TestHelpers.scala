@@ -12,6 +12,7 @@ object TestHelpers {
 
   val organization = "com.idorsia.research.mock"
   val organization2 = "com.idorsia.research.bioinfo"
+  val organization3 = "com.fake.wrong"
   val person1 = "B. Deffarges"
   val person2 = "B. Renault"
   val person3 = "M. Best Scientist of planet earth"
@@ -20,6 +21,7 @@ object TestHelpers {
   val owner2 = Owner(organization, person2)
   val owner3 = Owner(organization, person3)
   val owner4 = Owner(organization2, person3)
+  val owner5 = Owner(organization3, person3)
 
   val cond1 = Condition("hw", "helloworld", "greetings")
   val cond2 = Condition("he", "helloearth", "greetings")
@@ -42,6 +44,8 @@ object TestHelpers {
   val experiment2 = Experiment("flying to Neptune", "Flying to Neptune is better...", owner2, design = expDesign2)
 
   val experiment3 = Experiment("flying to the next galaxy ", "Flying far away...", owner4, design = expDesign2)
+
+  val experiment4 = Experiment("flying to the next galaxy ", "Flying far away...", owner5, design = expDesign2)
 
   def cloneForFakeExperiment(exp: Experiment): Experiment =
     exp.copy(name = s"${exp.name}--${UUID.randomUUID().toString}")

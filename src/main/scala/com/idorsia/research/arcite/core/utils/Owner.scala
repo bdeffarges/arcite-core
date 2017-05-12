@@ -2,7 +2,6 @@ package com.idorsia.research.arcite.core.utils
 
 import java.io.File
 
-import com.idorsia.research.arcite.core.experiments.Experiment
 
 /**
   * Created by deffabe1 on 3/8/16.
