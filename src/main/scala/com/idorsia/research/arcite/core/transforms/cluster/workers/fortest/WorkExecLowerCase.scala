@@ -9,9 +9,7 @@ import akka.actor.{Actor, ActorLogging, Props}
 import com.idorsia.research.arcite.core.api.ArciteJSONProtocol
 import com.idorsia.research.arcite.core.experiments.ExperimentFolderVisitor
 import com.idorsia.research.arcite.core.transforms._
-import com.idorsia.research.arcite.core.transforms.cluster.MasterWorkerProtocol.WorkerProgress
 import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.{WorkerJobFailed, WorkerJobSuccessFul}
-import com.idorsia.research.arcite.core.transforms.cluster.WorkState.WorkInProgress
 import com.idorsia.research.arcite.core.transforms.cluster.{GetTransfDefId, TransformType}
 import com.idorsia.research.arcite.core.utils.{FullName, WriteFeedbackActor}
 import spray.json._

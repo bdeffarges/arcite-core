@@ -8,8 +8,7 @@ import akka.actor.{Actor, ActorLogging, Props}
 import com.idorsia.research.arcite.core.api.ArciteJSONProtocol
 import com.idorsia.research.arcite.core.experiments.ExperimentFolderVisitor
 import com.idorsia.research.arcite.core.transforms._
-import com.idorsia.research.arcite.core.transforms.cluster.MasterWorkerProtocol.WorkerProgress
-import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.{WorkerJobFailed, WorkerJobSuccessFul}
+import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.{WorkerJobFailed, WorkerJobProgress, WorkerJobSuccessFul}
 import com.idorsia.research.arcite.core.transforms.cluster.{GetTransfDefId, TransformType}
 import com.idorsia.research.arcite.core.utils.{FullName, WriteFeedbackActor}
 import spray.json._
@@ -29,7 +28,7 @@ class WorkExecUpperCase extends Actor with ActorLogging with ArciteJSONProtocol 
       val increment = 100 / end
       0 to end foreach { _ ⇒
         Thread.sleep(500)
-        sender() ! WorkerProgress(increment)
+        sender() ! WorkerJobProgress(increment)
       }
       log.info("waited enough time, doing the work now...")
 

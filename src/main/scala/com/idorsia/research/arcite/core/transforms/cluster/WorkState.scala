@@ -36,8 +36,13 @@ object WorkState {
     progress = Map.empty,
     jobsDone = Set.empty)
 
+
   sealed trait WorkStatus
 
+  /**
+    * work has been accepted by the cluster
+    * @param transform
+    */
   case class WorkAccepted(transform: Transform) extends WorkStatus
 
   /**
@@ -48,29 +53,51 @@ object WorkState {
     */
   case class WorkInProgress(transform: Transform, progress: Int = 1) extends WorkStatus
 
+
+
   case class WorkCompleted(transform: Transform) extends WorkStatus
 
   /**
-    * The transform worker failed.
+    * The transform worker failed, in this case the job will be resubmitted.
     * @param transform
     */
   case class WorkerFailed(transform: Transform) extends WorkStatus
 
+  /**
+    * the job got lost.
+    * @param uid
+    */
   case class WorkLost(uid: String) extends WorkStatus
 
   case class WorkerTimedOut(transform: Transform) extends WorkStatus
 
-  //the summary of the workState
+  /**
+    * all jobs, whether they are running, peding, in progress or done.
+    * @param acceptedJobs
+    * @param pendingJobs
+    * @param jobsInProgress
+    * @param jobsDone
+    */
   case class AllJobsFeedback(acceptedJobs: Set[String], pendingJobs: Set[String],
                              jobsInProgress: Set[String], jobsDone: Set[String])
 
+
+  /**
+    * returning all the jobs that are currently running
+    * @param jobsInProgress
+    */
   case class RunningJobsFeedback(jobsInProgress: Set[RunningTransformFeedback])
 
 }
 
-case class WorkState(acceptedJobs: Set[Transform], pendingJobs: Queue[Transform],
-                     jobsInProgress: Map[String, Transform],
-                     progress: Map[String, Int], jobsDone: Set[Transform]) extends LazyLogging {
+
+
+case class WorkState private (private val acceptedJobs: Set[Transform],
+                              private val pendingJobs: Queue[Transform],
+                              private val jobsInProgress: Map[String, Transform],
+                              private val progress: Map[String, Int],
+                              private val jobsDone: Set[Transform]) extends LazyLogging {
+
 
   import WorkState._
 
@@ -166,8 +193,6 @@ case class WorkState(acceptedJobs: Set[Transform], pendingJobs: Queue[Transform]
     val progressReport = jobsInProgress.map(j ⇒ RunningTransformFeedback(j._2.uid, j._2.transfDefName,
       j._2.source.experiment.uid, j._2.parameters, progress.getOrElse(j._1, 0))).toSet
 
-    //    println(s"**** ${progressReport}")
-    //    println(s"##### ${progress}")
     RunningJobsFeedback(progressReport)
   }
 

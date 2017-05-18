@@ -6,7 +6,7 @@ import akka.actor.SupervisorStrategy.{Restart, Stop}
 import akka.actor.{Actor, ActorInitializationException, ActorLogging, ActorRef, DeathPactException, OneForOneStrategy, Props, ReceiveTimeout, Terminated}
 import akka.cluster.client.ClusterClient.SendToAll
 import com.idorsia.research.arcite.core.experiments.ManageExperiments.Selectable
-import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.WorkerJobCompletion
+import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.{WorkerJobCompletion, WorkerJobProgress}
 import com.idorsia.research.arcite.core.transforms.{Transform, TransformDefinition, TransformHelper}
 import com.idorsia.research.arcite.core.utils
 
@@ -116,7 +116,7 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
         context.become(waitForWorkIsDoneAck(wc))
 
 
-    case wp: WorkerProgress ⇒
+    case wp: WorkerJobProgress ⇒
       log.info(s"worker making progress... ${wp.progress}%...")
       sendToMaster(WorkerInProgress(workerId, transform, utils.getDateAsString(time), wp.progress))
 
@@ -184,6 +184,20 @@ object TransformWorker {
                                  artifacts: Map[String, String] = Map.empty,
                                  selectable: Set[Selectable] = Set.empty) extends WorkerJobCompletion
 
+  /**
+    * the actual has failed but it does not mean the worker itself has failed.
+    * @param feedback
+    * @param errors
+    */
   case class WorkerJobFailed(feedback: String = "", errors: String = "") extends WorkerJobCompletion
+
+  /**
+    * the worker has made some progress and informs the cluster about it.
+    *
+    * @param progress
+    */
+  case class WorkerJobProgress(progress: Int)
+
+
 }
 

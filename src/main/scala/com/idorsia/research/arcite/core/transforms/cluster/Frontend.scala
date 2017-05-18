@@ -26,9 +26,9 @@ object Frontend {
 class Frontend extends Actor with ActorLogging {
 
   import Frontend._
-  import context.dispatcher
 
   //todo change dispatcher/Executor
+  import context.dispatcher
 
   private val masterProxy = context.actorOf(
     ClusterSingletonProxy.props(
