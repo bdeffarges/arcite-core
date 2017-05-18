@@ -3,7 +3,7 @@ package com.idorsia.research.arcite.core.transforms.cluster.workers
 import java.io.File
 
 import akka.actor.{Actor, ActorLogging, Props}
-import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.{WorkFailed, WorkSuccessFull, WorkerException}
+import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.{WorkerJobFailed, WorkerJobSuccessFul}
 import com.idorsia.research.arcite.core.transforms.cluster.workers.RWrapperWorker.RunRCode
 import com.idorsia.research.arcite.core.transforms.cluster.{GetTransfDefId, TransformType}
 import com.idorsia.research.arcite.core.transforms.{Transform, TransformDefinition, TransformDefinitionIdentity, TransformDescription}
@@ -39,8 +39,8 @@ class RWrapperWorker extends Actor with ActorLogging {
 
       val status = process.!(ProcessLogger(output append _, error append _))
 
-      val rreturn = if (status == 0) WorkSuccessFull(s"returned status: $status" , Map("output" -> (output.toString takeRight 500)))
-      else WorkFailed(output.toString takeRight 500, error.toString takeRight 1000)
+      val rreturn = if (status == 0) WorkerJobSuccessFul(s"returned status: $status" , Map("output" -> (output.toString takeRight 500)))
+      else WorkerJobFailed(output.toString takeRight 500, error.toString takeRight 1000)
 
       log.info(s"rscript result is: $rreturn")
 
@@ -55,7 +55,7 @@ class RWrapperWorker extends Actor with ActorLogging {
     case msg: Any ⇒
       val s = s"unable to deal with this message: $msg"
       log.error(s)
-      sender() ! WorkerException(s)
+
   }
 }
 

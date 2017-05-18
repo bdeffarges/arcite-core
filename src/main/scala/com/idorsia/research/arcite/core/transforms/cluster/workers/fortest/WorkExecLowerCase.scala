@@ -10,7 +10,7 @@ import com.idorsia.research.arcite.core.api.ArciteJSONProtocol
 import com.idorsia.research.arcite.core.experiments.ExperimentFolderVisitor
 import com.idorsia.research.arcite.core.transforms._
 import com.idorsia.research.arcite.core.transforms.cluster.MasterWorkerProtocol.WorkerProgress
-import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.{WorkFailed, WorkSuccessFull}
+import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.{WorkerJobFailed, WorkerJobSuccessFul}
 import com.idorsia.research.arcite.core.transforms.cluster.WorkState.WorkInProgress
 import com.idorsia.research.arcite.core.transforms.cluster.{GetTransfDefId, TransformType}
 import com.idorsia.research.arcite.core.utils.{FullName, WriteFeedbackActor}
@@ -51,23 +51,26 @@ class WorkExecLowerCase extends Actor with ActorLogging with ArciteJSONProtocol 
     case t: Transform =>
       log.info(s"transformDef: ${t.transfDefName} defLight=$transfDefId")
       require(t.transfDefName == transfDefId.fullName)
-      log.info("starting work but will wait for fake...")
-      val end = java.util.concurrent.ThreadLocalRandom.current().nextInt(10, 20)
-      val increment = 100 / end
-      0 to end foreach { _ ⇒
-        Thread.sleep(1000)
-        sender() ! WorkerProgress(increment)
-      }
-      log.info("waited enough time, doing the work now...")
+//      log.info("starting work but will wait for fake...")
+//      val end = java.util.concurrent.ThreadLocalRandom.current().nextInt(10, 20)
+//      val increment = 100 / end
+//      0 to end foreach { _ ⇒
+//        Thread.sleep(1000)
+//        sender() ! WorkerProgress(increment)
+//      }
+//      log.info("waited enough time, doing the work now...")
 
       t.source match {
         case tfo: TransformSourceFromObject ⇒
           val toBeTransformed = ToLowerCase(t.parameters("ToLowerCase"))
-          val lowerCased = toBeTransformed.stgToLowerCase.toLowerCase()
-          val p = Paths.get(TransformHelper(t).getTransformFolder().toString, "lowercase.txt")
-          Files.write(p, lowerCased.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
-          sender() ! WorkSuccessFull("to lower case completed", Map("fileName" -> p.getFileName.toString))
-
+          if (toBeTransformed.stgToLowerCase.contains("fail!")) {
+            sender() ! WorkerJobFailed("failing on purpose for tests...")
+          } else {
+            val lowerCased = toBeTransformed.stgToLowerCase.toLowerCase()
+            val p = Paths.get(TransformHelper(t).getTransformFolder().toString, "lowercase.txt")
+            Files.write(p, lowerCased.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
+            sender() ! WorkerJobSuccessFul("to lower case completed", Map("fileName" -> p.getFileName.toString))
+          }
 
         case tfFtf: TransformSourceFromTransform ⇒
 
@@ -86,9 +89,9 @@ class WorkExecLowerCase extends Actor with ActorLogging with ArciteJSONProtocol 
                 Files.write(p, textLowerC.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
               }
             }
-            sender() ! WorkSuccessFull("to lower case completed", Map("fileList" -> listFiles.mkString("\n")))
+            sender() ! WorkerJobSuccessFul("to lower case completed", Map("fileList" -> listFiles.mkString("\n")))
           } else {
-            sender() ! WorkFailed("to lower case failed ", "did not find previous transform output file.")
+            sender() ! WorkerJobFailed("to lower case failed ", "did not find previous transform output file.")
           }
 
 
@@ -96,16 +99,21 @@ class WorkExecLowerCase extends Actor with ActorLogging with ArciteJSONProtocol 
           val expVisFolder = ExperimentFolderVisitor(tfr.experiment)
           var listFiles: List[String] = Nil
 
-          (expVisFolder.userRawFolderPath.toFile.listFiles ++ expVisFolder.rawFolderPath.toFile.listFiles)
-            .filterNot(fn ⇒ ExperimentFolderVisitor.isInternalFile(fn.getName)).map { f ⇒
-            val textLowerC = Files.readAllLines(f.toPath).mkString("\n").toLowerCase()
-            listFiles = s"lowercase_${f.getName}" :: listFiles
-            val p = Paths.get(TransformHelper(t).getTransformFolder().toString, listFiles.head)
-            Files.write(p, textLowerC.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
+          val toBeTransformed = ToLowerCase(t.parameters("ToLowerCase"))
+          if (toBeTransformed.stgToLowerCase.contains("fail!")) {
+            log.debug("got a fail message, failing on purpose to test failure behavior...")
+            sender() ! WorkerJobFailed("failing on purpose for tests...")
+          } else {
+            (expVisFolder.userRawFolderPath.toFile.listFiles ++ expVisFolder.rawFolderPath.toFile.listFiles)
+              .filterNot(fn ⇒ ExperimentFolderVisitor.isInternalFile(fn.getName)).map { f ⇒
+              val textLowerC = Files.readAllLines(f.toPath).mkString("\n").toLowerCase()
+              listFiles = s"lowercase_${f.getName}" :: listFiles
+              val p = Paths.get(TransformHelper(t).getTransformFolder().toString, listFiles.head)
+              Files.write(p, textLowerC.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
+            }
+            sender() ! WorkerJobSuccessFul("to lower case completed", Map("fileList" -> listFiles.mkString("\n")))
           }
-          sender() ! WorkSuccessFull("to lower case completed", Map("fileList" -> listFiles.mkString("\n")))
       }
-
 
     case GetTransfDefId(wi) ⇒
       log.debug(s"asking worker type for $wi")
@@ -119,7 +127,8 @@ object WorkExecLowerCase {
   val fullName = FullName("com.idorsia.research.arcite.core", "to-lowercase", "to-lowercase")
 
   val transfDefId = TransformDefinitionIdentity(fullName,
-    TransformDescription("to-lowercase", "text", "lowercase-text"))
+    TransformDescription("to-lowercase", "text", "lowercase-text",
+      transformParameters = Set(FreeText("ToLowerCase", "ToLowerCase", Some("TO LOWER CASE")))))
 
   val definition = TransformDefinition(transfDefId, props)
 

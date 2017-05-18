@@ -50,9 +50,13 @@ object WorkState {
 
   case class WorkCompleted(transform: Transform) extends WorkStatus
 
-  case class WorkLost(uid: String) extends WorkStatus
-
+  /**
+    * The transform worker failed.
+    * @param transform
+    */
   case class WorkerFailed(transform: Transform) extends WorkStatus
+
+  case class WorkLost(uid: String) extends WorkStatus
 
   case class WorkerTimedOut(transform: Transform) extends WorkStatus
 

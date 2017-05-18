@@ -9,7 +9,7 @@ import com.idorsia.research.arcite.core.experiments.ExperimentFolderVisitor
 import com.idorsia.research.arcite.core.experiments.ManageExperiments.Selectable
 import com.idorsia.research.arcite.core.transforms._
 import com.idorsia.research.arcite.core.transforms.cluster.MasterWorkerProtocol.WorkerProgress
-import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.WorkSuccessFull
+import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.WorkerJobSuccessFul
 import com.idorsia.research.arcite.core.transforms.cluster.{GetTransfDefId, TransformType}
 import com.idorsia.research.arcite.core.utils.FullName
 
@@ -68,7 +68,7 @@ class WorkExecDuplicateText extends Actor with ActorLogging {
 
           Files.write(p, dup.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
 
-          sender() ! WorkSuccessFull(s"text has been duplicated", artifacts = Map("output" -> "duplicated.txt"),
+          sender() ! WorkerJobSuccessFul(s"text has been duplicated", artifacts = Map("output" -> "duplicated.txt"),
           Set(Selectable("generatedFiles", Set("duplicated.txt"))))
       }
 

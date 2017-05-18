@@ -114,7 +114,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       }
 
 
-    case wid: MasterWorkerProtocol.WorkerSuccess ⇒
+    case wid: MasterWorkerProtocol.WorkerCompleted ⇒
       // write transform feedback report
       feedbackActor ! WriteFeedback(wid)
 
@@ -136,18 +136,16 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       }
 
 
-    case wf: MasterWorkerProtocol.WorkerFailed ⇒
-      // write transform feedback report
-      feedbackActor ! WriteFeedback(wf)
-
-      if (workState.isInProgress(wf.transf.uid)) {
-        log.info(s"Work ${wf.transf.uid} failed in worker ${wf.workerId}")
-        changeWorkerToIdle(wf.workerId, wf.transf)
-        persist(WorkState.WorkerFailed(wf.transf)) { event ⇒
+    case MasterWorkerProtocol.WorkFailed(workerId, transf) =>
+      if (workState.isInProgress(workerId)) {
+        log.info("Work {} failed by worker {}", transf, workerId)
+        changeWorkerToIdle(workerId, transf)
+        persist(WorkerFailed(transf)) { event ⇒
           workState = workState.updated(event)
           notifyWorkers()
         }
       }
+
 
 
     case wp: MasterWorkerProtocol.WorkerInProgress ⇒
@@ -192,7 +190,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       log.info(s"[${transformDefs.size}] workers transforms def. types")
       //      log.info(s"workers transforms def. types: $transformDefs")
       if (workState.hasWork(wt.fullName)) {
-        log.info(s"work is already there for worker... ${wt.fullName}")
+        log.info(s"worker${wt.fullName} already busy with some work...")
         sender() ! WorkIsReady
       }
 

@@ -1,7 +1,7 @@
 package com.idorsia.research.arcite.core.transforms.cluster
 
 import com.idorsia.research.arcite.core.transforms.Transform
-import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.{WorkCompletionStatus, WorkFailed, WorkSuccessFull}
+import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.{WorkerJobCompletion, WorkerJobFailed, WorkerJobSuccessFul}
 import com.idorsia.research.arcite.core.utils
 
 object MasterWorkerProtocol {
@@ -13,32 +13,20 @@ object MasterWorkerProtocol {
 
   case class WorkerProgress(progress: Int)
 
-  sealed trait WorkerIsDone {
-    def workerId: String
-
-    def transf: Transform
-
-    def result: WorkCompletionStatus
-
-    def startTime: String
-
-    def endTime: String
-  }
-
-  case class WorkerSuccess(workerId: String, transf: Transform,
-                           result: WorkSuccessFull,
-                           startTime: String,
-                           endTime: String = utils.getCurrentDateAsString()) extends WorkerIsDone
-
-
-  case class WorkerFailed(workerId: String, transf: Transform,
-                          result: WorkFailed,
-                          startTime: String,
-                          endTime: String = utils.getCurrentDateAsString()) extends WorkerIsDone
-
+  case class WorkerCompleted(workerId: String, transf: Transform,
+  result: WorkerJobCompletion,
+  startTime: String,
+  endTime: String = utils.getCurrentDateAsString())
 
   case class WorkerInProgress(workerId: String, transf: Transform, startTime: String, percentCompleted: Int)
 
+  /**
+    * in case the worker fails while processing its job.
+    * It's not the worker itself failing.
+    * @param workerId
+    * @param transf
+    */
+  case class WorkFailed(workerId: String, transf: Transform)
 
   // Messages to Workers
   case object WorkIsReady

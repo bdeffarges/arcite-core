@@ -9,7 +9,7 @@ import com.idorsia.research.arcite.core.api.ArciteJSONProtocol
 import com.idorsia.research.arcite.core.experiments.ExperimentFolderVisitor
 import com.idorsia.research.arcite.core.transforms._
 import com.idorsia.research.arcite.core.transforms.cluster.MasterWorkerProtocol.WorkerProgress
-import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.{WorkFailed, WorkSuccessFull}
+import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.{WorkerJobFailed, WorkerJobSuccessFul}
 import com.idorsia.research.arcite.core.transforms.cluster.{GetTransfDefId, TransformType}
 import com.idorsia.research.arcite.core.utils.{FullName, WriteFeedbackActor}
 import spray.json._
@@ -39,7 +39,7 @@ class WorkExecUpperCase extends Actor with ActorLogging with ArciteJSONProtocol 
           val upperCased = toBeTransformed.stgToUpperCase.toUpperCase()
           val p = Paths.get(TransformHelper(t).getTransformFolder().toString, "uppercase.txt")
           Files.write(p, upperCased.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
-          sender() ! WorkSuccessFull("to upper case completed", Map("fileName" -> p.getFileName.toString))
+          sender() ! WorkerJobSuccessFul("to upper case completed", Map("fileName" -> p.getFileName.toString))
 
 
         case tfFtf: TransformSourceFromTransform ⇒
@@ -58,9 +58,9 @@ class WorkExecUpperCase extends Actor with ActorLogging with ArciteJSONProtocol 
                 Files.write(p, textUpperC.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
               }
             }
-            sender() ! WorkSuccessFull("to Upper case completed", Map("fileList" -> listFiles.mkString("\n")))
+            sender() ! WorkerJobSuccessFul("to Upper case completed", Map("fileList" -> listFiles.mkString("\n")))
           } else {
-            sender() ! WorkFailed("to Upper case failed ", "did not find previous transform output file.")
+            sender() ! WorkerJobFailed("to Upper case failed ", "did not find previous transform output file.")
           }
 
 
@@ -75,7 +75,7 @@ class WorkExecUpperCase extends Actor with ActorLogging with ArciteJSONProtocol 
             val p = Paths.get(TransformHelper(t).getTransformFolder().toString, listFiles.head)
             Files.write(p, textUpperC.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
           }
-          sender() ! WorkSuccessFull("to Upper case completed", Map("fileList" -> listFiles.mkString("\n")))
+          sender() ! WorkerJobSuccessFul("to Upper case completed", Map("fileList" -> listFiles.mkString("\n")))
       }
 
     case GetTransfDefId(wi) ⇒

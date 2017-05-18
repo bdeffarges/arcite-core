@@ -11,7 +11,8 @@ import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.AddLog
 import com.idorsia.research.arcite.core.eventinfo.{ExpLog, LogCategory, LogType}
 import com.idorsia.research.arcite.core.experiments.ManageExperiments.{BunchOfSelectable, SaveSelectable}
 import com.idorsia.research.arcite.core.transforms._
-import com.idorsia.research.arcite.core.transforms.cluster.MasterWorkerProtocol.{WorkerFailed, WorkerIsDone, WorkerSuccess}
+import com.idorsia.research.arcite.core.transforms.cluster.MasterWorkerProtocol.WorkerCompleted
+import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.{WorkerJobFailed, WorkerJobSuccessFul}
 import com.typesafe.config.ConfigFactory
 
 /**
@@ -80,20 +81,21 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
 
         import spray.json._
 
-        wid match {
-          case ws: WorkerSuccess ⇒
+
+        wid.result match {
+          case ws: WorkerJobSuccessFul ⇒
             val fb = TransformCompletionFeedback(wid.transf.uid, wid.transf.transfDefName, fs, params,
-              TransformCompletionStatus.SUCCESS, ws.result.artifacts,
-              ws.result.feedback, "", wid.startTime)
+              TransformCompletionStatus.SUCCESS, ws.artifacts,
+              ws.feedback, "", wid.startTime)
 
             Files.write(Paths.get(transfFolder.toString, FILE_NAME),
               fb.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
 
             Files.write(transfFolder resolve core.successFile, "SUCCESS".getBytes(StandardCharsets.UTF_8), CREATE_NEW)
 
-            if (ws.result.selectable.nonEmpty) {
+            if (ws.selectable.nonEmpty) {
               expManager ! SaveSelectable(wid.transf.source.experiment.uid, wid.transf.uid,
-              BunchOfSelectable(ws.result.selectable))
+              BunchOfSelectable(ws.selectable))
             }
 
             eventInfoAct ! AddLog(wid.transf.source.experiment,
@@ -101,10 +103,10 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
                 s"transform [${wid.transf.transfDefName.name}] successfully completed", Some(wid.transf.uid)))
 
 
-          case wf: WorkerFailed ⇒
+          case wf: WorkerJobFailed ⇒
             val fb = TransformCompletionFeedback(wid.transf.uid, wid.transf.transfDefName, fs, params,
               TransformCompletionStatus.FAILED, Map.empty,
-              wf.result.feedback, wf.result.errors, wid.startTime)
+              wf.feedback, wf.errors, wid.startTime)
 
             Files.write(Paths.get(transfFolder.toString, FILE_NAME),
               fb.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
@@ -130,6 +132,6 @@ object WriteFeedbackActor {
 
   def props(): Props = Props(classOf[WriteFeedbackActor])
 
-  case class WriteFeedback(wid: WorkerIsDone)
+  case class WriteFeedback(wid: WorkerCompleted)
 
 }

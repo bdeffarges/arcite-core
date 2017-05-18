@@ -6,7 +6,7 @@ import akka.actor.SupervisorStrategy.{Restart, Stop}
 import akka.actor.{Actor, ActorInitializationException, ActorLogging, ActorRef, DeathPactException, OneForOneStrategy, Props, ReceiveTimeout, Terminated}
 import akka.cluster.client.ClusterClient.SendToAll
 import com.idorsia.research.arcite.core.experiments.ManageExperiments.Selectable
-import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.{WorkCompletionStatus, WorkFailed, WorkSuccessFull}
+import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.WorkerJobCompletion
 import com.idorsia.research.arcite.core.transforms.{Transform, TransformDefinition, TransformHelper}
 import com.idorsia.research.arcite.core.utils
 
@@ -62,15 +62,14 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
     case None => throw new IllegalStateException("Not working")
   }
 
-  override def supervisorStrategy = OneForOneStrategy() { //todo introduce Arcie exception
+  override def supervisorStrategy = OneForOneStrategy() { //todo introduce Arcite exception
     case _: ActorInitializationException => Stop
 
     case _: DeathPactException => Stop
 
     case excp: Exception =>
       currentTransform foreach { transf ⇒
-        val wf = WorkFailed("worker failed", excp.toString)
-        sendToMaster(WorkerFailed(workerId, transf, wf, utils.getDateAsString(time)))
+        sendToMaster(WorkFailed(workerId, transf))
       }
       context.become(idle)
       Restart
@@ -93,7 +92,6 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
         s"""Got a transform: ${t.transfDefName} / ${t.uid}
            |/ ${t.source.experiment.name} / ${t.source.getClass.getSimpleName}""".stripMargin)
 
-
       TransformHelper(t).getTransformFolder().toFile.mkdirs()
 
       currentTransform = Some(t)
@@ -111,20 +109,11 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
   }
 
   def working: Receive = {
-    case wc: WorkCompletionStatus ⇒ wc match {
-      case ws: WorkSuccessFull ⇒
-        log.info(s"Work is completed. feedback: ${ws.feedback}")
-        sendToMaster(WorkerSuccess(workerId, transform, ws, utils.getDateAsString(time)))
+    case wc: WorkerJobCompletion ⇒
+        log.info(s"Work is completed. feedback: ${wc.feedback}")
+        sendToMaster(WorkerCompleted(workerId, transform, wc, utils.getDateAsString(time)))
         context.setReceiveTimeout(10.seconds)
-        context.become(waitForWorkIsDoneAck(ws))
-
-
-      case wf: WorkFailed ⇒
-        log.info(s"Work failed. feedback: ${wf.feedback}")
-        sendToMaster(WorkerFailed(workerId, transform, wf, utils.getDateAsString(time)))
-        context.setReceiveTimeout(10.seconds)
-        context.become(waitForWorkIsDoneAck(wf))
-    }
+        context.become(waitForWorkIsDoneAck(wc))
 
 
     case wp: WorkerProgress ⇒
@@ -145,7 +134,7 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
       log.error(s"does not know how to process message $a")
   }
 
-  def waitForWorkIsDoneAck(result: WorkCompletionStatus): Receive = {
+  def waitForWorkIsDoneAck(result: WorkerJobCompletion): Receive = {
 
     case Ack(trans) if trans == transform =>
       sendToMaster(WorkerRequestsWork(workerId))
@@ -154,12 +143,8 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
 
     case ReceiveTimeout =>
       log.info(s"received timeout from ${sender().toString()}")
-      result match {
-        case ws: WorkSuccessFull ⇒
-          sendToMaster(WorkerSuccess(workerId, transform, ws, utils.getDateAsString(time)))
-        case wf: WorkFailed ⇒
-          sendToMaster(WorkerFailed(workerId, transform, wf, utils.getDateAsString(time)))
-      }
+      log.info(s"result= $result")
+      sendToMaster(WorkerCompleted(workerId, transform, result, utils.getDateAsString(time)))
   }
 
   override def unhandled(message: Any): Unit = message match {
@@ -180,19 +165,25 @@ object TransformWorker {
     Props(classOf[TransformWorker], clusterClient, transfDef, registerInterval)
 
 
-  sealed trait WorkCompletionStatus {
+  /**
+    * what comes back from the actual Worker: whether the work has been successful
+    * This does not cover the case when the worker itself fails.
+    */
+  sealed trait
+  WorkerJobCompletion {
     def feedback: String
   }
 
-  case class WorkSuccessFull(feedback: String = "",
-                             artifacts: Map[String, String] = Map.empty,
-                            selectable: Set[Selectable] = Set.empty) extends WorkCompletionStatus
+  /**
+    * the work was successful,
+    * @param feedback
+    * @param artifacts
+    * @param selectable
+    */
+  case class WorkerJobSuccessFul(feedback: String = "",
+                                 artifacts: Map[String, String] = Map.empty,
+                                 selectable: Set[Selectable] = Set.empty) extends WorkerJobCompletion
 
-  case class WorkFailed(feedback: String = "", errors: String = "") extends WorkCompletionStatus
-
-  case class WorkerException(cause: String)
-
-  case class WorkProgress(progress: Double)
-
+  case class WorkerJobFailed(feedback: String = "", errors: String = "") extends WorkerJobCompletion
 }
 

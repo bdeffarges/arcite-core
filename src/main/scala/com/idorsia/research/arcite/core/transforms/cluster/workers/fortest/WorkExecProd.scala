@@ -2,7 +2,7 @@ package com.idorsia.research.arcite.core.transforms.cluster.workers.fortest
 
 import akka.actor.{Actor, ActorLogging, Props}
 import com.idorsia.research.arcite.core.transforms.cluster.MasterWorkerProtocol.WorkerProgress
-import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.WorkSuccessFull
+import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.WorkerJobSuccessFul
 import com.idorsia.research.arcite.core.transforms.cluster.{GetTransfDefId, TransformType}
 import com.idorsia.research.arcite.core.transforms.{TransformDefinition, TransformDefinitionIdentity, TransformDescription}
 import com.idorsia.research.arcite.core.utils.FullName
@@ -23,7 +23,7 @@ class WorkExecProd extends Actor with ActorLogging {
       }
       log.info("waited enough time, doing the work now...")
 
-      sender() ! WorkSuccessFull(result)
+      sender() ! WorkerJobSuccessFul(result)
 
     case GetTransfDefId(wi) ⇒
       log.debug(s"asking worker type for $wi")
