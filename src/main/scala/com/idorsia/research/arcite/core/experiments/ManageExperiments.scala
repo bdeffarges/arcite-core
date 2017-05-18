@@ -595,7 +595,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
     }
   }
 
-  private def getSelectableFromTransfResults(exp: String, transf: String): Option[BunchOfSelectable] ={
+  private def getSelectableFromTransfResults(exp: String, transf: String): Option[BunchOfSelectables] ={
     val ex = experiments.get(exp)
     if (ex.isDefined) {
       val transfP = ExperimentFolderVisitor(ex.get).transformFolderPath resolve transf
@@ -603,7 +603,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       if (succF.toFile.exists()) {
         val selectF = transfP resolve core.selectable
         if (selectF.toFile.exists()) {
-          return Some(Files.readAllLines(selectF).mkString(" ").parseJson.convertTo[BunchOfSelectable])
+          return Some(Files.readAllLines(selectF).mkString(" ").parseJson.convertTo[BunchOfSelectables])
         }
       }
     }
@@ -691,13 +691,13 @@ object ManageExperiments {
   case class MakeImmutable(experiment: String)
 
 
-  case class SaveSelectable(exp: String, transf: String, bunchOfSelectable: BunchOfSelectable)
+  case class SaveSelectable(exp: String, transf: String, bunchOfSelectable: BunchOfSelectables)
 
   case class GetSelectable(exp: String, transf: String)
 
   case class Selectable(selectableType: String, items: Set[String])
 
-  case class BunchOfSelectable(selectables: Set[Selectable])
+  case class BunchOfSelectables(selectables: Set[Selectable])
 }
 
 class ExperimentActorsManager extends Actor with ActorLogging {

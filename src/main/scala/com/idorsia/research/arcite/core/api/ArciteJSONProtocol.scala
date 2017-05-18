@@ -7,7 +7,7 @@ import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.InfoLogs
 import com.idorsia.research.arcite.core.eventinfo.LogCategory.LogCategory
 import com.idorsia.research.arcite.core.eventinfo.{ArciteAppLog, ExpLog, LogCategory, LogType}
 import com.idorsia.research.arcite.core.experiments.ExpState.ExpState
-import com.idorsia.research.arcite.core.experiments.ManageExperiments.{BunchOfSelectable, _}
+import com.idorsia.research.arcite.core.experiments.ManageExperiments.{BunchOfSelectables, _}
 import com.idorsia.research.arcite.core.experiments._
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor._
 import com.idorsia.research.arcite.core.meta.DesignCategories.{AllCategories, SimpleCondition}
@@ -518,5 +518,5 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val rmpublishedInfoJson: RootJsonFormat[RemovePublished] = jsonFormat2(RemovePublished)
 
   implicit val selectableJson: RootJsonFormat[Selectable] = jsonFormat2(Selectable)
-  implicit val bunchOfSelectableJson: RootJsonFormat[BunchOfSelectable] = jsonFormat1(BunchOfSelectable)
+  implicit val bunchOfSelectableJson: RootJsonFormat[BunchOfSelectables] = jsonFormat1(BunchOfSelectables)
 }

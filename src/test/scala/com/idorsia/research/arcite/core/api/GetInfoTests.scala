@@ -4,7 +4,6 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.util.ByteString
-import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.InfoLogs
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor.{FoundFoldersAndFiles, GetFilesFromSource, SourceFoldersAsString}
 import com.idorsia.research.arcite.core.transforms.TransformCompletionFeedback

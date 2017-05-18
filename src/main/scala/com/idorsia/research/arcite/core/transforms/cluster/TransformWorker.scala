@@ -175,14 +175,14 @@ object TransformWorker {
   }
 
   /**
-    * the work was successful,
+    * the worker job completed successfully and returned some artifacts and maybe some "selectables"
     * @param feedback
     * @param artifacts
-    * @param selectable
+    * @param selectables
     */
   case class WorkerJobSuccessFul(feedback: String = "",
                                  artifacts: Map[String, String] = Map.empty,
-                                 selectable: Set[Selectable] = Set.empty) extends WorkerJobCompletion
+                                 selectables: Set[Selectable] = Set.empty) extends WorkerJobCompletion
 
   /**
     * the actual has failed but it does not mean the worker itself has failed.

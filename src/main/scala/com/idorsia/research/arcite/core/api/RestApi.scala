@@ -187,7 +187,7 @@ trait ArciteServiceApi extends LazyLogging {
   }
 
   private[api] def getSelectableForTransform(exp: String, transf: String) = {
-    arciteService.ask(GetSelectable(exp, transf)).mapTo[Option[BunchOfSelectable]]
+    arciteService.ask(GetSelectable(exp, transf)).mapTo[Option[BunchOfSelectables]]
   }
 
   private[api] def getAllToTForExperiment(exp: String) = {

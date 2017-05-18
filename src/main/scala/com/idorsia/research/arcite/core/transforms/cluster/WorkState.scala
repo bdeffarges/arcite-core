@@ -41,6 +41,7 @@ object WorkState {
 
   /**
     * work has been accepted by the cluster
+    *
     * @param transform
     */
   case class WorkAccepted(transform: Transform) extends WorkStatus
@@ -54,25 +55,33 @@ object WorkState {
   case class WorkInProgress(transform: Transform, progress: Int = 1) extends WorkStatus
 
 
-
   case class WorkCompleted(transform: Transform) extends WorkStatus
 
   /**
-    * The transform worker failed, in this case the job will be resubmitted.
+    * The transform worker failed, in this case the job will be resubmitted, because it's NOT the
+    * job itself which failed but the worker
+    *
     * @param transform
     */
   case class WorkerFailed(transform: Transform) extends WorkStatus
 
   /**
     * the job got lost.
+    *
     * @param uid
     */
   case class WorkLost(uid: String) extends WorkStatus
 
+  /**
+    * the worker timed out
+    *
+    * @param transform
+    */
   case class WorkerTimedOut(transform: Transform) extends WorkStatus
 
   /**
     * all jobs, whether they are running, peding, in progress or done.
+    *
     * @param acceptedJobs
     * @param pendingJobs
     * @param jobsInProgress
@@ -84,6 +93,7 @@ object WorkState {
 
   /**
     * returning all the jobs that are currently running
+    *
     * @param jobsInProgress
     */
   case class RunningJobsFeedback(jobsInProgress: Set[RunningTransformFeedback])
@@ -91,33 +101,37 @@ object WorkState {
 }
 
 
-
-case class WorkState private (private val acceptedJobs: Set[Transform],
-                              private val pendingJobs: Queue[Transform],
-                              private val jobsInProgress: Map[String, Transform],
-                              private val progress: Map[String, Int],
-                              private val jobsDone: Set[Transform]) extends LazyLogging {
+case class WorkState private[cluster](acceptedJobs: Set[Transform], pendingJobs: Queue[Transform],
+                                      jobsInProgress: Map[String, Transform], progress: Map[String, Int],
+                                      jobsDone: Set[Transform]) extends LazyLogging {
 
 
   import WorkState._
 
   def hasWorkLeft: Boolean = pendingJobs.nonEmpty
 
+
   def hasWork(fullName: FullName): Boolean = {
     pendingJobs.exists(_.transfDefName == fullName)
   }
+
 
   def nextWork(fullName: FullName): Option[Transform] = {
     pendingJobs.find(_.transfDefName == fullName)
   }
 
+
   def numberOfPendingJobs(): Int = pendingJobs.size
+
 
   def isAccepted(workId: String): Boolean = acceptedJobs.exists(_.uid == workId)
 
+
   def isInProgress(workId: String): Boolean = jobsInProgress.values.exists(_.uid == workId)
 
+
   def isDone(workId: String): Boolean = jobsDone.exists(_.uid == workId)
+
 
   def jobState(transf: String): WorkStatus = {
     jobsDone.find(_.uid == transf).fold(
@@ -156,13 +170,11 @@ case class WorkState private (private val acceptedJobs: Set[Transform],
           progress = progress + inProgress(t.uid, prog))
       }
 
-
     case WorkCompleted(t) ⇒
       copy(
         jobsInProgress = jobsInProgress - t.uid,
         progress = progress - t.uid,
         jobsDone = jobsDone + t)
-
 
     case WorkerFailed(t) ⇒
       copy(
@@ -170,13 +182,13 @@ case class WorkState private (private val acceptedJobs: Set[Transform],
         jobsInProgress = jobsInProgress - t.uid,
         progress = progress - t.uid)
 
-
     case WorkerTimedOut(t) ⇒
       copy(
         pendingJobs = pendingJobs enqueue jobsInProgress(t.uid),
         jobsInProgress = jobsInProgress - t.uid,
         progress = progress - t.uid)
   }
+
 
   private def inProgress(transf: String, prog: Int): (String, Int) = {
     val pr = prog max 0
@@ -195,6 +207,7 @@ case class WorkState private (private val acceptedJobs: Set[Transform],
 
     RunningJobsFeedback(progressReport)
   }
+
 
   def workStateSizeSummary(): String =
     s"""acceptedJobs= ${acceptedJobs.size} pendingJobs= ${pendingJobs.size}

@@ -7,7 +7,7 @@ import akka.util.ByteString
 import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.TestHelpers
 import com.idorsia.research.arcite.core.experiments.Experiment
-import com.idorsia.research.arcite.core.experiments.ManageExperiments.{AddExperiment, BunchOfSelectable}
+import com.idorsia.research.arcite.core.experiments.ManageExperiments.{AddExperiment, BunchOfSelectables}
 import com.idorsia.research.arcite.core.transforms.RunTransform.{RunTransformOnObject, RunTransformOnTransform}
 import com.idorsia.research.arcite.core.transforms.TransformDefinitionIdentity
 import com.idorsia.research.arcite.core.transforms.cluster.Frontend.OkTransfReceived
@@ -341,7 +341,7 @@ class TransformApiTests extends ApiTests {
       assert(r.status == StatusCodes.OK)
 
       val selectables = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
-        .parseJson.convertTo[BunchOfSelectable]
+        .parseJson.convertTo[BunchOfSelectables]
 
       println(selectables)
 
