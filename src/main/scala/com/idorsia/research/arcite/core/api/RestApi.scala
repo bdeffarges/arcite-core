@@ -284,8 +284,9 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
     RawHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization"))
 
 
+
   def routes: Route = respondWithHeaders(corsHeaders) {
-    directExpRoute ~
+    new DirectRoute(arciteService).directRoute ~
       pathPrefix("api") {
         pathPrefix(s"v$apiVersion") {
           experimentsRoute ~
@@ -318,58 +319,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
     }
   }
 
-  private def directExpRoute = pathPrefix("experiment") {
-    logger.info("direct route returning files or directory listing.")
-    pathPrefix(Segment) { experiment ⇒
-      pathPrefix("transform") {
-        pathPrefix(Segment) { transf ⇒
-          path(Segment) { artifact ⇒
-            onSuccess(getExperiment(experiment)) {
-              case NoExperimentFound ⇒ complete(BadRequest -> ErrorMessage("no experiment found. "))
-              case ExperimentFound(exp) ⇒ {
-                val visit = ExperimentFolderVisitor(exp)
-                val fil = visit.transformFolderPath.resolve(transf).resolve(artifact).toString
-                logger.info(s"returning file ${fil}")
-                getFromFile(fil)
-              }
-            }
-          } ~
-            pathEnd {
-              onSuccess(getExperiment(experiment)) {
-                case NoExperimentFound ⇒ complete(BadRequest -> ErrorMessage("no experiment found. "))
-                case ExperimentFound(exp) ⇒ {
-                  val visit = ExperimentFolderVisitor(exp)
-                  getFromBrowseableDirectory(visit.transformFolderPath.resolve(transf).toString)
-                }
-              }
-            }
-        }
-      } ~
-        path("user_raw") {
-          onSuccess(getExperiment(experiment)) {
-            case NoExperimentFound ⇒ complete(BadRequest -> ErrorMessage("no experiment found. "))
-            case ExperimentFound(exp) ⇒ {
-              val visit = ExperimentFolderVisitor(exp)
-              logger.info(s"returning user raw data for exp: ${exp.name}")
-              getFromBrowseableDirectory(visit.userRawFolderPath.toString)
-            }
-          }
-        } ~
-        path("raw") {
-          onSuccess(getExperiment(experiment)) {
-            case NoExperimentFound ⇒ complete(BadRequest -> ErrorMessage("no experiment found. "))
-            case ExperimentFound(exp) ⇒ {
-              val visit = ExperimentFolderVisitor(exp)
-              logger.info(s"returning raw data for exp: ${exp.name}")
-              getFromBrowseableDirectory(visit.rawFolderPath.toString)
-            }
-          }
-        }
-    }
-  }
-
-
-  def defaultRoute = {
+   def defaultRoute = {
     get {
       complete(OK -> apiSpec.stripMargin)
     }
