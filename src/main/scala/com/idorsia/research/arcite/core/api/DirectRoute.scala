@@ -1,9 +1,12 @@
 package com.idorsia.research.arcite.core.api
 
+import java.io.File
+
 import akka.http.scaladsl.server.Directives._
 import akka.actor.ActorRef
 import akka.http.scaladsl.model.StatusCodes.BadRequest
 import akka.http.scaladsl.server
+import akka.http.scaladsl.server.{Directive1, PathMatchers}
 import akka.http.scaladsl.server.Directives.{complete, getFromBrowseableDirectory, getFromFile, onSuccess, path, pathEnd, pathPrefix}
 import com.idorsia.research.arcite.core.api.ArciteService.{ExperimentFound, ExperimentFoundFeedback, GetExperiment, NoExperimentFound}
 import com.idorsia.research.arcite.core.experiments.ExperimentFolderVisitor
@@ -57,29 +60,56 @@ class DirectRoute(arciteService: ActorRef) extends LazyLogging {
             pathPrefix("transform") {
               pathPrefix(Segment) { transf ⇒
                 val filPath = visit.transformFolderPath resolve transf
-                if (!filPath.toFile.exists) complete(BadRequest -> "transform does not seem to exist. ")
-                pathEnd {
-                  getFromBrowseableDirectory(filPath.toFile.getAbsolutePath)
-                } ~
-                  path(Segment) { transContent ⇒
-                    val tc = filPath.resolve(transContent).toFile
-                    if (tc.isDirectory) {
-                      getFromBrowseableDirectory(tc.getAbsolutePath)
-                    } else {
-                      getFromFile(tc.getAbsolutePath)
-                    }
-                  }
+                path(Segments) { subPaths ⇒
+                  val tc = subPaths.foldLeft(filPath)((x, s) ⇒ x resolve s)
+                  getFromBrowseableDirectories(tc.toString)
+                }
               }
             } ~
               path("user-raw") {
-                getFromBrowseableDirectory(visit.userRawFolderPath.toString)
+                getFromBrowseableDirectories(visit.userRawFolderPath.toString)
+              } ~
+              pathPrefix("raw") {
+                path(Segments) { subPaths ⇒
+                  val tc = subPaths.foldLeft(visit.rawFolderPath)((x, s) ⇒ x resolve s)
+                  //                  complete("AA " + tc.toString)
+                  getFromBrowseableDirectory(tc.toString)
+                } ~
+                  path((Segment ~ Slash).repeat(0, 128, PathMatchers.Neutral)) { subPaths ⇒
+                    val tc = subPaths.foldLeft(visit.rawFolderPath)((x, s) ⇒ x resolve s)
+                    getFromBrowseableDirectory(tc.toString)
+                    //                                        complete("AB: " + tc.toString)
+                  }
               } ~
               path("raw") {
                 getFromBrowseableDirectory(visit.rawFolderPath.toString)
-
+              } ~
+              pathPrefix("user-meta") {
+                path(Segments) { subPaths ⇒
+                  val tc = subPaths.foldLeft(visit.userMetaFolderPath)((x, s) ⇒ x resolve s)
+                  //                  complete("AA " + tc.toString)
+                  getFromBrowseableDirectory(tc.toString)
+                } ~
+                  path((Segment ~ Slash).repeat(0, 128, PathMatchers.Neutral)) { subPaths ⇒
+                    val tc = subPaths.foldLeft(visit.userMetaFolderPath)((x, s) ⇒ x resolve s)
+                    getFromBrowseableDirectory(tc.toString)
+                    //                    complete("AB: " + tc.toString)
+                  }
               } ~
               path("user-meta") {
                 getFromBrowseableDirectory(visit.userMetaFolderPath.toString)
+              } ~
+              pathPrefix("meta") {
+                path(Segments) { subPaths ⇒
+                  val tc = subPaths.foldLeft(visit.metaFolderPath)((x, s) ⇒ x resolve s)
+                  //                  complete("AA " + tc.toString)
+                  getFromBrowseableDirectory(tc.toString)
+                } ~
+                  path((Segment ~ Slash).repeat(0, 128, PathMatchers.Neutral)) { subPaths ⇒
+                    val tc = subPaths.foldLeft(visit.metaFolderPath)((x, s) ⇒ x resolve s)
+                    getFromBrowseableDirectory(tc.toString)
+                    //                    complete("AB: " + tc.toString)
+                  }
               } ~
               path("meta") {
                 getFromBrowseableDirectory(visit.metaFolderPath.toString)
@@ -89,55 +119,4 @@ class DirectRoute(arciteService: ActorRef) extends LazyLogging {
       }
     }
   }
-
 }
-
-//
-//      pathPrefix("transform") {
-//        pathPrefix(Segment) { transf ⇒
-//          path(Segment) { artifact ⇒
-//            onSuccess(getExperiment(experiment)) {
-//              case NoExperimentFound ⇒ complete(BadRequest -> ErrorMessage("no experiment found. "))
-//              case ExperimentFound(exp) ⇒ {
-//                val visit = ExperimentFolderVisitor(exp)
-//                val filPath = visit.transformFolderPath.resolve(transf).resolve(artifact)
-//                if (filPath.toFile.isFile) {
-//                  logger.info(s"returning file ${filPath.toString}")
-//                  getFromFile(filPath.toFile.getAbsolutePath)
-//                } else {
-//                  getFromBrowseableDirectory(visit.transformFolderPath.resolve(transf).toString)
-//                }
-//              }
-//            }
-//          } ~
-//            pathEnd {
-//              onSuccess(getExperiment(experiment)) {
-//                case NoExperimentFound ⇒ complete(BadRequest -> ErrorMessage("no experiment found. "))
-//                case ExperimentFound(exp) ⇒ {
-//                  val visit = ExperimentFolderVisitor(exp)
-//                  getFromBrowseableDirectory(visit.transformFolderPath.resolve(transf).toString)
-//                }
-//              }
-//            }
-//        }
-//      } ~
-//        path("user_raw") {
-//          onSuccess(getExperiment(experiment)) {
-//            case NoExperimentFound ⇒ complete(BadRequest -> ErrorMessage("no experiment found. "))
-//            case ExperimentFound(exp) ⇒ {
-//              val visit = ExperimentFolderVisitor(exp)
-//              logger.info(s"returning user raw data for exp: ${exp.name}")
-//              getFromBrowseableDirectory(visit.userRawFolderPath.toString)
-//            }
-//          }
-//        } ~
-//        path("raw") {
-//          onSuccess(getExperiment(experiment)) {
-//            case NoExperimentFound ⇒ complete(BadRequest -> ErrorMessage("no experiment found. "))
-//            case ExperimentFound(exp) ⇒ {
-//              val visit = ExperimentFolderVisitor(exp)
-//              logger.info(s"returning raw data for exp: ${exp.name}")
-//              getFromBrowseableDirectory(visit.rawFolderPath.toString)
-//            }
-//          }
-//        }
