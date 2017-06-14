@@ -2,12 +2,12 @@ package com.idorsia.research.arcite.core.api
 
 import java.io.File
 
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directives.{complete, getFromBrowseableDirectory, getFromFile, onSuccess, path, pathEnd, pathPrefix, _}
 import akka.actor.ActorRef
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes.BadRequest
 import akka.http.scaladsl.server
 import akka.http.scaladsl.server.{Directive1, PathMatchers}
-import akka.http.scaladsl.server.Directives.{complete, getFromBrowseableDirectory, getFromFile, onSuccess, path, pathEnd, pathPrefix}
 import com.idorsia.research.arcite.core.api.ArciteService.{ExperimentFound, ExperimentFoundFeedback, GetExperiment, NoExperimentFound}
 import com.idorsia.research.arcite.core.experiments.ExperimentFolderVisitor
 import com.typesafe.scalalogging.LazyLogging
@@ -50,70 +50,68 @@ class DirectRoute(arciteService: ActorRef) extends LazyLogging {
   }
 
   def directRoute: server.Route = {
-    pathPrefix("experiment") {
-      logger.info("direct route returning files or directory listing.")
-      pathPrefix(Segment) { experiment ⇒
-        onSuccess(getExperiment(experiment)) {
-          case NoExperimentFound ⇒ complete(BadRequest -> "no experiment found for this ID")
-          case ExperimentFound(exp) ⇒ {
-            val visit = ExperimentFolderVisitor(exp)
-            pathPrefix("transform") {
-              pathPrefix(Segment) { transf ⇒
-                val filPath = visit.transformFolderPath resolve transf
-                path(Segments) { subPaths ⇒
-                  val tc = subPaths.foldLeft(filPath)((x, s) ⇒ x resolve s)
-                  getFromBrowseableDirectories(tc.toString)
-                }
-              }
-            } ~
-              path("user-raw") {
-                getFromBrowseableDirectories(visit.userRawFolderPath.toString)
-              } ~
-              pathPrefix("raw") {
-                path(Segments) { subPaths ⇒
-                  val tc = subPaths.foldLeft(visit.rawFolderPath)((x, s) ⇒ x resolve s)
-                  //                  complete("AA " + tc.toString)
-                  getFromBrowseableDirectory(tc.toString)
+    redirectToNoTrailingSlashIfPresent(StatusCodes.MovedPermanently) {
+
+      pathPrefix("experiment") {
+        logger.info("direct route returning files or directory listing.")
+        pathPrefix(Segment) { experiment ⇒
+          onSuccess(getExperiment(experiment)) {
+            case NoExperimentFound ⇒ complete(BadRequest -> "no experiment found for this ID")
+            case ExperimentFound(exp) ⇒ {
+              val visit = ExperimentFolderVisitor(exp)
+              pathPrefix("transform") {
+                pathPrefix(Segment) { transf ⇒
+                  val filPath = visit.transformFolderPath resolve transf
+                  path(Segments) { subPaths ⇒
+                    val tc = subPaths.foldLeft(filPath)((x, s) ⇒ x resolve s)
+                    getFromBrowseableDirectories(tc.toString)
+                  }
                 } ~
-                  path((Segment ~ Slash).repeat(0, 128, PathMatchers.Neutral)) { subPaths ⇒
+                  path(Segment) { transf ⇒
+                    getFromBrowseableDirectories((visit.transformFolderPath resolve transf).toString)
+                  }
+              } ~
+                pathPrefix("user-raw") {
+                  path(Segments) { subPaths ⇒
+                    val tc = subPaths.foldLeft(visit.userRawFolderPath)((x, s) ⇒ x resolve s)
+                    //                  complete("AA " + tc.toString)
+                    getFromBrowseableDirectory(tc.toString)
+                  }
+                } ~
+                path("user-raw") {
+                  getFromBrowseableDirectories(visit.userRawFolderPath.toString)
+                } ~
+                pathPrefix("raw") {
+                  path(Segments) { subPaths ⇒
                     val tc = subPaths.foldLeft(visit.rawFolderPath)((x, s) ⇒ x resolve s)
+                    //                  complete("AA " + tc.toString)
                     getFromBrowseableDirectory(tc.toString)
-                    //                                        complete("AB: " + tc.toString)
                   }
-              } ~
-              path("raw") {
-                getFromBrowseableDirectory(visit.rawFolderPath.toString)
-              } ~
-              pathPrefix("user-meta") {
-                path(Segments) { subPaths ⇒
-                  val tc = subPaths.foldLeft(visit.userMetaFolderPath)((x, s) ⇒ x resolve s)
-                  //                  complete("AA " + tc.toString)
-                  getFromBrowseableDirectory(tc.toString)
                 } ~
-                  path((Segment ~ Slash).repeat(0, 128, PathMatchers.Neutral)) { subPaths ⇒
+                path("raw") {
+                  getFromBrowseableDirectory(visit.rawFolderPath.toString)
+                } ~
+                pathPrefix("user-meta") {
+                  path(Segments) { subPaths ⇒
                     val tc = subPaths.foldLeft(visit.userMetaFolderPath)((x, s) ⇒ x resolve s)
+                    //                  complete("AA " + tc.toString)
                     getFromBrowseableDirectory(tc.toString)
-                    //                    complete("AB: " + tc.toString)
                   }
-              } ~
-              path("user-meta") {
-                getFromBrowseableDirectory(visit.userMetaFolderPath.toString)
-              } ~
-              pathPrefix("meta") {
-                path(Segments) { subPaths ⇒
-                  val tc = subPaths.foldLeft(visit.metaFolderPath)((x, s) ⇒ x resolve s)
-                  //                  complete("AA " + tc.toString)
-                  getFromBrowseableDirectory(tc.toString)
                 } ~
-                  path((Segment ~ Slash).repeat(0, 128, PathMatchers.Neutral)) { subPaths ⇒
+                path("user-meta") {
+                  getFromBrowseableDirectory(visit.userMetaFolderPath.toString)
+                } ~
+                pathPrefix("meta") {
+                  path(Segments) { subPaths ⇒
                     val tc = subPaths.foldLeft(visit.metaFolderPath)((x, s) ⇒ x resolve s)
+                    //                  complete("AA " + tc.toString)
                     getFromBrowseableDirectory(tc.toString)
-                    //                    complete("AB: " + tc.toString)
                   }
-              } ~
-              path("meta") {
-                getFromBrowseableDirectory(visit.metaFolderPath.toString)
-              }
+                } ~
+                path("meta") {
+                  getFromBrowseableDirectory(visit.metaFolderPath.toString)
+                }
+            }
           }
         }
       }

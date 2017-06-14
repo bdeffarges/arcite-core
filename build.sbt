@@ -58,7 +58,7 @@ resolvers ++= Seq(
 
 libraryDependencies ++= {
   val akkaVersion = "2.4.17"
-  val akkaHttpVersion = "10.0.5"
+  val akkaHttpVersion = "10.0.7"
   val luceneVersion = "6.5.0"
 
   Seq(
