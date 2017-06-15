@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
 import java.util.UUID
 
+import com.idorsia.research.arcite.core.TestHelpers
 import com.idorsia.research.arcite.core.experiments.CombinedCondition.NameTransform
 import com.typesafe.scalalogging.LazyLogging
 import org.scalatest.{FlatSpec, Matchers}
@@ -190,5 +191,23 @@ class DesignTest extends FlatSpec with Matchers with LazyLogging {
     val sm = ExperimentalDesignHelpers.fromDesignToConditionMatrix(d,true,true)
     assert(sm.headers.isEmpty)
     assert(sm.lines.isEmpty)
+  }
+
+  "asking for categories of a set of conditions " should " return all categories " in {
+
+    val d = TestHelpers.expDesign1
+
+    val cats1 = ExperimentalDesignHelpers.uniqueCategoriesForGivenValues(d, "hw", "he")
+    assert(cats1.size == 1)
+    assert(cats1.contains("greetings"))
+
+    val cats2= ExperimentalDesignHelpers.uniqueCategoriesForGivenValues(d, "3", "1")
+    assert(cats2.size == 1)
+    assert(cats2.contains("sampleid"))
+
+    val cats3= ExperimentalDesignHelpers.uniqueCategoriesForGivenValues(d, "hw", "hj", "3", "1")
+    assert(cats3.size == 2)
+    assert(cats3.contains("greetings"))
+    assert(cats3.contains("sampleid"))
   }
 }

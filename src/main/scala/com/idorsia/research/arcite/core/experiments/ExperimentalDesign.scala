@@ -93,9 +93,6 @@ object ExperimentalDesignHelpers {
     val allCats = allCategories(expDes).toList.sorted
     val allDiffCats = allCats.toSet.subsets.map(_.toList).filter(_.nonEmpty)
 
-    //    println(allCats)
-    //    println(allDiffCats.toList.mkString("\n"))
-
     allDiffCats.filter(c ⇒
       allValuesForCats(expDes, c: _*)
         .map(sc ⇒ sc.toList.sortBy(_.category).mkString).size == size).toList
@@ -121,6 +118,21 @@ object ExperimentalDesignHelpers {
   }
 
   /**
+    * Sometimes it's useful to get all the categories of a set of condition names.
+    * If some condition names can be found in multiple conditions in different categories then we
+    * return all of them.
+    *
+    * @param exp
+    * @param values
+    * @return
+    */
+  def uniqueCategoriesForGivenValues(exp: ExperimentalDesign, values: String*): Set[String] = {
+    exp.samples.flatMap(s ⇒ s.conditions)
+      .filter(c ⇒ values.contains(c.name))
+      .map(_.category)
+  }
+
+  /**
     *
     * @param expDesign
     * @param categories
@@ -129,7 +141,7 @@ object ExperimentalDesignHelpers {
     */
   @deprecated("should use the export from the SimpleMatrix. ")
   def exportToDelimitedWithHeader(expDesign: ExperimentalDesign,
-                                  categories: List[String],
+                                 categories: List[String],
                                   separator: String = "\t"): String = {
 
     val sb = new StringBuilder
