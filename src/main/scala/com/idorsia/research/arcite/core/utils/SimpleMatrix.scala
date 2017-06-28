@@ -55,7 +55,6 @@ case class SimpleMatrix(headers: List[String], lines: List[List[String]],
 
   def isEmpty(): Boolean = headers.isEmpty || lines.isEmpty
 
-
   override def toString: String = {
     toStrg
   }
@@ -78,8 +77,7 @@ object SimpleMatrixHelper {
   }
 
 
-  def saveSimpleMatrix(matrix: SimpleMatrix, targetFile: String,
-                       separator: String = ",", addMissingValues: Boolean = true): Unit = {
+  def saveSimpleMatrix(matrix: SimpleMatrix, targetFile: String): Unit = {
 
     Files.write(Paths.get(targetFile), matrix.toString.getBytes(StandardCharsets.UTF_8))
   }
