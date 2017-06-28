@@ -1,10 +1,10 @@
 Arcite
 ======
 
-Arcite aims to be a general purpose biological data management and processing engine based on Akka and Spark.
+Arcite aims to be a general purpose biological data management and processing engine written in scala and based on Akka and Spark.
 
 The purpose of Arcite is to enable scientists to run reproducible analysis on data produced by laboratory equipments 
-like microrray scanner, sequencer, etc. 
+like microrray scanner, NGS sequencer, etc. 
 
 ### Key concepts and ideas
 Ultimately, Arcite wants to share data, processing and analysis with everybody in a similar way as bitcoin transactions are 
@@ -21,5 +21,11 @@ An experiment definition cannot be changed, it would have to be recreated. The r
 would have been produced with the data (e.g. even a simple matrix given values for X samples with Y features), changing
 the experiment definition would corrupt the results. Thus, immutability is key to Arcite. 
 
+
+
+### Architecture
+
 ### Building Arcite
+to build arcite you need sbt and an easy way to get it is to install sdkman (http://sdkman.io/)
+
 

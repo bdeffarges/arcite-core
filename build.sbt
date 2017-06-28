@@ -5,7 +5,7 @@ organization := "com.idorsia.research.arcite"
 
 name := "arcite-core"
 
-version := "1.55.0"
+version := "1.57.0"
 
 scalaVersion := "2.11.8"
 
@@ -144,6 +144,10 @@ dockerCommands := Seq(
   Cmd("EXPOSE", "8084 2551 2552 2553 2554 2555 2556 2557 2558"),
   Cmd("USER", "daemon"),
   Cmd("ENTRYPOINT", "bin/arcite-core"))
+
+dockerRepository := Some("gaia:5000")
+dockerAlias := DockerAlias(dockerRepository.value, Some("core"), packageName.value, Some(version.value))
+
 
 licenses := Seq(("CC0", url("http://creativecommons.org/publicdomain/zero/1.0")))
 
