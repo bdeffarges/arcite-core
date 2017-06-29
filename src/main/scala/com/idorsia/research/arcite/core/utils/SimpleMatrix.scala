@@ -28,13 +28,14 @@ import java.nio.file.{Files, Paths}
   */
 case class SimpleMatrix(headers: List[String], lines: List[List[String]],
                         separator: String = ",", addEndMissingValues: Boolean = true,
-                       headersSorted: Boolean = false) {
+                       headersSorted: Boolean = false, changeHeaderToLowerCase: Boolean = false) {
 
   require(if (lines.nonEmpty) lines.map(_.size).max <= headers.size else true)
 
   lazy val toStrg: String = {
     val colSize = headers.size
-    val heads = if (headersSorted) headers.sorted else headers
+    val hheads = if (headersSorted) headers.sorted else headers
+    val heads = if (changeHeaderToLowerCase) hheads.map(_.toLowerCase) else hheads
 
     val h = if (addEndMissingValues) {
       heads.mkString("", separator, s"$separator\n")
