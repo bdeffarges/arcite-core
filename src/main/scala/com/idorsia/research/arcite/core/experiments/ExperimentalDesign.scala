@@ -171,7 +171,8 @@ object ExperimentalDesignHelpers {
 
 
   def fromDesignToConditionMatrix(exp: ExperimentalDesign, addEndMissingValues: Boolean = true,
-                                  headersSorted: Boolean = false): SimpleMatrix = {
+                                  headersSorted: Boolean = false,
+                                  headersToLowerCase: Boolean= false): SimpleMatrix = {
 
     val allHeaders = exp.samples.flatMap(_.conditions).map(_.category).toList
 
@@ -180,7 +181,7 @@ object ExperimentalDesignHelpers {
       allHeaders.map(h ⇒ conds.find(_.category == h)).map(c ⇒ if (c.isDefined) c.get.name else "")
     }
 
-    SimpleMatrix(allHeaders, lines, ",", addEndMissingValues, headersSorted)
+    SimpleMatrix(allHeaders, lines, ",", addEndMissingValues, headersSorted, headersToLowerCase)
   }
 }
 
