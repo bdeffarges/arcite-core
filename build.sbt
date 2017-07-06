@@ -136,7 +136,7 @@ javaOptions in Universal ++= Seq(
 )
 dockerCommands := Seq(
   Cmd("FROM", "openjdk:latest"),
-  Cmd("MAINTAINER", "Bernard Deffarges bernard.deffarges@actelion.com"),
+  Cmd("MAINTAINER", "Bernard Deffarges bernard.deffarges@idorsia.com"),
   Cmd("RUN", "echo Europe/Berlin > /etc/timezone && dpkg-reconfigure --frontend noninteractive tzdata"),
   Cmd("WORKDIR", "/opt/docker"),
   Cmd("COPY", "opt /opt"),
