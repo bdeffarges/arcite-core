@@ -137,7 +137,7 @@ class FilesUploadApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val jsonRequest = ByteString(CloneExperimentNewProps(s"cloned-${UUID.randomUUID().toString}",
-      "com.idorsia.research.test.cloned", TestHelpers.owner3).toJson.prettyPrint)
+      "experiment cloned", TestHelpers.owner3).toJson.prettyPrint)
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
