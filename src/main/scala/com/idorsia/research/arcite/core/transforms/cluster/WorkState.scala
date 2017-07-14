@@ -203,7 +203,7 @@ case class WorkState private[cluster](acceptedJobs: Set[Transform], pendingJobs:
 
   def runningJobsSummary(): RunningJobsFeedback = {
     val progressReport = jobsInProgress.map(j ⇒ RunningTransformFeedback(j._2.uid, j._2.transfDefName,
-      j._2.source.experiment.uid, j._2.parameters, progress.getOrElse(j._1, 0))).toSet
+      j._2.source.experiment.uid.get, j._2.parameters, progress.getOrElse(j._1, 0))).toSet
 
     RunningJobsFeedback(progressReport)
   }

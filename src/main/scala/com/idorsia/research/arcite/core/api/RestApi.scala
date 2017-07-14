@@ -283,8 +283,6 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
     RawHeader("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS, DELETE"),
     RawHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization"))
 
-
-
   def routes: Route = respondWithHeaders(corsHeaders) {
     new DirectRoute(arciteService).directRoute ~
       pathPrefix("api") {

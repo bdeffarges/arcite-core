@@ -55,9 +55,7 @@ object ArciteService {
 
   case class SearchExperimentsWithReq(search: SearchExperiments, forWhom: ActorRef)
 
-  case class GetExperiment(digest: String)
-
-  case class GetExperimentWithRequester(digest: String, requester: ActorRef)
+  case class GetExperiment(uid: String)
 
 
   // responses

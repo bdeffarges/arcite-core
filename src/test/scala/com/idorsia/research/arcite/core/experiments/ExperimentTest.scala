@@ -33,8 +33,8 @@ class ExperimentTest extends FlatSpec with Matchers {
 
     val exp1 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment1)
 
-    val uriSlash = exp1.defaultURIHelper.expURIWithSlashArcite
-    val uriSubDomain = exp1.defaultURIHelper.expURIWithSubdomain
+    val uriSlash = ExpUriHelper(exp1).expURIWithSlashArcite
+    val uriSubDomain = ExpUriHelper(exp1).expURIWithSubdomain
 
     val expected1 = s"arcite.idorsia.com/com/idorsia/research/bioinfo/mock/${exp1.uid}"
     val expected2 = s"www.idorsia.com/arcite/com/idorsia/research/bioinfo/mock/${exp1.uid}"

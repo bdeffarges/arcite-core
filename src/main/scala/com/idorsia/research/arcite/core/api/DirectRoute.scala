@@ -42,11 +42,11 @@ class DirectRoute(arciteService: ActorRef) extends LazyLogging {
   private[api] val config = ConfigFactory.load()
   private[api] val apiSpec = config.getString("arcite.api.specification")
 
-  private def getExperiment(digest: String) = {
-    logger.debug(s"asking for experiment with digest= $digest")
+  private def getExperiment(uid: String) = {
+    logger.debug(s"asking for experiment with digest= $uid")
     import scala.concurrent.duration._
     implicit val requestTimeOut = Timeout(2 seconds)
-    arciteService.ask(GetExperiment(digest)).mapTo[ExperimentFoundFeedback]
+    arciteService.ask(GetExperiment(uid)).mapTo[ExperimentFoundFeedback]
   }
 
   def directRoute: server.Route = {
@@ -56,7 +56,7 @@ class DirectRoute(arciteService: ActorRef) extends LazyLogging {
         logger.info("direct route returning files or directory listing.")
         pathPrefix(Segment) { experiment ⇒
           onSuccess(getExperiment(experiment)) {
-            case NoExperimentFound ⇒ complete(BadRequest -> "no experiment found for this ID")
+            case NoExperimentFound ⇒ complete(BadRequest -> "no experiment found for this UID")
             case ExperimentFound(exp) ⇒ {
               val visit = ExperimentFolderVisitor(exp)
               pathPrefix("transform") {

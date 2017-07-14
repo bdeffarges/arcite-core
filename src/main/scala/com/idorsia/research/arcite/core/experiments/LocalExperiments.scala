@@ -2,6 +2,7 @@ package com.idorsia.research.arcite.core.experiments
 
 import java.nio.charset.StandardCharsets
 import java.nio.file._
+import java.util.UUID
 
 import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.api.ArciteJSONProtocol
@@ -14,16 +15,15 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
   val config = ConfigFactory.load()
 
   val EXPERIMENT_FILE_NAME = "experiment"
-  val EXPERIMENT_DIGEST_FILE_NAME = "digest"
+  val EXPERIMENT_UID_FILE_NAME = "uid"
 
   case class LoadExperiment(folder: String)
 
   sealed trait SaveExperimentFeedback
 
-  case class SaveExperimentSuccessful(uid: String) extends SaveExperimentFeedback
+  case class SaveExperimentSuccessful(exp: Experiment) extends SaveExperimentFeedback
 
   case class SaveExperimentFailed(error: String) extends SaveExperimentFeedback
-
 
   def loadAllLocalExperiments(): Map[String, Experiment] = {
 
@@ -51,11 +51,11 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
 
         if (expFile.exists()) {
           import scala.collection.convert.wrapAsScala._
-          val digest = Files.readAllLines(currentFolder resolve EXPERIMENT_DIGEST_FILE_NAME)
+          val uid = Files.readAllLines(currentFolder resolve EXPERIMENT_UID_FILE_NAME)
             .toList.mkString("\n")
 
           val expCond = loadExperiment(expFile.toPath)
-          if (expCond.isDefined) map += ((digest, expCond.get))
+          if (expCond.isDefined) map += ((uid, expCond.get))
 
         }
       }
@@ -65,7 +65,7 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
 
     deeperUntilMeta(core.dataPath)
 
-    map + (DefaultExperiment.defaultExperiment.uid -> DefaultExperiment.defaultExperiment)
+    map
   }
 
   def loadExperiment(path: Path): Option[Experiment] = {
@@ -81,9 +81,12 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
     }
   }
 
-  def saveExperiment(exp: Experiment): SaveExperimentFeedback = {
+  def saveExperiment(experiment: Experiment): SaveExperimentFeedback = {
 
     import spray.json._
+
+    val exp = experiment.copy(uid = Some(UUID.randomUUID().toString))
+    println(s"save $exp")
 
     val expFVisit = ExperimentFolderVisitor(exp)
 
@@ -93,31 +96,36 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
     import java.nio.file.StandardCopyOption._
 
     val fp = expFVisit.experimentFilePath
-    val dp = expFVisit.digestFilePath
+    val uidF = expFVisit.uidFilePath
+
+    logger.info(s"saved experiment [${exp.name}] to [${fp.toString}]")
+    println(s"saved experiment [${exp.name}] to [${fp.toString}]")
 
     try {
       if (fp.toFile.exists) Files.move(fp, Paths.get(fp.toString + "_bkup"), REPLACE_EXISTING)
 
       Files.write(fp, strg.getBytes(StandardCharsets.UTF_8), CREATE)
 
-      if (!dp.toFile.exists) Files.write(dp, exp.uid.getBytes(StandardCharsets.UTF_8), CREATE)
+      Files.write(uidF, exp.uid.get.getBytes(StandardCharsets.UTF_8), CREATE)
 
-      SaveExperimentSuccessful(exp.uid)
+      SaveExperimentSuccessful(exp)
+
     } catch {
       case e: Exception ⇒ SaveExperimentFailed(e.toString)
     }
   }
 
-  def safeDeleteExperiment(exp: Experiment): DeleteExperimentFeedback = {
+  def safeDeleteExperiment(exp: Experiment): DeleteExperimentFeedback = {//todo check?
     val expFoldVis = ExperimentFolderVisitor(exp)
 
     try {
-      val p = core.archivePath resolve s"deleted_${utils.getDateForFolderName}" resolve expFoldVis.relFolderPath
+      val p = core.archivePath resolve s"deleted_${utils.getDateForFolderName()}" resolve expFoldVis.relFolderPath
       p.toFile.mkdirs()
 
       Files.move(expFoldVis.expFolderPath, p, StandardCopyOption.ATOMIC_MOVE)
 
       ExperimentDeletedSuccess
+
     } catch {
       case e: Exception ⇒
         logger.error(e.toString)

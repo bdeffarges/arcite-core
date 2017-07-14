@@ -80,7 +80,7 @@ class DefineRawDataApiTests extends ApiTests {
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)
 
-    val jsonRequest = ByteString(SourceRawDataSet(exp1.uid, "microarray1",
+    val jsonRequest = ByteString(SourceRawDataSet(exp1.uid.get, "microarray1",
       filesAndFolders = List("AMS0090/160309_br")).toJson.prettyPrint)
 
     val postRequest = HttpRequest(

@@ -18,20 +18,9 @@ import com.typesafe.config.{Config, ConfigFactory}
   *
   *
   */
-case class Experiment(name: String, description: String, owner: Owner, state: ExpState = ExpState.NEW,
-                      design: ExperimentalDesign = ExperimentalDesign(), properties: Map[String, String] = Map()) {
-
-  lazy val uid = GetDigest.getDigest(s"${owner.organization}$name")
-
-  lazy val defaultURIHelper = ExpUriHelper(owner.organization, uid)
-}
-
-object DefaultExperiment {
-
-  val defaultExperiment = Experiment("default-experiment",
-    "an experiment to experiment with the system or to do anything that does not require the definition of an experiment",
-    DefaultOwner.systemOwner)
-}
+case class Experiment(name: String, description: String, owner: Owner, uid: Option[String] = None, state: ExpState = ExpState.NEW,
+                      design: ExperimentalDesign = ExperimentalDesign(),
+                      properties: Map[String, String] = Map())
 
 /**
   * An experiment summary information (no details like design)
@@ -44,22 +33,17 @@ object DefaultExperiment {
 case class ExperimentSummary(name: String, description: String, owner: Owner, uid: String,
                              lastUpdate: String = utils.almostTenYearsAgoAsString, state: ExpState = ExpState.IMMUTABLE)
 
-//todo what happens in case project has same name as a folder...
 case class ExperimentFolderVisitor(exp: Experiment) {
-
-  val config: Config = ConfigFactory.load()
+  require(exp.uid.isDefined)
 
   val name: String = exp.name
 
-  // relative paths
-  val folderName: String = name.replaceAll("\\s", "_")
-
   val owner: Owner = exp.owner
 
-  //todo maybe we can get rid of the relative paths
   val owfs: String = owner.asFileStructure
+
   val relParentPath: Path = Paths.get(owfs)
-  val relFolderPath: Path = relParentPath resolve folderName
+  val relFolderPath: Path = relParentPath resolve exp.uid.get
   val relMetaFolderPath: Path = relFolderPath resolve "meta"
   val relUserMetaFolderPath: Path = relFolderPath resolve "user_meta"
   val relRawFolderPath: Path = relFolderPath resolve "raw"
@@ -94,7 +78,7 @@ case class ExperimentFolderVisitor(exp: Experiment) {
 
   val experimentFilePath: Path = metaFolderPath resolve LocalExperiments.EXPERIMENT_FILE_NAME
 
-  val digestFilePath: Path = metaFolderPath resolve LocalExperiments.EXPERIMENT_DIGEST_FILE_NAME
+  val uidFilePath: Path = metaFolderPath resolve LocalExperiments.EXPERIMENT_UID_FILE_NAME
 
   val logsFolderPath: Path = expFolderPath resolve "logs"
 
@@ -102,7 +86,7 @@ case class ExperimentFolderVisitor(exp: Experiment) {
 
   val immutableStateFile: Path = metaFolderPath resolve ".immutable"
 
-  def ensureFolderStructure(): Unit = {
+  private def ensureFolderStructure(): Unit = {
     expFolderPath.toFile.mkdirs()
     rawFolderPath.toFile.mkdir()
     userRawFolderPath.toFile.mkdir()
@@ -118,9 +102,6 @@ case class ExperimentFolderVisitor(exp: Experiment) {
 
   def isImmutableExperiment: Boolean = immutableStateFile.toFile.exists()
 
-  def linkTo(otherExp: Experiment): Unit = {
-    val visitor = ExperimentFolderVisitor(otherExp)
-  }
 }
 
 object ExperimentFolderVisitor {
@@ -157,13 +138,16 @@ case class ExperimentUID(uid: String)
 
 // for api feedback
 
-case class ExpUriHelper(organization: String, expUID: String) {
+case class ExpUriHelper(experiment: Experiment) {
+  require(experiment.uid.isDefined)
 
-  private val elts = organization.split('.')
+  private val elts = experiment.owner.organization.split('.')
 
   require(elts.size > 1)
 
   private lazy val localPart = elts.mkString("/", "/", "/")
+
+  val expUID = experiment.uid.get
 
   lazy val uRIPrefixwithArciteSubdomain: String = s"arcite.${elts(1)}.${elts(0)}$localPart"
   lazy val uRIPrefixwithSlashArcite: String = s"www.${elts(1)}.${elts(0)}/arcite$localPart"
@@ -175,7 +159,7 @@ case class ExpUriHelper(organization: String, expUID: String) {
   lazy val uris = URIs(expURIWithSlashArcite, expURIWithSubdomain)
 
   def transformURI(transformUID: String): URIs = {
-    URIs(s"$expURIWithSlashArcite/transforms/$transformUID",s"$expURIWithSubdomain/transforms/$transformUID")
+    URIs(s"$expURIWithSlashArcite/transforms/$transformUID", s"$expURIWithSubdomain/transforms/$transformUID")
   }
 }
 

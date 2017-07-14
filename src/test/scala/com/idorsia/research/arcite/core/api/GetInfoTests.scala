@@ -107,7 +107,7 @@ class GetInfoTests extends ApiTests {
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)
 
-    val jsonRequest = ByteString(GetFilesFromSource("microarray1", List("AMS0100")).toJson.prettyPrint)
+    val jsonRequest = ByteString(GetFilesFromSource("microarray", List("AMS0100")).toJson.prettyPrint)
 
     val postRequest = HttpRequest(
       HttpMethods.POST,

@@ -61,7 +61,7 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
       } else {
         Files.write(immutableF, "IMMUTABLE".getBytes(StandardCharsets.UTF_8), CREATE_NEW)
 
-        val exp = wid.transf.source.experiment.uid
+        val exp = wid.transf.source.experiment.uid.get
 
         val fs: TransformDoneSource = wid.transf.source match {
           case tsr: TransformSourceFromRaw ⇒
@@ -94,7 +94,7 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
             Files.write(transfFolder resolve core.successFile, "SUCCESS".getBytes(StandardCharsets.UTF_8), CREATE_NEW)
 
             if (ws.selectables.nonEmpty) {
-              expManager ! SaveSelectable(wid.transf.source.experiment.uid, wid.transf.uid,
+              expManager ! SaveSelectable(wid.transf.source.experiment.uid.get, wid.transf.uid,
               BunchOfSelectables(ws.selectables))
             }
 

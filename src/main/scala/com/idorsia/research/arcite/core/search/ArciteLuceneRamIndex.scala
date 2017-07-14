@@ -43,7 +43,7 @@ class ArciteLuceneRamIndex extends Actor with ActorLogging {
            |${exp.design.samples.mkString(" ")} ${exp.owner}""".toLowerCase
 
       d.add(new TextField(luc_content, content, Field.Store.NO))
-      d.add(new StringField(luc_digest, exp.uid, Field.Store.YES))
+      d.add(new StringField(luc_uid, exp.uid.get, Field.Store.YES))
       indexWriter.addDocument(d)
 
       indexWriter.close()
@@ -54,7 +54,7 @@ class ArciteLuceneRamIndex extends Actor with ActorLogging {
       val indexWriter = new IndexWriter(directory,
         new IndexWriterConfig(ArciteAnalyzerFactory.perfieldAnalyzerWrapper))
 
-      indexWriter.deleteDocuments(new TermQuery(new Term(luc_digest, exp.uid)))
+      indexWriter.deleteDocuments(new TermQuery(new Term(luc_uid, exp.uid.get)))
       indexWriter.close()
 
 
@@ -89,7 +89,7 @@ class ArciteLuceneRamIndex extends Actor with ActorLogging {
     val nameHits1 = indexSearcher.search(new TermQuery(new Term(luc_name, input.toLowerCase)), maxHits)
     if (nameHits1.totalHits > 0) {
       log.debug(s"found ${nameHits1.totalHits} in name ")
-      results ++= nameHits1.scoreDocs.map(d ⇒ indexSearcher.doc(d.doc).getField(luc_digest).stringValue())
+      results ++= nameHits1.scoreDocs.map(d ⇒ indexSearcher.doc(d.doc).getField(luc_uid).stringValue())
         .map(uuid ⇒ FoundExperiment(uuid, "name", 1)).toList
 
       if (results.size >= maxHits) return returnValue(results)
@@ -99,7 +99,7 @@ class ArciteLuceneRamIndex extends Actor with ActorLogging {
     val descHit = indexSearcher.search(new TermQuery(new Term(luc_description, input.toLowerCase)), maxHits)
     if (descHit.totalHits > 0) {
       log.debug(s"found ${descHit.totalHits} in description ")
-      results ++= descHit.scoreDocs.map(d ⇒ indexSearcher.doc(d.doc).getField(luc_digest).stringValue())
+      results ++= descHit.scoreDocs.map(d ⇒ indexSearcher.doc(d.doc).getField(luc_uid).stringValue())
         .map(uuid ⇒ FoundExperiment(uuid, "description", 2)).toList
 
       if (results.size >= maxHits) return returnValue(results)
@@ -109,7 +109,7 @@ class ArciteLuceneRamIndex extends Actor with ActorLogging {
     val fuzzyHits = indexSearcher.search(new FuzzyQuery(new Term(luc_content, ngramSearch.toLowerCase())), maxHits)
     if (fuzzyHits.totalHits > 0) {
       log.debug(s"found ${fuzzyHits.totalHits} in fuzzy lowercase ngrams search")
-      results ++= fuzzyHits.scoreDocs.map(d ⇒ indexSearcher.doc(d.doc).getField(luc_digest).stringValue())
+      results ++= fuzzyHits.scoreDocs.map(d ⇒ indexSearcher.doc(d.doc).getField(luc_uid).stringValue())
         .map(uuid ⇒ FoundExperiment(uuid, "ngrams", 3)).toList
     }
 
@@ -124,7 +124,7 @@ class ArciteLuceneRamIndex extends Actor with ActorLogging {
 object ArciteLuceneRamIndex {
   val luc_name = "name"
   val luc_description = "description"
-  val luc_digest = "digest"
+  val luc_uid = "uid"
   val luc_content = "content"
 
   val minGram = 3
@@ -184,7 +184,7 @@ object ArciteAnalyzerFactory {
 
   import ArciteLuceneRamIndex._
 
-  perFieldAnalyzer += ((luc_digest, whiteSpaceAnalyzer))
+  perFieldAnalyzer += ((luc_uid, whiteSpaceAnalyzer))
   perFieldAnalyzer += ((luc_name, standardAnalyzer))
   perFieldAnalyzer += ((luc_description, standardAnalyzer))
   perFieldAnalyzer += ((luc_content, nGramAnalyzer))

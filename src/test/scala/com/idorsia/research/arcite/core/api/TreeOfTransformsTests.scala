@@ -127,7 +127,7 @@ class TreeOfTransformsTests extends ApiTests {
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)
 
-    val transf1 = ProceedWithTreeOfTransf(exp1.uid, transfDef2.get.uid)
+    val transf1 = ProceedWithTreeOfTransf(exp1.uid.get, transfDef2.get.uid)
 
     val jsonRequest = ByteString(transf1.toJson.prettyPrint)
 
@@ -157,7 +157,7 @@ class TreeOfTransformsTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
 
-    val transf1 = ProceedWithTreeOfTransf(exp1.uid, transfDef1.get.uid)
+    val transf1 = ProceedWithTreeOfTransf(exp1.uid.get, transfDef1.get.uid)
 
     val jsonRequest = ByteString(transf1.toJson.prettyPrint)
 

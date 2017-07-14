@@ -155,8 +155,6 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
       case JsString("PUBLISHED") ⇒ ExpState.PUBLISHED
       case JsString("REMOTE") ⇒ ExpState.REMOTE
       case _ ⇒ ExpState.NEW
-
-      //      case _ ⇒ deserializationError("Experiment state expected")
     }
   }
 
@@ -199,33 +197,37 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
 
   implicit val conditionJson: RootJsonFormat[Condition] = jsonFormat3(Condition)
   implicit val simpleConditionJson: RootJsonFormat[SimpleCondition] = jsonFormat2(SimpleCondition)
-  implicit val allCategoriesJson:  RootJsonFormat[AllCategories] = jsonFormat1(AllCategories)
+  implicit val allCategoriesJson: RootJsonFormat[AllCategories] = jsonFormat1(AllCategories)
   implicit val conditionForSampleJson: RootJsonFormat[Sample] = jsonFormat1(Sample)
   implicit val experimentalDesignJson: RootJsonFormat[ExperimentalDesign] = jsonFormat2(ExperimentalDesign)
 
 
   implicit object ExperimentJSonFormat extends RootJsonFormat[Experiment] {
     override def read(json: JsValue): Experiment = {
-      json.asJsObject.getFields("name", "description", "owner", "state", "design", "properties") match {
+      json.asJsObject.getFields("name", "description", "owner", "uid", "state", "design", "properties") match {
+        case Seq(JsString(name), JsString(description), owner, JsString(uid), state, design, properties) ⇒
+          Experiment(name, description, owner.convertTo[Owner], Some(uid), state.convertTo[ExpState],
+            design.convertTo[ExperimentalDesign], properties.convertTo[Map[String, String]])
+
         case Seq(JsString(name), JsString(description), owner, state, design, properties) ⇒
-          Experiment(name, description, owner.convertTo[Owner], state.convertTo[ExpState],
+          Experiment(name, description, owner.convertTo[Owner], None, state.convertTo[ExpState],
             design.convertTo[ExperimentalDesign], properties.convertTo[Map[String, String]])
 
         case Seq(JsString(name), JsString(description), owner, design, properties) ⇒
-          Experiment(name, description, owner.convertTo[Owner], ExpState.NEW,
+          Experiment(name, description, owner.convertTo[Owner], None, ExpState.NEW,
             design.convertTo[ExperimentalDesign], properties.convertTo[Map[String, String]])
 
         case Seq(JsString(name), JsString(description), owner, design) ⇒
-          Experiment(name, description, owner.convertTo[Owner], ExpState.NEW,
+          Experiment(name, description, owner.convertTo[Owner], None, ExpState.NEW,
             design.convertTo[ExperimentalDesign], Map[String, String]())
 
         case Seq(JsString(name), JsString(description), owner, properties) ⇒
-          Experiment(name, description, owner.convertTo[Owner], ExpState.NEW,
+          Experiment(name, description, owner.convertTo[Owner], None, ExpState.NEW,
             ExperimentalDesign(), properties.convertTo[Map[String, String]])
 
         case Seq(JsString(name), JsString(description), owner) ⇒
-          Experiment(name, description, owner.convertTo[Owner], ExpState.NEW,
-            ExperimentalDesign(), Map[String, String]())
+          Experiment(name, description, owner.convertTo[Owner], None, ExpState.NEW,
+      ExperimentalDesign (), Map[String, String] () )
 
         case _ => throw DeserializationException("could not deserialize.")
       }
@@ -235,7 +237,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
       JsObject(
         "name" -> JsString(exp.name),
         "description" -> JsString(exp.description),
-        "uid" -> JsString(exp.uid),
+        "uid" -> exp.uid.fold(JsString(""))(JsString(_)),
         "owner" -> exp.owner.toJson,
         "state" -> exp.state.toJson,
         "design" -> exp.design.toJson,
@@ -276,9 +278,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
       case _ => throw DeserializationException("could not deserialize.")
     }
 
-    def read(value: JsValue) = {
-      TransformSourceFromObject(DefaultExperiment.defaultExperiment)
-    }
+    def read(value: JsValue):TransformSource = ???
   }
 
 
@@ -343,7 +343,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
 
     override def read(json: JsValue): FullName = {
       json.asJsObject.getFields("organization", "name", "short_name", "version") match {
-        case Seq(JsString(organization), JsString(name),  JsString(shortName), JsString(version)) ⇒
+        case Seq(JsString(organization), JsString(name), JsString(shortName), JsString(version)) ⇒
           FullName(organization, name, shortName, version)
 
         case Seq(JsString(organization), JsString(name), JsString(shortName)) ⇒

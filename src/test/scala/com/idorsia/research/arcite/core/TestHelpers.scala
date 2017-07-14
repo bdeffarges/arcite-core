@@ -10,8 +10,8 @@ import com.idorsia.research.arcite.core.utils.Owner
   */
 object TestHelpers {
 
-  val organization = "com.idorsia.research.mock"
-  val organization2 = "com.idorsia.research.bioinfo"
+  val organization = "com.idorsia.research.misc"
+  val organization2 = "com.idorsia.research.mps.nextseq"
   val organization3 = "com.fake.wrong"
   val person1 = "B. Deffarges"
   val person2 = "B. Renault"

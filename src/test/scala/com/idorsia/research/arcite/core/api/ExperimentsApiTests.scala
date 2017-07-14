@@ -60,8 +60,8 @@ class ExperimentsApiTests extends ApiTests {
       Source.single(HttpRequest(uri =s"$urlPrefix/")).via(connectionFlow).runWith(Sink.head)
 
     responseFuture.map { r ⇒
-      assert(r.status == StatusCodes.OK)
       assert(r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8") == refApi)
+      assert(r.status == StatusCodes.OK)
     }
   }
 
@@ -82,7 +82,7 @@ class ExperimentsApiTests extends ApiTests {
 
       assert(experiments.size > 10)
 
-      assert(experiments.exists(exp ⇒ exp.name.contains("AMS")))
+      assert(experiments.exists(exp ⇒ exp.name.contains("jupiter")))
 
     }
   }

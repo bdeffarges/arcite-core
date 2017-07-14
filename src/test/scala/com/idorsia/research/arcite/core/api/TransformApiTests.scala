@@ -6,7 +6,7 @@ import akka.stream.scaladsl._
 import akka.util.ByteString
 import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.TestHelpers
-import com.idorsia.research.arcite.core.experiments.Experiment
+import com.idorsia.research.arcite.core.experiments.{Experiment, ExperimentUID}
 import com.idorsia.research.arcite.core.experiments.ManageExperiments.{AddExperiment, BunchOfSelectables}
 import com.idorsia.research.arcite.core.transforms.RunTransform.{RunTransformOnObject, RunTransformOnTransform}
 import com.idorsia.research.arcite.core.transforms.TransformDefinitionIdentity
@@ -42,11 +42,13 @@ import scala.concurrent.Future
 class TransformApiTests extends ApiTests {
 
   val exp1 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment1)
+  var exp1Uid:Option[String] = None // because the uid is created on the server.
 
   private var transfDef1: Option[TransformDefinitionIdentity] = None
   private var transfDef2: Option[TransformDefinitionIdentity] = None
   private var transfDefDuplicate: Option[TransformDefinitionIdentity] = None
 
+  private var lowerCaseJobID: Option[String] = None
   private var upperCaseJobID: Option[String] = None
   private var dupliJobID: Option[String] = None
 
@@ -169,6 +171,11 @@ class TransformApiTests extends ApiTests {
     responseFuture.map { r ⇒
       logger.info(r.toString())
       assert(r.status == StatusCodes.Created)
+
+      exp1Uid = Some(r.entity.asInstanceOf[HttpEntity.Strict]
+        .data.decodeString("UTF-8").parseJson.convertTo[ExperimentUID].uid)
+
+      assert(exp1Uid.isDefined)
     }
   }
 
@@ -179,7 +186,7 @@ class TransformApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri = s"$urlPrefix/experiment/${exp1.uid}")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri = s"$urlPrefix/experiment/${exp1Uid.get}")).via(connectionFlow).runWith(Sink.head)
 
     import spray.json._
     responseFuture.map { r ⇒
@@ -188,11 +195,10 @@ class TransformApiTests extends ApiTests {
       val experiment = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
         .parseJson.convertTo[Experiment]
 
-      assert(experiment.name == experiment.name)
-      assert(experiment.description == experiment.description)
+      assert(experiment.name == exp1.name)
+      assert(experiment.description == exp1.description)
     }
   }
-
 
   "start upper case transform on experiment " should " return the transform job uid " in {
 
@@ -202,7 +208,7 @@ class TransformApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     import spray.json._
-    val transf1 = RunTransformOnObject(exp1.uid, transfDef1.get.fullName.asUID,
+    val transf1 = RunTransformOnObject(exp1Uid.get, transfDef1.get.fullName.asUID,
       Map("ToUpperCase" -> "transform me to upper case"))
 
     val jsonRequest = ByteString(transf1.toJson.prettyPrint)
@@ -225,7 +231,6 @@ class TransformApiTests extends ApiTests {
     }
   }
 
-
   "start lower case transform on experiment " should " return the transform job uid " in {
 
     implicit val executionContext = system.dispatcher
@@ -235,7 +240,7 @@ class TransformApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     import spray.json._
-    val transf1 = RunTransformOnObject(exp1.uid, transfDef2.get.fullName.asUID,
+    val transf1 = RunTransformOnObject(exp1Uid.get, transfDef2.get.fullName.asUID,
       Map("ToLowerCase" -> "transform me to lower case"))
 
     val jsonRequest = ByteString(transf1.toJson.prettyPrint)
@@ -253,10 +258,11 @@ class TransformApiTests extends ApiTests {
       assert(r.status == StatusCodes.OK)
       val result = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8").parseJson.convertTo[OkTransfReceived]
 
+      lowerCaseJobID = Some(result.transfUID)
+
       assert(result.transfUID.length > 5)
     }
   }
-
 
   "start duplicate transform on experiment " should " return the transform job uid " in {
 
@@ -266,7 +272,8 @@ class TransformApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     import spray.json._
-    val transf1 = RunTransformOnTransform(exp1.uid, transfDefDuplicate.get.fullName.asUID, upperCaseJobID.get)
+    val transf1 = RunTransformOnTransform(exp1Uid.get, transfDefDuplicate.get.fullName.asUID, upperCaseJobID.get)
+    println(transf1.toString)
 
     val jsonRequest = ByteString(transf1.toJson.prettyPrint)
 
@@ -280,7 +287,7 @@ class TransformApiTests extends ApiTests {
       Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
 
     responseFuture.map { r ⇒
-      logger.info(r.toString())
+      println(r.toString())
       assert(r.status == StatusCodes.OK)
       val result = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8").parseJson.convertTo[OkTransfReceived]
 
@@ -301,7 +308,7 @@ class TransformApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.DELETE,
-      uri = s"$urlPrefix/experiment/${exp1.uid}",
+      uri = s"$urlPrefix/experiment/${exp1Uid.get}",
       entity = HttpEntity(MediaTypes.`application/json`, ""))
 
     val responseFuture: Future[HttpResponse] =
@@ -313,18 +320,50 @@ class TransformApiTests extends ApiTests {
     }
   }
 
+  " uppercase transform " should " eventually complete and produce an upper cased text " in {
+    implicit val executionContext = system.dispatcher
+    import scala.concurrent.duration._
+
+    transStatus += (upperCaseJobID.get -> false)
+
+    eventually(timeout(10 minutes), interval(30 seconds)) {
+      println("checking whether upper case job is completed...")
+
+      checkTransformStatus(upperCaseJobID.get)
+
+      transStatus(upperCaseJobID.get) should be(true)
+    }
+  }
+
+  " lowercase transform " should " eventually complete and produce an lower cased text " in {
+    implicit val executionContext = system.dispatcher
+    import scala.concurrent.duration._
+
+    transStatus += (lowerCaseJobID.get -> false)
+
+    eventually(timeout(10 minutes), interval(30 seconds)) {
+      println("checking whether lower case job  is completed...")
+
+      checkTransformStatus(lowerCaseJobID.get)
+
+      transStatus(lowerCaseJobID.get) should be(true)
+    }
+  }
+
   " duplicate transform " should " eventually complete and produce duplicated text and selectable " in {
     implicit val executionContext = system.dispatcher
     import scala.concurrent.duration._
 
     transStatus += (dupliJobID.get -> false)
+
     eventually(timeout(10 minutes), interval(30 seconds)) {
       println("checking whether duplicate is completed...")
+
       checkTransformStatus(dupliJobID.get)
+
       transStatus(dupliJobID.get) should be(true)
     }
   }
-
 
   "Retrieving selectable for one experiment/transform " should " return all selectables " in {
     implicit val executionContext = system.dispatcher
@@ -333,7 +372,7 @@ class TransformApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri = s"$urlPrefix/experiment/${exp1.uid}/transform/${dupliJobID.get}/selectable"))
+      Source.single(HttpRequest(uri = s"$urlPrefix/experiment/${exp1Uid.get}/transform/${dupliJobID.get}/selectable"))
         .via(connectionFlow).runWith(Sink.head)
 
     import spray.json._

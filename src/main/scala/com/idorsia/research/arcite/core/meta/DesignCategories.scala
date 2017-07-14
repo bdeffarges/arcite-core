@@ -55,31 +55,23 @@ class DesignCategories extends Actor with ActorLogging {
 }
 
 class CategoriesRebuilder extends Actor with ActorLogging with ArciteJSONProtocol {
+
   import spray.json._
   import scala.collection.convert.wrapAsScala._
+  import DesignCategories._
 
   override def receive: Receive = {
 
     case RebuildDesignCategories ⇒
       val byCategories = getExpFiles(core.dataPath)
         .map(f ⇒ Files.readAllLines(f).toList.mkString("\n").parseJson.convertTo[Experiment])
-      .map(_.design).flatMap(_.samples).flatMap(_.conditions).groupBy(_.category)
-      .map(c ⇒ (c._1, c._2.map(co ⇒ SimpleCondition(co.name, co.description)))).toMap
+        .map(_.design).flatMap(_.samples).flatMap(_.conditions).groupBy(_.category)
+        .map(c ⇒ (c._1, c._2.map(co ⇒ SimpleCondition(co.name, co.description)))).toMap
 
       sender() ! AllCategories(byCategories)
 
   }
 
-  def getExpFiles(folder: Path): Set[Path] = {
-    val afiles = folder.toFile.listFiles
-    val files = afiles.filter(_.isFile)
-      .filter(_.getParent.endsWith("meta"))
-      .filter(_.getName == "experiment").map(_.toPath).toSet
-
-    val folders = afiles.filter(_.isDirectory)
-
-    files ++ folders.flatMap(f ⇒ getExpFiles(f.toPath))
-  }
 }
 
 object DesignCategories {
@@ -93,6 +85,19 @@ object DesignCategories {
   case class AllCategories(categories: Map[String, Set[SimpleCondition]])
 
   def props(): Props = Props(classOf[DesignCategories])
+
+  def getExpFiles(folder: Path): Set[Path] = {
+    if (folder.toFile.exists()) {
+      val listFiles = folder.toFile.listFiles
+      val files = listFiles.filter(_.isFile)
+        .filter(_.getParent.endsWith("meta"))
+        .filter(_.getName == "experiment").map(_.toPath).toSet
+
+      val folders = listFiles.filter(_.isDirectory)
+
+      files ++ folders.flatMap(f ⇒ getExpFiles(f.toPath))
+    } else Set.empty
+  }
 }
 
 

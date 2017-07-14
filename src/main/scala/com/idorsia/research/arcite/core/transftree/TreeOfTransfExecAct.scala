@@ -101,7 +101,7 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
 
           eventInfoMgr ! AddLog(ef.exp,
             ExpLog(LogType.TREE_OF_TRANSFORM, LogCategory.SUCCESS,
-              s"started a new tree of transform [${proceedWithTreeOfTransf.get.treeOfTransformUID}]", Some(ef.exp.uid)))
+              s"started a new tree of transform [${proceedWithTreeOfTransf.get.treeOfTransformUID}]", ef.exp.uid))
 
 
         case _ ⇒
@@ -244,7 +244,7 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
 
       //      log.info(s"all uids= ${allUIDs.mkString("\t")}")
 
-      val exp = expFound.get.exp.uid
+      val exp = expFound.get.exp.uid.get
 
       allUIDs.foreach(expManager ! GetTransfCompletionFromExpAndTransf(exp, _))
 

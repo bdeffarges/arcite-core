@@ -47,16 +47,16 @@ import scala.concurrent.Future
 class FilesUploadApiTests extends ApiTests {
 
   val exp1 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment1)
+
+  var exp1Uid:Option[String] = None // because the uid is created on the server.
   var clonedExp: Option[String] = None
 
   "Create a new experiment " should " return the uid of the new experiment " in {
 
     implicit val executionContext = system.dispatcher
 
-
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)
-
 
     val jsonRequest = ByteString(AddExperiment(exp1).toJson.prettyPrint)
 
@@ -71,6 +71,11 @@ class FilesUploadApiTests extends ApiTests {
     responseFuture.map { r ⇒
       logger.info(r.toString())
       assert(r.status == StatusCodes.Created)
+
+      exp1Uid = Some(r.entity.asInstanceOf[HttpEntity.Strict]
+        .data.decodeString("UTF-8").parseJson.convertTo[ExperimentUID].uid)
+
+      assert(exp1Uid.isDefined)
     }
   }
 
@@ -91,7 +96,7 @@ class FilesUploadApiTests extends ApiTests {
 
     def createRequest(target: Uri, file: File): HttpRequest = HttpRequest(HttpMethods.POST, uri = target, entity = createEntity(file))
 
-    val req = createRequest(s"$urlPrefix/experiment/${exp1.uid}/file_upload/meta",
+    val req = createRequest(s"$urlPrefix/experiment/${exp1Uid.get}/file_upload/meta",
       new File("./for_testing/for_unit_testing/of_paramount_importance.txt"))
 
     val res: Future[HttpResponse] = Source.single(req).via(connectionFlow).runWith(Sink.head)
@@ -118,7 +123,7 @@ class FilesUploadApiTests extends ApiTests {
 
     def createRequest(target: Uri, file: File): HttpRequest = HttpRequest(HttpMethods.POST, uri = target, entity = createEntity(file))
 
-    val req = createRequest(s"$urlPrefix/experiment/${exp1.uid}/file_upload/raw",
+    val req = createRequest(s"$urlPrefix/experiment/${exp1Uid.get}/file_upload/raw",
       new File("./for_testing/for_unit_testing/raw_data_measurements.tsv"))
 
     val res: Future[HttpResponse] = Source.single(req).via(connectionFlow).runWith(Sink.head)
@@ -136,12 +141,15 @@ class FilesUploadApiTests extends ApiTests {
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)
 
-    val jsonRequest = ByteString(CloneExperimentNewProps(s"cloned-${UUID.randomUUID().toString}",
-      "experiment cloned", TestHelpers.owner3).toJson.prettyPrint)
+    val jsonArgs = CloneExperimentNewProps(s"cloned-${UUID.randomUUID().toString}",
+      "experiment cloned", TestHelpers.owner3).toJson.toString()
+    logger.info(jsonArgs)
+
+    val jsonRequest = ByteString(jsonArgs)
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri =s"$urlPrefix/experiment/${exp1.uid}/clone",
+      uri =s"$urlPrefix/experiment/${exp1Uid.get}/clone",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -165,7 +173,7 @@ class FilesUploadApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri =s"$urlPrefix/experiment/${exp1.uid}/files/meta")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri =s"$urlPrefix/experiment/${exp1Uid.get}/files/meta")).via(connectionFlow).runWith(Sink.head)
 
 
     responseFuture.map { r ⇒
@@ -213,7 +221,7 @@ class FilesUploadApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.DELETE,
-      uri =s"$urlPrefix/experiment/${exp1.uid}/file_upload/meta",
+      uri =s"$urlPrefix/experiment/${exp1Uid.get}/file_upload/meta",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -257,7 +265,7 @@ class FilesUploadApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri =s"$urlPrefix/experiment/${exp1.uid}")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri =s"$urlPrefix/experiment/${exp1Uid.get}")).via(connectionFlow).runWith(Sink.head)
 
 
     responseFuture.map { r ⇒
@@ -266,8 +274,8 @@ class FilesUploadApiTests extends ApiTests {
       val experiment = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
         .parseJson.convertTo[Experiment]
 
-      assert(experiment.name == experiment.name)
-      assert(experiment.description == experiment.description)
+      assert(experiment.name == exp1.name)
+      assert(experiment.description == exp1.description)
     }
   }
 
@@ -280,9 +288,10 @@ class FilesUploadApiTests extends ApiTests {
 
     assert(clonedExp.isDefined)
 
+    println(clonedExp)
+
     val responseFuture: Future[HttpResponse] =
       Source.single(HttpRequest(uri =s"$urlPrefix/experiment/${clonedExp.get}")).via(connectionFlow).runWith(Sink.head)
-
 
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
@@ -290,8 +299,7 @@ class FilesUploadApiTests extends ApiTests {
       val experiment = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
         .parseJson.convertTo[Experiment]
 
-      assert(experiment.name == experiment.name)
-      assert(experiment.description == experiment.description)
+      assert(experiment.description == "experiment cloned")
     }
   }
 
@@ -305,7 +313,7 @@ class FilesUploadApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.DELETE,
-      uri =s"$urlPrefix/experiment/${exp1.uid}",
+      uri =s"$urlPrefix/experiment/${exp1Uid.get}",
       entity = HttpEntity(MediaTypes.`application/json`, ""))
 
     val responseFuture: Future[HttpResponse] =

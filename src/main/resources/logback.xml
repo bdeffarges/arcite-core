@@ -14,9 +14,9 @@
         </encoder>
     </appender>
 
-    <logger name="com.idorsia.research.arcite" level="debug"/>
+    <logger name="com.idorsia.research" level="debug"/>
 
-    <root level="debug">
+    <root level="warn">
         <appender-ref ref="STDOUT" />
         <!--<appender-ref ref="FILE" />-->
     </root>

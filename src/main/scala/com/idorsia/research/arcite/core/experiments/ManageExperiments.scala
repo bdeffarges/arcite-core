@@ -3,9 +3,10 @@ package com.idorsia.research.arcite.core.experiments
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file._
+import java.util.UUID
 
 import akka.actor.SupervisorStrategy.{Escalate, Restart}
-import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSystem, OneForOneStrategy, Props}
+import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSystem, OneForOneStrategy, Props, SupervisorStrategy}
 import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.api.ArciteJSONProtocol
 import com.idorsia.research.arcite.core.api.ArciteService._
@@ -14,7 +15,7 @@ import com.idorsia.research.arcite.core.eventinfo.{EventInfoLogging, ExpLog, Log
 import com.idorsia.research.arcite.core.experiments.ExperimentActorsManager.StartExperimentsServiceActors
 import com.idorsia.research.arcite.core.experiments.LocalExperiments.{LoadExperiment, SaveExperimentFailed, SaveExperimentSuccessful}
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor
-import com.idorsia.research.arcite.core.fileservice.FileServiceActor.{getClass => _, _}
+import com.idorsia.research.arcite.core.fileservice.FileServiceActor._
 import com.idorsia.research.arcite.core.publish.PublishActor
 import com.idorsia.research.arcite.core.publish.PublishActor._
 import com.idorsia.research.arcite.core.rawdata.DefineRawData
@@ -83,39 +84,40 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
   import scala.collection.convert.wrapAsScala._
 
   import scala.concurrent.duration._
-  override val supervisorStrategy =
+
+  override val supervisorStrategy: SupervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 20 seconds) {
       case _: FileSystemException ⇒ Restart
       case _: Exception ⇒ Escalate
     }
 
 
-  override def receive = {
+  override def receive: Receive = {
 
     case AddExperiment(exp) ⇒
-      if (!experiments.contains(exp.uid)) {
-        if (core.organization.experimentTypes.exists(_.packagePath == exp.owner.organization)) {
+      if (core.organization.experimentTypes.exists(_.packagePath == exp.owner.organization)) {
+        //has to be one of the defined
 
-          experiments += ((exp.uid, exp))
+        LocalExperiments.saveExperiment(exp) match {
 
-          LocalExperiments.saveExperiment(exp) match {
+          case SaveExperimentSuccessful(expSaved) ⇒
+            val expUID = expSaved.uid.get
+            eventInfoLoggingAct ! AddLog(expSaved,
+              ExpLog(LogType.CREATED, LogCategory.SUCCESS, "experiment created. ", Some(expUID)))
 
-            case SaveExperimentSuccessful(expLog) ⇒
-              eventInfoLoggingAct ! AddLog(exp, ExpLog(LogType.CREATED, LogCategory.SUCCESS, "experiment created. ", Some(exp.uid)))
-              sender() ! AddedExperiment(exp.uid)
+            experiments += ((expUID, expSaved))
 
-            case SaveExperimentFailed(error) ⇒
-              sender() ! FailedAddingExperiment(error)
-          }
+            luceneRAMSearchAct ! IndexExperiment(exp)
 
-          luceneRAMSearchAct ! IndexExperiment(exp)
-        } else {
-          sender() ! FailedAddingExperiment(
-            s"""experiment owner organization ${exp.owner.organization} does not conform with
-               |authorized organizations for this installation of Arcite, see API/organization """.stripMargin)
+            sender() ! AddedExperiment(expUID)
+
+          case SaveExperimentFailed(error) ⇒
+            sender() ! FailedAddingExperiment(error)
         }
       } else {
-        sender() ! FailedAddingExperiment(s"same experiment ${exp.owner.organization}/${exp.name} already exists. ")
+        sender() ! FailedAddingExperiment(
+          s"""experiment owner organization ${exp.owner.organization} does not conform with
+             |authorized organizations for this installation of Arcite, see API/organization """.stripMargin)
       }
 
 
@@ -124,32 +126,32 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       if (origExp.isEmpty) {
         sender() ! FailedAddingExperiment(s"could not find original experiment ")
       } else {
-        val newExp = origExp.get.copy(name = cexp.cloneExpProps.name,
-          description = cexp.cloneExpProps.description, owner = cexp.cloneExpProps.owner, state = ExpState.NEW)
+        val cExp = origExp.get.copy(name = cexp.cloneExpProps.name,
+          description = cexp.cloneExpProps.description,
+          owner = cexp.cloneExpProps.owner, state = ExpState.NEW)
 
-        experiments += ((newExp.uid, newExp))
+        LocalExperiments.saveExperiment(cExp) match {
 
-        LocalExperiments.saveExperiment(newExp) match {
-
-          case SaveExperimentSuccessful(expLog) ⇒
+          case SaveExperimentSuccessful(expCloned) ⇒
             // linking all data, ...
             val orVis = ExperimentFolderVisitor(origExp.get)
-            val tgrVis = ExperimentFolderVisitor(newExp)
+            val tgrVis = ExperimentFolderVisitor(expCloned)
 
             FoldersHelpers.deepLinking(orVis.rawFolderPath, tgrVis.rawFolderPath)
             FoldersHelpers.deepLinking(orVis.userMetaFolderPath, tgrVis.userMetaFolderPath)
 
-            eventInfoLoggingAct ! AddLog(newExp, ExpLog(LogType.CREATED, LogCategory.SUCCESS,
-              s"cloned experiment [${origExp.get.uid}] ", Some(newExp.uid)))
+            eventInfoLoggingAct ! AddLog(expCloned, ExpLog(LogType.CREATED, LogCategory.SUCCESS,
+              s"cloned experiment [${origExp.get.uid.get}] ", Some(expCloned.uid.get)))
 
-            sender() ! AddedExperiment(newExp.uid)
+            experiments += ((expCloned.uid.get, expCloned))
+
+            luceneRAMSearchAct ! IndexExperiment(expCloned)
+
+            sender() ! AddedExperiment(expCloned.uid.get)
 
           case SaveExperimentFailed(error) ⇒
             sender() ! FailedAddingExperiment(error)
         }
-
-        luceneRAMSearchAct ! IndexExperiment(newExp)
-
       }
 
 
@@ -264,7 +266,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
         .toList.sortBy(_._2.date).reverse
         .slice(start, end)
         .map(e ⇒ ExperimentSummary(e._1.name, e._1.description, e._1.owner,
-          e._1.uid, utils.getDateAsStrg(e._2.date), e._1.state))
+          e._1.uid.get, utils.getDateAsStrg(e._2.date), e._1.state))
 
       sender() ! AllExperiments(allExps)
 
@@ -283,13 +285,13 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       log.debug(s"found ${foundExperiments.experiments.size} experiments ")
       val resp = foundExperiments.experiments.map(f ⇒ experiments(f.digest))
         .map(f ⇒ ExperimentSummary(f.name, f.description, f.owner,
-          f.uid, utils.getDateAsStrg(readLastExpLog(f).date), f.state))
+          f.uid.get, utils.getDateAsStrg(readLastExpLog(f).date), f.state))
       requester ! SomeExperiments(resp.size, resp)
 
 
-    case GetExperiment(digest) ⇒
-      log.debug(s"retrieving experiment with digest: $digest")
-      val exp = experiments.get(digest)
+    case GetExperiment(uid) ⇒
+      log.debug(s"retrieving experiment with digest: $uid")
+      val exp = experiments.get(uid)
       if (exp.isDefined) {
         val ex = LocalExperiments.loadExperiment(ExperimentFolderVisitor(exp.get).experimentFilePath)
         if (ex.isDefined) sender() ! ExperimentFound(ex.get)
@@ -448,14 +450,14 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
 
           case SaveExperimentSuccessful(expLog) ⇒
             eventInfoLoggingAct ! AddLog(exp, ExpLog(LogType.UPDATED,
-              LogCategory.SUCCESS, "experiment is immutable.", Some(exp.uid)))
+              LogCategory.SUCCESS, "experiment is immutable.", exp.uid))
 
           case SaveExperimentFailed(error) ⇒
             eventInfoLoggingAct ! AddLog(exp, ExpLog(LogType.UPDATED,
-              LogCategory.ERROR, "experiment is immutable failed.", Some(exp.uid)))
+              LogCategory.ERROR, "experiment is immutable failed.", exp.uid))
         }
 
-        experiments += ((exp.uid, exp))
+        experiments += ((exp.uid.get, exp))
 
         Files.write(ExperimentFolderVisitor(exper.get).immutableStateFile,
           "IMMUTABLE".getBytes(StandardCharsets.UTF_8), CREATE)
@@ -493,7 +495,6 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       }
 
 
-
     case any: Any ⇒ log.debug(s"don't know what to do with this message $any")
   }
 
@@ -526,7 +527,6 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
     //Todo refactor to pick up only most recent ones... and paging...
     //todo exception handling
 
-
     def convertToTransfComFeed(file: File): Option[TransformCompletionFeedback] = {
       import spray.json._
       try {
@@ -546,7 +546,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
 
 
   private def getOneTransform(transf: String): Option[TransformCompletionFeedback] = {
-    getAllTransforms.find(_.transform == transf)
+    getAllTransforms.find(_.transform == transf) //todo that needs to be improved obviously
   }
 
   private def getTransfDefFromExpAndTransf(experiment: String, transform: String): FoundTransformDefinition = {
@@ -595,7 +595,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
     }
   }
 
-  private def getSelectableFromTransfResults(exp: String, transf: String): Option[BunchOfSelectables] ={
+  private def getSelectableFromTransfResults(exp: String, transf: String): Option[BunchOfSelectables] = {
     val ex = experiments.get(exp)
     if (ex.isDefined) {
       val transfP = ExperimentFolderVisitor(ex.get).transformFolderPath resolve transf
@@ -616,12 +616,9 @@ object ManageExperiments {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-
   private[ManageExperiments] val defExpLog = ExpLog(LogType.UNKNOWN, LogCategory.UNKNOWN, "no latest log. ", utils.almostTenYearsAgo)
 
-
   case class State(experiments: Set[Experiment] = Set())
-
 
   case class AddExperiment(experiment: Experiment)
 
@@ -698,6 +695,7 @@ object ManageExperiments {
   case class Selectable(selectableType: String, items: Set[String])
 
   case class BunchOfSelectables(selectables: Set[Selectable])
+
 }
 
 class ExperimentActorsManager extends Actor with ActorLogging {
@@ -705,9 +703,15 @@ class ExperimentActorsManager extends Actor with ActorLogging {
   import scala.concurrent.duration._
 
   override val supervisorStrategy: OneForOneStrategy =
-    OneForOneStrategy(maxNrOfRetries = 50, withinTimeRange = 1 minute) { //todo replace with oneForMany strategy because of depending actors
-      case _: FileSystemException ⇒ Restart // todo in both case should log
-      case _: Exception ⇒ Restart // todo should eventually escalate
+    OneForOneStrategy(maxNrOfRetries = 50, withinTimeRange = 1 minute) {
+      case exc: FileSystemException ⇒
+        log.error(s"experiment actor child file system error, trying to restart [${exc.getReason}] will retry 50 times. ")
+        println(s"experiment actor child file system error, trying to restart [${exc.getReason}] will retry 50 times. ")
+        Restart
+      case exc: Exception ⇒
+        log.error(s"experiment actor child general error [${exc.getMessage}] will retry 50 times. ")
+        println(s"experiment actor child general error [${exc.getMessage}] will retry 50 times. ")
+        Restart
     }
 
   override def receive: Receive = {
