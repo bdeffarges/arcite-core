@@ -81,12 +81,9 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
     }
   }
 
-  def saveExperiment(experiment: Experiment): SaveExperimentFeedback = {
+  def saveExperiment(exp: Experiment): SaveExperimentFeedback = {
 
     import spray.json._
-
-    val exp = experiment.copy(uid = Some(UUID.randomUUID().toString))
-    println(s"save $exp")
 
     val expFVisit = ExperimentFolderVisitor(exp)
 
@@ -99,7 +96,6 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
     val uidF = expFVisit.uidFilePath
 
     logger.info(s"saved experiment [${exp.name}] to [${fp.toString}]")
-    println(s"saved experiment [${exp.name}] to [${fp.toString}]")
 
     try {
       if (fp.toFile.exists) Files.move(fp, Paths.get(fp.toString + "_bkup"), REPLACE_EXISTING)
@@ -115,7 +111,8 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
     }
   }
 
-  def safeDeleteExperiment(exp: Experiment): DeleteExperimentFeedback = {//todo check?
+  def safeDeleteExperiment(exp: Experiment): DeleteExperimentFeedback = {
+    //todo check?
     val expFoldVis = ExperimentFolderVisitor(exp)
 
     try {

@@ -94,20 +94,22 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
 
   override def receive: Receive = {
 
-    case AddExperiment(exp) ⇒
-      if (core.organization.experimentTypes.exists(_.packagePath == exp.owner.organization)) {
+    case AddExperiment(experiment) ⇒
+      if (core.organization.experimentTypes.exists(_.packagePath == experiment.owner.organization)) {
         //has to be one of the defined
+        val exp = experiment.copy(uid = Some(UUID.randomUUID().toString))
 
         LocalExperiments.saveExperiment(exp) match {
 
           case SaveExperimentSuccessful(expSaved) ⇒
             val expUID = expSaved.uid.get
+
             eventInfoLoggingAct ! AddLog(expSaved,
               ExpLog(LogType.CREATED, LogCategory.SUCCESS, "experiment created. ", Some(expUID)))
 
             experiments += ((expUID, expSaved))
 
-            luceneRAMSearchAct ! IndexExperiment(exp)
+            luceneRAMSearchAct ! IndexExperiment(expSaved)
 
             sender() ! AddedExperiment(expUID)
 
@@ -116,7 +118,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
         }
       } else {
         sender() ! FailedAddingExperiment(
-          s"""experiment owner organization ${exp.owner.organization} does not conform with
+          s"""experiment owner organization ${experiment.owner.organization} does not conform with
              |authorized organizations for this installation of Arcite, see API/organization """.stripMargin)
       }
 
@@ -127,6 +129,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
         sender() ! FailedAddingExperiment(s"could not find original experiment ")
       } else {
         val cExp = origExp.get.copy(name = cexp.cloneExpProps.name,
+          uid =Some(UUID.randomUUID().toString),
           description = cexp.cloneExpProps.description,
           owner = cexp.cloneExpProps.owner, state = ExpState.NEW)
 
@@ -160,7 +163,8 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
 
       if (exp.isEmpty) {
         sender() ! ExperimentDeleteFailed(s"experiment [$digest] does not exist.")
-      } else if (exp.get.state.eq(ExpState.NEW) && !ExperimentFolderVisitor(exp.get).isImmutableExperiment) {
+
+      } else if (exp.get.state != ExpState.IMMUTABLE && !ExperimentFolderVisitor(exp.get).isImmutableExperiment) {
         experiments -= digest
         luceneRAMSearchAct ! RemoveFromIndex(exp.get)
         sender() ! LocalExperiments.safeDeleteExperiment(exp.get)
@@ -173,15 +177,16 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       val uid = design.experiment
 
       val exp = experiments.get(uid)
+
       if (exp.isDefined) {
         val nexp = exp.get.copy(design = design.design)
-        experiments += ((uid, nexp))
 
         LocalExperiments.saveExperiment(nexp) match {
 
           case SaveExperimentSuccessful(expL) ⇒
-            sender() ! AddedDesignSuccess
+            experiments += ((uid, nexp))
             luceneRAMSearchAct ! IndexExperiment(nexp)
+            sender() ! AddedDesignSuccess
 
           case SaveExperimentFailed(error) ⇒
             sender() ! FailedAddingDesign(error)
@@ -198,10 +203,10 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       if (exp.isDefined) {
         val ex = exp.get
         val nex = ex.copy(properties = ex.properties ++ addProps.properties)
-        experiments += ((uid, nex))
         LocalExperiments.saveExperiment(nex) match {
 
           case SaveExperimentSuccessful(expL) ⇒
+            experiments += ((uid, nex))
             luceneRAMSearchAct ! IndexExperiment(nex)
             sender() ! AddedPropertiesSuccess
 
@@ -218,10 +223,10 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       val exp = experiments.get(uid)
       if (exp.isDefined) {
         val nex = exp.get.copy(description = desc)
-        experiments += ((uid, nex))
         LocalExperiments.saveExperiment(nex) match {
 
           case SaveExperimentSuccessful(expL) ⇒
+            experiments += ((uid, nex))
             luceneRAMSearchAct ! IndexExperiment(nex)
             sender() ! DescriptionChangeOK
 
@@ -241,10 +246,10 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       if (exp.isDefined) {
         val ex = exp.get
         val nex = ex.copy(properties = ex.properties -- rmProps.properties)
-        experiments += ((uid, nex))
         LocalExperiments.saveExperiment(nex) match {
 
           case SaveExperimentSuccessful(expL) ⇒
+            experiments += ((uid, nex))
             luceneRAMSearchAct ! IndexExperiment(nex)
             sender() ! RemovePropertiesSuccess
 
@@ -444,20 +449,22 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
 
     case makeImmutable: MakeImmutable ⇒
       val exper = experiments.get(makeImmutable.experiment)
-      if (exper.isDefined) {
+
+      if (exper.isDefined && exper.get.state != ExpState.IMMUTABLE) {
+
         val exp = exper.get.copy(state = ExpState.IMMUTABLE)
+
         LocalExperiments.saveExperiment(exp) match {
 
           case SaveExperimentSuccessful(expLog) ⇒
+            experiments += ((exp.uid.get, exp))
             eventInfoLoggingAct ! AddLog(exp, ExpLog(LogType.UPDATED,
               LogCategory.SUCCESS, "experiment is immutable.", exp.uid))
 
           case SaveExperimentFailed(error) ⇒
             eventInfoLoggingAct ! AddLog(exp, ExpLog(LogType.UPDATED,
-              LogCategory.ERROR, "experiment is immutable failed.", exp.uid))
+              LogCategory.ERROR, "set experiment immutable failed.", exp.uid))
         }
-
-        experiments += ((exp.uid.get, exp))
 
         Files.write(ExperimentFolderVisitor(exper.get).immutableStateFile,
           "IMMUTABLE".getBytes(StandardCharsets.UTF_8), CREATE)

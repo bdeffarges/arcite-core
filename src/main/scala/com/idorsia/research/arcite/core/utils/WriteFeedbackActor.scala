@@ -9,7 +9,7 @@ import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.api.ArciteJSONProtocol
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.AddLog
 import com.idorsia.research.arcite.core.eventinfo.{ExpLog, LogCategory, LogType}
-import com.idorsia.research.arcite.core.experiments.ManageExperiments.{BunchOfSelectables, SaveSelectable}
+import com.idorsia.research.arcite.core.experiments.ManageExperiments.{BunchOfSelectables, MakeImmutable, SaveSelectable}
 import com.idorsia.research.arcite.core.transforms._
 import com.idorsia.research.arcite.core.transforms.cluster.MasterWorkerProtocol.WorkerCompleted
 import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.{WorkerJobFailed, WorkerJobSuccessFul}
@@ -102,6 +102,8 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
               ExpLog(LogType.TRANSFORM, LogCategory.SUCCESS,
                 s"transform [${wid.transf.transfDefName.name}] successfully completed", Some(wid.transf.uid)))
 
+            // the transform has been successful, it's time to make the experiment immutable
+            expManager ! MakeImmutable(wid.transf.source.experiment.uid.get)
 
           case wf: WorkerJobFailed ⇒
             val fb = TransformCompletionFeedback(wid.transf.uid, wid.transf.transfDefName, fs, params,

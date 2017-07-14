@@ -113,7 +113,7 @@ object ArciteService {
   case object NoExperimentFound extends ExperimentFoundFeedback
 
 
-  case class DeleteExperiment(digest: String)
+  case class DeleteExperiment(uid: String)
 
 
   sealed trait DeleteExperimentFeedback
@@ -296,9 +296,8 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
       ManageTransformCluster.getNextFrontEnd() forward gtd
 
 
-    case rt: ProceedWithTransform ⇒
-      context.system.actorOf(ScatGathTransform.props(sender(), expManager)) ! rt
-      expManager ! MakeImmutable(rt.experiment)
+    case pwt: ProceedWithTransform ⇒
+      context.system.actorOf(ScatGathTransform.props(sender(), expManager)) ! pwt
 
 
     // messages to workers cluster

@@ -62,12 +62,14 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
   override def postStop(): Unit = cleanupTask.cancel()
 
+
   override def receiveRecover: Receive = {
     case event: WorkStatus =>
       // only update current state by applying the event, no side effects
       workState = workState.updated(event)
       log.info(s"Replayed ${event}")
   }
+
 
   override def receiveCommand: Receive = {
     case MasterWorkerProtocol.RegisterWorker(workerId) ⇒
@@ -207,6 +209,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       log.info("asking for Running job status...")
       sender() ! workState.runningJobsSummary()
 
+
     case GetAllTransfDefs ⇒
       sender() ! ManyTransfDefs(transformDefs.toList)
 
@@ -221,6 +224,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
         case Some(x) ⇒ sender() ! OneTransfDef(x)
         case _ ⇒ sender() ! NoTransfDefFound
       }
+
 
     case GetTransfDefFromName(fn) ⇒
       transformDefs.find(_.fullName == fn) match {

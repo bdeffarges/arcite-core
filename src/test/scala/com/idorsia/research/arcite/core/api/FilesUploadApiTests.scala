@@ -58,7 +58,8 @@ class FilesUploadApiTests extends ApiTests {
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)
 
-    val jsonRequest = ByteString(AddExperiment(exp1).toJson.prettyPrint)
+    val jsonText = AddExperiment(exp1).toJson.prettyPrint
+    val jsonRequest = ByteString(jsonText)
 
     val postRequest = HttpRequest(
       HttpMethods.POST,

@@ -28,10 +28,10 @@ case class Experiment(name: String, description: String, owner: Owner, uid: Opti
   * @param name
   * @param description
   * @param owner
-  * @param uid the actual digest (from digest function)
+  * @param uid the unique ID generated
   */
 case class ExperimentSummary(name: String, description: String, owner: Owner, uid: String,
-                             lastUpdate: String = utils.almostTenYearsAgoAsString, state: ExpState = ExpState.IMMUTABLE)
+                             lastUpdate: String = utils.almostTenYearsAgoAsString, state: ExpState = ExpState.NEW)
 
 case class ExperimentFolderVisitor(exp: Experiment) {
   require(exp.uid.isDefined)
