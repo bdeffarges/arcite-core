@@ -52,7 +52,7 @@ class GetInfoTests extends ApiTests {
       val recentLogs = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
         .parseJson.convertTo[InfoLogs]
 
-      assert(recentLogs.logs.size > 3)
+      assert(recentLogs.logs.size > 1)
 
     }
   }

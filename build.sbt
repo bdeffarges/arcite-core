@@ -5,7 +5,7 @@ organization := "com.idorsia.research.arcite"
 
 name := "arcite-core"
 
-version := "1.64.0-SNAPSHOT"
+version := "1.66.0-SNAPSHOT"
 
 scalaVersion := "2.11.8"
 
@@ -57,8 +57,8 @@ resolvers ++= Seq(
 
 
 libraryDependencies ++= {
-  val akkaVersion = "2.4.17"
-  val akkaHttpVersion = "10.0.7"
+  val akkaVersion = "2.5.3"
+  val akkaHttpVersion = "10.0.9"
   val luceneVersion = "6.5.0"
 
   Seq(
@@ -79,15 +79,13 @@ libraryDependencies ++= {
     "com.typesafe.akka" %% "akka-stream" % akkaVersion,
     "com.typesafe.akka" %% "akka-stream-testkit" % akkaVersion,
     "com.typesafe.akka" %% "akka-testkit" % akkaVersion,
-    "com.typesafe.akka" %% "akka-distributed-data-experimental" % akkaVersion,
-    "com.typesafe.akka" %% "akka-typed-experimental" % akkaVersion,
-    "com.typesafe.akka" %% "akka-persistence-query-experimental" % akkaVersion,
     "com.typesafe.akka" %% "akka-http-core" % akkaHttpVersion,
     "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
     "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion,
     "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
     "com.typesafe.akka" %% "akka-http-jackson" % akkaHttpVersion,
     "com.typesafe.akka" %% "akka-http-xml" % akkaHttpVersion,
+    "ch.qos.logback" % "logback-classic" % "1.2.3",
     "org.apache.lucene" % "lucene-core" % luceneVersion,
     "org.apache.lucene" % "lucene-suggest" % luceneVersion,
     "org.apache.lucene" % "lucene-analyzers-common" % luceneVersion,

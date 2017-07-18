@@ -158,18 +158,18 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       }
 
 
-    case DeleteExperiment(digest) ⇒
-      val exp = experiments.get(digest)
+    case DeleteExperiment(uid) ⇒
+      val exp = experiments.get(uid)
 
       if (exp.isEmpty) {
-        sender() ! ExperimentDeleteFailed(s"experiment [$digest] does not exist.")
+        sender() ! ExperimentDeleteFailed(s"experiment [$uid] does not exist.")
 
       } else if (exp.get.state != ExpState.IMMUTABLE && !ExperimentFolderVisitor(exp.get).isImmutableExperiment) {
-        experiments -= digest
+        experiments -= uid
         luceneRAMSearchAct ! RemoveFromIndex(exp.get)
         sender() ! LocalExperiments.safeDeleteExperiment(exp.get)
       } else {
-        sender() ! ExperimentDeleteFailed(s"experiment [$digest] can not be deleted, it's immutable. ")
+        sender() ! ExperimentDeleteFailed(s"experiment [$uid] can not be deleted, it's immutable. ")
       }
 
 
@@ -200,9 +200,11 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       val uid = addProps.exp
 
       val exp = experiments.get(uid)
+
       if (exp.isDefined) {
         val ex = exp.get
         val nex = ex.copy(properties = ex.properties ++ addProps.properties)
+
         LocalExperiments.saveExperiment(nex) match {
 
           case SaveExperimentSuccessful(expL) ⇒
@@ -214,7 +216,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
             sender() ! FailedAddingProperties(error)
         }
       } else {
-        sender() ! FailedAddingProperties("It seems the experiment does not exist.")
+        sender() ! FailedAddingProperties("It seems the experiment to which properties should be added does not exist.")
       }
 
 

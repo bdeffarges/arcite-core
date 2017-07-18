@@ -23,10 +23,10 @@ object TestHelpers {
   val owner4 = Owner(organization2, person3)
   val owner5 = Owner(organization3, person3)
 
-  val cond1 = Condition("hw", "helloworld", "greetings")
-  val cond2 = Condition("he", "helloearth", "greetings")
-  val cond3 = Condition("hm", "hellomars", "greetings")
-  val cond4 = Condition("hj", "hellojupiter", "greetings")
+  val cond1 = Condition("hw", "hello world", "greetings")
+  val cond2 = Condition("he", "hello earth", "greetings")
+  val cond3 = Condition("hm", "hello mars", "greetings")
+  val cond4 = Condition("hj", "hello Marjupiter", "greetings")
   val cond11 = Condition("1", "1", "sampleid")
   val cond22 = Condition("2", "2", "sampleid")
   val cond33 = Condition("3", "3", "sampleid")
@@ -48,6 +48,5 @@ object TestHelpers {
   val experiment4 = Experiment("flying to the next galaxy ", "Flying far away...", owner5, design = expDesign2)
 
   def cloneForFakeExperiment(exp: Experiment): Experiment =
-    exp.copy(name = s"${exp.name}--${UUID.randomUUID().toString}")
-
+    exp.copy(name = s"${exp.name}--${java.util.concurrent.ThreadLocalRandom.current().nextInt(10000).toString}")
 }

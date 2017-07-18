@@ -2,7 +2,6 @@ package com.idorsia.research.arcite.core.api
 
 
 import akka.actor.ActorSystem
-import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.headers.{Allow, RawHeader}
@@ -90,15 +89,14 @@ object Main extends App {
   val bindingFuture: Future[ServerBinding] =
     Http().bindAndHandle(api, host, port)
 
-  val log = Logging(system.eventStream, "arcite...")
-
   bindingFuture.map { serverBinding ⇒
     arciteAppService ! AddAppLog(ArciteAppLog(LogCategory.INFO,
       s"application started successfully, listening on port ${serverBinding.localAddress}"))
-    log.info(s"RestApi bound to ${serverBinding.localAddress} ")
+    println("starting RestApi...")
+    println(s"akka.loglevel ${config.getString("akka.loglevel")}")
   }.onFailure {
     case ex: Exception ⇒
-      log.error(ex, s"Failed to bind to $host:$port")
+      println(ex, s"Failed to bind to $host:$port")
       arciteAppService ! AddAppLog(ArciteAppLog(LogCategory.ERROR,
         s"could not start ARCITE. ${ex}"))
       system.terminate()

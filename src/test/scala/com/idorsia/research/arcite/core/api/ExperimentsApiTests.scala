@@ -57,11 +57,11 @@ class ExperimentsApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri =s"$urlPrefix/")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri =s"$urlPrefix")).via(connectionFlow).runWith(Sink.head)
 
     responseFuture.map { r ⇒
-      assert(r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8") == refApi)
       assert(r.status == StatusCodes.OK)
+      assert(r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8") == refApi)
     }
   }
 
@@ -80,14 +80,14 @@ class ExperimentsApiTests extends ApiTests {
       val experiments = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
         .parseJson.convertTo[AllExperiments].experiments
 
-      assert(experiments.size > 10)
+      assert(experiments.size > 5)
 
-      assert(experiments.exists(exp ⇒ exp.name.contains("jupiter")))
+      assert(experiments.exists(exp ⇒ exp.name.contains("Mars")))
 
     }
   }
 
-  "searching for 'AMS' and paging through experiments " should "return at least a couple of experiments... " in {
+  "searching for 'Mars' and paging through experiments " should "return at least a couple of experiments... " in {
     implicit val executionContext = system.dispatcher
 
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
@@ -102,9 +102,9 @@ class ExperimentsApiTests extends ApiTests {
       val experiments = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
         .parseJson.convertTo[AllExperiments].experiments
 
-      assert(experiments.size > 30)
+      assert(experiments.size > 5)
 
-      assert(experiments.exists(exp ⇒ exp.name.contains("AMS")))
+      assert(experiments.exists(exp ⇒ exp.name.contains("Mars")))
 
     }
   }

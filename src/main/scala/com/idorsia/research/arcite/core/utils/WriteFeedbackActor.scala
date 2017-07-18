@@ -43,11 +43,16 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
   import WriteFeedbackActor._
 
   private val conf = ConfigFactory.load().getConfig("experiments-manager")
+
   private val actSys = conf.getString("akka.uri")
+
   private val eventInfoSelect = s"${actSys}/user/exp_actors_manager/event_logging_info"
+
   private val eventInfoAct = context.actorSelection(ActorPath.fromString(eventInfoSelect))
+
   private val expManager =
     context.actorSelection(ActorPath.fromString(s"${actSys}/user/exp_actors_manager/experiments_manager"))
+
 
   override def receive: Receive = {
     case WriteFeedback(wid) ⇒
@@ -102,8 +107,6 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
               ExpLog(LogType.TRANSFORM, LogCategory.SUCCESS,
                 s"transform [${wid.transf.transfDefName.name}] successfully completed", Some(wid.transf.uid)))
 
-            // the transform has been successful, it's time to make the experiment immutable
-            expManager ! MakeImmutable(wid.transf.source.experiment.uid.get)
 
           case wf: WorkerJobFailed ⇒
             val fb = TransformCompletionFeedback(wid.transf.uid, wid.transf.transfDefName, fs, params,
