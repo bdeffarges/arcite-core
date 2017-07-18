@@ -8,6 +8,7 @@ import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.util.ByteString
 import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.TestHelpers
+import com.idorsia.research.arcite.core.experiments.ExperimentUID
 import com.idorsia.research.arcite.core.experiments.ManageExperiments.AddExperiment
 import com.idorsia.research.arcite.core.transftree.{DefaultTofT, ProceedWithTreeOfTransf, TreeOfTransformInfo}
 import spray.json._
@@ -39,10 +40,10 @@ import scala.concurrent.Future
   *
   */
 class TreeOfTransformsTests extends ApiTests {
-  val exp1 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment1)
 
-  var transfDef1: Option[TreeOfTransformInfo] = None
-  var transfDef2: Option[TreeOfTransformInfo] = None
+  private var exp1 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment1)
+  private var transfDef1: Option[TreeOfTransformInfo] = None
+  private var transfDef2: Option[TreeOfTransformInfo] = None
 
   "Create a new experiment " should " that can then be used to test the tree of transform " in {
 
@@ -52,12 +53,11 @@ class TreeOfTransformsTests extends ApiTests {
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)
 
-
     val jsonRequest = ByteString(AddExperiment(exp1).toJson.prettyPrint)
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri =s"$urlPrefix/experiment",
+      uri = s"$urlPrefix/experiment",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -66,6 +66,10 @@ class TreeOfTransformsTests extends ApiTests {
     responseFuture.map { r ⇒
       logger.info(r.toString())
       assert(r.status == StatusCodes.Created)
+      exp1 = exp1.copy(uid = Some(r.entity.asInstanceOf[HttpEntity.Strict]
+        .data.decodeString("UTF-8").parseJson.convertTo[ExperimentUID].uid))
+      assert(r.status == StatusCodes.Created)
+
     }
   }
 
@@ -105,7 +109,7 @@ class TreeOfTransformsTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri =s"$urlPrefix/tree_of_transforms")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri = s"$urlPrefix/tree_of_transforms")).via(connectionFlow).runWith(Sink.head)
 
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
@@ -133,7 +137,7 @@ class TreeOfTransformsTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri =s"$urlPrefix/tree_of_transforms",
+      uri = s"$urlPrefix/tree_of_transforms",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -163,7 +167,7 @@ class TreeOfTransformsTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri =s"$urlPrefix/tree_of_transforms",
+      uri = s"$urlPrefix/tree_of_transforms",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =

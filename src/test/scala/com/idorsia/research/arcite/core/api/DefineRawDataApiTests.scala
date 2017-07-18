@@ -42,10 +42,12 @@ import scala.concurrent.Future
   */
 class DefineRawDataApiTests extends ApiTests {
 
-  val exp1 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment1)
-  var clonedExp: Option[String] = None
+  private var exp1 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment1)
+  private var clonedExp: Option[String] = None
 
-  def addSoon(addends: Int*): Future[Int] = Future { addends.sum }
+  def addSoon(addends: Int*): Future[Int] = Future {
+    addends.sum
+  }
 
   behavior of "Create a new experiment"
   it should "eventually return the uid of the new experiment " in {
@@ -60,7 +62,7 @@ class DefineRawDataApiTests extends ApiTests {
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri =s"$urlPrefix/experiment",
+      uri = s"$urlPrefix/experiment",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -68,6 +70,9 @@ class DefineRawDataApiTests extends ApiTests {
 
     responseFuture.map { r ⇒
       logger.info(r.toString())
+      assert(r.status == StatusCodes.Created)
+      exp1 = exp1.copy(uid = Some(r.entity.asInstanceOf[HttpEntity.Strict]
+        .data.decodeString("UTF-8").parseJson.convertTo[ExperimentUID].uid))
       assert(r.status == StatusCodes.Created)
     }
   }
@@ -80,12 +85,12 @@ class DefineRawDataApiTests extends ApiTests {
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)
 
-    val jsonRequest = ByteString(SourceRawDataSet(exp1.uid.get, "microarray1",
+    val jsonRequest = ByteString(SourceRawDataSet(exp1.uid.get, "microarray",
       filesAndFolders = List("AMS0090/160309_br")).toJson.prettyPrint)
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri =s"$urlPrefix/raw_data/from_source",
+      uri = s"$urlPrefix/raw_data/from_source",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val res: Future[HttpResponse] = Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
@@ -104,12 +109,12 @@ class DefineRawDataApiTests extends ApiTests {
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)
 
-    val jsonRequest = ByteString(CloneExperimentNewProps(s"cloned-${UUID.randomUUID().toString}",
+    val jsonRequest = ByteString(CloneExperimentNewProps(s"cloned-${exp1.name}",
       "com.idorsia.research.test.cloned", TestHelpers.owner3).toJson.prettyPrint)
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri =s"$urlPrefix/experiment/${exp1.uid}/clone",
+      uri = s"$urlPrefix/experiment/${exp1.uid.get}/clone",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
