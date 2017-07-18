@@ -298,6 +298,7 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
     case pwt: ProceedWithTransform ⇒
       context.system.actorOf(ScatGathTransform.props(sender(), expManager)) ! pwt
+      expManager ! MakeImmutable(pwt.experiment)
 
 
     // messages to workers cluster
