@@ -205,7 +205,11 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
 
   implicit object ExperimentJSonFormat extends RootJsonFormat[Experiment] {
     override def read(json: JsValue): Experiment = {
-      json.asJsObject.getFields("name", "description", "owner", "uid", "state", "design", "properties") match {
+      json.asJsObject.getFields("name", "description", "owner", "uid", "state", "design", "properties", "hidden") match {
+        case Seq(JsString(name), JsString(description), owner, JsString(uid), state, design, properties, hidden) ⇒
+          Experiment(name, description, owner.convertTo[Owner], Some(uid), state.convertTo[ExpState],
+            design.convertTo[ExperimentalDesign], properties.convertTo[Map[String, String]], hidden.convertTo[Boolean])
+
         case Seq(JsString(name), JsString(description), owner, JsString(uid), state, design, properties) ⇒
           Experiment(name, description, owner.convertTo[Owner], Some(uid), state.convertTo[ExpState],
             design.convertTo[ExperimentalDesign], properties.convertTo[Map[String, String]])
@@ -242,13 +246,14 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
         "owner" -> exp.owner.toJson,
         "state" -> exp.state.toJson,
         "design" -> exp.design.toJson,
-        "properties" -> exp.properties.toJson
+        "properties" -> exp.properties.toJson,
+        "hidden" -> exp.hidden.toJson
       )
     }
   }
 
 
-  implicit val experimentSummaryJson: RootJsonFormat[ExperimentSummary] = jsonFormat6(ExperimentSummary)
+  implicit val experimentSummaryJson: RootJsonFormat[ExperimentSummary] = jsonFormat7(ExperimentSummary)
 
 
   implicit val stateJSon: RootJsonFormat[State] = jsonFormat1(State)

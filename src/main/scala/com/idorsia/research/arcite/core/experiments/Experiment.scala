@@ -31,7 +31,7 @@ case class Experiment(name: String, description: String, owner: Owner, uid: Opti
   * @param uid the unique ID generated
   */
 case class ExperimentSummary(name: String, description: String, owner: Owner, uid: String,
-                             lastUpdate: String = utils.almostTenYearsAgoAsString, state: ExpState = ExpState.NEW)
+                             lastUpdate: String, state: ExpState, hidden: Boolean)
 
 case class ExperimentFolderVisitor(exp: Experiment) {
   require(exp.uid.isDefined)

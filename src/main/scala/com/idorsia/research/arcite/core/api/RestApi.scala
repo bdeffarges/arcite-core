@@ -4,6 +4,7 @@ import java.nio.file.{Path, Paths}
 import java.util.UUID
 
 import akka.actor.{ActorRef, ActorSystem}
+import akka.event.slf4j.Logger
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives.{getFromFile, _}
@@ -74,12 +75,12 @@ trait ArciteServiceApi extends LazyLogging {
 
   private[api] lazy val arciteService = createArciteApi()
 
-  def getAllExperiments(page: Int = 0, max: Int = 100) = {
+  private[api] def getAllExperiments(page: Int = 0, max: Int = 100): Future[AllExperiments] = {
     logger.debug("asking for all experiments. ")
     arciteService.ask(GetAllExperiments(page, max)).mapTo[AllExperiments]
   }
 
-  def getExperiment(digest: String) = {
+  private[api] def getExperiment(digest: String): Future[ExperimentFoundFeedback] = {
     logger.debug(s"asking for experiment with digest= $digest")
     arciteService.ask(GetExperiment(digest)).mapTo[ExperimentFoundFeedback]
   }

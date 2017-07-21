@@ -295,7 +295,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
         .toList.sortBy(_._2.date).reverse
         .slice(start, end)
         .map(e ⇒ ExperimentSummary(e._1.name, e._1.description, e._1.owner,
-          e._1.uid.get, utils.getDateAsStrg(e._2.date), e._1.state))
+          e._1.uid.get, utils.getDateAsStrg(e._2.date), e._1.state, e._1.hidden))
 
       sender() ! AllExperiments(allExps)
 
@@ -314,7 +314,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       log.debug(s"found ${foundExperiments.experiments.size} experiments ")
       val resp = foundExperiments.experiments.map(f ⇒ experiments(f.digest))
         .map(f ⇒ ExperimentSummary(f.name, f.description, f.owner,
-          f.uid.get, utils.getDateAsStrg(readLastExpLog(f).date), f.state))
+          f.uid.get, utils.getDateAsStrg(readLastExpLog(f).date), f.state, f.hidden))
       requester ! SomeExperiments(resp.size, resp)
 
 

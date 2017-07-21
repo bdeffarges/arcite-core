@@ -128,16 +128,22 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
   }
 
   def isHidden(exp: Experiment): Boolean = {
-
-    ExperimentFolderVisitor(exp).metaFolderPath
-      .toFile.listFiles.filter(_.getName.contains("hide_"))
-      .sortBy(_.lastModified()).headOption.fold(false)(!_.getName.contains("unhide"))
+    val hideFolder = (ExperimentFolderVisitor(exp).metaFolderPath resolve "hide").toFile
+    if (hideFolder.exists()) {
+      hideFolder.listFiles.filter(_.getName.contains("hide_"))
+        .sortBy(_.lastModified()).reverse.headOption.fold(false)(!_.getName.contains("unhide_"))
+    } else {
+      false
+    }
   }
 
   def hideUnhide(exp: Experiment, hide: Boolean): HideUnHideFeedback = {
     if (hide != isHidden(exp)) {
+      val hideFolder = ExperimentFolderVisitor(exp).metaFolderPath resolve "hide"
+      if (!hideFolder.toFile.exists()) hideFolder.toFile.mkdir()
+
       val fileName = if (hide) s"hide_${utils.getDateForFolderName()}" else s"unhide_${utils.getDateForFolderName()}"
-      Files.write(ExperimentFolderVisitor(exp).metaFolderPath resolve fileName,
+      Files.write(hideFolder resolve fileName,
         fileName.getBytes(StandardCharsets.UTF_8))
       saveExperiment(exp) match {
         case SaveExperimentSuccessful(exp) ⇒

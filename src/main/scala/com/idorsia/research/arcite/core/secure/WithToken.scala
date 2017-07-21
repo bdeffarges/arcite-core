@@ -25,4 +25,9 @@ import java.util.UUID
   * Created by Bernard Deffarges on 2017/07/18.
   *
   */
+/**
+  * for operation that need logon a token has to be transmitted.
+  *
+  * @param token
+  */
 case class WithToken(token: String = UUID.randomUUID().toString)
