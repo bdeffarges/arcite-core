@@ -20,7 +20,7 @@ import com.typesafe.config.{Config, ConfigFactory}
   */
 case class Experiment(name: String, description: String, owner: Owner, uid: Option[String] = None, state: ExpState = ExpState.NEW,
                       design: ExperimentalDesign = ExperimentalDesign(),
-                      properties: Map[String, String] = Map())
+                      properties: Map[String, String] = Map(), hidden: Boolean = false)
 
 /**
   * An experiment summary information (no details like design)

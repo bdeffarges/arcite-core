@@ -129,7 +129,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
         sender() ! FailedAddingExperiment(s"could not find original experiment ")
       } else {
         val cExp = origExp.get.copy(name = cexp.cloneExpProps.name,
-          uid =Some(UUID.randomUUID().toString),
+          uid = Some(UUID.randomUUID().toString),
           description = cexp.cloneExpProps.description,
           owner = cexp.cloneExpProps.owner, state = ExpState.NEW)
 
@@ -193,6 +193,28 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
         }
       } else {
         sender() ! FailedAddingDesign("It seems the experiment does not exist.")
+      }
+
+
+    case hidUnhid: HideUnhide ⇒
+      val exp = experiments.get(hidUnhid.uid)
+
+
+      if (exp.isDefined) {
+        val nexp = exp.get.copy(hidden = hidUnhid.hide)
+
+        LocalExperiments.hideUnhide(nexp, hidUnhid.hide) match {
+
+          case HideUnhideSuccess ⇒
+            experiments += nexp.uid.get -> nexp
+            luceneRAMSearchAct ! IndexExperiment(nexp)
+            sender() ! HideUnhideSuccess
+
+          case fhu: FailedHideUnhide ⇒
+            sender() ! fhu
+        }
+      } else {
+        sender() ! FailedHideUnhide("It seems the experiment does not exist.")
       }
 
 
@@ -630,6 +652,23 @@ object ManageExperiments {
   case class State(experiments: Set[Experiment] = Set())
 
   case class AddExperiment(experiment: Experiment)
+
+  case class DeleteExperiment(uid: String)
+
+
+  sealed trait HideUnhide {
+    def uid: String
+    def hide: Boolean
+  }
+
+  case class Hide(uid: String) extends HideUnhide {
+    override def hide: Boolean = true
+  }
+
+  case class Unhide(uid: String) extends HideUnhide {
+    override def hide: Boolean = false
+  }
+
 
   //todo enable cloning with our without copying raw/meta data
   case class CloneExperimentNewProps(name: String, description: String, owner: Owner)

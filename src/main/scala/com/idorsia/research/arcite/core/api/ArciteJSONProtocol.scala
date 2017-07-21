@@ -14,6 +14,7 @@ import com.idorsia.research.arcite.core.meta.DesignCategories.{AllCategories, Si
 import com.idorsia.research.arcite.core.publish.PublishActor.{PublishInfo, PublishInfoLight, PublishedInfo, RemovePublished}
 import com.idorsia.research.arcite.core.rawdata.DefineRawData.{RawDataSet, RawDataSetRegex, SourceRawDataSet}
 import com.idorsia.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments}
+import com.idorsia.research.arcite.core.secure.WithToken
 import com.idorsia.research.arcite.core.transforms.ParameterType.ParameterType
 import com.idorsia.research.arcite.core.transforms.RunTransform._
 import com.idorsia.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, ManyTransfDefs, OneTransfDef}
@@ -252,6 +253,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
 
   implicit val stateJSon: RootJsonFormat[State] = jsonFormat1(State)
 
+  implicit val withTokenJSon: RootJsonFormat[WithToken] = jsonFormat1(WithToken)
 
   implicit object TransformSourceJsonFormat extends RootJsonFormat[TransformSource] {
 
@@ -280,7 +282,6 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
 
     def read(value: JsValue):TransformSource = ???
   }
-
 
   implicit object SourceRawDataSetJsonFormat extends RootJsonFormat[SourceRawDataSet] {
 

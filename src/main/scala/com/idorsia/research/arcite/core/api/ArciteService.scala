@@ -83,6 +83,13 @@ object ArciteService {
   case class FailedAddingDesign(error: String) extends AddDesignFeedback
 
 
+  sealed trait HideUnHideFeedback
+
+  case object HideUnhideSuccess extends HideUnHideFeedback
+
+  case class FailedHideUnhide(error: String) extends HideUnHideFeedback
+
+
   sealed trait AddedPropertiesFeedback
 
   case object AddedPropertiesSuccess extends AddedPropertiesFeedback
@@ -113,9 +120,6 @@ object ArciteService {
   case object NoExperimentFound extends ExperimentFoundFeedback
 
 
-  case class DeleteExperiment(uid: String)
-
-
   sealed trait DeleteExperimentFeedback
 
   case object ExperimentDeletedSuccess extends DeleteExperimentFeedback
@@ -142,12 +146,16 @@ object ArciteService {
 
 
   sealed trait PublishFeedback
+
   case class ArtifactPublished(uid: String) extends PublishFeedback
+
   case class ArtifactPublishedFailed(reason: String) extends PublishFeedback
 
 
   sealed trait DefaultFeedback
+
   case class DefaultSuccess(msg: String = "") extends DefaultFeedback
+
   case class DefaultFailure(msg: String = "") extends DefaultFeedback
 
 }
@@ -193,8 +201,8 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
       expManager forward GetAllExperiments(gae.page, gae.max)
 
 
-    case se : SearchExperiments ⇒
-      expManager forward  se
+    case se: SearchExperiments ⇒
+      expManager forward se
 
     case ge: GetExperiment ⇒
       expManager forward ge
@@ -210,6 +218,14 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
     case de: DeleteExperiment ⇒
       expManager forward de
+
+
+    case unh: Unhide ⇒
+      expManager forward unh
+
+
+    case hide: Hide ⇒
+      expManager forward hide
 
 
     case d: AddDesign ⇒

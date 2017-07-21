@@ -2,17 +2,14 @@ package com.idorsia.research.arcite.core.experiments
 
 import java.nio.charset.StandardCharsets
 import java.nio.file._
-import java.util.UUID
 
 import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.api.ArciteJSONProtocol
-import com.idorsia.research.arcite.core.api.ArciteService.{DeleteExperimentFeedback, ExperimentDeleteFailed, ExperimentDeletedSuccess}
+import com.idorsia.research.arcite.core.api.ArciteService._
 import com.idorsia.research.arcite.core.utils
-import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 
 object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
-  val config = ConfigFactory.load()
 
   val EXPERIMENT_FILE_NAME = "experiment"
   val EXPERIMENT_UID_FILE_NAME = "uid"
@@ -127,6 +124,29 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
       case e: Exception ⇒
         logger.error(e.toString)
         ExperimentDeleteFailed(e.toString)
+    }
+  }
+
+  def isHidden(exp: Experiment): Boolean = {
+
+    ExperimentFolderVisitor(exp).metaFolderPath
+      .toFile.listFiles.filter(_.getName.contains("hide_"))
+      .sortBy(_.lastModified()).headOption.fold(false)(!_.getName.contains("unhide"))
+  }
+
+  def hideUnhide(exp: Experiment, hide: Boolean): HideUnHideFeedback = {
+    if (hide != isHidden(exp)) {
+      val fileName = if (hide) s"hide_${utils.getDateForFolderName()}" else s"unhide_${utils.getDateForFolderName()}"
+      Files.write(ExperimentFolderVisitor(exp).metaFolderPath resolve fileName,
+        fileName.getBytes(StandardCharsets.UTF_8))
+      saveExperiment(exp) match {
+        case SaveExperimentSuccessful(exp) ⇒
+          HideUnhideSuccess
+        case _ ⇒
+          FailedHideUnhide("could not save Hide/Unhide change.")
+      }
+    } else {
+      FailedHideUnhide("already in right state. ")
     }
   }
 }

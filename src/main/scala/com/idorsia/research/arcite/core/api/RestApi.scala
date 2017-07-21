@@ -15,12 +15,13 @@ import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.api.ArciteService._
 import com.idorsia.research.arcite.core.eventinfo.ArciteAppLogs.GetAppLogs
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.{InfoLogs, MostRecentLogs, ReadLogs, RecentAllLastUpdates}
-import com.idorsia.research.arcite.core.experiments.ExperimentFolderVisitor
+import com.idorsia.research.arcite.core.experiments.{ExperimentFolderVisitor, ExperimentUID}
 import com.idorsia.research.arcite.core.experiments.ManageExperiments._
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor._
 import com.idorsia.research.arcite.core.meta.DesignCategories.{AllCategories, GetCategories}
 import com.idorsia.research.arcite.core.publish.PublishActor._
 import com.idorsia.research.arcite.core.rawdata.DefineRawData._
+import com.idorsia.research.arcite.core.secure.WithToken
 import com.idorsia.research.arcite.core.transforms.RunTransform._
 import com.idorsia.research.arcite.core.transforms.TransfDefMsg._
 import com.idorsia.research.arcite.core.transforms.cluster.Frontend.{TransfNotReceived, _}
@@ -108,6 +109,14 @@ trait ArciteServiceApi extends LazyLogging {
 
   def addDesign(addDesign: AddDesign) = {
     arciteService.ask(addDesign).mapTo[AddDesignFeedback]
+  }
+
+  def hide(uid: String) : Future[HideUnHideFeedback] = {
+    arciteService.ask(Hide(uid)).mapTo[HideUnHideFeedback]
+  }
+
+  def unhide(uid: String) : Future[HideUnHideFeedback] = {
+    arciteService.ask(Unhide(uid)).mapTo[HideUnHideFeedback]
   }
 
   def addExpProperties(newProps: AddExpProperties) = {
@@ -317,7 +326,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
     }
   }
 
-   def defaultRoute = {
+  def defaultRoute = {
     get {
       complete(OK -> apiSpec.stripMargin)
     }
@@ -548,6 +557,30 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
                   case AddedDesignSuccess ⇒ complete(Created -> SuccessMessage("new design added."))
                   case FailedAddingDesign(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
                 }
+              }
+            }
+          }
+        } ~
+        path("hide") {
+          post {
+            logger.info("hidding experiment. ")
+            entity(as[WithToken]) { wt ⇒
+              val changed: Future[HideUnHideFeedback] = hide(experiment)
+              onSuccess(changed) {
+                case HideUnhideSuccess ⇒ complete(Created -> SuccessMessage("hidding exp."))
+                case failed: FailedHideUnhide ⇒ complete(BadRequest -> ErrorMessage(failed.error))
+              }
+            }
+          }
+        } ~
+        path("unhide") {
+          post {
+            logger.info("unhidding experiment.")
+            entity(as[WithToken]) { wt ⇒
+              val changed: Future[HideUnHideFeedback] = unhide(experiment)
+              onSuccess(changed) {
+                case HideUnhideSuccess ⇒ complete(Created -> SuccessMessage("unhidding exp."))
+                case failed: FailedHideUnhide ⇒ complete(BadRequest -> ErrorMessage(failed.error))
               }
             }
           }
@@ -993,7 +1026,6 @@ case class ExperimentCreated(uid: String, message: String) extends GeneralFeedba
 case class SuccessMessage(message: String) extends GeneralFeedbackMessage
 
 case class ErrorMessage(error: String) extends GeneralFeedbackMessage
-
 
 case class UniqueID(uid: String)
 
