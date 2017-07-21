@@ -13,6 +13,7 @@ import com.idorsia.research.arcite.core.TestHelpers
 import com.idorsia.research.arcite.core.api.ArciteService.{AddedExperiment, AllExperiments, ExperimentFound}
 import com.idorsia.research.arcite.core.experiments.{Experiment, ExperimentSummary, ExperimentUID}
 import com.idorsia.research.arcite.core.experiments.ManageExperiments.{AddExpProps, AddExperiment, ChangeDescription, RmExpProps}
+import com.idorsia.research.arcite.core.secure.WithToken
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import org.scalatest.{AsyncFlatSpec, Matchers}
@@ -279,6 +280,157 @@ class ExperimentsApiTests extends ApiTests {
   }
 
 
+  "Hide experiment " should " change the hidden tag of the experiment " in {
+
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+
+    val jsonRequest = ByteString(WithToken().toJson.prettyPrint)
+
+    val postRequest = HttpRequest(
+      HttpMethods.POST,
+      uri =s"$urlPrefix/experiment/${exp1.uid.get}/hide",
+      entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
+
+    responseFuture.map { r ⇒
+      logger.info(r.toString())
+      assert(r.status == StatusCodes.Created)
+      assert(r.entity.asInstanceOf[HttpEntity.Strict].
+        data.decodeString("UTF-8").parseJson.convertTo[SuccessMessage].message.contains("hidding"))
+    }
+  }
+
+
+  "Hide experiment after it has already been done " should " complain " in {
+
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+
+    val jsonRequest = ByteString(WithToken("blllllasdfkjlwkerj").toJson.prettyPrint)
+
+    val postRequest = HttpRequest(
+      HttpMethods.POST,
+      uri =s"$urlPrefix/experiment/${exp1.uid.get}/hide",
+      entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
+
+    responseFuture.map { r ⇒
+      logger.info(r.toString())
+      assert(r.status == StatusCodes.BadRequest)
+      assert(r.entity.asInstanceOf[HttpEntity.Strict].
+        data.decodeString("UTF-8").parseJson.convertTo[ErrorMessage].error.contains("in right state"))
+    }
+  }
+
+
+  "Checking hidden properties of experiment " should " return true " in {
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(HttpRequest(uri =s"$urlPrefix/experiment/${exp1.uid.get}")).via(connectionFlow).runWith(Sink.head)
+
+    responseFuture.map { r ⇒
+      assert(r.status == StatusCodes.OK)
+
+      val experiment = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+        .parseJson.convertTo[Experiment]
+
+      assert(experiment.name == exp1.name)
+      assert(experiment.hidden)
+    }
+  }
+
+
+  "UnHide experiment " should " change the hidden tag of the experiment " in {
+
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+
+    val jsonRequest = ByteString(WithToken("blllllasdfkjlwkerj").toJson.prettyPrint)
+
+    val postRequest = HttpRequest(
+      HttpMethods.POST,
+      uri =s"$urlPrefix/experiment/${exp1.uid.get}/unhide",
+      entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
+
+    responseFuture.map { r ⇒
+      logger.info(r.toString())
+      assert(r.status == StatusCodes.Created)
+      assert(r.entity.asInstanceOf[HttpEntity.Strict].
+        data.decodeString("UTF-8").parseJson.convertTo[SuccessMessage].message.contains("unhidding"))
+    }
+  }
+
+
+  "Unhide experiment after it has already been done " should " complain " in {
+
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+
+    val jsonRequest = ByteString(WithToken("blllllasdfkjlwkerj").toJson.prettyPrint)
+
+    val postRequest = HttpRequest(
+      HttpMethods.POST,
+      uri =s"$urlPrefix/experiment/${exp1.uid.get}/unhide",
+      entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
+
+    responseFuture.map { r ⇒
+      logger.info(r.toString())
+      assert(r.status == StatusCodes.BadRequest)
+      assert(r.entity.asInstanceOf[HttpEntity.Strict].
+        data.decodeString("UTF-8").parseJson.convertTo[ErrorMessage].error.contains("in right state"))
+    }
+  }
+
+
+  "Checking hidden properties of experiment after unhidding " should " return false " in {
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(HttpRequest(uri =s"$urlPrefix/experiment/${exp1.uid.get}")).via(connectionFlow).runWith(Sink.head)
+
+    responseFuture.map { r ⇒
+      assert(r.status == StatusCodes.OK)
+
+      val experiment = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+        .parseJson.convertTo[Experiment]
+
+      assert(experiment.name == exp1.name)
+      assert(!experiment.hidden)
+    }
+  }
+
+
+
   "Delete an experiment " should " move the experiment to the deleted folder " in {
 
     implicit val executionContext = system.dispatcher
@@ -299,6 +451,7 @@ class ExperimentsApiTests extends ApiTests {
       assert(r.status == StatusCodes.OK)
     }
   }
+
 }
 
 
