@@ -5,6 +5,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpEntity, HttpRequest, HttpResponse, StatusCodes}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Sink, Source}
+import com.idorsia.research.arcite.core.fileservice.FileServiceActor.AllFilesInformation
 import com.idorsia.research.arcite.core.transforms.{TransformCompletionFeedback, TransformCompletionStatus}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
@@ -49,6 +50,8 @@ class ApiTests extends AsyncFlatSpec with Matchers with ArciteJSONProtocol
 
   protected var transStatus: Map[String, Boolean] = Map.empty
 
+  protected var filesInfo: Option[AllFilesInformation] = None
+
   implicit var system: ActorSystem = null
   implicit var materializer: ActorMaterializer = null
 
@@ -82,6 +85,26 @@ class ApiTests extends AsyncFlatSpec with Matchers with ArciteJSONProtocol
       super.withFixture(test) // Invoke the test function
     } lastly {
       system.terminate()
+    }
+  }
+
+  def getAllFilesForExperiment(exp: String): Unit = {
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(HttpRequest(uri = s"$urlPrefix/experiment/${exp}/files"))
+        .via(connectionFlow).runWith(Sink.head)
+
+    import spray.json._
+
+    responseFuture.map { r ⇒
+      if (r.status == StatusCodes.OK) {
+        filesInfo = Some(r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+          .parseJson.convertTo[AllFilesInformation])
+      }
     }
   }
 }

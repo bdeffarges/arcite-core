@@ -1,21 +1,17 @@
 package com.idorsia.research.arcite.core.rawdata
 
 import java.io.File
-import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Path, StandardOpenOption}
 
-import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, PoisonPill, Props}
-import akka.event.Logging
-import com.idorsia.research.arcite.core
+import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props}
 import com.idorsia.research.arcite.core.api.ArciteJSONProtocol
 import com.idorsia.research.arcite.core.api.ArciteService.{ExperimentFound, ExperimentFoundFeedback, GetExperiment}
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.AddLog
 import com.idorsia.research.arcite.core.eventinfo.{ExpLog, LogCategory, LogType}
 import com.idorsia.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor}
-import com.idorsia.research.arcite.core.fileservice.FileServiceActor.{GetSourceFolder, NothingFound, SourceInformation}
-import com.idorsia.research.arcite.core.rawdata.DefineRawData.{RawDataSetFailed, RawDataSetInProgress, SourceRawDataSet}
-import com.idorsia.research.arcite.core.rawdata.SourceRawDataSetActor.{StartDataTransfer, TransferSourceData}
+import com.idorsia.research.arcite.core.rawdata.DefineRawData.{RawDataSetFailed, RawDataSetInProgress, RemoveAllRaw, RemoveRaw, RemoveRawData, RmCannot, RmFailed, RmSuccess, SetRawData}
+import com.idorsia.research.arcite.core.rawdata.SetSrcRawDataAct.StartDataTransfer
 import com.idorsia.research.arcite.core.rawdata.TransferSelectedRawData._
+import com.idorsia.research.arcite.core.rawdata.TransferSelectedRawFile.TransferFiles
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 
@@ -23,8 +19,7 @@ import com.typesafe.scalalogging.LazyLogging
   * Created by deffabe1 on 5/12/16.
   */
 
-class DefineRawData(expActor: ActorRef) extends Actor with ActorLogging {
-  val logger = Logging(context.system, this)
+class DefineRawData(expManagerAct: ActorRef, eventInfo: ActorRef) extends Actor with ActorLogging {
 
   private val conf = ConfigFactory.load().getConfig("experiments-manager")
   private val actSys = conf.getString("akka.uri")
@@ -33,153 +28,85 @@ class DefineRawData(expActor: ActorRef) extends Actor with ActorLogging {
 
   override def receive: Receive = {
 
-    case rds: RawDataSetWithRequester ⇒
-      expActor ! GetExperimentForRawDataSet(rds)
+    case rds: SetRawData ⇒
+      val srdsa = context.actorOf(SetSrcRawDataAct.props(actSys, sender(), expManagerAct, eventInfo))
+      srdsa ! rds
 
 
-    case rds: SourceRawDataSetWithRequester ⇒
-      val srdsa = context.actorOf(SourceRawDataSetActor.props(actSys, rds.requester))
-      srdsa ! TransferSourceData(rds.rds)
+    case rrd: RemoveRaw ⇒
+      val rrda = context.actorOf(RmRawDataAct.props(actSys, sender(), expManagerAct, eventInfo))
+      rrda ! rrd
 
 
-    case rdse: RawDataSetWithRequesterAndExperiment ⇒
-      val exp = rdse.experiment
-      val response = defineRawData(exp, rdse.rdsr.rds)
-
-      // transfer file if required
-      if (rdse.rdsr.rds.transferFiles) {
-        val target = ExperimentFolderVisitor(exp).rawFolderPath
-        val transferActor = context.actorOf(Props(classOf[TransferSelectedRawData],self, target))
-        val filesMap = rdse.rdsr.rds.filesAndTarget.map(f ⇒ (new File(f._1), f._2))
-
-        transferActor ! TransferFilesToFolder(filesMap, target)
-
-        rdse.rdsr.requester ! RawDataSetAdded //todo hopefully it works, nor exception nor error nor counter yet !!
-
-      } else {
-        rdse.rdsr.requester ! response
-      }
-
-
-    case rdsr: RawDataSetRegexWithRequester ⇒
-
-      val files = core.allRegexFilesInFolderAndSubfolder(rdsr.rdsr.folder, rdsr.rdsr.regex, rdsr.rdsr.withSubfolder)
-        .map(f ⇒ (f._1.getAbsolutePath, f._2))
-
-      self ! RawDataSetWithRequester(
-        RawDataSet(rdsr.rdsr.experiment, rdsr.rdsr.transferFiles, files), rdsr.requester)
+    case _: Any ⇒
+      log.error("don't know what to do with passed message...")
   }
-
 }
-
 
 object DefineRawData extends ArciteJSONProtocol with LazyLogging {
 
-  /**
-    * a precise folder/file location is defined, a file is mapped to another (from the map) in the raw folder.
-    * todo remove transferFiles, as it should be transfered in this case
-    *
-    * @param experiment
-    * @param transferFiles
-    * @param filesAndTarget
-    */
-  case class RawDataSet(experiment: String, transferFiles: Boolean, filesAndTarget: Map[String, String])
+  def props(manageExpAct: ActorRef, eventInfo: ActorRef) = Props(classOf[DefineRawData], manageExpAct, eventInfo)
 
-  case class RawDataSetWithRequester(rds: RawDataSet, requester: ActorRef)
 
   /**
-    * a Source is given (microarray, ngs, ...) which usually is a mount to a drive where the lab equipment exports its data
+    * a Source is given (microarray, ngs, ...) which usually is a mount to a drive
+    * where the lab equipment stores its produced data, which can now be copied into the raw folder
+    * of the experiment.
     *
     * @param experiment
-    * @param source
-    * @param filesAndFolders
+    * @param files
+    * @param symLink : should it be only symbolic links?
     */
-  case class SourceRawDataSet(experiment: String, source: String, filesAndFolders: List[String], regex: String = ".*")
-
-  case class SourceRawDataSetWithRequester(rds: SourceRawDataSet, requester: ActorRef)
+  case class SetRawData(experiment: String, files: Set[String], symLink: Boolean = false)
 
 
-  case class RawDataSetRegex(experiment: String, transferFiles: Boolean, folder: String, regex: String, withSubfolder: Boolean)
+  sealed trait RemoveRaw {
+    def experiment: String
+  }
+  /**
+    * remove files from raw. Remove all if set is empty.
+    *
+    * @param experiment
+    * @param files
+    */
+  case class RemoveRawData(experiment: String, files: Set[String]) extends RemoveRaw
 
-  case class RawDataSetRegexWithRequester(rdsr: RawDataSetRegex, requester: ActorRef)
+  case class RemoveAllRaw(experiment: String) extends RemoveRaw
 
-  //todo fix hacks
-  case class GetExperimentForRawDataSet(rdsr: RawDataSetWithRequester)
+  sealed trait RmRawDataResponse
 
-  case class RawDataSetWithRequesterAndExperiment(rdsr: RawDataSetWithRequester, experiment: Experiment)
+  case object RmSuccess extends RmRawDataResponse
 
+  case object RmCannot extends RmRawDataResponse
+
+  case object RmFailed extends RmRawDataResponse
 
   sealed trait RawDataSetResponse
 
   case object RawDataSetAdded extends RawDataSetResponse
 
-  case object RawDataSetInProgress extends RawDataSetResponse //todo giving real progress in %
+  case object RawDataSetInProgress extends RawDataSetResponse
 
   case class RawDataSetFailed(error: String) extends RawDataSetResponse
 
-
-
-  import StandardOpenOption._
-
-  import spray.json._
-
-  def mergeRawDataSet(rds1: RawDataSet, rds2: RawDataSet): RawDataSet = {
-    RawDataSet(rds1.experiment, rds1.transferFiles | rds2.transferFiles, rds1.filesAndTarget ++ rds2.filesAndTarget)
-  }
-
-  def saveRawDataSetJson(rds: RawDataSet, path: Path) = {
-    logger.debug(s"rawdataset=$rds, path=$path")
-
-    val strg = rds.toJson.prettyPrint
-    if (path.toFile.exists()) Files.delete(path)
-    Files.write(path, strg.getBytes(StandardCharsets.UTF_8), CREATE)
-  }
-
-  //todo really needed ?
-  def defineRawData(exp: Experiment, rds: RawDataSet): RawDataSetResponse = {
-    logger.debug(s"new raw data files : $rds")
-
-    val targetFile = ExperimentFolderVisitor(exp).rawFolderPath resolve ExperimentFolderVisitor.metaFileInPublicFolder
-
-    import spray.json._
-
-    import scala.collection.convert.wrapAsScala._
-
-    // is there already a json file describing folder?, if yes add them up.
-    if (targetFile.toFile.exists) {
-      val st = Files.readAllLines(targetFile).toList.mkString.parseJson.convertTo[RawDataSet]
-      saveRawDataSetJson(mergeRawDataSet(st, rds), targetFile)
-    } else {
-      saveRawDataSetJson(rds, targetFile)
-    }
-
-    RawDataSetAdded // todo needs to care about exceptional cases
-  }
 }
 
 /**
-  * a short living actor just to transfer the data from a source mount to the experiment
-  *
-  *
+  * a short living actor just to transfer some data from a source mount to the experiment
   */
-class SourceRawDataSetActor(actSys: String, requester: ActorRef) extends Actor with ActorLogging {
-  private val fileServiceActPath = s"${actSys}/user/exp_actors_manager/file_service"
-  private val expManSelect = s"${actSys}/user/exp_actors_manager/experiments_manager"
-  private val eventInfoSelect = s"${actSys}/user/exp_actors_manager/event_logging_info"
-  private val fileServiceAct = context.actorSelection(ActorPath.fromString(fileServiceActPath))
-  private val expManager = context.actorSelection(ActorPath.fromString(expManSelect))
-  private val eventInfoAct = context.actorSelection(ActorPath.fromString(eventInfoSelect))
+class SetSrcRawDataAct(actSys: String, requester: ActorRef, expManager: ActorRef,
+                       eventInfoAct: ActorRef) extends Actor with ActorLogging {
+
 
   private var experiment: Option[Experiment] = None
-  private var source: Option[SourceInformation] = None
-  private var rawDataSet: Option[SourceRawDataSet] = None
+  private var rawDataSet: Option[SetRawData] = None
 
   override def receive: Receive = {
-    case TransferSourceData(src) ⇒
-      log.debug(s"%4* transferring data from source... $src")
-      rawDataSet = Some(src)
-      fileServiceAct ! GetSourceFolder(src.source)
-      expManager ! GetExperiment(src.experiment)
+
+    case srds: SetRawData ⇒
+      log.debug(s"%4* transferring data from source... $srds")
+      rawDataSet = Some(srds)
+      expManager ! GetExperiment(srds.experiment)
 
 
     case eff: ExperimentFoundFeedback ⇒
@@ -194,43 +121,118 @@ class SourceRawDataSetActor(actSys: String, requester: ActorRef) extends Actor w
       }
 
 
-    case si: SourceInformation ⇒
-      source = Some(si)
-      self ! StartDataTransfer
-
-
-    case NothingFound ⇒
-      requester ! RawDataSetFailed("could not find source. ")
-      self ! PoisonPill
-
-
     case StartDataTransfer ⇒
-      if (source.isDefined && experiment.isDefined) {
-        requester ! RawDataSetInProgress
-        val target = ExperimentFolderVisitor(experiment.get).rawFolderPath
-        val transferActor = context.actorOf(Props(classOf[TransferSelectedRawData], self, target))
-        transferActor ! TransferFilesFromSourceToFolder(source.get.path,
-          rawDataSet.get.filesAndFolders, rawDataSet.get.regex.r)
-      }
+      requester ! RawDataSetInProgress
+
+      val target = ExperimentFolderVisitor(experiment.get).rawFolderPath
+
+      val transferActor = context.actorOf(Props(classOf[TransferSelectedRawData], self, target))
+
+      val files = rawDataSet.get.files.map(new File(_)).filter(_.exists())
+
+      transferActor ! TransferFiles(files, target, rawDataSet.get.symLink)
 
 
     case FileTransferredSuccessfully ⇒
-      requester ! FileTransferredSuccessfully //todo most likely won't be able to reach it
+
+      requester ! FileTransferredSuccessfully
+
       log.debug("@#1 transfer completed successfully. ")
-      eventInfoAct ! AddLog(experiment.get, ExpLog(LogType.UPDATED, LogCategory.SUCCESS, s"Raw data copied. [${rawDataSet}]"))
+
+      eventInfoAct ! AddLog(experiment.get, ExpLog(LogType.UPDATED,
+        LogCategory.SUCCESS, s"Raw data copied. [${rawDataSet}]"))
+
       self ! PoisonPill
+
 
     case f: FileTransferredFailed ⇒
       requester ! RawDataSetFailed(s"file transfer failed ${f.error}")
 
+      self ! PoisonPill
+
+
   }
 }
 
-object SourceRawDataSetActor {
-  def props(actSys: String, requester: ActorRef) = Props(classOf[SourceRawDataSetActor], actSys, requester)
-
-  case class TransferSourceData(source: SourceRawDataSet)
+object SetSrcRawDataAct {
+  def props(actSys: String, requester: ActorRef,
+            expManager: ActorRef, eventInfoAct: ActorRef) =
+    Props(classOf[SetSrcRawDataAct], actSys, requester, expManager, eventInfoAct)
 
   case object StartDataTransfer
 
 }
+
+
+class RmRawDataAct(actSys: String, requester: ActorRef, expManager: ActorRef,
+                   eventInfoAct: ActorRef) extends Actor with ActorLogging {
+
+  import RmRawDataAct._
+
+  private var experiment: Option[Experiment] = None
+  private var filesToBeRemoved: Set[String] = Set.empty
+  private var removeAll: Boolean = false
+
+  override def receive: Receive = {
+
+    case srds: RemoveRaw ⇒
+
+      srds match {
+        case rrd: RemoveRawData ⇒
+          log.debug(s"%324a deleting source data... $rrd")
+          filesToBeRemoved = rrd.files
+
+        case ra: RemoveAllRaw ⇒
+          log.debug(s"%324a deleting all data... ")
+          removeAll = true
+      }
+      expManager ! GetExperiment(srds.experiment)
+
+
+    case eff: ExperimentFoundFeedback ⇒
+      eff match {
+        case ExperimentFound(exp) ⇒
+          experiment = Some(exp)
+          if (ExperimentFolderVisitor(exp).isImmutableExperiment) {
+            sender() ! RmCannot
+          } else {
+            self ! StartRemove
+          }
+
+        case _: Any ⇒
+          requester ! RawDataSetFailed("could not find experiment")
+          self ! PoisonPill
+      }
+
+
+    case StartRemove ⇒
+      val rawFolder = ExperimentFolderVisitor(experiment.get).rawFolderPath
+
+      try {
+        if (removeAll) {
+          rawFolder.toFile.listFiles.foreach(_.delete())
+        } else {
+          filesToBeRemoved.foreach(f ⇒ (rawFolder resolve f).toFile.delete())
+        }
+        requester ! RmSuccess
+
+      } catch {
+        case exc: Exception ⇒
+          requester ! RmFailed
+      } finally {
+        self ! PoisonPill
+      }
+  }
+}
+
+
+object RmRawDataAct {
+
+  def props(actSys: String, requester: ActorRef,
+            expManager: ActorRef, eventInfoAct: ActorRef) =
+    Props(classOf[RmRawDataAct], actSys, requester, expManager, eventInfoAct)
+
+  case object StartRemove
+
+}
+

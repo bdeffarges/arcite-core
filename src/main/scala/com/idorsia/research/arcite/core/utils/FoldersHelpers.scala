@@ -1,7 +1,10 @@
 package com.idorsia.research.arcite.core.utils
 
 import java.io.File
-import java.nio.file.{FileSystemException, Files, Path}
+import java.nio.file.{FileSystemException, Files, Path, Paths}
+
+import com.idorsia.research.arcite.core.rawdata.TransferSelectedRawData.logger
+import org.slf4j.LoggerFactory
 
 import scala.util.matching.Regex
 
@@ -29,6 +32,7 @@ import scala.util.matching.Regex
   *
   */
 object FoldersHelpers {
+  val logger = LoggerFactory.getLogger(this.getClass)
 
   def deepLinking(originFolder: Path, targetFolder: Path): DeepLinkingFeedback = {
     deepLinking(originFolder.toFile, targetFolder.toFile)
@@ -60,6 +64,76 @@ object FoldersHelpers {
     if (file.isDirectory) file.listFiles.foreach(deleteRecursively)
 
     Files.delete(file.toPath)
+  }
+
+  def nextFileName(folder: Path, fileName: String): String = {
+    val file = folder resolve fileName
+    val f = file.toFile
+    if (f.exists()) {
+      val splitName = fileName.split("\\.")
+      val prefName = if (splitName.length > 0) splitName(0) else fileName
+      val sufName = if (splitName.length > 1) splitName(1) else ""
+
+      def nFilName(increment: Int): String = {
+        val nextN = s"${prefName}__${increment}.${sufName}"
+        if ((folder resolve nextN).toFile.exists()) {
+          nFilName(increment + 1)
+        } else {
+          nextN
+        }
+      }
+      nFilName(1)
+    } else {
+      fileName
+    }
+  }
+
+  def buildTransferFromSourceFileMap(source: Path, files: List[String],
+                                     regex: Regex, targetFolder: Path): Map[Path, Path] = {
+
+    var fileMap = Map[Path, Path]()
+
+    def buildFileMap(file: Path, folderPrefix: Path): Unit = {
+
+      val f = source resolve folderPrefix resolve file
+      val fi = f.toFile
+      logger.debug(s"folderPrefix=[$folderPrefix] fileFolder=[$file] full path=[$f]")
+      if (fi.isFile && regex.findFirstIn(fi.getName).isDefined) {
+        logger.debug(s"selected file: ${fi.getName}")
+        fileMap += ((f, targetFolder resolve folderPrefix resolve file.getFileName))
+      } else if (fi.isDirectory) {
+        fi.listFiles.foreach(ff ⇒ buildFileMap(ff.toPath.getFileName, folderPrefix resolve file))
+      }
+    }
+
+    files.foreach(f ⇒ buildFileMap(Paths.get(f), Paths.get("")))
+
+    logger.debug(s"${fileMap.size} files will be transferred. ")
+
+    fileMap
+  }
+
+  def buildTransferFolderMap(folder: String, regex: Regex, includeSubFolder: Boolean,
+                             targetFolder: Path): Map[Path, Path] = {
+
+    var fileMap = Map[Path, Path]()
+
+    def buildFileMap(folder: String, folderPrefix: String): Unit = {
+      val files = new File(folder).listFiles.filter(_.isFile)
+        .filter(f ⇒ regex.findFirstIn(f.getName).isDefined)
+
+      fileMap ++= files.map(f ⇒ (f, targetFolder resolve folderPrefix resolve f.getName))
+        .map(a ⇒ (a._1.toPath, a._2))
+
+      if (includeSubFolder) {
+        new File(folder).listFiles().filter(_.isDirectory)
+          .foreach(fo ⇒ buildFileMap(fo.getPath, folderPrefix + fo.getName + File.separator))
+      }
+    }
+
+    buildFileMap(folder, "")
+
+    fileMap
   }
 
   sealed trait DeepLinkingFeedback

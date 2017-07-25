@@ -12,7 +12,7 @@ import com.idorsia.research.arcite.core.experiments._
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor._
 import com.idorsia.research.arcite.core.meta.DesignCategories.{AllCategories, SimpleCondition}
 import com.idorsia.research.arcite.core.publish.PublishActor.{PublishInfo, PublishInfoLight, PublishedInfo, RemovePublished}
-import com.idorsia.research.arcite.core.rawdata.DefineRawData.{RawDataSet, RawDataSetRegex, SourceRawDataSet}
+import com.idorsia.research.arcite.core.rawdata.DefineRawData.{RemoveAllRaw, RemoveRawData, SetRawData}
 import com.idorsia.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments}
 import com.idorsia.research.arcite.core.secure.WithToken
 import com.idorsia.research.arcite.core.transforms.ParameterType.ParameterType
@@ -288,35 +288,9 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
     def read(value: JsValue):TransformSource = ???
   }
 
-  implicit object SourceRawDataSetJsonFormat extends RootJsonFormat[SourceRawDataSet] {
-
-    override def write(obj: SourceRawDataSet): JsValue = {
-      JsObject(
-        "experiment" -> JsString(obj.experiment),
-        "source" -> JsString(obj.source),
-        "regex" -> JsString(obj.regex),
-        "filesAndFolders" -> obj.filesAndFolders.toJson
-      )
-    }
-
-    override def read(json: JsValue): SourceRawDataSet = {
-      json.asJsObject.getFields("experiment", "source", "filesAndFolders", "regex") match {
-        case Seq(JsString(experiment), JsString(source), filesAndFolders, JsString(regex)) ⇒
-          SourceRawDataSet(experiment, source, filesAndFolders.convertTo[List[String]], regex)
-
-        case Seq(JsString(experiment), JsString(source), filesAndFolders) ⇒
-          SourceRawDataSet(experiment, source, filesAndFolders.convertTo[List[String]])
-
-        case _ => throw DeserializationException(
-          """could not deserialize, expected {experiment : String,
-            | source : String, filesAndFolders : String, (optional) regex : String""".stripMargin)
-      }
-    }
-  }
-
-
-  implicit val rdsJson: RootJsonFormat[RawDataSet] = jsonFormat3(RawDataSet)
-  implicit val rdsrJson: RootJsonFormat[RawDataSetRegex] = jsonFormat5(RawDataSetRegex)
+  implicit val sourceRawDataJson: RootJsonFormat[SetRawData] = jsonFormat3(SetRawData)
+  implicit val rmRawDataJson: RootJsonFormat[RemoveRawData] = jsonFormat2(RemoveRawData)
+  implicit val rmAllRawDataJson: RootJsonFormat[RemoveAllRaw] = jsonFormat1(RemoveAllRaw)
 
   implicit val manyTransformersJson: RootJsonFormat[ManyTransfDefs] = jsonFormat1(ManyTransfDefs)
   implicit val oneTransformersJson: RootJsonFormat[OneTransfDef] = jsonFormat1(OneTransfDef)
@@ -388,7 +362,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val rmPropertiesJSonFormat: RootJsonFormat[RmExpProps] = jsonFormat1(RmExpProps)
   implicit val newDescriptionJSonFormat: RootJsonFormat[ChangeDescription] = jsonFormat1(ChangeDescription)
 
-  implicit val fileInfoJsonFormat: RootJsonFormat[FileInformation] = jsonFormat2(FileInformation)
+  implicit val fileInfoJsonFormat: RootJsonFormat[FileInformation] = jsonFormat3(FileInformation)
   implicit val fileInfoWithSubFolderJsonFormat: RootJsonFormat[FileInformationWithSubFolder] = jsonFormat2(FileInformationWithSubFolder)
   implicit val allFilesInfoJsonFormat: RootJsonFormat[AllFilesInformation] = jsonFormat3(AllFilesInformation)
   implicit val folderFileJsonFormat: RootJsonFormat[FolderFilesInformation] = jsonFormat1(FolderFilesInformation)

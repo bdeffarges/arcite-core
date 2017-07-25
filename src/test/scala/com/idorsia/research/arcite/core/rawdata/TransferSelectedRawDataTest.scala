@@ -2,6 +2,7 @@ package com.idorsia.research.arcite.core.rawdata
 
 import java.nio.file.Paths
 
+import com.idorsia.research.arcite.core.utils.FoldersHelpers
 import com.typesafe.scalalogging.LazyLogging
 import org.scalatest.{FlatSpec, Matchers}
 
@@ -46,11 +47,11 @@ class TransferSelectedRawDataTest extends FlatSpec with Matchers with LazyLoggin
 
     val fileList = List("a", "b")
 
-    val map1 = TransferSelectedRawData.buildTransferFromSourceFileMap(source, fileList, ".*33\\.txt".r, target)
+    val map1 = FoldersHelpers.buildTransferFromSourceFileMap(source, fileList, ".*33\\.txt".r, target)
 
     assert(map1.size == 2)
 
-    val map2 = TransferSelectedRawData.buildTransferFromSourceFileMap(source, fileList, ".*33|44\\.txt".r, target)
+    val map2 = FoldersHelpers.buildTransferFromSourceFileMap(source, fileList, ".*33|44\\.txt".r, target)
 
     assert(map2.size == 4)
   }
@@ -71,7 +72,7 @@ class TransferSelectedRawDataTest extends FlatSpec with Matchers with LazyLoggin
 
     val fileList = List("AMS0100")
 
-    val map1 = TransferSelectedRawData.buildTransferFromSourceFileMap(source, fileList,
+    val map1 = FoldersHelpers.buildTransferFromSourceFileMap(source, fileList,
       "\\S+(257236312158|257236312159)\\S+txt".r, target)
 
     assert(map1.size == 32)

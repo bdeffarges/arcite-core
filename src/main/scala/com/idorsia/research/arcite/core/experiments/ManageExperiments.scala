@@ -330,17 +330,6 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       }
 
 
-    case rdsw: GetExperimentForRawDataSet ⇒
-      val uid = rdsw.rdsr.rds.experiment
-      log.debug(s"retrieving experiment with uid: $uid")
-      val exp = experiments.get(uid)
-      if (exp.isDefined) {
-        sender() ! RawDataSetWithRequesterAndExperiment(rdsw.rdsr, exp.get)
-      } else {
-        rdsw.rdsr.requester ! RawDataSetFailed(error = s"could not find exp for uid=${uid}")
-      }
-
-
     case GetAllExperimentsLastUpdate ⇒
       sender() ! AllLastUpdatePath(experiments.values.map(ExperimentFolderVisitor(_).lastUpdateLog).toSet)
 
@@ -420,10 +409,9 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
 
     case grf: InfoAboutRawFiles ⇒
       logger.info("looking for raw data files list")
-      val actRef = sender()
       val exp = experiments.get(grf.experiment)
       if (exp.isDefined) {
-        fileServiceAct ! GetAllFilesWithRequester(GetAllFiles(FromRawFolder(exp.get)), actRef)
+        fileServiceAct forward GetAllFiles(FromRawFolder(exp.get))
       } else {
         sender() ! FolderFilesInformation(Set())
       }
@@ -434,7 +422,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       val exp = experiments.get(gmf.experiment)
       val actRef = sender()
       if (exp.isDefined) {
-        fileServiceAct ! GetAllFilesWithRequester(GetAllFiles(FromMetaFolder(exp.get)), actRef)
+        fileServiceAct forward GetAllFiles(FromMetaFolder(exp.get))
       } else {
         sender() ! FolderFilesInformation(Set())
       }
@@ -445,7 +433,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       val exp = experiments.get(gmf.experiment)
       val actRef = sender()
       if (exp.isDefined) {
-        fileServiceAct ! GetAllFilesWithRequester(GetAllFiles(FromAllFolders(exp.get)), actRef)
+        fileServiceAct forward GetAllFiles(FromAllFolders(exp.get))
       } else {
         sender() ! AllFilesInformation()
       }
@@ -768,7 +756,7 @@ class ExperimentActorsManager extends Actor with ActorLogging {
       val eventInfoLoggingAct = context.actorOf(Props(classOf[EventInfoLogging]), "event_logging_info")
       val fileServiceAct = context.actorOf(FileServiceActor.props(), "file_service")
       val manExpActor = context.actorOf(Props(classOf[ManageExperiments], eventInfoLoggingAct), "experiments_manager")
-      val defineRawDataAct = context.actorOf(Props(classOf[DefineRawData], manExpActor), "define_raw_data")
+      val defineRawDataAct = context.actorOf(DefineRawData.props(manExpActor, eventInfoLoggingAct), "define_raw_data")
 
       log.info(s"event info log: [$eventInfoLoggingAct]")
       log.info(s"exp manager actor: [$manExpActor]")

@@ -71,17 +71,17 @@ class FileServiceActor(mounts: Option[Map[String, SourceInformation]]) extends A
       else sender() ! FoundFoldersAndFiles(Set(), Set())
 
 
-    case GetAllFilesWithRequester(fromExp, requester) ⇒
+    case GetAllFiles(fromExp) ⇒
 
-      val ev = ExperimentFolderVisitor(fromExp.fromExp.experiment)
+      val ev = ExperimentFolderVisitor(fromExp.experiment)
 
-      fromExp.fromExp match {
+      fromExp match {
         case FromRawFolder(_) ⇒
-          requester ! FolderFilesInformation(core.getFilesInformation(ev.userRawFolderPath))
+          sender() ! FolderFilesInformation(core.getFilesInformation(ev.userRawFolderPath))
         case FromMetaFolder(_) ⇒
-          requester ! FolderFilesInformation(core.getFilesInformation(ev.userMetaFolderPath))
+          sender() ! FolderFilesInformation(core.getFilesInformation(ev.userMetaFolderPath))
         case FromAllFolders(_) ⇒
-          requester ! AllFilesInformation(rawFiles = core.getFilesInformation(ev.rawFolderPath),
+          sender() ! AllFilesInformation(rawFiles = core.getFilesInformation(ev.rawFolderPath),
             userRawFiles = core.getFilesInformation(ev.userRawFolderPath),
             metaFiles = core.getFilesInformation(ev.userMetaFolderPath))
       }
@@ -151,13 +151,11 @@ object FileServiceActor {
 
   case class GetAllFiles(fromExp: FilesFromExperiment)
 
-  case class GetAllFilesWithRequester(getAllFiles: GetAllFiles, requester: ActorRef)
-
   case class FolderFilesInformation(files: Set[FileInformationWithSubFolder])
 
-  case class AllFilesInformation(rawFiles: Set[FileInformationWithSubFolder] = Set(),
-                                 userRawFiles: Set[FileInformationWithSubFolder] = Set(),
-                                 metaFiles: Set[FileInformationWithSubFolder] = Set())
+  case class AllFilesInformation(rawFiles: Set[FileInformationWithSubFolder] = Set.empty,
+                                 userRawFiles: Set[FileInformationWithSubFolder] = Set.empty,
+                                 metaFiles: Set[FileInformationWithSubFolder] = Set.empty)
 
 
   private def getFolderAndFiles(sourceP: Path, subFolderPath: List[String]): FoundFoldersAndFiles = {
@@ -171,10 +169,10 @@ object FileServiceActor {
         val files = folder.listFiles.filter(f ⇒ f.isFile).map(FileVisitor(_).fileInformation).toSet
         FoundFoldersAndFiles(subdirs, files)
       } else {
-        FoundFoldersAndFiles(Set(), Set(FileVisitor(folder).fileInformation))
+        FoundFoldersAndFiles(Set.empty, Set(FileVisitor(folder).fileInformation))
       }
     } else {
-      FoundFoldersAndFiles(Set(), Set())
+      FoundFoldersAndFiles(Set.empty, Set.empty)
     }
   }
 }

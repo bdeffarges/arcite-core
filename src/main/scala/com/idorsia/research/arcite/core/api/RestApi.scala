@@ -112,11 +112,11 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(addDesign).mapTo[AddDesignFeedback]
   }
 
-  def hide(uid: String) : Future[HideUnHideFeedback] = {
+  def hide(uid: String): Future[HideUnHideFeedback] = {
     arciteService.ask(Hide(uid)).mapTo[HideUnHideFeedback]
   }
 
-  def unhide(uid: String) : Future[HideUnHideFeedback] = {
+  def unhide(uid: String): Future[HideUnHideFeedback] = {
     arciteService.ask(Unhide(uid)).mapTo[HideUnHideFeedback]
   }
 
@@ -136,16 +136,16 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(toRemove).mapTo[RemoveFileFeedback]
   }
 
-  def defineRawData(rawData: RawDataSet) = {
+  def defineRawDataFromSource(rawData: SetRawData) = {
     arciteService.ask(rawData).mapTo[RawDataSetResponse]
   }
 
-  def defineRawDataFromSource(rawData: SourceRawDataSet) = {
-    arciteService.ask(rawData).mapTo[RawDataSetResponse]
+  def deleteRawData(rmRawData: RemoveRawData): Future[RmRawDataResponse] = {
+    arciteService.ask(rmRawData).mapTo[RmRawDataResponse]
   }
 
-  def defineRawData2(rawData: RawDataSetRegex) = {
-    arciteService.ask(rawData).mapTo[RawDataSetResponse]
+  def deleteAllRawData(rmRawData: RemoveAllRaw): Future[RmRawDataResponse] = {
+    arciteService.ask(rmRawData).mapTo[RmRawDataResponse]
   }
 
   def getAllTransfDefs = {
@@ -710,52 +710,46 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       }
   }
 
-  //todo replace raw data location with an uri location
   def rawDataRoute = pathPrefix("raw_data") {
-    path("files") {
-      pathEnd {
-        post {
-          logger.debug(s"adding raw data (files based)...")
-          entity(as[RawDataSet]) {
-            drd ⇒
-              val saved: Future[RawDataSetResponse] = defineRawData(drd)
-              onSuccess(saved) {
-                case RawDataSetAdded ⇒ complete(OK -> SuccessMessage("raw data added. "))
-                case RawDataSetFailed(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
-              }
-          }
+    path("from_source") {
+      post {
+        logger.debug(s"adding raw data (files from mounted source)...")
+        entity(as[SetRawData]) {
+          drd ⇒
+            val saved: Future[RawDataSetResponse] = defineRawDataFromSource(drd)
+            onSuccess(saved) {
+              case RawDataSetAdded ⇒ complete(Created -> SuccessMessage("raw data added. "))
+              case RawDataSetInProgress ⇒ complete(OK -> SuccessMessage("raw data transfer started..."))
+              case RawDataSetFailed(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
+            }
         }
       }
     } ~
-      path("from_source") {
-        pathEnd {
-          post {
-            logger.debug(s"adding raw data (files from mounted source)...")
-            entity(as[SourceRawDataSet]) {
-              drd ⇒
-                val saved: Future[RawDataSetResponse] = defineRawDataFromSource(drd)
-                onSuccess(saved) {
-                  case RawDataSetAdded ⇒ complete(Created -> SuccessMessage("raw data added. "))
-                  case RawDataSetInProgress ⇒ complete(OK -> SuccessMessage("raw data transfer started..."))
-                  case RawDataSetFailed(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
-                }
-            }
+      path("rm") {
+        delete {
+          logger.debug(s"remove data from raw ")
+          entity(as[RemoveRawData]) {
+            rrd ⇒
+              val saved: Future[RmRawDataResponse] = deleteRawData(rrd)
+              onSuccess(saved) {
+                case RmSuccess ⇒ complete(OK -> SuccessMessage("raw data removed. "))
+                case RmFailed ⇒ complete(BadRequest -> ErrorMessage("cannot remove data. "))
+                case RmCannot ⇒ complete(BadRequest -> ErrorMessage("cannot remove raw data, exp. probably already immutable."))
+              }
           }
         }
       } ~
-      path("folder") {
-        pathEnd {
-
-          post {
-            logger.debug(s"adding raw data (folder and regex based)...")
-            entity(as[RawDataSetRegex]) {
-              drd ⇒
-                val saved: Future[RawDataSetResponse] = defineRawData2(drd)
-                onSuccess(saved) {
-                  case RawDataSetAdded ⇒ complete(OK -> SuccessMessage("raw data added. "))
-                  case RawDataSetFailed(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
-                }
-            }
+      path("rm_all") {
+        delete {
+          logger.debug(s"remove all data from raw ")
+          entity(as[RemoveAllRaw]) {
+            rrd ⇒
+              val saved: Future[RmRawDataResponse] = deleteAllRawData(rrd)
+              onSuccess(saved) {
+                case RmSuccess ⇒ complete(OK -> SuccessMessage("raw data removed. "))
+                case RmFailed ⇒ complete(BadRequest -> ErrorMessage("cannot remove data. "))
+                case RmCannot ⇒ complete(BadRequest -> ErrorMessage("cannot remove raw data, exp. probably already immutable."))
+              }
           }
         }
       }

@@ -288,19 +288,15 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
       expManager forward gs
 
 
-    case rds: RawDataSet ⇒
-      defineRawDataAct ! RawDataSetWithRequester(rds, sender())
+    case rds: SetRawData ⇒
+      defineRawDataAct forward rds
 
 
-    case rds: SourceRawDataSet ⇒
-      defineRawDataAct ! SourceRawDataSetWithRequester(rds, sender())
+    case rrd: RemoveRaw ⇒
+      defineRawDataAct forward rrd
 
 
-    case rds: RawDataSetRegex ⇒
-      defineRawDataAct ! RawDataSetRegexWithRequester(rds, sender())
-
-
-    case GetAllTransfDefs ⇒
+   case GetAllTransfDefs ⇒
       ManageTransformCluster.getNextFrontEnd() forward GetAllTransfDefs
 
 
