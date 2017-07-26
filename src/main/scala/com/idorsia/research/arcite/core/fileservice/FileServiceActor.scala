@@ -76,10 +76,19 @@ class FileServiceActor(mounts: Option[Map[String, SourceInformation]]) extends A
       val ev = ExperimentFolderVisitor(fromExp.experiment)
 
       fromExp match {
+        case FromUserRawFolder(_) ⇒
+          val rawFilesInfo = FilesInformation(
+            ev.userRawFolderPath.toFile.listFiles.map(f ⇒ FileVisitor(f).fileInformation).toSet)
+          sender() ! rawFilesInfo
+
         case FromRawFolder(_) ⇒
-          sender() ! FolderFilesInformation(core.getFilesInformation(ev.userRawFolderPath))
+          val rawFilesInfo = FilesInformation(
+            ev.rawFolderPath.toFile.listFiles.map(f ⇒ FileVisitor(f).fileInformation).toSet)
+          sender() ! rawFilesInfo
+
         case FromMetaFolder(_) ⇒
           sender() ! FolderFilesInformation(core.getFilesInformation(ev.userMetaFolderPath))
+
         case FromAllFolders(_) ⇒
           sender() ! AllFilesInformation(rawFiles = core.getFilesInformation(ev.rawFolderPath),
             userRawFiles = core.getFilesInformation(ev.userRawFolderPath),
@@ -120,6 +129,8 @@ object FileServiceActor {
 
   case class FromRawFolder(experiment: Experiment) extends FilesFromExperiment
 
+  case class FromUserRawFolder(experiment: Experiment) extends FilesFromExperiment
+
   case class FromMetaFolder(experiment: Experiment) extends FilesFromExperiment
 
   case class FromAllFolders(experiment: Experiment) extends FilesFromExperiment
@@ -152,6 +163,8 @@ object FileServiceActor {
   case class GetAllFiles(fromExp: FilesFromExperiment)
 
   case class FolderFilesInformation(files: Set[FileInformationWithSubFolder])
+
+  case class FilesInformation(files: Set[FileInformation])
 
   case class AllFilesInformation(rawFiles: Set[FileInformationWithSubFolder] = Set.empty,
                                  userRawFiles: Set[FileInformationWithSubFolder] = Set.empty,

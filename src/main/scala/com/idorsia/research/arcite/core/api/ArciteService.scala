@@ -138,11 +138,17 @@ object ArciteService {
   case class MoveRawFile(experiment: String, filePath: String) extends MoveUploadedFile
 
 
-  case class InfoAboutRawFiles(experiment: String)
+  sealed trait InfoAboutFiles {
+    def experiment: String
+  }
 
-  case class InfoAboutMetaFiles(experiment: String)
+  case class InfoAboutRawFiles(experiment: String) extends InfoAboutFiles
 
-  case class InfoAboutAllFiles(experiment: String)
+  case class InfoAboutUserRawFiles(experiment: String) extends InfoAboutFiles
+
+  case class InfoAboutMetaFiles(experiment: String) extends InfoAboutFiles
+
+  case class InfoAboutAllFiles(experiment: String) extends InfoAboutFiles
 
 
   sealed trait PublishFeedback
@@ -264,17 +270,8 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
       expManager forward rmF
 
 
-    case iamf: InfoAboutMetaFiles ⇒
+    case iamf: InfoAboutFiles ⇒
       expManager forward iamf
-
-
-    case iarf: InfoAboutRawFiles ⇒
-      expManager forward iarf
-
-
-    case iaaf: InfoAboutAllFiles ⇒
-      expManager forward iaaf
-
 
     case changeDesc: ChangeDescriptionOfExperiment ⇒
       expManager forward changeDesc

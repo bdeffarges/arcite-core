@@ -5,7 +5,7 @@ import java.io.File
 /**
   * Created by bernitu on 20/11/16.
   */
-case class FileInformation(fullPath: String, name: String, fileSize: String)
+case class FileInformation(fullPath: String, name: String, fileSize: String, fileType: String = "file")
 
 //todo can probably remove as the fullPath info is in FileInformation now
 case class FileInformationWithSubFolder(subFolder: String, fileInformation: FileInformation)
@@ -23,7 +23,8 @@ case class FileVisitor(file: File) {
     }
   }
 
-  lazy val fileInformation = FileInformation(file.getAbsolutePath, file.getName, sizeToString(file.length()))
+  lazy val fileInformation = FileInformation(file.getAbsolutePath, file.getName,
+    sizeToString(file.length()), if (file.isDirectory) "folder" else "file")
 }
 
 

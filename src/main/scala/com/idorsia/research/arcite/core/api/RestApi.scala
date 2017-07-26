@@ -161,7 +161,11 @@ trait ArciteServiceApi extends LazyLogging {
   }
 
   def getAllRawFiles(digest: String) = {
-    arciteService.ask(InfoAboutRawFiles(digest)).mapTo[FolderFilesInformation]
+    arciteService.ask(InfoAboutRawFiles(digest)).mapTo[FilesInformation]
+  }
+
+  def getAllUserRawFiles(digest: String) = {
+    arciteService.ask(InfoAboutUserRawFiles(digest)).mapTo[FilesInformation]
   }
 
   private[api] def getAllFiles(digest: String) = {
@@ -531,11 +535,19 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
               }
             }
           } ~
-            path("raw") {
+            path("user_raw") {
               get {
                 logger.info(s"returning all user uploaded RAW files for experiment: $experiment")
+                onSuccess(getAllUserRawFiles(experiment)) {
+                  case FilesInformation(ffi) ⇒ complete(OK -> ffi)
+                }
+              }
+            } ~
+            path("raw") {
+              get {
+                logger.info(s"returning all RAW files for experiment: $experiment")
                 onSuccess(getAllRawFiles(experiment)) {
-                  case FolderFilesInformation(ffi) ⇒ complete(OK -> ffi)
+                  case FilesInformation(ffi) ⇒ complete(OK -> ffi)
                 }
               }
             } ~

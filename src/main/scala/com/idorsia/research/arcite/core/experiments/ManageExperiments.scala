@@ -408,17 +408,27 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
 
 
     case grf: InfoAboutRawFiles ⇒
-      logger.info("looking for raw data files list")
+      logger.info("looking for raw data files ")
       val exp = experiments.get(grf.experiment)
       if (exp.isDefined) {
         fileServiceAct forward GetAllFiles(FromRawFolder(exp.get))
+      } else {
+        sender() ! FilesInformation(Set())
+      }
+
+
+    case grf: InfoAboutUserRawFiles ⇒
+      logger.info("looking for user uploaded raw data files ")
+      val exp = experiments.get(grf.experiment)
+      if (exp.isDefined) {
+        fileServiceAct forward GetAllFiles(FromUserRawFolder(exp.get))
       } else {
         sender() ! FolderFilesInformation(Set())
       }
 
 
     case gmf: InfoAboutMetaFiles ⇒
-      logger.info("looking for meta data files list")
+      logger.info("looking for meta data files ")
       val exp = experiments.get(gmf.experiment)
       val actRef = sender()
       if (exp.isDefined) {
