@@ -103,14 +103,14 @@ class SourceFilesApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val jsonRequest = ByteString(SetRawData(exp1.uid.get,
-      Set("/arcite/microarrays/raw_data/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_1_1.txt",
-        "/arcite/microarrays/raw_data/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_1_2.txt",
-        "/arcite/microarrays/raw_data/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_1_3.txt",
-        "/arcite/microarrays/raw_data/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_1_4.txt",
-        "/arcite/microarrays/raw_data/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_2_1.txt",
-        "/arcite/microarrays/raw_data/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_2_2.txt",
-        "/arcite/microarrays/raw_data/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_2_3.txt",
-        "/arcite/microarrays/raw_data/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_2_4.txt")).toJson.prettyPrint)
+      Set("/arcite/raw_data/microarrays/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_1_1.txt",
+        "/arcite/raw_data/microarrays/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_1_2.txt",
+        "/arcite/raw_data/microarrays/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_1_3.txt",
+        "/arcite/raw_data/microarrays/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_1_4.txt",
+        "/arcite/raw_data/microarrays/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_2_1.txt",
+        "/arcite/raw_data/microarrays/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_2_2.txt",
+        "/arcite/raw_data/microarrays/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_2_3.txt",
+        "/arcite/raw_data/microarrays/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_2_4.txt")).toJson.prettyPrint)
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
@@ -137,14 +137,14 @@ class SourceFilesApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val jsonRequest = ByteString(SetRawData(exp1.uid.get,
-      Set("/arcite/microarrays/raw_data/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_1_1.txt",
-        "/arcite/microarrays/raw_data/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_1_2.txt",
-        "/arcite/microarrays/raw_data/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_1_3.txt",
-        "/arcite/microarrays/raw_data/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_1_4.txt",
-        "/arcite/microarrays/raw_data/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_2_1.txt",
-        "/arcite/microarrays/raw_data/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_2_2.txt",
-        "/arcite/microarrays/raw_data/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_2_3.txt",
-        "/arcite/microarrays/raw_data/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_2_4.txt")).toJson.prettyPrint)
+      Set("/arcite/raw_data/microarrays/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_1_1.txt",
+        "/arcite/raw_data/microarrays/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_1_2.txt",
+        "/arcite/raw_data/microarrays/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_1_3.txt",
+        "/arcite/raw_data/microarrays/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_1_4.txt",
+        "/arcite/raw_data/microarrays/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_2_1.txt",
+        "/arcite/raw_data/microarrays/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_2_2.txt",
+        "/arcite/raw_data/microarrays/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_2_3.txt",
+        "/arcite/raw_data/microarrays/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_2_4.txt")).toJson.prettyPrint)
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
@@ -285,14 +285,14 @@ class SourceFilesApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val jsonRequest = ByteString(SetRawData(exp1.uid.get,
-      Set("/arcite/microarrays/raw_data/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_1_1.txt",
-        "/arcite/microarrays/raw_data/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_1_2.txt",
-        "/arcite/microarrays/raw_data/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_1_3.txt",
-        "/arcite/microarrays/raw_data/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_1_4.txt",
-        "/arcite/microarrays/raw_data/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_2_1.txt",
-        "/arcite/microarrays/raw_data/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_2_2.txt",
-        "/arcite/microarrays/raw_data/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_2_3.txt",
-        "/arcite/microarrays/raw_data/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_2_4.txt"),
+      Set("/arcite/raw_data/microarrays/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_1_1.txt",
+        "/arcite/raw_data/microarrays/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_1_2.txt",
+        "/arcite/raw_data/microarrays/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_1_3.txt",
+        "/arcite/raw_data/microarrays/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_1_4.txt",
+        "/arcite/raw_data/microarrays/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_2_1.txt",
+        "/arcite/raw_data/microarrays/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_2_2.txt",
+        "/arcite/raw_data/microarrays/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_2_3.txt",
+        "/arcite/raw_data/microarrays/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_2_4.txt"),
       symLink = true).toJson.prettyPrint)
 
     val postRequest = HttpRequest(
@@ -337,6 +337,5 @@ class SourceFilesApiTests extends ApiTests {
     assert(rawFileNames.contains("161125_br_257236312183_S01_GE2_1105_Oct12_2_4.txt"))
   }
 
-  //todo test case where the experiment is immutable should not delete raw files.
-
+  //todo test case where the experiment is immutable should not delet
 }

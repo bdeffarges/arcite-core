@@ -88,8 +88,9 @@ class TransferSelectedRawFile extends Actor {
     case TransferFile(srcFile, target, symLink) ⇒
 
       if (symLink) {
-        logger.debug(s"&3% linking $srcFile from $target")
+
         val link = target resolve srcFile.getName
+        logger.debug(s"&3% linking $srcFile from $target")
         if (!link.toFile.exists())
           Files.createSymbolicLink(link, srcFile.toPath)
       } else {

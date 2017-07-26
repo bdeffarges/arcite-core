@@ -63,6 +63,7 @@ object DefineRawData extends ArciteJSONProtocol with LazyLogging {
   sealed trait RemoveRaw {
     def experiment: String
   }
+
   /**
     * remove files from raw. Remove all if set is empty.
     *
@@ -129,9 +130,15 @@ class SetSrcRawDataAct(actSys: String, requester: ActorRef, expManager: ActorRef
       val transferActor = context.actorOf(Props(classOf[TransferSelectedRawData], self, target))
 
       val files = rawDataSet.get.files.map(new File(_)).filter(_.exists())
+      log.info(s"file size: ${files.size}")
 
-      transferActor ! TransferFiles(files, target, rawDataSet.get.symLink)
+      if (files.size < 1) {
+        requester ! RawDataSetFailed(s"empty file set. ")
+        self ! PoisonPill
 
+      } else {
+        transferActor ! TransferFiles(files, target, rawDataSet.get.symLink)
+      }
 
     case FileTransferredSuccessfully ⇒
 
