@@ -336,4 +336,7 @@ class SourceFilesApiTests extends ApiTests {
     assert(rawFileNames.contains("161125_br_257236312183_S01_GE2_1105_Oct12_2_3.txt"))
     assert(rawFileNames.contains("161125_br_257236312183_S01_GE2_1105_Oct12_2_4.txt"))
   }
+
+  //todo test case where the experiment is immutable should not delete raw files.
+
 }
