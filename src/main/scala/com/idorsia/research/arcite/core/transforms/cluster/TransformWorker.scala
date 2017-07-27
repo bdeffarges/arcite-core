@@ -92,7 +92,13 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
         s"""Got a transform: ${t.transfDefName} / ${t.uid}
            |/ ${t.source.experiment.name} / ${t.source.getClass.getSimpleName}""".stripMargin)
 
-      TransformHelper(t).getTransformFolder().toFile.mkdirs()
+      try {
+        TransformHelper(t).getTransformFolder().toFile.mkdirs()
+      } catch {
+        case exc: Exception ⇒
+          log.error(s"That's bad, an exception occurred while creating the transform folder... exception msg: ${exc.getMessage}")
+          sendToMaster(WorkFailed(workerId, t))
+      }
 
       currentTransform = Some(t)
       workExecutor ! t
