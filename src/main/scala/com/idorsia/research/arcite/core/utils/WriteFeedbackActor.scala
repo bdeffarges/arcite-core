@@ -61,6 +61,7 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
       val transfFolder = TransformHelper(wid.transf).getTransformFolder()
 
       val immutableF = transfFolder resolve core.immutableFile
+
       if (immutableF.toFile.exists()) {
         sender() ! GeneralMessages.ImmutablePath(transfFolder.toString)
       } else {
@@ -81,11 +82,9 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
             TransformDoneSource(exp, JSON, None, None, None)
         }
 
-        val digest = GetDigest.getFolderContentDigest(transfFolder.toFile)
         val params = wid.transf.parameters
 
         import spray.json._
-
 
         wid.result match {
           case ws: WorkerJobSuccessFul ⇒

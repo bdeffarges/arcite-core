@@ -47,9 +47,8 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
   private val registerTask = context.system.scheduler.schedule(0.seconds, registerInterval, clusterClient,
     SendToAll("/user/master/singleton", RegisterWorker(workerId)))
 
-  private val workTransformExec = context.actorOf(transformDefinition.actorProps(), s"$workerId-exec")
-
-  private val workExecutor = context.watch(workTransformExec)
+  private val workExecutor = context.watch(
+    context.actorOf(transformDefinition.actorProps(), s"$workerId-exec"))
 
   private var currentTransform: Option[Transform] = None
 
@@ -116,10 +115,10 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
 
   def working: Receive = {
     case wc: WorkerJobCompletion ⇒
-        log.info(s"Work is completed. feedback: ${wc.feedback}")
-        sendToMaster(WorkerCompleted(workerId, transform, wc, utils.getDateAsString(time)))
-        context.setReceiveTimeout(10.seconds)
-        context.become(waitForWorkIsDoneAck(wc))
+      log.info(s"Work is completed. feedback: ${wc.feedback}")
+      sendToMaster(WorkerCompleted(workerId, transform, wc, utils.getDateAsString(time)))
+      context.setReceiveTimeout(10.seconds)
+      context.become(waitForWorkIsDoneAck(wc))
 
 
     case wp: WorkerJobProgress ⇒
@@ -182,8 +181,9 @@ object TransformWorker {
 
   /**
     * the worker job completed successfully and returned some artifacts and maybe some "selectables"
+    *
     * @param feedback
-    * @param artifacts
+    * @param artifacts a map title -> path of file
     * @param selectables
     */
   case class WorkerJobSuccessFul(feedback: String = "",
@@ -192,6 +192,7 @@ object TransformWorker {
 
   /**
     * the actual has failed but it does not mean the worker itself has failed.
+    *
     * @param feedback
     * @param errors
     */
