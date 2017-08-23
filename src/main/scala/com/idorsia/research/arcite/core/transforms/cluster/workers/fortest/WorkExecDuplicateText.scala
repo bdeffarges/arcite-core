@@ -8,7 +8,7 @@ import akka.actor.{Actor, ActorLogging, Props}
 import com.idorsia.research.arcite.core.experiments.ExperimentFolderVisitor
 import com.idorsia.research.arcite.core.experiments.ManageExperiments.Selectable
 import com.idorsia.research.arcite.core.transforms._
-import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.{WorkerJobProgress, WorkerJobSuccessFul}
+import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.{WorkerJobFailed, WorkerJobProgress, WorkerJobSuccessFul}
 import com.idorsia.research.arcite.core.transforms.cluster.{GetTransfDefId, TransformType}
 import com.idorsia.research.arcite.core.utils.FullName
 
@@ -56,24 +56,28 @@ class WorkExecDuplicateText extends Actor with ActorLogging {
         case tfo: TransformSourceFromTransform ⇒
           log.info("waited enough time, doing the work now...")
           val visit = ExperimentFolderVisitor(tfo.experiment)
-          val inputFile = Paths.get(visit.transformFolderPath.toString,
-            tfo.srcTransformID, "uppercase.txt")
+          val inputFile = (visit.transformFolderPath resolve tfo.srcTransformID)
+            .toFile.listFiles.find(_.getName.contains("upper"))
 
-          import scala.collection.convert.wrapAsScala._
-          val lines = Files.readAllLines(inputFile).toList.mkString("\n")
-          val dup = lines + lines + lines + lines
+          if (inputFile.isDefined) {
+            import scala.collection.convert.wrapAsScala._
+            val lines = Files.readAllLines(inputFile.get.toPath).toList.mkString("\n")
+            val dup = lines + lines + lines + lines
 
-          val p = Paths.get(TransformHelper(t).getTransformFolder().toString, "duplicated.txt")
+            val p = Paths.get(TransformHelper(t).getTransformFolder().toString, "duplicated.txt")
 
-          Files.write(p, dup.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
+            Files.write(p, dup.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
 
-          sender() ! WorkerJobSuccessFul(s"text has been duplicated", artifacts = Map("output" -> "duplicated.txt"),
-          Set(Selectable("generatedFiles", Set("duplicated.txt"))))
+            sender() ! WorkerJobSuccessFul(s"text has been duplicated", artifacts = Map("output" -> "duplicated.txt"),
+              Set(Selectable("generatedFiles", Set("duplicated.txt"))))
+          } else {
+            sender() ! WorkerJobFailed("duplicate job failed. ", "could not find any input file. ")
+          }
       }
 
     case GetTransfDefId(wi) ⇒
       log.debug(s"asking worker type for $wi")
-      sender() ! TransformType(wi, transfDefId)
+s      sender() ! TransformType(wi, transfDefId)
 
     case msg: Any ⇒ log.error(s"unable to deal with message: $msg")
   }
