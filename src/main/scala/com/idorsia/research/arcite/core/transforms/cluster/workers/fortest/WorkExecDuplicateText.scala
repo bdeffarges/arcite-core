@@ -77,7 +77,7 @@ class WorkExecDuplicateText extends Actor with ActorLogging {
 
     case GetTransfDefId(wi) ⇒
       log.debug(s"asking worker type for $wi")
-s      sender() ! TransformType(wi, transfDefId)
+      sender() ! TransformType(wi, transfDefId)
 
     case msg: Any ⇒ log.error(s"unable to deal with message: $msg")
   }

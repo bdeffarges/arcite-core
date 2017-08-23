@@ -80,7 +80,7 @@ class WorkExecLowerCase extends Actor with ActorLogging with ArciteJSONProtocol 
             var listFiles: List[String] = Nil
             tdi.artifacts.values.map { f ⇒
               val fileP = path resolve f
-              if (fileP.toFile.exists) {
+              if (fileP.toFile.exists && fileP.toFile.isFile) {
                 val textLowerC = Files.readAllLines(fileP).mkString("\n").toLowerCase()
                 listFiles = s"lowercase_$f" :: listFiles
                 val p = Paths.get(TransformHelper(t).getTransformFolder().toString, listFiles.head)

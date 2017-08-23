@@ -28,7 +28,7 @@ import com.typesafe.scalalogging.LazyLogging
 object DamerauLevenshtein extends LazyLogging {
 
   def distance(source: String, target: String): Int = {
-    logger.debug("levenshtein distance from %s to %s".format(source, target))
+//    logger.debug("levenshtein distance from %s to %s".format(source, target))
 
     def dist(source: String, target: String): Int = {
       val sourceAr = source.toCharArray
