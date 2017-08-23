@@ -19,7 +19,6 @@ import com.idorsia.research.arcite.core.fileservice.FileServiceActor._
 import com.idorsia.research.arcite.core.publish.PublishActor
 import com.idorsia.research.arcite.core.publish.PublishActor._
 import com.idorsia.research.arcite.core.rawdata.DefineRawData
-import com.idorsia.research.arcite.core.rawdata.DefineRawData._
 import com.idorsia.research.arcite.core.search.ArciteLuceneRamIndex
 import com.idorsia.research.arcite.core.search.ArciteLuceneRamIndex._
 import com.idorsia.research.arcite.core.transforms.TransformCompletionFeedback
@@ -557,7 +556,6 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
     //todo exception handling
 
     def convertToTransfComFeed(file: File): Option[TransformCompletionFeedback] = {
-      import spray.json._
       try {
         Some(Files.readAllLines(file.toPath).mkString(" ").parseJson.convertTo[TransformCompletionFeedback])
       } catch {
@@ -582,8 +580,6 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
 
     val exp = experiments(experiment)
     val ef = ExperimentFolderVisitor(exp).transformFolderPath
-
-    import spray.json._
 
     //todo check whether it exists...
     val f = ef resolve transform resolve WriteFeedbackActor.FILE_NAME
