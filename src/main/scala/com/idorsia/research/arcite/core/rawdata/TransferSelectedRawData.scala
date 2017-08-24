@@ -10,7 +10,6 @@ import com.idorsia.research.arcite.core.utils.FoldersHelpers
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.duration._
-import scala.util.matching.Regex
 
 /**
   * Created by deffabe1 on 3/4/16.

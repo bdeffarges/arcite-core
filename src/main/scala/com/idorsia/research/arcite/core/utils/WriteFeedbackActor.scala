@@ -9,7 +9,7 @@ import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.api.ArciteJSONProtocol
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.AddLog
 import com.idorsia.research.arcite.core.eventinfo.{ExpLog, LogCategory, LogType}
-import com.idorsia.research.arcite.core.experiments.ManageExperiments.{BunchOfSelectables, MakeImmutable, SaveSelectable}
+import com.idorsia.research.arcite.core.experiments.ManageExperiments.BunchOfSelectables
 import com.idorsia.research.arcite.core.transforms._
 import com.idorsia.research.arcite.core.transforms.cluster.MasterWorkerProtocol.WorkerCompleted
 import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.{WorkerJobFailed, WorkerJobSuccessFul}
@@ -98,8 +98,9 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
             Files.write(transfFolder resolve core.successFile, "SUCCESS".getBytes(StandardCharsets.UTF_8), CREATE_NEW)
 
             if (ws.selectables.nonEmpty) {
-              expManager ! SaveSelectable(wid.transf.source.experiment.uid.get, wid.transf.uid,
-              BunchOfSelectables(ws.selectables))
+              log.info(s"writing down ${ws.selectables.size} selectables")
+              val bunchOf = BunchOfSelectables(ws.selectables).toJson.prettyPrint
+              Files.write(transfFolder resolve core.selectable, bunchOf.getBytes(StandardCharsets.UTF_8))
             }
 
             eventInfoAct ! AddLog(wid.transf.source.experiment,
