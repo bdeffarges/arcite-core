@@ -422,7 +422,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       if (exp.isDefined) {
         fileServiceAct forward GetAllFiles(FromUserRawFolder(exp.get))
       } else {
-        sender() ! FolderFilesInformation(Set())
+        sender() ! FilesInformation(Set())
       }
 
 
@@ -433,7 +433,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       if (exp.isDefined) {
         fileServiceAct forward GetAllFiles(FromMetaFolder(exp.get))
       } else {
-        sender() ! FolderFilesInformation(Set())
+        sender() ! FilesInformation(Set())
       }
 
 

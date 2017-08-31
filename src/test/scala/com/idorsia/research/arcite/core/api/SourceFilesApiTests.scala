@@ -177,7 +177,7 @@ class SourceFilesApiTests extends ApiTests {
   "check the right files have been copied and renamed " should
     " confirm that some files have been renamed after being copied " in {
 
-    val rawFileNames = filesInfo.get.rawFiles.map(_.fileInformation.name)
+    val rawFileNames = filesInfo.get.rawFiles.map(_.files)
     assert(rawFileNames.contains("161125_br_257236312183_S01_GE2_1105_Oct12_1_1.txt"))
     assert(rawFileNames.contains("161125_br_257236312183_S01_GE2_1105_Oct12_1_2.txt"))
     assert(rawFileNames.contains("161125_br_257236312183_S01_GE2_1105_Oct12_1_3.txt"))
@@ -326,7 +326,7 @@ class SourceFilesApiTests extends ApiTests {
   "check the right symlinks have been created " should
     " confirm the 8 files which have been linked. " in {
 
-    val rawFileNames = filesInfo.get.rawFiles.map(_.fileInformation.name)
+    val rawFileNames = filesInfo.get.rawFiles.get.files.map(_.name)
     assert(rawFileNames.contains("161125_br_257236312183_S01_GE2_1105_Oct12_1_1.txt"))
     assert(rawFileNames.contains("161125_br_257236312183_S01_GE2_1105_Oct12_1_2.txt"))
     assert(rawFileNames.contains("161125_br_257236312183_S01_GE2_1105_Oct12_1_3.txt"))

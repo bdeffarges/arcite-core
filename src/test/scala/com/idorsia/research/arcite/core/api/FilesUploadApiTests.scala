@@ -14,8 +14,7 @@ import com.idorsia.research.arcite.core.TestHelpers
 import com.idorsia.research.arcite.core.api.ArciteService.AllExperiments
 import com.idorsia.research.arcite.core.experiments.{Experiment, ExperimentUID}
 import com.idorsia.research.arcite.core.experiments.ManageExperiments.{AddExpProps, AddExperiment, CloneExperimentNewProps}
-import com.idorsia.research.arcite.core.fileservice.FileServiceActor.FolderFilesInformation
-import com.idorsia.research.arcite.core.utils.{FileInformationWithSubFolder, RmFile}
+import com.idorsia.research.arcite.core.utils.{FilesInformation, RmFile}
 import spray.json._
 
 import scala.concurrent.Future
@@ -180,10 +179,10 @@ class FilesUploadApiTests extends ApiTests {
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
 
-      val foldInf: Set[FileInformationWithSubFolder] = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
-        .parseJson.convertTo[Set[FileInformationWithSubFolder]]
+      val foldInf: Set[FilesInformation] = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+        .parseJson.convertTo[Set[FilesInformation]]
 
-      assert(foldInf.toList.head.fileInformation.name == "of_paramount_importance.txt")
+      assert(foldInf.toList.head.files.head.name == "of_paramount_importance.txt")
     }
 
   }
@@ -202,10 +201,10 @@ class FilesUploadApiTests extends ApiTests {
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
 
-      val foldInf: Set[FileInformationWithSubFolder] = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
-        .parseJson.convertTo[Set[FileInformationWithSubFolder]]
+      val foldInf: Set[FilesInformation] = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+        .parseJson.convertTo[Set[FilesInformation]]
 
-      assert(foldInf.toList.head.fileInformation.name == "of_paramount_importance.txt")
+      assert(foldInf.toList.head.files.head.name == "of_paramount_importance.txt")
     }
 
   }

@@ -7,7 +7,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor}
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor.SourceInformation
-import com.idorsia.research.arcite.core.utils.{FileInformation, FileInformationWithSubFolder, FileVisitor}
+import com.idorsia.research.arcite.core.utils.{FileInformation, FileVisitor, FilesInformation}
 import com.typesafe.config.ConfigFactory
 
 /**
@@ -71,6 +71,7 @@ class FileServiceActor(mounts: Option[Map[String, SourceInformation]]) extends A
       else sender() ! FoundFoldersAndFiles(Set(), Set())
 
 
+
     case GetAllFiles(fromExp) ⇒
 
       val ev = ExperimentFolderVisitor(fromExp.experiment)
@@ -87,12 +88,12 @@ class FileServiceActor(mounts: Option[Map[String, SourceInformation]]) extends A
           sender() ! rawFilesInfo
 
         case FromMetaFolder(_) ⇒
-          sender() ! FolderFilesInformation(core.getFilesInformation(ev.userMetaFolderPath))
+          sender() ! FileVisitor.getFilesInformation3(ev.userMetaFolderPath)
 
         case FromAllFolders(_) ⇒
-          sender() ! AllFilesInformation(rawFiles = core.getFilesInformation(ev.rawFolderPath),
-            userRawFiles = core.getFilesInformation(ev.userRawFolderPath),
-            metaFiles = core.getFilesInformation(ev.userMetaFolderPath))
+          sender() ! AllFilesInformation(rawFiles = FileVisitor.getFilesInformation2(ev.rawFolderPath),
+            userRawFiles = FileVisitor.getFilesInformation2(ev.userRawFolderPath),
+            metaFiles = FileVisitor.getFilesInformation2(ev.userMetaFolderPath))
       }
 
 
@@ -162,14 +163,9 @@ object FileServiceActor {
 
   case class GetAllFiles(fromExp: FilesFromExperiment)
 
-  case class FolderFilesInformation(files: Set[FileInformationWithSubFolder])
-
-  case class FilesInformation(files: Set[FileInformation])
-
-  case class AllFilesInformation(rawFiles: Set[FileInformationWithSubFolder] = Set.empty,
-                                 userRawFiles: Set[FileInformationWithSubFolder] = Set.empty,
-                                 metaFiles: Set[FileInformationWithSubFolder] = Set.empty)
-
+  case class AllFilesInformation(rawFiles: Option[FilesInformation] = None,
+                                 userRawFiles: Option[FilesInformation] = None,
+                                 metaFiles: Option[FilesInformation] = None)
 
   private def getFolderAndFiles(sourceP: Path, subFolderPath: List[String]): FoundFoldersAndFiles = {
 

@@ -6,7 +6,6 @@ import akka.stream.scaladsl.{Flow, Sink, Source}
 import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.api.ArciteService.AllExperiments
 import com.idorsia.research.arcite.core.meta.DesignCategories.{AllCategories, SimpleCondition}
-import com.idorsia.research.arcite.core.utils.FileInformationWithSubFolder
 import org.scalatest.Failed
 
 import scala.concurrent.Future

@@ -173,7 +173,7 @@ trait ArciteServiceApi extends LazyLogging {
   }
 
   private[api] def getAllMetaFiles(digest: String) = {
-    arciteService.ask(InfoAboutMetaFiles(digest)).mapTo[FolderFilesInformation]
+    arciteService.ask(InfoAboutMetaFiles(digest)).mapTo[FilesInformation]
   }
 
   private[api] def runTransformFromRaw(runTransform: RunTransformOnRawData) = {
@@ -531,7 +531,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             get {
               logger.info(s"returning all META files for experiment: $experiment")
               onSuccess(getAllMetaFiles(experiment)) {
-                case FolderFilesInformation(ffi) ⇒ complete(OK -> ffi)
+                case FilesInformation(ffi) ⇒ complete(OK -> ffi)
               }
             }
           } ~

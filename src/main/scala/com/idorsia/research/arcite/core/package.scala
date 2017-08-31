@@ -3,7 +3,6 @@ package com.idorsia.research.arcite
 import java.io.File
 import java.nio.file.{Path, Paths}
 
-import com.idorsia.research.arcite.core.utils.{FileInformationWithSubFolder, FileVisitor}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.slf4j.LoggerFactory
 
@@ -135,21 +134,4 @@ package object core {
     }
   }
 
-
-  def getFilesInformation(subFolder: Path): Set[FileInformationWithSubFolder] = {
-    getFilesInformation(subFolder.toFile)
-  }
-
-  def getFilesInformation(subFolder: File): Set[FileInformationWithSubFolder] = {
-
-    def getFInfo(prefix: String, subF: File): Set[FileInformationWithSubFolder] = {
-      if (subF.isFile) Set(FileInformationWithSubFolder(prefix, FileVisitor(subF).fileInformation))
-      else {
-        val newPrefix = s"$prefix/${subF.getName}"
-        subF.listFiles().flatMap(f ⇒ getFInfo(newPrefix, f)).toSet
-      }
-    }
-
-    getFInfo("", subFolder)
-  }
 }

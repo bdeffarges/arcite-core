@@ -20,3 +20,5 @@ object MemoryUsage {
 
   def printMemInMB() = println(meminMBAsString())
 }
+
+

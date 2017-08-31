@@ -3,6 +3,7 @@ package com.idorsia.research.arcite.core._trials
 import java.io.File
 
 import com.idorsia.research.arcite.core._
+import com.idorsia.research.arcite.core.utils.FileVisitor
 import org.scalatest.{FlatSpec, Matchers}
 
 /**
@@ -32,9 +33,9 @@ class TestCore extends FlatSpec with Matchers {
 
   val folder1 = new File("./for_testing/find_files/")
 
-  "get file information " should "return information about all files in subfolder at any level " in {
+  "get file information " should "return information about all files in subfolder and children " in {
 
-    val files = getFilesInformation(folder1)
+    val files = FileVisitor.getFilesInformation2(folder1.toPath)
 
     println(files)
     
