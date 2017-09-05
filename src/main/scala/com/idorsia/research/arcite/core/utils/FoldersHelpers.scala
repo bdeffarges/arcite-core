@@ -88,6 +88,7 @@ object FoldersHelpers {
     }
   }
 
+
   def buildTransferFromSourceFileMap(source: Path, files: List[String],
                                      regex: Regex, targetFolder: Path): Map[Path, Path] = {
 
@@ -113,6 +114,7 @@ object FoldersHelpers {
     fileMap
   }
 
+
   def buildTransferFolderMap(folder: String, regex: Regex, includeSubFolder: Boolean,
                              targetFolder: Path): Map[Path, Path] = {
 
@@ -135,6 +137,7 @@ object FoldersHelpers {
 
     fileMap
   }
+
 
   sealed trait DeepLinkingFeedback
 

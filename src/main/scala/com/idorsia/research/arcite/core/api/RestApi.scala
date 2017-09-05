@@ -269,8 +269,8 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(GetSourceFolders).mapTo[SourceFoldersAsString]
   }
 
-  private[api] def getFolderAndFilesFromSource(getFiles: GetFilesFromSource): Future[FoundFoldersAndFiles] = {
-    arciteService.ask(getFiles).mapTo[FoundFoldersAndFiles]
+  private[api] def getFoldersAndFilesFromMountedSource(getFiles: GetFilesFromSource): Future[FilesInformation] = {
+    arciteService.ask(getFiles).mapTo[FilesInformation]
   }
 
   private[api] def publish(pubInf: PublishInfo): Future[PublishFeedback] = {
@@ -916,8 +916,8 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       pathEnd {
         get {
           logger.debug("returns data source files ")
-          onSuccess(getFolderAndFilesFromSource(GetFilesFromSource(dataS))) {
-            case ff: FoundFoldersAndFiles ⇒ complete(OK -> ff)
+          onSuccess(getFoldersAndFilesFromMountedSource(GetFilesFromSource(dataS))) {
+            case ff: FilesInformation ⇒ complete(OK -> ff)
             case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning files for given source folder."))
           }
         }
@@ -934,9 +934,9 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           post {
             logger.debug("returns data source files with subfolder ")
             entity(as[GetFilesFromSource]) { gf ⇒
-              val found: Future[FoundFoldersAndFiles] = getFolderAndFilesFromSource(gf)
+              val found: Future[FilesInformation] = getFoldersAndFilesFromMountedSource(gf)
               onSuccess(found) {
-                case ff: FoundFoldersAndFiles ⇒ complete(OK -> ff)
+                case ff: FilesInformation ⇒ complete(OK -> ff)
               }
             }
           }

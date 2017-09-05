@@ -5,7 +5,7 @@ import akka.util.Timeout
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.{MostRecentLogs, ReadLogs, RecentAllLastUpdates}
 import com.idorsia.research.arcite.core.experiments.ManageExperiments.{GetAllTransforms, _}
 import com.idorsia.research.arcite.core.experiments.{Experiment, ExperimentSummary}
-import com.idorsia.research.arcite.core.fileservice.FileServiceActor.{GetExperimentFiles, GetFilesFromSource, GetSourceFolders}
+import com.idorsia.research.arcite.core.fileservice.FileServiceActor.{GetFilesFromSource, GetSourceFolders}
 import com.idorsia.research.arcite.core.meta.DesignCategories.GetCategories
 import com.idorsia.research.arcite.core.meta.MetaInfoActors
 import com.idorsia.research.arcite.core.publish.PublishActor.PublishApi
@@ -340,10 +340,6 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
 
     case gf: GetFilesFromSource ⇒
-      fileServiceAct forward gf
-
-
-    case gf: GetExperimentFiles ⇒
       fileServiceAct forward gf
 
 

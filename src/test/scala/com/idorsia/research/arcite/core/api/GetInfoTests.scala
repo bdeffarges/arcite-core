@@ -5,8 +5,9 @@ import akka.http.scaladsl.model._
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.util.ByteString
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.InfoLogs
-import com.idorsia.research.arcite.core.fileservice.FileServiceActor.{FoundFoldersAndFiles, GetFilesFromSource, SourceFoldersAsString}
+import com.idorsia.research.arcite.core.fileservice.FileServiceActor.{GetFilesFromSource, SourceFoldersAsString}
 import com.idorsia.research.arcite.core.transforms.TransformCompletionFeedback
+import com.idorsia.research.arcite.core.utils.FilesInformation
 import spray.json._
 
 import scala.concurrent.Future
@@ -121,7 +122,7 @@ class GetInfoTests extends ApiTests {
       assert(r.status == StatusCodes.OK)
 
       val dataSources = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
-        .parseJson.convertTo[FoundFoldersAndFiles]
+        .parseJson.convertTo[FilesInformation]
 
       assert(dataSources.files.nonEmpty)
 

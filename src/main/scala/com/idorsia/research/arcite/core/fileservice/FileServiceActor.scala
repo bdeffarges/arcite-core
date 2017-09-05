@@ -55,21 +55,11 @@ class FileServiceActor(mounts: Option[Map[String, SourceInformation]]) extends A
         sourceFolders.values.map(si ⇒ (si.name, s"${si.description} (${si.path.toString})")).toMap)
 
 
-    case GetExperimentFiles(fromExperiment, subFolder) ⇒
-
-      fromExperiment match {
-        case FromRawFolder(exp) ⇒
-          sender() ! getFolderAndFiles(ExperimentFolderVisitor(exp).rawFolderPath, subFolder)
-        case FromMetaFolder(exp) ⇒
-          sender() ! getFolderAndFiles(ExperimentFolderVisitor(exp).metaFolderPath, subFolder)
-      }
-
-
     case GetFilesFromSource(source, subFolder) ⇒
       val sourceF = sourceFolders.get(source)
-      if (sourceF.isDefined) sender() ! getFolderAndFiles(sourceF.get.path, subFolder)
-      else sender() ! FoundFoldersAndFiles(Set(), Set())
-
+      if (sourceF.isDefined) {
+        sender() ! FilesInformation(FileVisitor.getFilesInformationOneLevel(sourceF.get.path, subFolder: _*))
+      } else sender() ! FilesInformation(Set.empty)
 
 
     case GetAllFiles(fromExp) ⇒
@@ -153,13 +143,9 @@ object FileServiceActor {
     override def toString: String = s"$name, $description (${path.toString})"
   }
 
-  case class GetFilesFromSource(sourceName: String, subFolder: List[String] = List())
+  case class GetFilesFromSource(sourceName: String, subFolder: Seq[String] = Seq.empty)
 
   case object NothingFound
-
-  case class GetExperimentFiles(source: FilesFromExperiment, subFolder: List[String] = List())
-
-  case class FoundFoldersAndFiles(folders: Set[String], files: Set[FileInformation])
 
   case class GetAllFiles(fromExp: FilesFromExperiment)
 
@@ -167,21 +153,4 @@ object FileServiceActor {
                                  userRawFiles: Option[FilesInformation] = None,
                                  metaFiles: Option[FilesInformation] = None)
 
-  private def getFolderAndFiles(sourceP: Path, subFolderPath: List[String]): FoundFoldersAndFiles = {
-
-    val folder = subFolderPath.foldLeft(sourceP)((p, s) ⇒ p resolve s).toFile
-
-    if (folder.exists()) {
-      if (folder.isDirectory) {
-        val subdirs = folder.listFiles.filter(f ⇒ f.isDirectory).map(_.getName).toSet
-
-        val files = folder.listFiles.filter(f ⇒ f.isFile).map(FileVisitor(_).fileInformation).toSet
-        FoundFoldersAndFiles(subdirs, files)
-      } else {
-        FoundFoldersAndFiles(Set.empty, Set(FileVisitor(folder).fileInformation))
-      }
-    } else {
-      FoundFoldersAndFiles(Set.empty, Set.empty)
-    }
-  }
 }

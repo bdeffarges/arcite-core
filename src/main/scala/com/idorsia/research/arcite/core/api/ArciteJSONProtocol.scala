@@ -377,7 +377,6 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
 
   implicit val sourceFolderJson: RootJsonFormat[SourceFoldersAsString] = jsonFormat1(SourceFoldersAsString)
 
-  implicit val foundFilesJson: RootJsonFormat[FoundFoldersAndFiles] = jsonFormat2(FoundFoldersAndFiles)
   implicit val getFilesFolderJson: RootJsonFormat[GetFilesFromSource] = jsonFormat2(GetFilesFromSource)
 
   implicit val expTypesJson: RootJsonFormat[ExperimentType] = jsonFormat3(ExperimentType)
