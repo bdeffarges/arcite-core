@@ -495,6 +495,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val publishedInfoJson: RootJsonFormat[PublishedInfo] = jsonFormat3(PublishedInfo)
   implicit val rmpublishedInfoJson: RootJsonFormat[RemovePublished] = jsonFormat2(RemovePublished)
 
+  implicit val selectableItemJson: RootJsonFormat[SelectableItem] = jsonFormat2(SelectableItem)
   implicit val selectableJson: RootJsonFormat[Selectable] = jsonFormat2(Selectable)
   implicit val bunchOfSelectableJson: RootJsonFormat[BunchOfSelectables] = jsonFormat1(BunchOfSelectables)
 }

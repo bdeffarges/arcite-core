@@ -6,7 +6,7 @@ import java.nio.file.{Files, Paths}
 
 import akka.actor.{Actor, ActorLogging, Props}
 import com.idorsia.research.arcite.core.experiments.ExperimentFolderVisitor
-import com.idorsia.research.arcite.core.experiments.ManageExperiments.Selectable
+import com.idorsia.research.arcite.core.experiments.ManageExperiments.{Selectable, SelectableItem, SelectableType}
 import com.idorsia.research.arcite.core.transforms._
 import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.{WorkerJobFailed, WorkerJobProgress, WorkerJobSuccessFul}
 import com.idorsia.research.arcite.core.transforms.cluster.{GetTransfDefId, TransformType}
@@ -69,7 +69,7 @@ class WorkExecDuplicateText extends Actor with ActorLogging {
             Files.write(p, dup.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
 
             sender() ! WorkerJobSuccessFul(s"text has been duplicated", artifacts = Map("output" -> "duplicated.txt"),
-              Set(Selectable("generatedFiles", Set("duplicated.txt"))))
+              Set(Selectable(SelectableType.TransformResult, Set(SelectableItem("duplicated text","duplicated.txt")))))
           } else {
             sender() ! WorkerJobFailed("duplicate job failed. ", "could not find any input file. ")
           }

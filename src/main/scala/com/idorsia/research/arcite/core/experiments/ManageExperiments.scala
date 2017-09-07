@@ -14,6 +14,7 @@ import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging._
 import com.idorsia.research.arcite.core.eventinfo.{EventInfoLogging, ExpLog, LogCategory, LogType}
 import com.idorsia.research.arcite.core.experiments.ExperimentActorsManager.StartExperimentsServiceActors
 import com.idorsia.research.arcite.core.experiments.LocalExperiments.{LoadExperiment, SaveExperimentFailed, SaveExperimentSuccessful}
+import com.idorsia.research.arcite.core.experiments.ManageExperiments.SelectableType.SelectableType
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor._
 import com.idorsia.research.arcite.core.publish.PublishActor
@@ -642,6 +643,7 @@ object ManageExperiments {
 
   sealed trait HideUnhide {
     def uid: String
+
     def hide: Boolean
   }
 
@@ -721,9 +723,16 @@ object ManageExperiments {
 
   case class GetSelectable(exp: String, transf: String)
 
-  case class Selectable(selectableType: String, items: Set[String])
+  case class SelectableItem(name: String, path: String)
+
+  case class Selectable(selectableType: SelectableType, items: Set[SelectableItem])
 
   case class BunchOfSelectables(selectables: Set[Selectable])
+
+  object SelectableType extends scala.Enumeration {
+    type SelectableType = Value
+    val RawFile, TransformResult, SomeObject = Value
+  }
 
 }
 
