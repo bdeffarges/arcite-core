@@ -14,7 +14,6 @@ import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging._
 import com.idorsia.research.arcite.core.eventinfo.{EventInfoLogging, ExpLog, LogCategory, LogType}
 import com.idorsia.research.arcite.core.experiments.ExperimentActorsManager.StartExperimentsServiceActors
 import com.idorsia.research.arcite.core.experiments.LocalExperiments.{LoadExperiment, SaveExperimentFailed, SaveExperimentSuccessful}
-import com.idorsia.research.arcite.core.experiments.ManageExperiments.SelectableType.SelectableType
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor._
 import com.idorsia.research.arcite.core.publish.PublishActor
@@ -28,6 +27,7 @@ import com.idorsia.research.arcite.core.utils
 import com.idorsia.research.arcite.core.utils._
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
+import spray.json.DeserializationException
 
 /**
   * arcite-core
@@ -142,6 +142,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
 
             FoldersHelpers.deepLinking(orVis.rawFolderPath, tgrVis.rawFolderPath)
             FoldersHelpers.deepLinking(orVis.userMetaFolderPath, tgrVis.userMetaFolderPath)
+            FoldersHelpers.deepLinking(orVis.userRawFolderPath, tgrVis.userRawFolderPath)
 
             eventInfoLoggingAct ! AddLog(expCloned, ExpLog(LogType.CREATED, LogCategory.SUCCESS,
               s"cloned experiment [${origExp.get.uid.get}] ", Some(expCloned.uid.get)))
@@ -613,17 +614,24 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
 
   private def getSelectableFromTransfResults(exp: String, transf: String): Option[BunchOfSelectables] = {
     val ex = experiments.get(exp)
+    var bunchOfSelectables: Option[BunchOfSelectables] = None
+
     if (ex.isDefined) {
       val transfP = ExperimentFolderVisitor(ex.get).transformFolderPath resolve transf
       val succF = transfP resolve core.successFile
-      if (succF.toFile.exists()) {
-        val selectF = transfP resolve core.selectable
-        if (selectF.toFile.exists()) {
-          return Some(Files.readAllLines(selectF).mkString(" ").parseJson.convertTo[BunchOfSelectables])
+      val selectF = transfP resolve core.selectable
+      if (succF.toFile.exists() && selectF.toFile.exists()) {
+        try {
+          val bunchOfSelect = Files.readAllLines(selectF).mkString(" ").parseJson.convertTo[BunchOfSelectables]
+          bunchOfSelectables = Some(bunchOfSelect)
+        }
+        catch {
+          case ex: DeserializationException ⇒
+            log.error(s"cannot deserialize selectables. ${ex.msg}")
         }
       }
     }
-    None
+    bunchOfSelectables
   }
 }
 
@@ -725,14 +733,11 @@ object ManageExperiments {
 
   case class SelectableItem(name: String, path: String)
 
-  case class Selectable(selectableType: SelectableType, items: Set[SelectableItem])
+  case class Selectable(selectableType: String, items: Set[SelectableItem])
 
   case class BunchOfSelectables(selectables: Set[Selectable])
 
-  object SelectableType extends scala.Enumeration {
-    type SelectableType = Value
-    val RawFile, TransformResult, SomeObject = Value
-  }
+  case class SelectedSelectables(selectableType: String, names: Set[String])
 
 }
 
@@ -741,14 +746,21 @@ class ExperimentActorsManager extends Actor with ActorLogging {
   import scala.concurrent.duration._
 
   override val supervisorStrategy: OneForOneStrategy =
-    OneForOneStrategy(maxNrOfRetries = 50, withinTimeRange = 1 minute) {
+    OneForOneStrategy(maxNrOfRetries = 20, withinTimeRange = 1 minute) {
       case exc: FileSystemException ⇒
         log.error(s"experiment actor child file system error, trying to restart [${exc.getReason}] will retry 50 times. ")
         println(s"experiment actor child file system error, trying to restart [${exc.getReason}] will retry 50 times. ")
         Restart
+
+      case exc: DeserializationException ⇒
+        val errr = s"error while deserializing some json with spray : ${exc.getMessage}"
+        log.error(errr)
+        Restart
+
       case exc: Exception ⇒
-        log.error(s"experiment actor child general error [${exc.getMessage}] will retry 50 times. ")
-        println(s"experiment actor child general error [${exc.getMessage}] will retry 50 times. ")
+        val errr = s"exp. mng. actor, child general error/exception [${exc.getMessage}] will retry 20 times. "
+        log.error(errr)
+        println(errr)
         Restart
     }
 

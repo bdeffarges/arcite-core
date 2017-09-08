@@ -39,6 +39,7 @@ object RunTransform {
   case class RunTransformOnRawData(experiment: String, transfDefUID: String,
                                    parameters: Map[String, String] = Map()) extends TransfOnRaw
 
+  @deprecated("don't need exclusion regex")
   case class RunTransformOnRawDataWithExclusion(experiment: String, transfDefUID: String,
                                                 excludes: Set[String] = Set(), excludesRegex: Set[String] = Set(),
                                                 parameters: Map[String, String] = Map()) extends TransfOnRaw
@@ -51,6 +52,8 @@ object RunTransform {
   case class RunTransformOnTransform(experiment: String, transfDefUID: String, transformOrigin: String,
                                      parameters: Map[String, String] = Map()) extends ProcTransfFromTransf
 
+
+  @deprecated("don't need exclusion regex")
   case class RunTransformOnTransformWithExclusion(experiment: String, transfDefUID: String,
                                                   transformOrigin: String, excludes: Set[String] = Set(),
                                                   excludesRegex: Set[String] = Set(),

@@ -1,20 +1,16 @@
 package com.idorsia.research.arcite.core.api
 
 import java.io.File
-import java.nio.file.Paths
 import java.util.UUID
 
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.{HttpEntity, RequestEntity, _}
 import akka.stream.scaladsl._
 import akka.util.ByteString
-import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.TestHelpers
-import com.idorsia.research.arcite.core.api.ArciteService.AllExperiments
 import com.idorsia.research.arcite.core.experiments.{Experiment, ExperimentUID}
 import com.idorsia.research.arcite.core.experiments.ManageExperiments.{AddExpProps, AddExperiment, CloneExperimentNewProps}
-import com.idorsia.research.arcite.core.utils.{FilesInformation, RmFile}
+import com.idorsia.research.arcite.core.utils.{FileInformation, FilesInformation, RmFile}
 import spray.json._
 
 import scala.concurrent.Future
@@ -175,14 +171,13 @@ class FilesUploadApiTests extends ApiTests {
     val responseFuture: Future[HttpResponse] =
       Source.single(HttpRequest(uri =s"$urlPrefix/experiment/${exp1Uid.get}/files/meta")).via(connectionFlow).runWith(Sink.head)
 
-
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
 
-      val foldInf: Set[FilesInformation] = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
-        .parseJson.convertTo[Set[FilesInformation]]
+      val foldInf: Set[FileInformation] = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+        .parseJson.convertTo[Set[FileInformation]]
 
-      assert(foldInf.toList.head.files.head.name == "of_paramount_importance.txt")
+      assert(foldInf.toList.head.name == "of_paramount_importance.txt")
     }
 
   }
@@ -201,10 +196,10 @@ class FilesUploadApiTests extends ApiTests {
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
 
-      val foldInf: Set[FilesInformation] = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
-        .parseJson.convertTo[Set[FilesInformation]]
+      val foldInf: Set[FileInformation] = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+        .parseJson.convertTo[Set[FileInformation]]
 
-      assert(foldInf.toList.head.files.head.name == "of_paramount_importance.txt")
+      assert(foldInf.toList.head.name == "of_paramount_importance.txt")
     }
 
   }

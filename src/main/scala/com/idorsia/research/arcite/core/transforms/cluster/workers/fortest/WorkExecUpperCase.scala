@@ -7,7 +7,7 @@ import java.nio.file.{Files, Paths}
 import akka.actor.{Actor, ActorLogging, Props}
 import com.idorsia.research.arcite.core.api.ArciteJSONProtocol
 import com.idorsia.research.arcite.core.experiments.ExperimentFolderVisitor
-import com.idorsia.research.arcite.core.experiments.ManageExperiments.Selectable
+import com.idorsia.research.arcite.core.experiments.ManageExperiments.{Selectable, SelectableItem}
 import com.idorsia.research.arcite.core.transforms._
 import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.{WorkerJobFailed, WorkerJobProgress, WorkerJobSuccessFul}
 import com.idorsia.research.arcite.core.transforms.cluster.{GetTransfDefId, TransformType}
@@ -60,7 +60,8 @@ class WorkExecUpperCase extends Actor with ActorLogging with ArciteJSONProtocol 
             }
             val filesMap = listFiles.zipWithIndex.map(fi ⇒ s"file${fi._2}" -> fi._1).toMap
 
-            sender() ! WorkerJobSuccessFul("to Upper case completed", filesMap, Set(Selectable("files", listFiles.toSet)))
+            sender() ! WorkerJobSuccessFul("to Upper case completed", filesMap, Set(
+              Selectable("result files", listFiles.map(f ⇒ SelectableItem(f,f)).toSet)))
           } else {
             sender() ! WorkerJobFailed("to Upper case failed ", "did not find previous transform output file.")
           }

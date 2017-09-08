@@ -6,7 +6,6 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpEntity, _}
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.util.ByteString
-import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.TestHelpers
 import com.idorsia.research.arcite.core.experiments.ExperimentUID
 import com.idorsia.research.arcite.core.experiments.ManageExperiments.AddExperiment
