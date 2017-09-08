@@ -343,11 +343,9 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
 
   implicit val getTransfDefJson: RootJsonFormat[GetTransfDef] = jsonFormat1(GetTransfDef)
 
-  implicit val runTransformOnObjectJson: RootJsonFormat[RunTransformOnObject] = jsonFormat3(RunTransformOnObject)
-  implicit val runTransformOnRawDataJson: RootJsonFormat[RunTransformOnRawData] = jsonFormat3(RunTransformOnRawData)
-  implicit val runTransformOnRawDataWithExclusionsJson: RootJsonFormat[RunTransformOnRawDataWithExclusion] = jsonFormat5(RunTransformOnRawDataWithExclusion)
-  implicit val runTransformFromTransformJson: RootJsonFormat[RunTransformOnTransform] = jsonFormat4(RunTransformOnTransform)
-  implicit val runTransformFromTransformWExclusionsJson: RootJsonFormat[RunTransformOnTransformWithExclusion] = jsonFormat6(RunTransformOnTransformWithExclusion)
+  implicit val runTransformOnObjectJson: RootJsonFormat[RunTransformOnObject] = jsonFormat4(RunTransformOnObject)
+  implicit val runTransformOnRawDataJson: RootJsonFormat[RunTransformOnRawData] = jsonFormat4(RunTransformOnRawData)
+  implicit val runTransformFromTransformJson: RootJsonFormat[RunTransformOnTransform] = jsonFormat5(RunTransformOnTransform)
 
   implicit val transformJSon: RootJsonFormat[Transform] = jsonFormat4(Transform)
   implicit val getAllJobsFeedbackJson: RootJsonFormat[AllJobsFeedback] = jsonFormat4(AllJobsFeedback)
@@ -498,4 +496,5 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val selectableItemJson: RootJsonFormat[SelectableItem] = jsonFormat2(SelectableItem)
   implicit val selectableJson: RootJsonFormat[Selectable] = jsonFormat2(Selectable)
   implicit val bunchOfSelectableJson: RootJsonFormat[BunchOfSelectables] = jsonFormat1(BunchOfSelectables)
+  implicit val selectedSelectablesJson: RootJsonFormat[SelectedSelectables] = jsonFormat2(SelectedSelectables)
 }

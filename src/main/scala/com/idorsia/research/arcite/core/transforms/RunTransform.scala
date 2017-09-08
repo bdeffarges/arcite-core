@@ -1,5 +1,7 @@
 package com.idorsia.research.arcite.core.transforms
 
+import com.idorsia.research.arcite.core.experiments.ManageExperiments.SelectedSelectables
+
 /**
   * arcite-core
   *
@@ -31,36 +33,21 @@ object RunTransform {
     def transfDefUID: String
 
     def parameters: Map[String, String]
+
+    def selectables: Set[SelectedSelectables]
   }
-
-
-  sealed trait TransfOnRaw extends ProceedWithTransform
 
   case class RunTransformOnRawData(experiment: String, transfDefUID: String,
-                                   parameters: Map[String, String] = Map()) extends TransfOnRaw
-
-  @deprecated("don't need exclusion regex")
-  case class RunTransformOnRawDataWithExclusion(experiment: String, transfDefUID: String,
-                                                excludes: Set[String] = Set(), excludesRegex: Set[String] = Set(),
-                                                parameters: Map[String, String] = Map()) extends TransfOnRaw
-
-
-  sealed trait ProcTransfFromTransf extends ProceedWithTransform {
-    def transformOrigin: String
-  }
-
-  case class RunTransformOnTransform(experiment: String, transfDefUID: String, transformOrigin: String,
-                                     parameters: Map[String, String] = Map()) extends ProcTransfFromTransf
-
-
-  @deprecated("don't need exclusion regex")
-  case class RunTransformOnTransformWithExclusion(experiment: String, transfDefUID: String,
-                                                  transformOrigin: String, excludes: Set[String] = Set(),
-                                                  excludesRegex: Set[String] = Set(),
-                                                  parameters: Map[String, String] = Map()) extends ProcTransfFromTransf
-
+                                   parameters: Map[String, String] = Map.empty,
+                                   selectables: Set[SelectedSelectables] = Set.empty) extends ProceedWithTransform
 
   case class RunTransformOnObject(experiment: String, transfDefUID: String,
-                                  parameters: Map[String, String] = Map()) extends ProceedWithTransform
+                                  parameters: Map[String, String] = Map.empty,
+                                  selectables: Set[SelectedSelectables] = Set.empty) extends ProceedWithTransform
+
+
+  case class RunTransformOnTransform(experiment: String, transfDefUID: String, transformOrigin: String,
+                                     parameters: Map[String, String] = Map.empty,
+                                     selectables: Set[SelectedSelectables] = Set.empty) extends ProceedWithTransform
 
 }

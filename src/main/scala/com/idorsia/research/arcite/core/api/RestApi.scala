@@ -180,19 +180,11 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(runTransform).mapTo[TransformJobReceived]
   }
 
-  private[api] def runTransformFromRaw(runTransform: RunTransformOnRawDataWithExclusion) = {
-    arciteService.ask(runTransform).mapTo[TransformJobReceived]
-  }
-
   private[api] def runTransformFromObject(runTransform: RunTransformOnObject) = {
     arciteService.ask(runTransform).mapTo[TransformJobReceived]
   }
 
   private[api] def runTransformFromTransform(runTransform: RunTransformOnTransform) = {
-    arciteService.ask(runTransform).mapTo[TransformJobReceived]
-  }
-
-  private[api] def runTransformFromTransform(runTransform: RunTransformOnTransformWithExclusion) = {
     arciteService.ask(runTransform).mapTo[TransformJobReceived]
   }
 
@@ -790,32 +782,6 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
               case ok: OkTransfReceived ⇒ complete(OK -> ok)
               case TransfNotReceived(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
             }
-          }
-        }
-      } ~
-      path("on_raw_data_with_exclusions") {
-        post {
-          logger.debug("running a transform on the raw data from an experiment.")
-          entity(as[RunTransformOnRawDataWithExclusion]) {
-            rtf ⇒
-              val saved: Future[TransformJobReceived] = runTransformFromRaw(rtf)
-              onSuccess(saved) {
-                case ok: OkTransfReceived ⇒ complete(OK -> ok)
-                case TransfNotReceived(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
-              }
-          }
-        }
-      } ~
-      path("on_transform_with_exclusions") {
-        post {
-          logger.debug("running a transform from a previous transform ")
-          entity(as[RunTransformOnTransformWithExclusion]) {
-            rtf ⇒
-              val saved: Future[TransformJobReceived] = runTransformFromTransform(rtf)
-              onSuccess(saved) {
-                case ok: OkTransfReceived ⇒ complete(OK -> ok)
-                case TransfNotReceived(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
-              }
           }
         }
       } ~

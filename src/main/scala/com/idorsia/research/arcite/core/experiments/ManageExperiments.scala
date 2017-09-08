@@ -737,7 +737,7 @@ object ManageExperiments {
 
   case class BunchOfSelectables(selectables: Set[Selectable])
 
-  case class SelectedSelectables(selectableType: String, names: Set[String])
+  case class SelectedSelectables(selectableType: String, items: Set[String])
 
 }
 

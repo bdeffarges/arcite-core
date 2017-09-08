@@ -78,7 +78,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
           if (otd.transfDefId.fullName.asUID == procWTransf.get.transfDefUID) {
             transfDef = Some(otd.transfDefId)
             procWTransf.get match {
-              case ptft: ProcTransfFromTransf ⇒
+              case ptft: RunTransformOnTransform ⇒
                 context.become(waitForDependingTransformToComplete)
                 transfUID = Some(UUID.randomUUID().toString)
                 expManager ! GetTransfCompletionFromExpAndTransf(ptft.experiment, ptft.transformOrigin)
@@ -111,15 +111,15 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
       log.debug(s"preparing for transform...")
 
       procWTransf.get match {
-        case RunTransformOnObject(_, _, _) ⇒
+        case RunTransformOnObject(_, _, _, _) ⇒
           val t = Transform(td.fullName, TransformSourceFromObject(exp), parameters)
           ManageTransformCluster.getNextFrontEnd() ! t
 
-        case RunTransformOnRawData(_, _, _) ⇒
+        case RunTransformOnRawData(_, _, _, _) ⇒
           ManageTransformCluster.getNextFrontEnd() !
             Transform(td.fullName, TransformSourceFromRaw(exp), parameters)
 
-        case RunTransformOnTransform(_, _, transfOrigin, _) ⇒
+        case RunTransformOnTransform(_, _, transfOrigin, _, _) ⇒
           if (transfUID.nonEmpty) {
             ManageTransformCluster.getNextFrontEnd() !
               Transform(td.fullName, TransformSourceFromTransform(exp, transfOrigin), parameters, transfUID.get)
@@ -149,7 +149,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
       context.unbecome()
       log.info(s"was waiting for [$time] for transform to complete, done now, can proceed with next step get transform definition....")
       procWTransf.get match {
-        case ptft: ProcTransfFromTransf ⇒
+        case ptft: RunTransformOnTransform ⇒
           expManager ! GetTransfDefFromExpAndTransf(ptft.experiment, ptft.transformOrigin)
       }
 
@@ -158,7 +158,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
       log.info(s"depending on a transform that does not seem to be completed yet... will wait for $time...")
       context.system.scheduler.scheduleOnce(time) {
         procWTransf.get match {
-          case ptft: ProcTransfFromTransf ⇒
+          case ptft: RunTransformOnTransform ⇒
             expManager ! GetTransfCompletionFromExpAndTransf(ptft.experiment, ptft.transformOrigin)
         }
       }
