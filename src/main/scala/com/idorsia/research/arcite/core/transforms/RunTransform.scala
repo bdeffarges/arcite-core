@@ -34,12 +34,12 @@ object RunTransform {
 
     def parameters: Map[String, String]
 
-    def selectables: Set[SelectedSelectables]
   }
 
+
   case class RunTransformOnRawData(experiment: String, transfDefUID: String,
-                                   parameters: Map[String, String] = Map.empty,
-                                   selectables: Set[SelectedSelectables] = Set.empty) extends ProceedWithTransform
+                                   parameters: Map[String, String] = Map.empty) extends ProceedWithTransform
+
 
   case class RunTransformOnObject(experiment: String, transfDefUID: String,
                                   parameters: Map[String, String] = Map.empty,
@@ -49,5 +49,23 @@ object RunTransform {
   case class RunTransformOnTransform(experiment: String, transfDefUID: String, transformOrigin: String,
                                      parameters: Map[String, String] = Map.empty,
                                      selectables: Set[SelectedSelectables] = Set.empty) extends ProceedWithTransform
+
+
+  /**
+    * a user can also run a transform on the results of multiple other transforms from
+    * different experiments
+    */
+
+  case class ExpAndTransf(experiment: String, transform: String)
+
+  case class SelectedArtifact(name: String, path: String)
+
+  case class SelectedArtifacts(expAndTransf: ExpAndTransf, artifacts: Set[SelectedArtifact])
+
+
+  case class RunTransfOnXExpandXTransf(experiment: String, transfDefUID: String,
+                                       transformOrigins: Set[ExpAndTransf],
+                                       parameters: Map[String, String] = Map.empty,
+                                       selectedArtifacts: Set[SelectedArtifacts] = Set.empty) extends ProceedWithTransform
 
 }

@@ -42,7 +42,8 @@ import scala.concurrent.Future
 class TransformApiTests extends ApiTests {
 
   val exp1 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment1)
-  var exp1Uid:Option[String] = None // because the uid is created on the server.
+  var exp1Uid: Option[String] = None // because the uid is created on the server.
+  var selectables: Option[BunchOfSelectables] = None
 
   private var transfDef1: Option[TransformDefinitionIdentity] = None
   private var transfDef2: Option[TransformDefinitionIdentity] = None
@@ -379,12 +380,12 @@ class TransformApiTests extends ApiTests {
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
 
-      val selectables = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
-        .parseJson.convertTo[BunchOfSelectables]
+      selectables = Some(r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+        .parseJson.convertTo[BunchOfSelectables])
 
       println(selectables)
 
-      assert(selectables.selectables.nonEmpty)
+      assert(selectables.get.selectables.nonEmpty)
     }
   }
 }

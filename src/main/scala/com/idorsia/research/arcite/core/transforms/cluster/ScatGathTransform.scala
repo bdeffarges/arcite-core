@@ -115,7 +115,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
           val t = Transform(td.fullName, TransformSourceFromObject(exp), parameters)
           ManageTransformCluster.getNextFrontEnd() ! t
 
-        case RunTransformOnRawData(_, _, _, _) ⇒
+        case RunTransformOnRawData(_, _, _) ⇒
           ManageTransformCluster.getNextFrontEnd() !
             Transform(td.fullName, TransformSourceFromRaw(exp), parameters)
 
