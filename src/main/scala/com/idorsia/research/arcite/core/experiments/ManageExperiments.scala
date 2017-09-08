@@ -131,7 +131,9 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
         val cExp = origExp.get.copy(name = cexp.cloneExpProps.name,
           uid = Some(UUID.randomUUID().toString),
           description = cexp.cloneExpProps.description,
-          owner = cexp.cloneExpProps.owner, state = ExpState.NEW)
+          owner = Owner(organization = origExp.get.owner.organization,
+            person = cexp.cloneExpProps.owner.person),
+          state = ExpState.NEW)
 
         LocalExperiments.saveExperiment(cExp) match {
 
@@ -665,6 +667,7 @@ object ManageExperiments {
 
 
   //todo enable cloning with our without copying raw/meta data
+  //todo think again, should clone be in the same subfolder? Yes for now.
   case class CloneExperimentNewProps(name: String, description: String, owner: Owner)
 
   case class CloneExperiment(originExp: String, cloneExpProps: CloneExperimentNewProps)
