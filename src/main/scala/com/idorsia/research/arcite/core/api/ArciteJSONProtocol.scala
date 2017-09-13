@@ -12,7 +12,7 @@ import com.idorsia.research.arcite.core.experiments._
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor._
 import com.idorsia.research.arcite.core.meta.DesignCategories.{AllCategories, SimpleCondition}
 import com.idorsia.research.arcite.core.publish.PublishActor.{PublishInfo, PublishInfoLight, PublishedInfo, RemovePublished}
-import com.idorsia.research.arcite.core.rawdata.DefineRawAndMetaData.{RemoveAllRaw, RemoveRawData, SetRawData}
+import com.idorsia.research.arcite.core.rawdata.DefineRawAndMetaData.{LinkMetaData, RemoveAllRaw, RemoveMetaData, RemoveRawData, SetRawData}
 import com.idorsia.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments}
 import com.idorsia.research.arcite.core.secure.WithToken
 import com.idorsia.research.arcite.core.transforms.ParameterType.ParameterType
@@ -291,6 +291,9 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val sourceRawDataJson: RootJsonFormat[SetRawData] = jsonFormat3(SetRawData)
   implicit val rmRawDataJson: RootJsonFormat[RemoveRawData] = jsonFormat2(RemoveRawData)
   implicit val rmAllRawDataJson: RootJsonFormat[RemoveAllRaw] = jsonFormat1(RemoveAllRaw)
+
+  implicit val sourceMetaDataJson: RootJsonFormat[LinkMetaData] = jsonFormat2(LinkMetaData)
+  implicit val rmMetaDataJson: RootJsonFormat[RemoveMetaData] = jsonFormat2(RemoveMetaData)
 
   implicit val manyTransformersJson: RootJsonFormat[ManyTransfDefs] = jsonFormat1(ManyTransfDefs)
   implicit val oneTransformersJson: RootJsonFormat[OneTransfDef] = jsonFormat1(OneTransfDef)

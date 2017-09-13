@@ -42,7 +42,7 @@ class DefineRawAndMetaData(expManagerAct: ActorRef, eventInfo: ActorRef) extends
       srdsa ! mds
 
 
-    case rmm: RemoveMeta ⇒
+    case rmm: RemoveMetaData ⇒
       val rrda = context.actorOf(RmMetaDataAct.props(actSys, sender(), expManagerAct, eventInfo))
       rrda ! rmm
 
@@ -109,11 +109,11 @@ object DefineRawAndMetaData extends ArciteJSONProtocol with LazyLogging {
 
   sealed trait RmMetaDataResponse
 
-  case object RmMetaSuccess extends RmRawDataResponse
+  case object RmMetaSuccess extends RmMetaDataResponse
 
-  case object RmMetaCannot extends RmRawDataResponse
+  case object RmMetaCannot extends RmMetaDataResponse
 
-  case object RmMetaFailed extends RmRawDataResponse
+  case object RmMetaFailed extends RmMetaDataResponse
 
 }
 

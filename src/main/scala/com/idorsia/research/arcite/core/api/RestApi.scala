@@ -773,7 +773,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
         logger.debug(s"adding meta data (files from mounted source)...")
         entity(as[LinkMetaData]) {
           drd ⇒
-            val saved: Future[RawDataSetResponse] = defineRawDataFromSource(drd)
+            val saved: Future[RawDataSetResponse] = defineMetaDataFromSource(drd)
             onSuccess(saved) {
               case RawDataSetAdded ⇒ complete(Created -> SuccessMessage("raw data added. "))
               case RawDataSetInProgress ⇒ complete(OK -> SuccessMessage("raw data transfer started..."))
@@ -785,13 +785,13 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       path("rm") {
         delete {
           logger.debug(s"remove data from meta ")
-          entity(as[RemoveRawData]) {
+          entity(as[RemoveMetaData]) {
             rrd ⇒
-              val saved: Future[RmRawDataResponse] = deleteRawData(rrd)
+              val saved: Future[RmMetaDataResponse] = deleteMetaData(rrd)
               onSuccess(saved) {
-                case RmSuccess ⇒ complete(OK -> SuccessMessage("raw data removed. "))
-                case RmFailed ⇒ complete(BadRequest -> ErrorMessage("cannot remove data. "))
-                case RmCannot ⇒ complete(BadRequest -> ErrorMessage("cannot remove raw data, exp. probably already immutable."))
+                case RmMetaSuccess ⇒ complete(OK -> SuccessMessage("raw data removed. "))
+                case RmMetaFailed ⇒ complete(BadRequest -> ErrorMessage("cannot remove data. "))
+                case RmMetaCannot ⇒ complete(BadRequest -> ErrorMessage("cannot remove raw data, exp. probably already immutable."))
               }
           }
         }
