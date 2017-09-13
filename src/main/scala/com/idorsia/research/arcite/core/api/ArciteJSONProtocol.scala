@@ -12,7 +12,7 @@ import com.idorsia.research.arcite.core.experiments._
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor._
 import com.idorsia.research.arcite.core.meta.DesignCategories.{AllCategories, SimpleCondition}
 import com.idorsia.research.arcite.core.publish.PublishActor.{PublishInfo, PublishInfoLight, PublishedInfo, RemovePublished}
-import com.idorsia.research.arcite.core.rawdata.DefineRawData.{RemoveAllRaw, RemoveRawData, SetRawData}
+import com.idorsia.research.arcite.core.rawdata.DefineRawAndMetaData.{RemoveAllRaw, RemoveRawData, SetRawData}
 import com.idorsia.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments}
 import com.idorsia.research.arcite.core.secure.WithToken
 import com.idorsia.research.arcite.core.transforms.ParameterType.ParameterType

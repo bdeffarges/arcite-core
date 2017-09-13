@@ -8,7 +8,7 @@ import com.idorsia.research.arcite.core.TestHelpers
 import com.idorsia.research.arcite.core.experiments.ExperimentUID
 import com.idorsia.research.arcite.core.experiments.ManageExperiments.AddExperiment
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor.GetFilesFromSource
-import com.idorsia.research.arcite.core.rawdata.DefineRawData.{RemoveAllRaw, RemoveRawData, SetRawData}
+import com.idorsia.research.arcite.core.rawdata.DefineRawAndMetaData.{RemoveAllRaw, RemoveRawData, SetRawData}
 import com.idorsia.research.arcite.core.utils.FilesInformation
 
 import scala.concurrent.Future

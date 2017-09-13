@@ -21,7 +21,7 @@ import com.idorsia.research.arcite.core.experiments.ManageExperiments._
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor._
 import com.idorsia.research.arcite.core.meta.DesignCategories.{AllCategories, GetCategories}
 import com.idorsia.research.arcite.core.publish.PublishActor._
-import com.idorsia.research.arcite.core.rawdata.DefineRawData._
+import com.idorsia.research.arcite.core.rawdata.DefineRawAndMetaData._
 import com.idorsia.research.arcite.core.secure.WithToken
 import com.idorsia.research.arcite.core.transforms.RunTransform._
 import com.idorsia.research.arcite.core.transforms.TransfDefMsg._
@@ -146,6 +146,14 @@ trait ArciteServiceApi extends LazyLogging {
 
   def deleteAllRawData(rmRawData: RemoveAllRaw): Future[RmRawDataResponse] = {
     arciteService.ask(rmRawData).mapTo[RmRawDataResponse]
+  }
+
+  def defineMetaDataFromSource(metaData: LinkMetaData) = {
+    arciteService.ask(metaData).mapTo[RawDataSetResponse]
+  }
+
+  def deleteMetaData(rmMetaData: RemoveMetaData): Future[RmMetaDataResponse] = {
+    arciteService.ask(rmMetaData).mapTo[RmMetaDataResponse]
   }
 
   def getAllTransfDefs = {
@@ -749,6 +757,37 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
           entity(as[RemoveAllRaw]) {
             rrd ⇒
               val saved: Future[RmRawDataResponse] = deleteAllRawData(rrd)
+              onSuccess(saved) {
+                case RmSuccess ⇒ complete(OK -> SuccessMessage("raw data removed. "))
+                case RmFailed ⇒ complete(BadRequest -> ErrorMessage("cannot remove data. "))
+                case RmCannot ⇒ complete(BadRequest -> ErrorMessage("cannot remove raw data, exp. probably already immutable."))
+              }
+          }
+        }
+      }
+  }
+
+  def metaDataRoute = pathPrefix("meta_data") {
+    path("from_source") {
+      post {
+        logger.debug(s"adding meta data (files from mounted source)...")
+        entity(as[LinkMetaData]) {
+          drd ⇒
+            val saved: Future[RawDataSetResponse] = defineRawDataFromSource(drd)
+            onSuccess(saved) {
+              case RawDataSetAdded ⇒ complete(Created -> SuccessMessage("raw data added. "))
+              case RawDataSetInProgress ⇒ complete(OK -> SuccessMessage("raw data transfer started..."))
+              case RawDataSetFailed(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
+            }
+        }
+      }
+    } ~
+      path("rm") {
+        delete {
+          logger.debug(s"remove data from meta ")
+          entity(as[RemoveRawData]) {
+            rrd ⇒
+              val saved: Future[RmRawDataResponse] = deleteRawData(rrd)
               onSuccess(saved) {
                 case RmSuccess ⇒ complete(OK -> SuccessMessage("raw data removed. "))
                 case RmFailed ⇒ complete(BadRequest -> ErrorMessage("cannot remove data. "))

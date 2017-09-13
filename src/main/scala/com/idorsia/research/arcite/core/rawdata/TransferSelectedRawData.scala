@@ -27,7 +27,7 @@ import scala.concurrent.duration._
   * The raw data can be linked (linux symbolic links) or transferred.
   *
   */
-class TransferSelectedRawData(caller: ActorRef, targetRawFolder: Path) extends Actor with ActorLogging {
+class TransferSelectedRawData(caller: ActorRef, targetFolder: Path) extends Actor with ActorLogging {
 
   import TransferSelectedRawData._
   import TransferSelectedRawFile._

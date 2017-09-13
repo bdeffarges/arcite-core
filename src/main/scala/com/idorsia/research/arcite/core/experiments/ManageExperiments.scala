@@ -18,7 +18,7 @@ import com.idorsia.research.arcite.core.fileservice.FileServiceActor
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor._
 import com.idorsia.research.arcite.core.publish.PublishActor
 import com.idorsia.research.arcite.core.publish.PublishActor._
-import com.idorsia.research.arcite.core.rawdata.DefineRawData
+import com.idorsia.research.arcite.core.rawdata.DefineRawAndMetaData
 import com.idorsia.research.arcite.core.search.ArciteLuceneRamIndex
 import com.idorsia.research.arcite.core.search.ArciteLuceneRamIndex._
 import com.idorsia.research.arcite.core.transforms.TransformCompletionFeedback
@@ -773,7 +773,7 @@ class ExperimentActorsManager extends Actor with ActorLogging {
       val eventInfoLoggingAct = context.actorOf(Props(classOf[EventInfoLogging]), "event_logging_info")
       val fileServiceAct = context.actorOf(FileServiceActor.props(), "file_service")
       val manExpActor = context.actorOf(Props(classOf[ManageExperiments], eventInfoLoggingAct), "experiments_manager")
-      val defineRawDataAct = context.actorOf(DefineRawData.props(manExpActor, eventInfoLoggingAct), "define_raw_data")
+      val defineRawDataAct = context.actorOf(DefineRawAndMetaData.props(manExpActor, eventInfoLoggingAct), "define_raw_data")
 
       log.info(s"event info log: [$eventInfoLoggingAct]")
       log.info(s"exp manager actor: [$manExpActor]")

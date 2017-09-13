@@ -9,7 +9,7 @@ import com.idorsia.research.arcite.core.fileservice.FileServiceActor.{GetFilesFr
 import com.idorsia.research.arcite.core.meta.DesignCategories.GetCategories
 import com.idorsia.research.arcite.core.meta.MetaInfoActors
 import com.idorsia.research.arcite.core.publish.PublishActor.PublishApi
-import com.idorsia.research.arcite.core.rawdata.DefineRawData._
+import com.idorsia.research.arcite.core.rawdata.DefineRawAndMetaData._
 import com.idorsia.research.arcite.core.transforms.RunTransform._
 import com.idorsia.research.arcite.core.transforms.TransfDefMsg._
 import com.idorsia.research.arcite.core.transforms.cluster.Frontend.{GetAllJobsStatus, GetRunningJobsStatus, QueryWorkStatus}
@@ -291,6 +291,14 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
     case rrd: RemoveRaw ⇒
       defineRawDataAct forward rrd
+
+
+    case lmd: LinkMetaData ⇒
+      defineRawDataAct forward lmd
+
+
+    case rmd: RemoveMetaData ⇒
+      defineRawDataAct forward rmd
 
 
    case GetAllTransfDefs ⇒
