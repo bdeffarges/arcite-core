@@ -352,7 +352,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val workInProgressJson: RootJsonFormat[WorkInProgress] = jsonFormat2(WorkInProgress)
   implicit val runningJobsFeedbackJson: RootJsonFormat[RunningJobsFeedback] = jsonFormat1(RunningJobsFeedback)
 
-  implicit val feedbackSourceJsonFormat: RootJsonFormat[TransformDoneSource] = jsonFormat5(TransformDoneSource)
+  implicit val feedbackSourceJsonFormat: RootJsonFormat[TransformDoneSource] = jsonFormat3(TransformDoneSource)
   implicit val transformfeedbackJsonFormat: RootJsonFormat[TransformCompletionFeedback] = jsonFormat10(TransformCompletionFeedback)
   implicit val runningTransformFeedbackJsonFormat: RootJsonFormat[RunningTransformFeedback] = jsonFormat5(RunningTransformFeedback)
 

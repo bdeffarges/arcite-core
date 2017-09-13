@@ -71,15 +71,15 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
 
         val fs: TransformDoneSource = wid.transf.source match {
           case tsr: TransformSourceFromRaw ⇒
-            TransformDoneSource(exp, RAW, None, None, None)
-          case tsr: TransformSourceFromRawWithExclusion ⇒
-            TransformDoneSource(exp, RAW, None, Some(tsr.excludes), Some(tsr.excludesRegex))
+            TransformDoneSource(exp, RAW, None)
           case tst: TransformSourceFromTransform ⇒
-            TransformDoneSource(exp, TRANSFORM, Some(tst.srcTransformID), None, None)
-          case tst: TransformSourceFromTransformWithExclusion ⇒
-            TransformDoneSource(exp, TRANSFORM, Some(tst.srcTransformUID), Some(tst.excludes), Some(tst.excludesRegex))
+            TransformDoneSource(exp, TRANSFORM, Some(tst.srcTransformID))
+          case tst: TransformSourceFromTransforms ⇒
+            TransformDoneSource(exp, TRANSFORM, Some(tst.srcTransformIDs.mkString(" ; ")))
           case tob: TransformSourceFromObject ⇒
-            TransformDoneSource(exp, JSON, None, None, None)
+            TransformDoneSource(exp, JSON, None)
+          case _ : Any ⇒
+            TransformDoneSource(exp, UNKNOWN, None)
         }
 
         val params = wid.transf.parameters
@@ -133,7 +133,7 @@ object WriteFeedbackActor {
   val RAW = "RAW"
   val TRANSFORM = "TRANSFORM"
   val JSON = "JSON"
-
+  val UNKNOWN = "UNKNOWN"
 
   def props(): Props = Props(classOf[WriteFeedbackActor])
 

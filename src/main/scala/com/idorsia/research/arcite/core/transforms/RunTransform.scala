@@ -51,11 +51,15 @@ object RunTransform {
                                      selectables: Set[SelectedSelectables] = Set.empty) extends ProceedWithTransform
 
 
+  case class RunTransformOnTransforms(experiment: String, transfDefUID: String, transformOrigins: Set[String],
+                                     parameters: Map[String, String] = Map.empty,
+                                     selectables: Set[SelectedSelectables] = Set.empty) extends ProceedWithTransform
+
+
   /**
     * a user can also run a transform on the results of multiple other transforms from
     * different experiments
     */
-
   case class ExpAndTransf(experiment: String, transform: String)
 
   case class SelectedArtifact(name: String, path: String)

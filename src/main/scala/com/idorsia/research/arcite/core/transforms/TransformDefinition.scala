@@ -63,14 +63,9 @@ sealed trait TransformSource {
 
 case class TransformSourceFromRaw(experiment: Experiment) extends TransformSource
 
-case class TransformSourceFromRawWithExclusion(experiment: Experiment, excludes: Set[String] = Set(),
-                                               excludesRegex: Set[String] = Set()) extends TransformSource
-
 case class TransformSourceFromTransform(experiment: Experiment, srcTransformID: String) extends TransformSource
 
-case class TransformSourceFromTransformWithExclusion(experiment: Experiment, srcTransformUID: String,
-                                                     excludes: Set[String] = Set(),
-                                                     excludesRegex: Set[String] = Set()) extends TransformSource
+case class TransformSourceFromTransforms(experiment: Experiment, srcTransformIDs: Set[String]) extends TransformSource
 
 case class TransformSourceFromObject(experiment: Experiment) extends TransformSource
 
@@ -106,8 +101,7 @@ case class TransformHelper(transform: Transform) {
 }
 
 
-case class TransformDoneSource(experiment: String, kindOfSource: String, fromTransform: Option[String],
-                               excludes: Option[Set[String]], excludesRegex: Option[Set[String]])
+case class TransformDoneSource(experiment: String, kindOfSource: String, fromTransform: Option[String])
 
 case class TransformCompletionFeedback(transform: String, transformDefinition: FullName, source: TransformDoneSource,
                                        parameters: Map[String, String], status: TransformCompletionStatus,
