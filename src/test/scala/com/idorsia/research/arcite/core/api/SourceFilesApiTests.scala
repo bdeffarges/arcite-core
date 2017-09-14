@@ -8,7 +8,7 @@ import com.idorsia.research.arcite.core.TestHelpers
 import com.idorsia.research.arcite.core.experiments.ExperimentUID
 import com.idorsia.research.arcite.core.experiments.ManageExperiments.AddExperiment
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor.GetFilesFromSource
-import com.idorsia.research.arcite.core.rawdata.DefineRawAndMetaData.{RemoveAllRaw, RemoveRawData, SetRawData}
+import com.idorsia.research.arcite.core.rawdata.DefineRawAndMetaData.{LinkMetaData, RemoveAllRaw, RemoveRawData, SetRawData}
 import com.idorsia.research.arcite.core.utils.FilesInformation
 
 import scala.concurrent.Future
@@ -164,21 +164,53 @@ class SourceFilesApiTests extends ApiTests {
     }
   }
 
+
+  "post a link data from source to meta " should " create symlinks to the files or folder in source " in {
+
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    val jsonRequest = ByteString(LinkMetaData(exp1.uid.get,
+      Set("/arcite/raw_data/microarrays/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_1_1.txt",
+        "/arcite/raw_data/microarrays/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_1_2.txt")).toJson.prettyPrint)
+
+    val postRequest = HttpRequest(
+      HttpMethods.POST,
+      uri = s"$urlPrefix/meta_data/from_source",
+      entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
+
+    responseFuture.map { r ⇒
+      assert(r.status == StatusCodes.OK || r.status == StatusCodes.Created)
+
+      val message = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+        .parseJson.convertTo[SuccessMessage].message
+      assert(message.contains("almost linked"))
+    }
+  }
+
+
   " once transferred total raw files for experiment " should " eventually be 16 " in {
     implicit val executionContext = system.dispatcher
     import scala.concurrent.duration._
     getAllFilesForExperiment(exp1.uid.get)
-    eventually(timeout(2 minutes), interval(10 seconds)) {
+    eventually(timeout(4 minutes), interval(10 seconds)) {
       getAllFilesForExperiment(exp1.uid.get)
-      println(s"checking the number of copied files... ${filesInfo.fold(0)(_.rawFiles.size)}")
-      assert(filesInfo.fold(0)(_.rawFiles.size) == 16)
+//      println(filesInfo)
+      val rawFileSize = filesInfo.fold(0)(_.rawFiles.size)
+      println(s"number of copied files... $rawFileSize")
+      assert(rawFileSize == 16)
     }
   }
 
   "check the right files have been copied and renamed " should
     " confirm that some files have been renamed after being copied " in {
 
-    val rawFileNames = filesInfo.get.rawFiles.map(_.files)
+    val rawFileNames = filesInfo.get.rawFiles.map(_.name)
     assert(rawFileNames.contains("161125_br_257236312183_S01_GE2_1105_Oct12_1_1.txt"))
     assert(rawFileNames.contains("161125_br_257236312183_S01_GE2_1105_Oct12_1_2.txt"))
     assert(rawFileNames.contains("161125_br_257236312183_S01_GE2_1105_Oct12_1_3.txt"))
@@ -327,7 +359,7 @@ class SourceFilesApiTests extends ApiTests {
   "check the right symlinks have been created " should
     " confirm the 8 files which have been linked. " in {
 
-    val rawFileNames = filesInfo.get.rawFiles.get.files.map(_.name)
+    val rawFileNames = filesInfo.get.rawFiles.map(_.name)
     assert(rawFileNames.contains("161125_br_257236312183_S01_GE2_1105_Oct12_1_1.txt"))
     assert(rawFileNames.contains("161125_br_257236312183_S01_GE2_1105_Oct12_1_2.txt"))
     assert(rawFileNames.contains("161125_br_257236312183_S01_GE2_1105_Oct12_1_3.txt"))
@@ -338,5 +370,5 @@ class SourceFilesApiTests extends ApiTests {
     assert(rawFileNames.contains("161125_br_257236312183_S01_GE2_1105_Oct12_2_4.txt"))
   }
 
-  //todo test case where the experiment is immutable should not delet
+  //todo test case where the experiment is immutable should not delete
 }

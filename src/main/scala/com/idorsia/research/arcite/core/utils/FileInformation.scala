@@ -41,13 +41,6 @@ object FileVisitor extends LazyLogging {
     }
   }
 
-  def getFilesInformation2(subFolder: Path): Option[FilesInformation] = {
-    val filesInfo = getFilesInformation(subFolder)
-    if (filesInfo.nonEmpty)
-      Some(FilesInformation(filesInfo))
-    else None
-  }
-
   def getFilesInformation3(subFolder: Path): FilesInformation =
     FilesInformation(getFilesInformation(subFolder))
 

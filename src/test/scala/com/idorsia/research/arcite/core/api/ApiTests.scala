@@ -1,10 +1,14 @@
 package com.idorsia.research.arcite.core.api
 
 import akka.actor.ActorSystem
+import akka.actor.Status.Failure
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.StatusCodes.Success
 import akka.http.scaladsl.model.{HttpEntity, HttpRequest, HttpResponse, StatusCodes}
+import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.util.ByteString
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor.AllFilesInformation
 import com.idorsia.research.arcite.core.transforms.{TransformCompletionFeedback, TransformCompletionStatus}
 import com.typesafe.config.ConfigFactory
@@ -88,22 +92,28 @@ class ApiTests extends AsyncFlatSpec with Matchers with ArciteJSONProtocol
     }
   }
 
+  //todo seems like a hack, should be improved.
   def getAllFilesForExperiment(exp: String): Unit = {
     implicit val executionContext = system.dispatcher
+    println(s"asking for files for experiment $exp...")
 
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)
 
-    val responseFuture: Future[HttpResponse] =
+    val response: Future[HttpResponse] =
       Source.single(HttpRequest(uri = s"$urlPrefix/experiment/${exp}/files"))
         .via(connectionFlow).runWith(Sink.head)
 
     import spray.json._
+    response.map { r ⇒
+      assert(r.status == StatusCodes.OK)
 
-    responseFuture.map { r ⇒
-      if (r.status == StatusCodes.OK) {
-        filesInfo = Some(r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+      try {
+        filesInfo = Some(r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8") //todo improve, the HttpEntity.Strict will not work with long results, il will instead be a Default.
           .parseJson.convertTo[AllFilesInformation])
+      } catch {
+        case exc: Exception ⇒
+          println(exc.toString)
       }
     }
   }
