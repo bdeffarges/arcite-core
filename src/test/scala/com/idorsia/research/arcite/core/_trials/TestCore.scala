@@ -35,7 +35,7 @@ class TestCore extends FlatSpec with Matchers {
 
   "get file information " should "return information about all files in subfolder and children " in {
 
-    val files = FileVisitor.getFilesInformation2(folder1.toPath)
+    val files = FileVisitor.getFilesInformation(folder1.toPath)
 
     println(files)
     

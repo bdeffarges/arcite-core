@@ -81,9 +81,9 @@ class FileServiceActor(mounts: Option[Map[String, SourceInformation]]) extends A
           sender() ! FileVisitor.getFilesInformation3(ev.userMetaFolderPath)
 
         case FromAllFolders(_) ⇒
-          sender() ! AllFilesInformation(rawFiles = FileVisitor.getFilesInformation2(ev.rawFolderPath),
-            userRawFiles = FileVisitor.getFilesInformation2(ev.userRawFolderPath),
-            metaFiles = FileVisitor.getFilesInformation2(ev.userMetaFolderPath))
+          sender() ! AllFilesInformation(rawFiles = FileVisitor.getFilesInformation(ev.rawFolderPath),
+            userRawFiles = FileVisitor.getFilesInformation(ev.userRawFolderPath),
+            metaFiles = FileVisitor.getFilesInformation(ev.userMetaFolderPath))
       }
 
 
@@ -149,8 +149,8 @@ object FileServiceActor {
 
   case class GetAllFiles(fromExp: FilesFromExperiment)
 
-  case class AllFilesInformation(rawFiles: Option[FilesInformation] = None,
-                                 userRawFiles: Option[FilesInformation] = None,
-                                 metaFiles: Option[FilesInformation] = None)
+  case class AllFilesInformation(rawFiles: Set[FileInformation] = Set.empty,
+                                 userRawFiles: Set[FileInformation] = Set.empty,
+                                 metaFiles: Set[FileInformation] = Set.empty)
 
 }
