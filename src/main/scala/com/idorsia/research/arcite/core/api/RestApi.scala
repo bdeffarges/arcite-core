@@ -320,6 +320,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             organizationRoute ~
             treeOfTransforms ~
             runningJobsFeedbackRoute ~
+          new GlobPublishRoute(arciteService, executionContext, requestTimeout).publishRoute ~
             defaultRoute
         }
       } ~
@@ -840,7 +841,7 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
       }
   }
 
-  //todo not yet push but only pull...
+  //todo not yet push but only pull for job status...
   def transformFeedbackRoute = pathPrefix("job_status" / Segment) {
     workID ⇒
       pathEnd {

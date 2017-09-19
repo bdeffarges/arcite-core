@@ -11,7 +11,6 @@ import com.idorsia.research.arcite.core.api.ArciteService.{ArtifactPublished, De
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.AddLog
 import com.idorsia.research.arcite.core.eventinfo.{ExpLog, LogCategory, LogType}
 import com.idorsia.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor}
-import com.idorsia.research.arcite.core.publish.PublishActor._
 import com.idorsia.research.arcite.core.utils
 import spray.json._
 
@@ -41,6 +40,8 @@ import scala.collection.convert.wrapAsScala._
   *
   */
 class PublishActor(eventInfoAct: ActorRef) extends Actor with ActorLogging with ArciteJSONProtocol {
+
+  import PublishActor._
 
   override def receive: Receive = {
 
@@ -88,7 +89,7 @@ class PublishActor(eventInfoAct: ActorRef) extends Actor with ActorLogging with 
 
 
     case msg: Any ⇒
-      log.debug(s"don't know what to do with message $msg... ")
+      log.debug(s"I'm the publish actor and I don't know what to do with this message [$msg]... ")
   }
 }
 

@@ -8,6 +8,8 @@ import com.idorsia.research.arcite.core.experiments.{Experiment, ExperimentSumma
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor.{GetFilesFromSource, GetSourceFolders}
 import com.idorsia.research.arcite.core.meta.DesignCategories.GetCategories
 import com.idorsia.research.arcite.core.meta.MetaInfoActors
+import com.idorsia.research.arcite.core.publish.GlobalPublishActor.GlobalPublishApi
+import com.idorsia.research.arcite.core.publish.{GlobalPublishActor, PublishActor}
 import com.idorsia.research.arcite.core.publish.PublishActor.PublishApi
 import com.idorsia.research.arcite.core.rawdata.DefineRawAndMetaData._
 import com.idorsia.research.arcite.core.transforms.RunTransform._
@@ -199,9 +201,11 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
   private val metaInfoActPath = s"${metaActSys}/user/${MetaInfoActors.getMetaInfoActorName}"
   private val metaActor = context.actorSelection(metaInfoActPath)
 
+  //publish global actor
+  private val pubGlobActor = context.actorOf(GlobalPublishActor.props)
+
   import ArciteService._
 
-  // todo all with requester could be replaced by forward
   override def receive = {
     case gae: GetAllExperiments ⇒
       expManager forward GetAllExperiments(gae.page, gae.max)
@@ -209,6 +213,7 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
     case se: SearchExperiments ⇒
       expManager forward se
+
 
     case ge: GetExperiment ⇒
       expManager forward ge
@@ -368,6 +373,12 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
     case GetCategories ⇒
       metaActor forward GetCategories
+
+
+      // global publish
+    case gpa : GlobalPublishApi ⇒
+      pubGlobActor forward gpa
+
 
     //don't know what to do with this message...
     case msg: Any ⇒ log.error(s"don't know what to do with the passed message [$msg] in ${getClass}")

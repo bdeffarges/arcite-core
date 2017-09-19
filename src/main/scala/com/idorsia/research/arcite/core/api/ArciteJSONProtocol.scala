@@ -11,6 +11,7 @@ import com.idorsia.research.arcite.core.experiments.ManageExperiments.{BunchOfSe
 import com.idorsia.research.arcite.core.experiments._
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor._
 import com.idorsia.research.arcite.core.meta.DesignCategories.{AllCategories, SimpleCondition}
+import com.idorsia.research.arcite.core.publish.GlobalPublishActor.{GetAllGlobPublishedItems, _}
 import com.idorsia.research.arcite.core.publish.PublishActor.{PublishInfo, PublishInfoLight, PublishedInfo, RemovePublished}
 import com.idorsia.research.arcite.core.rawdata.DefineRawAndMetaData.{LinkMetaData, RemoveAllRaw, RemoveMetaData, RemoveRawData, SetRawData}
 import com.idorsia.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments}
@@ -292,6 +293,13 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val rmRawDataJson: RootJsonFormat[RemoveRawData] = jsonFormat2(RemoveRawData)
   implicit val rmAllRawDataJson: RootJsonFormat[RemoveAllRaw] = jsonFormat1(RemoveAllRaw)
 
+  implicit val globalPublishedItemLightJson: RootJsonFormat[GlobalPublishedItemLight] = jsonFormat3(GlobalPublishedItemLight)
+  implicit val globalPublishedItemJson: RootJsonFormat[GlobalPublishedItem] = jsonFormat3(GlobalPublishedItem)
+  implicit val publishGlobItemJson: RootJsonFormat[PublishGlobalItem] = jsonFormat1(PublishGlobalItem)
+  implicit val getGlobPubItemJson: RootJsonFormat[GetGlobalPublishedItem] = jsonFormat1(GetGlobalPublishedItem)
+  implicit val getAllGlobPubItemsJson: RootJsonFormat[GetAllGlobPublishedItems] = jsonFormat1(GetAllGlobPublishedItems)
+
+
   implicit val sourceMetaDataJson: RootJsonFormat[LinkMetaData] = jsonFormat2(LinkMetaData)
   implicit val rmMetaDataJson: RootJsonFormat[RemoveMetaData] = jsonFormat2(RemoveMetaData)
 
@@ -501,3 +509,5 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val bunchOfSelectableJson: RootJsonFormat[BunchOfSelectables] = jsonFormat1(BunchOfSelectables)
   implicit val selectedSelectablesJson: RootJsonFormat[SelectedSelectables] = jsonFormat2(SelectedSelectables)
 }
+
+

@@ -161,7 +161,7 @@ object ArciteLuceneRamIndex {
 
   case class IndexingCompletedForExp(exp: Experiment)
 
-  // todo should only return hascode-digest
+  // todo should only return hashcode-digest
 
   case object IndexCompletedForThisTime
 

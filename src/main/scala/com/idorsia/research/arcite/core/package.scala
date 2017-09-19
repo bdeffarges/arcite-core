@@ -28,9 +28,14 @@ package object core {
 
   if (!logsPath.toFile.exists) logsPath.toFile.mkdir()
 
+  val globalPublishPath: Path = home resolve "published"
+
+  if (!globalPublishPath.toFile.exists) globalPublishPath.toFile.mkdirs()
+
   logger.debug(s"data Path: $dataPath")
   logger.debug(s"archive path: $archivePath")
   logger.debug(s"logs path: $logsPath")
+  logger.debug(s"publish path: $globalPublishPath")
 
   // because of Docker and absolute paths vs mounted directory.
   // So we can always substitute this folder at later stage.
