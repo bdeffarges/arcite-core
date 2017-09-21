@@ -26,13 +26,11 @@ class ArciteLuceneRamIndex extends Actor with ActorLogging {
 
   private lazy val executors = Executors.newCachedThreadPool
 
-  private lazy val indexReader = DirectoryReader.open(directory)
-  private lazy val indexSearcher = new IndexSearcher(indexReader, executors)
+  private lazy val indexWriter = new IndexWriter(directory,
+    new IndexWriterConfig(ArciteAnalyzerFactory.perfieldAnalyzerWrapper))
 
   override def receive: Receive = {
     case IndexExperiment(exp) ⇒
-      val indexWriter = new IndexWriter(directory,
-        new IndexWriterConfig(ArciteAnalyzerFactory.perfieldAnalyzerWrapper))
 
       val d = new Document
       d.add(new TextField(luc_name, exp.name, Field.Store.NO))
@@ -45,17 +43,12 @@ class ArciteLuceneRamIndex extends Actor with ActorLogging {
       d.add(new TextField(luc_content, content, Field.Store.NO))
       d.add(new StringField(luc_uid, exp.uid.get, Field.Store.YES))
       indexWriter.addDocument(d)
-
-      indexWriter.close()
+      indexWriter.commit()
 
 
     case RemoveFromIndex(exp) ⇒
-
-      val indexWriter = new IndexWriter(directory,
-        new IndexWriterConfig(ArciteAnalyzerFactory.perfieldAnalyzerWrapper))
-
       indexWriter.deleteDocuments(new TermQuery(new Term(luc_uid, exp.uid.get)))
-      indexWriter.close()
+      indexWriter.commit()
 
 
     case se: SearchExperimentsWithReq ⇒
@@ -85,6 +78,9 @@ class ArciteLuceneRamIndex extends Actor with ActorLogging {
       FoundExperiments(res)
     }
 
+    val indexReader = DirectoryReader.open(directory)
+    val indexSearcher = new IndexSearcher(indexReader, executors)
+
     // search for name
     val nameHits1 = indexSearcher.search(new TermQuery(new Term(luc_name, input.toLowerCase)), maxHits)
     if (nameHits1.totalHits > 0) {
@@ -113,7 +109,7 @@ class ArciteLuceneRamIndex extends Actor with ActorLogging {
         .map(uuid ⇒ FoundExperiment(uuid, "ngrams", 3)).toList
     }
 
-     val res = returnValue(results)
+    val res = returnValue(results)
 
     log.debug(s"total returned results = ${res.experiments.size}")
 
@@ -152,6 +148,7 @@ object ArciteLuceneRamIndex {
 
   //todo only for testing?
   case class FoundExperiments(experiments: List[FoundExperiment])
+
   case class FoundExperimentsWithReq(foundExps: FoundExperiments, req: ActorRef)
 
   // sends back the number of results
