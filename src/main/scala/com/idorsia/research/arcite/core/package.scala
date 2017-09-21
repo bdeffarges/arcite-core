@@ -30,7 +30,9 @@ package object core {
 
   val globalPublishPath: Path = home resolve "published"
 
-  if (!globalPublishPath.toFile.exists) globalPublishPath.toFile.mkdirs()
+  val globalPublishPathIndex: Path = globalPublishPath resolve "index"
+
+  if (!globalPublishPathIndex.toFile.exists) globalPublishPath.toFile.mkdirs()
 
   logger.debug(s"data Path: $dataPath")
   logger.debug(s"archive path: $archivePath")

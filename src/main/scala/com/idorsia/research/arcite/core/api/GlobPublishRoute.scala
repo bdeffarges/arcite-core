@@ -66,7 +66,7 @@ class GlobPublishRoute(arciteService: ActorRef,
       } ~
       post {
         logger.debug(s"adding global item. ")
-        entity(as[PublishGlobalItem]) {
+        entity(as[GlobalPublishedItemLight]) {
           drd ⇒
             val saved: Future[PublishResponse] = publishGPI(drd)
             onSuccess(saved) {
@@ -95,8 +95,8 @@ class GlobPublishRoute(arciteService: ActorRef,
     arciteService.ask(SearchGlobalPublishedItems(search, maxHits)).mapTo[FoundGlobPubItems]
   }
 
-  private[api] def publishGPI(pubItem: PublishGlobalItem): Future[PublishResponse] = {
-    arciteService.ask(pubItem).mapTo[PublishResponse]
+  private[api] def publishGPI(pubItem: GlobalPublishedItemLight): Future[PublishResponse] = {
+    arciteService.ask(PublishGlobalItem(pubItem)).mapTo[PublishResponse]
   }
 
   private[api] def rmGPI(uid: String): Future[PublishResponse] = {

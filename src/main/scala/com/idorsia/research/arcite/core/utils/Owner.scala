@@ -21,6 +21,7 @@ case class Owner(organization: String, person: String) {
 
 object DefaultOwner {
   val systemOwner = Owner("system", "arcite")
+  val anonymous = Owner("system", "anonymous")
 }
 
 /**

@@ -1,5 +1,9 @@
 package com.idorsia.research.arcite.core.publish
 
+import com.idorsia.research.arcite.core
+import com.idorsia.research.arcite.core.api.ArciteJSONProtocol
+import com.idorsia.research.arcite.core.utils
+import com.idorsia.research.arcite.core.utils.{DefaultOwner, Owner}
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption.CREATE_NEW
@@ -7,12 +11,6 @@ import java.util.UUID
 import java.util.concurrent.Executors
 
 import akka.actor.{Actor, ActorLogging, Props}
-import com.idorsia.research.arcite.core
-import com.idorsia.research.arcite.core.api.ArciteJSONProtocol
-import com.idorsia.research.arcite.core.api.ArciteService.DefaultSuccess
-import com.idorsia.research.arcite.core.search.ArciteLuceneRamIndex.{luc_content, luc_description, luc_name, luc_uid}
-import com.idorsia.research.arcite.core.utils
-import com.idorsia.research.arcite.core.utils.Owner
 import org.apache.lucene.analysis.Analyzer
 import org.apache.lucene.analysis.Analyzer.TokenStreamComponents
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer
@@ -20,8 +18,8 @@ import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper
 import org.apache.lucene.analysis.ngram.NGramTokenizer
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.document.{Document, Field, StringField, TextField}
-import org.apache.lucene.index.{DirectoryReader, IndexWriter, IndexWriterConfig, Term}
-import org.apache.lucene.search.{FuzzyQuery, IndexSearcher, TermQuery}
+import org.apache.lucene.index._
+import org.apache.lucene.search._
 import org.apache.lucene.store.RAMDirectory
 import spray.json._
 
@@ -52,23 +50,25 @@ class GlobalPublishActor extends Actor with ActorLogging with ArciteJSONProtocol
 
   import GlobalPublishActor._
 
-  val directory = new RAMDirectory
+  private lazy val directory = new RAMDirectory
 
   private lazy val executors = Executors.newCachedThreadPool
 
-  private lazy val indexReader = DirectoryReader.open(directory)
-  private lazy val indexSearcher = new IndexSearcher(indexReader, executors)
-
   private var globalPublished: Map[String, GlobalPublishedItem] = Map.empty
+
+  private lazy val indexWriter = new IndexWriter(directory,
+    new IndexWriterConfig(PublishedAnalyzerFactory.perfieldAnalyzerWrapper))
 
   private def readPublishFiles(): List[GlobalPublishedItem] = {
     import scala.collection.convert.wrapAsScala._
 
     val deleted = core.globalPublishPath.toFile.listFiles
-      .filter(_.isFile).filter(_.getName.endsWith("_rm"))
+      .filter(_.isFile).map(_.getName).filter(_.startsWith("rm_"))
+
+    log.debug(s"deleted= ${deleted.mkString(",")}")
 
     core.globalPublishPath.toFile.listFiles.
-      filter(_.isFile).filterNot(deleted.contains)
+      filter(_.isFile).filterNot(f ⇒ deleted.contains(f.getName) || deleted.contains(f.getName.substring(3)))
       .map(f ⇒ Files.readAllLines(f.toPath, StandardCharsets.UTF_8).toList.mkString(" "))
       .map(st ⇒ parseToPublishedItem(st)).filter(_.isDefined).map(_.get).toSet[GlobalPublishedItem]
       .toList.sortBy(_.date)
@@ -81,7 +81,7 @@ class GlobalPublishActor extends Actor with ActorLogging with ArciteJSONProtocol
       res = Some(r)
     } catch {
       case exc: Exception ⇒
-        log.error(s"could not parse... $json")
+        log.error(s"could not parse... [$json] exception was [${exc.getMessage}]")
     }
     res
   }
@@ -89,20 +89,23 @@ class GlobalPublishActor extends Actor with ActorLogging with ArciteJSONProtocol
   override def preStart(): Unit = {
     val allPub = readPublishFiles()
     globalPublished = allPub.map(gpi ⇒ gpi.uid -> gpi).toMap
-    allPub.foreach(p ⇒ self ! IndexItem(p))
+    indexGlobPub(allPub: _*)
+    log.info(s"there is a total of ${globalPublished.size} published global items.")
   }
 
 
   override def receive: Receive = {
 
-    case PublishGlobalItem(globalPublish) ⇒
+    case PublishGlobalItem(gpL) ⇒
+      val globalPublish = GlobalPublishedItem(gpL)
 
       Files.write(core.globalPublishPath resolve globalPublish.uid,
         globalPublish.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
 
       globalPublished += globalPublish.uid -> globalPublish
+      log.debug(s"adding a global publish ${globalPublish}, total published ${globalPublished.size}")
 
-      self ! IndexItem(globalPublish)
+      indexGlobPub(globalPublish)
 
       sender() ! GlobPubSuccess(globalPublish.uid)
 
@@ -119,83 +122,125 @@ class GlobalPublishActor extends Actor with ActorLogging with ArciteJSONProtocol
 
     case searchGl: SearchGlobalPublishedItems ⇒
       log.info(s"searching for published artifacts...search=[$searchGl]")
-      sender() ! search(searchGl.search.toLowerCase.trim, searchGl.maxHits)
+      sender() ! FoundGlobPubItems(search(searchGl.search.toLowerCase.trim, searchGl.maxHits))
 
 
     case GetAllGlobPublishedItems(maxHits) ⇒
-      sender() ! FoundGlobPubItems(globalPublished.take(maxHits).values.toSeq)
-
-
-    case item: IndexItem ⇒
-      val item.item = item.item
-      val indexWriter = new IndexWriter(directory,
-        new IndexWriterConfig(PublishedAnalyzerFactory.perfieldAnalyzerWrapper))
-
-      val d = new Document
-      d.add(new TextField(LUCENE_DESCRIPTION, item.item.globalPubInf.description, Field.Store.NO))
-      d.add(new TextField(LUCENE_USER, item.item.globalPubInf.owner.person, Field.Store.NO))
-      d.add(new TextField(LUCENE_ORGA, item.item.globalPubInf.owner.organization, Field.Store.NO))
-      d.add(new StringField(LUCENE_UID, item.item.uid, Field.Store.YES))
-
-      val content =
-        s"""${item.item.globalPubInf.description} ${item.item.globalPubInf.owner}
-           |${item.item.globalPubInf.items.mkString(" ")}""".toLowerCase
-
-      d.add(new TextField(LUCENE_CONTENT, content, Field.Store.NO))
-      indexWriter.addDocument(d)
-
-      indexWriter.close()
+      sender() ! FoundGlobPubItems(globalPublished.values.toList.sortBy(_.date).reverse.take(maxHits))
 
 
     case rm: RmGloPubItem ⇒
       val gp = globalPublished.get(rm.uid)
       if (gp.isDefined) {
-        Files.write(core.globalPublishPath resolve s"${gp.get.uid}_rm",
+        val uid = gp.get.uid
+        log.debug(s"removing glob. pub. item [${uid}]")
+        Files.write(core.globalPublishPath resolve s"rm_$uid",
           "__MARKED_AS_DELETED__".getBytes(StandardCharsets.UTF_8), CREATE_NEW)
 
-        val indexWriter = new IndexWriter(directory,
-          new IndexWriterConfig(PublishedAnalyzerFactory.perfieldAnalyzerWrapper))
-        indexWriter.deleteDocuments(new TermQuery(new Term(LUCENE_UID, rm.uid)))
-        indexWriter.close()
-        globalPublished -= rm.uid
+        try {
+          val indexWriter = new IndexWriter(directory,
+            new IndexWriterConfig(PublishedAnalyzerFactory.perfieldAnalyzerWrapper))
+          indexWriter.deleteDocuments(new Term(LUCENE_UID, uid))
+          indexWriter.commit()
+        } catch {
+          case exc: Exception ⇒
+            log.error(exc.getMessage)
+        }
 
-        sender() ! GlobPubDeleted(s"published ${rm.uid} removed")
+        globalPublished -= uid
+        log.debug(s"removed a pub. glob. item, current total: ${globalPublished.size}")
+
+        sender() ! GlobPubDeleted(s"published ${uid} removed")
       } else {
         sender() ! GlobPubError(s"could not find ${rm.uid} to be deleted")
       }
-
 
     case msg: Any ⇒
       log.debug(s"I'm the global publish actor and I don't know what to do with this message [$msg]... ")
   }
 
-  def search(input: String, maxHits: Int): FoundGlobPubItems = {
-    val ngramSearch = if (input.length > maxNGrams) input.substring(0, maxNGrams) else input
-    log.info(s"search for: $ngramSearch")
+  def indexGlobPub(globPubItems: GlobalPublishedItem*): Unit = {
+    try {
 
-    var results: Seq[GlobalPublishedItem] = Seq.empty
+      globPubItems.foreach { glPub ⇒
+        val glPL = glPub.globalPubInf
+        val d = new Document
+        d.add(new StringField(LUCENE_UID, glPub.uid, Field.Store.YES))
+        d.add(new TextField(LUCENE_DESCRIPTION, glPL.description, Field.Store.NO))
+        d.add(new TextField(LUCENE_USER, glPL.owner.person, Field.Store.NO))
+        d.add(new TextField(LUCENE_ORGA, glPL.owner.organization, Field.Store.NO))
+
+        val content =
+          s"""${glPL.description} ${glPL.owner.organization} ${glPL.owner.person}
+             |${glPL.items.mkString(" ")}""".toLowerCase
+
+        d.add(new TextField(LUCENE_CONTENT, content, Field.Store.NO))
+        indexWriter.addDocument(d)
+        log.debug(s"indexed ${d}")
+        log.debug(s"current number of docs in index: ${indexWriter.numDocs()}")
+      }
+      indexWriter.commit()
+
+    } catch {
+      case exc: Exception ⇒
+        log.error(exc.getMessage)
+    }
+  }
+
+  private def search(input: String, maxHits: Int): List[GlobalPublishedItem] = {
+    val indexReader = DirectoryReader.open(directory)
+    val indexSearcher = new IndexSearcher(indexReader, executors)
+
+    log.debug(
+      s"""searching for [$input], current published:
+         |[${
+        globalPublished.values
+          .map(gp ⇒ s"[${gp.uid}/${gp.globalPubInf.description}]").mkString(",")
+      }]""".stripMargin)
+
+    var results: List[GlobalPublishedItem] = List.empty
 
     // search for description
-    val descHit = indexSearcher.search(new TermQuery(new Term(LUCENE_DESCRIPTION, input.toLowerCase)), maxHits)
-    if (descHit.totalHits > 0) {
-      log.debug(s"found ${descHit.totalHits} in description ")
-      results ++= descHit.scoreDocs.map(d ⇒ indexSearcher.doc(d.doc).getField(LUCENE_UID).stringValue())
-        .map(uuid ⇒ globalPublished.get(uuid)).filter(_.isDefined).map(_.get).toSeq
+    try {
+      val descHit = indexSearcher.search(new TermQuery(new Term(LUCENE_DESCRIPTION, input.toLowerCase)), maxHits)
+      if (descHit.totalHits > 0) {
+        log.debug(s"found ${descHit.totalHits} in field description in RAM index")
+        val found: List[GlobalPublishedItem] = descHit.scoreDocs.map(d ⇒ indexSearcher.doc(d.doc).getField(LUCENE_UID).stringValue())
+          .map(uuid ⇒ globalPublished.get(uuid)).filter(_.isDefined).map(_.get).toList
+        log.debug(s"found in (description) index= ${found.mkString(",")}")
+        results ++= found
 
-      if (results.size >= maxHits) return FoundGlobPubItems(results)
+        results = results.distinct
+        if (results.size >= maxHits) {
+          log.debug(s"total returned results = ${results.size}")
+          return results.sortBy(_.date).reverse
+        }
+      }
+
+      val ngramSearch = if (input.length > maxNGrams) input.substring(0, maxNGrams) else input
+      log.info(s"ngrams, searching for: $ngramSearch")
+
+      // fuzzy and ngrams searching
+      val fuzzyHits = indexSearcher.search(new FuzzyQuery(new Term(LUCENE_CONTENT, ngramSearch.toLowerCase())), maxHits)
+      if (fuzzyHits.totalHits > 0) {
+        log.debug(s"found ${fuzzyHits.totalHits} in fuzzy lowercase ngrams search in content in RAM index")
+        val foundUIDs = fuzzyHits.scoreDocs.map(d ⇒ indexSearcher.doc(d.doc).getField(LUCENE_UID).stringValue())
+        log.debug(s"foundUIDs: ${foundUIDs.mkString(",")}")
+        val found: List[GlobalPublishedItem] = foundUIDs.map(uuid ⇒ globalPublished.get(uuid))
+          .filter(_.isDefined).map(_.get).toList
+
+        log.debug(s"found in (fuzzy) index= ${found.mkString(",")}")
+
+        results ++= found
+      }
+
+      results = results.distinct
+      log.debug(s"total returned results = ${results.size}")
+    } catch {
+      case exc: Exception ⇒
+        log.error(s"error while searching... ${exc.getMessage}")
     }
-
-    // fuzzy and ngrams searching
-    val fuzzyHits = indexSearcher.search(new FuzzyQuery(new Term(luc_content, ngramSearch.toLowerCase())), maxHits)
-    if (fuzzyHits.totalHits > 0) {
-      log.debug(s"found ${fuzzyHits.totalHits} in fuzzy lowercase ngrams search")
-      results ++= fuzzyHits.scoreDocs.map(d ⇒ indexSearcher.doc(d.doc).getField(luc_uid).stringValue())
-        .map(uuid ⇒ globalPublished.get(uuid)).filter(_.isDefined).map(_.get).toSeq
-    }
-
-    log.debug(s"total returned results = ${results.size}")
-
-    FoundGlobPubItems(results)
+    results.sortBy(_.date).reverse
   }
 }
 
@@ -210,18 +255,17 @@ object GlobalPublishActor {
   val LUCENE_UID = "uid"
   val LUCENE_CONTENT = "content"
 
-  case class GlobalPublishedItemLight(description: String, owner: Owner, items: Seq[String])
+  case class GlobalPublishedItemLight(description: String, items: Seq[String],
+                                      owner: Owner = DefaultOwner.anonymous)
 
   case class GlobalPublishedItem(globalPubInf: GlobalPublishedItemLight,
                                  uid: String = UUID.randomUUID().toString,
                                  date: String = utils.getCurrentDateAsString())
 
-  case class IndexItem(item: GlobalPublishedItem)
-
 
   sealed trait GlobalPublishApi
 
-  case class PublishGlobalItem(globalPublish: GlobalPublishedItem) extends GlobalPublishApi
+  case class PublishGlobalItem(globalPublish: GlobalPublishedItemLight) extends GlobalPublishApi
 
   case class GetGlobalPublishedItem(uid: String) extends GlobalPublishApi
 
@@ -237,7 +281,7 @@ object GlobalPublishActor {
 
   case class FoundGlobPubItem(published: GlobalPublishedItem) extends PublishResponse
 
-  case class FoundGlobPubItems(published: Seq[GlobalPublishedItem]) extends PublishResponse
+  case class FoundGlobPubItems(published: List[GlobalPublishedItem]) extends PublishResponse
 
   case class GlobPubSuccess(uid: String) extends PublishResponse
 
@@ -265,7 +309,6 @@ object GlobalPublishActor {
     private val standardAnalyzer = new StandardAnalyzer
     private val nGramAnalyzer = new NGramPublishAnalyzer
 
-    perFieldAnalyzer += ((LUCENE_UID, whiteSpaceAnalyzer))
     perFieldAnalyzer += ((LUCENE_DESCRIPTION, standardAnalyzer))
     perFieldAnalyzer += ((LUCENE_ORGA, standardAnalyzer))
     perFieldAnalyzer += ((LUCENE_USER, standardAnalyzer))

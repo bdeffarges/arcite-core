@@ -37,10 +37,9 @@ import spray.json._
   */
 class GlobPubTests extends ApiTests {
 
-  val random = UUID.randomUUID().toString
-  val description1 = s"test data $random"
-  val description2 = s"hello world $random"
-  val description3 = s"hello Neptune $random"
+  val description1 = s"test data ${UUID.randomUUID().toString.substring(0,5)}"
+  val description2 = s"hello world ${UUID.randomUUID().toString.substring(0,5)}"
+  val description3 = s"hello Neptune ${UUID.randomUUID().toString.substring(0,5)}"
 
   var selected1: Option[GlobalPublishedItem] = None
   var selected2: Option[GlobalPublishedItem] = None
@@ -54,9 +53,8 @@ class GlobPubTests extends ApiTests {
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)
 
-    val jsonRequest = ByteString(PublishGlobalItem(GlobalPublishedItem(
-      GlobalPublishedItemLight(description1, TestHelpers.owner1,
-        Seq("/arcite/test/data")))).toJson.prettyPrint)
+    val jsonRequest = ByteString(GlobalPublishedItemLight(description1, Seq("/arcite/test/data"),
+      TestHelpers.owner1).toJson.prettyPrint)
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
@@ -81,9 +79,8 @@ class GlobPubTests extends ApiTests {
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)
 
-    val jsonRequest = ByteString(PublishGlobalItem(GlobalPublishedItem(
-      GlobalPublishedItemLight(description2, TestHelpers.owner1,
-        Seq("/arcite/hello/world")))).toJson.prettyPrint)
+    val jsonRequest = ByteString(GlobalPublishedItemLight(description2,
+      Seq("/arcite/hello/world"), TestHelpers.owner1).toJson.prettyPrint)
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
@@ -109,9 +106,8 @@ class GlobPubTests extends ApiTests {
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)
 
-    val jsonRequest = ByteString(PublishGlobalItem(GlobalPublishedItem(
-      GlobalPublishedItemLight(description3, TestHelpers.owner1,
-        Seq("/arcite/hello/neptune")))).toJson.prettyPrint)
+    val jsonRequest = ByteString(GlobalPublishedItemLight(description3,
+      Seq("/arcite/hello/neptune"), TestHelpers.owner1).toJson.prettyPrint)
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
@@ -147,10 +143,6 @@ class GlobPubTests extends ApiTests {
         .parseJson.convertTo[Seq[GlobalPublishedItem]]
 
       assert(publishedItems.nonEmpty)
-
-      selected1 = publishedItems.find(pi ⇒ pi.globalPubInf.description == description1)
-
-      assert(selected1.isDefined)
 
     }
   }
@@ -250,6 +242,8 @@ class GlobPubTests extends ApiTests {
   }
 
   "Deleting selection1 entry " should " mark the item as being deleted. " in {
+    assert(selected1.isDefined)
+
     implicit val executionContext = system.dispatcher
 
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
@@ -291,6 +285,8 @@ class GlobPubTests extends ApiTests {
   }
 
   "Deleting selection2 entry " should " mark the item as being deleted. " in {
+    assert(selected2.isDefined)
+
     implicit val executionContext = system.dispatcher
 
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
@@ -313,6 +309,7 @@ class GlobPubTests extends ApiTests {
   }
 
   "Retrieving all published items after 2snd delete " should " return list of all published items -1" in {
+
     implicit val executionContext = system.dispatcher
 
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
@@ -331,7 +328,10 @@ class GlobPubTests extends ApiTests {
     }
   }
 
+
   "Deleting selection3 entry " should " mark the item as being deleted. " in {
+    assert(selected3.isDefined)
+
     implicit val executionContext = system.dispatcher
 
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
@@ -371,6 +371,27 @@ class GlobPubTests extends ApiTests {
       assert(publishedItems.size == currentResultLength - 3)
     }
   }
+
+  "Searching for data after delete " should " return empty results" in {
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(HttpRequest(uri = s"$urlPrefix/publish?search=data&maxHits=100")).via(connectionFlow).runWith(Sink.head)
+
+    responseFuture.map { r ⇒
+      assert(r.status == StatusCodes.OK)
+
+      val publishedItems = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+        .parseJson.convertTo[Seq[GlobalPublishedItem]]
+
+      assert(!publishedItems.exists(pi ⇒ pi.globalPubInf.description == description1))
+
+    }
+  }
+
   "Searching for neptune after delete " should " return empty results" in {
     implicit val executionContext = system.dispatcher
 
@@ -378,7 +399,7 @@ class GlobPubTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri = s"$urlPrefix/publish?search=Neptune&maxHits=1")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri = s"$urlPrefix/publish?search=Neptune&maxHits=100")).via(connectionFlow).runWith(Sink.head)
 
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
@@ -399,7 +420,7 @@ class GlobPubTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri = s"$urlPrefix/publish?search=world&maxHits=1")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri = s"$urlPrefix/publish?search=world&maxHits=100")).via(connectionFlow).runWith(Sink.head)
 
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
@@ -409,6 +430,26 @@ class GlobPubTests extends ApiTests {
 
       assert(!publishedItems.exists(pi ⇒ pi.globalPubInf.description == description2))
 
+    }
+  }
+
+  "Retrieving all published items after 3 removes " should " return list of all published items " in {
+    implicit val executionContext = system.dispatcher
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(HttpRequest(uri = s"$urlPrefix/publish")).via(connectionFlow).runWith(Sink.head)
+
+    responseFuture.map { r ⇒
+      assert(r.status == StatusCodes.OK)
+
+      val publishedItems = r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8")
+        .parseJson.convertTo[Seq[GlobalPublishedItem]]
+
+
+      assert(publishedItems.size == currentResultLength - 3)
     }
   }
 }
