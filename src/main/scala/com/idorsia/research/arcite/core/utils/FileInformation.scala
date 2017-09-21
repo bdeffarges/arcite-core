@@ -1,7 +1,7 @@
 package com.idorsia.research.arcite.core.utils
 
 import java.io.File
-import java.nio.file.Path
+import java.nio.file.{Files, Path}
 
 import com.typesafe.scalalogging.LazyLogging
 
@@ -31,11 +31,11 @@ case class FileVisitor(file: File) {
 }
 
 object FileVisitor extends LazyLogging {
-  def getFilesInformation(subFolder: Path): Set[FileInformation] = {
+  def getFilesInformation(subFolder: Path, followSymLink: Boolean = true): Set[FileInformation] = {
     if (subFolder.toFile.isFile) {
       Set(FileVisitor(subFolder.toFile).fileInformation)
-    } else if (subFolder.toFile.isDirectory) {
-      subFolder.toFile.listFiles.flatMap(f ⇒ getFilesInformation(f.toPath)).toSet
+    } else if (subFolder.toFile.isDirectory && !Files.isSymbolicLink(subFolder) || followSymLink) {
+      subFolder.toFile.listFiles.flatMap(f ⇒ getFilesInformation(f.toPath, followSymLink)).toSet
     } else {
       Set()
     }
@@ -45,14 +45,14 @@ object FileVisitor extends LazyLogging {
     FilesInformation(getFilesInformation(subFolder))
 
   def getFilesInformationOneLevel(folder: Path, subFolder: String*): Set[FileInformation] = {
-    val file = subFolder.flatMap(f ⇒ f.split('/').toList).foldLeft(folder)((f,s) ⇒ f resolve s).toFile
+    val file = subFolder.flatMap(f ⇒ f.split('/').toList).foldLeft(folder)((f, s) ⇒ f resolve s).toFile
 
     logger.info(s"files information from: [${file.getAbsolutePath}]")
     if (file.exists) {
       if (file.isFile) {
         Set(FileVisitor(file).fileInformation)
       } else {
-        file.listFiles().map(f ⇒FileVisitor(f).fileInformation).toSet
+        file.listFiles().map(f ⇒ FileVisitor(f).fileInformation).toSet
       }
     } else {
       Set.empty

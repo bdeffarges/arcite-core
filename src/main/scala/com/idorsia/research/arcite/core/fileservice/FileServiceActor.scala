@@ -82,7 +82,7 @@ class FileServiceActor(mounts: Option[Map[String, SourceInformation]]) extends A
 
         case FromAllFolders(_) ⇒
           sender() ! AllFilesInformation(rawFiles = FileVisitor.getFilesInformation(ev.rawFolderPath),
-            userRawFiles = FileVisitor.getFilesInformation(ev.userRawFolderPath),
+            userRawFiles = FileVisitor.getFilesInformation(ev.userRawFolderPath, false),
             metaFiles = FileVisitor.getFilesInformation(ev.userMetaFolderPath))
       }
 
