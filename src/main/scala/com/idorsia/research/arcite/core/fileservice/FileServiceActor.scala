@@ -58,8 +58,9 @@ class FileServiceActor(mounts: Option[Map[String, SourceInformation]]) extends A
     case GetFilesFromSource(source, subFolder) ⇒
       val sourceF = sourceFolders.get(source)
       if (sourceF.isDefined) {
-        sender() ! FilesInformation(FileVisitor.getFilesInformationOneLevel(sourceF.get.path, subFolder: _*))
-      } else sender() ! FilesInformation(Set.empty)
+        sender() ! FilesInformation(
+          FileVisitor.getFilesInformationOneLevel(sourceF.get.path, subFolder: _*).toSeq.sortBy(_.name))
+      } else sender() ! FilesInformation()
 
 
     case GetAllFiles(fromExp) ⇒
@@ -69,21 +70,21 @@ class FileServiceActor(mounts: Option[Map[String, SourceInformation]]) extends A
       fromExp match {
         case FromUserRawFolder(_) ⇒
           val rawFilesInfo = FilesInformation(
-            ev.userRawFolderPath.toFile.listFiles.map(f ⇒ FileVisitor(f).fileInformation).toSet)
+            ev.userRawFolderPath.toFile.listFiles.map(f ⇒ FileVisitor(f).fileInformation))
           sender() ! rawFilesInfo
 
         case FromRawFolder(_) ⇒
           val rawFilesInfo = FilesInformation(
-            ev.rawFolderPath.toFile.listFiles.map(f ⇒ FileVisitor(f).fileInformation).toSet)
+            ev.rawFolderPath.toFile.listFiles.map(f ⇒ FileVisitor(f).fileInformation))
           sender() ! rawFilesInfo
 
         case FromMetaFolder(_) ⇒
           sender() ! FileVisitor.getFilesInformation3(ev.userMetaFolderPath)
 
         case FromAllFolders(_) ⇒
-          sender() ! AllFilesInformation(rawFiles = FileVisitor.getFilesInformation(ev.rawFolderPath),
+          sender() ! AllFilesInformation(rawFiles = FileVisitor.getFilesInformation(ev.rawFolderPath, false),
             userRawFiles = FileVisitor.getFilesInformation(ev.userRawFolderPath, false),
-            metaFiles = FileVisitor.getFilesInformation(ev.userMetaFolderPath))
+            metaFiles = FileVisitor.getFilesInformation(ev.userMetaFolderPath, false))
       }
 
 

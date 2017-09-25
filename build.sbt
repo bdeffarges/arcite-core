@@ -5,7 +5,7 @@ organization := "com.idorsia.research.arcite"
 
 name := "arcite-core"
 
-version := "1.75.1-SNAPSHOT"
+version := "1.76.0"
 
 scalaVersion := "2.11.8"
 
@@ -132,15 +132,27 @@ javaOptions in Universal ++= Seq(
   // you can access any build setting/task here
   //  s"-version=${version.value}"
 )
+
+// all arcite docker will work as user/group arcite/arcite
+// to make sure it's always the same user we need to use uid and gid.
+// so to create the group, use:
+//sudo addgroup -gid 987654 arcite
+// and to create the user:
+// sudo useradd --home-dir /home/arcite --uid 987654 --gid 987654 arcite
+// of course the uid and gid have to map with those below in all the docker files.
+// the owner of the arcite path on the host should be arcite:arcite.
 dockerCommands := Seq(
   Cmd("FROM", "openjdk:latest"),
   Cmd("MAINTAINER", "Bernard Deffarges bernard.deffarges@idorsia.com"),
   Cmd("RUN", "echo Europe/Berlin > /etc/timezone && dpkg-reconfigure --frontend noninteractive tzdata"),
+  Cmd("RUN", "addgroup -gid 987654 arcite"),
+  Cmd("RUN", "useradd --home-dir /home/arcite --uid 987654 --gid 987654 arcite"),
+  Cmd("RUN", "mkdir /home/arcite && chown arcite:arcite /home/arcite"),
   Cmd("WORKDIR", "/opt/docker"),
   Cmd("COPY", "opt /opt"),
-  Cmd("RUN", """chown -R daemon:daemon ."""),
+  Cmd("RUN", """chown -R arcite:arcite ."""),
   Cmd("EXPOSE", "8084 2551 2552 2553 2554 2555 2556 2557 2558"),
-  Cmd("USER", "daemon"),
+  Cmd("USER", "arcite"),
   Cmd("ENTRYPOINT", "bin/arcite-core"))
 
 dockerRepository := Some("gaia:5000")

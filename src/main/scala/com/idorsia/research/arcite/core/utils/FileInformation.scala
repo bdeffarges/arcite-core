@@ -10,7 +10,7 @@ import com.typesafe.scalalogging.LazyLogging
   */
 case class FileInformation(fullPath: String, name: String, fileSize: String, fileType: String = "file")
 
-case class FilesInformation(files: Set[FileInformation])
+case class FilesInformation(files: Seq[FileInformation] = Seq.empty)
 
 case class FileVisitor(file: File) {
   require(file.exists())
@@ -32,17 +32,22 @@ case class FileVisitor(file: File) {
 
 object FileVisitor extends LazyLogging {
   def getFilesInformation(subFolder: Path, followSymLink: Boolean = true): Set[FileInformation] = {
-    if (subFolder.toFile.isFile) {
-      Set(FileVisitor(subFolder.toFile).fileInformation)
-    } else if (subFolder.toFile.isDirectory && !Files.isSymbolicLink(subFolder) || followSymLink) {
-      subFolder.toFile.listFiles.flatMap(f ⇒ getFilesInformation(f.toPath, followSymLink)).toSet
+      val sf = subFolder.toFile
+    if (sf.isFile) {// todo can be simplified
+      Set(FileVisitor(sf).fileInformation)
+    } else if (sf.isDirectory) {
+      if (!Files.isSymbolicLink(subFolder) || followSymLink) {
+        sf.listFiles.flatMap(f ⇒ getFilesInformation(f.toPath, followSymLink)).toSet
+      } else {
+        Set(FileVisitor(sf).fileInformation)
+      }
     } else {
-      Set()
+      Set.empty
     }
   }
 
   def getFilesInformation3(subFolder: Path): FilesInformation =
-    FilesInformation(getFilesInformation(subFolder))
+    FilesInformation(getFilesInformation(subFolder).toSeq.sortBy(_.name))
 
   def getFilesInformationOneLevel(folder: Path, subFolder: String*): Set[FileInformation] = {
     val file = subFolder.flatMap(f ⇒ f.split('/').toList).foldLeft(folder)((f, s) ⇒ f resolve s).toFile

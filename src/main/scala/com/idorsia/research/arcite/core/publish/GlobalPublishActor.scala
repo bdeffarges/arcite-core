@@ -176,8 +176,8 @@ class GlobalPublishActor extends Actor with ActorLogging with ArciteJSONProtocol
 
         d.add(new TextField(LUCENE_CONTENT, content, Field.Store.NO))
         indexWriter.addDocument(d)
-        log.debug(s"indexed ${d}")
-        log.debug(s"current number of docs in index: ${indexWriter.numDocs()}")
+//        log.debug(s"indexed ${d}")
+//        log.debug(s"current number of docs in index: ${indexWriter.numDocs()}")
       }
       indexWriter.commit()
 
@@ -191,12 +191,12 @@ class GlobalPublishActor extends Actor with ActorLogging with ArciteJSONProtocol
     val indexReader = DirectoryReader.open(directory)
     val indexSearcher = new IndexSearcher(indexReader, executors)
 
-    log.debug(
-      s"""searching for [$input], current published:
-         |[${
-        globalPublished.values
-          .map(gp ⇒ s"[${gp.uid}/${gp.globalPubInf.description}]").mkString(",")
-      }]""".stripMargin)
+//    log.debug(
+//      s"""searching for [$input], current published:
+//         |[${
+//        globalPublished.values
+//          .map(gp ⇒ s"[${gp.uid}/${gp.globalPubInf.description}]").mkString(",")
+//      }]""".stripMargin)
 
     var results: List[GlobalPublishedItem] = List.empty
 
@@ -204,7 +204,7 @@ class GlobalPublishActor extends Actor with ActorLogging with ArciteJSONProtocol
     try {
       val descHit = indexSearcher.search(new TermQuery(new Term(LUCENE_DESCRIPTION, input.toLowerCase)), maxHits)
       if (descHit.totalHits > 0) {
-        log.debug(s"found ${descHit.totalHits} in field description in RAM index")
+//        log.debug(s"found ${descHit.totalHits} in field description in RAM index")
         val found: List[GlobalPublishedItem] = descHit.scoreDocs.map(d ⇒ indexSearcher.doc(d.doc).getField(LUCENE_UID).stringValue())
           .map(uuid ⇒ globalPublished.get(uuid)).filter(_.isDefined).map(_.get).toList
         log.debug(s"found in (description) index= ${found.mkString(",")}")
@@ -223,7 +223,7 @@ class GlobalPublishActor extends Actor with ActorLogging with ArciteJSONProtocol
       // fuzzy and ngrams searching
       val fuzzyHits = indexSearcher.search(new FuzzyQuery(new Term(LUCENE_CONTENT, ngramSearch.toLowerCase())), maxHits)
       if (fuzzyHits.totalHits > 0) {
-        log.debug(s"found ${fuzzyHits.totalHits} in fuzzy lowercase ngrams search in content in RAM index")
+//        log.debug(s"found ${fuzzyHits.totalHits} in fuzzy lowercase ngrams search in content in RAM index")
         val foundUIDs = fuzzyHits.scoreDocs.map(d ⇒ indexSearcher.doc(d.doc).getField(LUCENE_UID).stringValue())
         log.debug(s"foundUIDs: ${foundUIDs.mkString(",")}")
         val found: List[GlobalPublishedItem] = foundUIDs.map(uuid ⇒ globalPublished.get(uuid))
@@ -257,6 +257,7 @@ object GlobalPublishActor {
 
   case class GlobalPublishedItemLight(description: String, items: Seq[String],
                                       owner: Owner = DefaultOwner.anonymous)
+
 
   case class GlobalPublishedItem(globalPubInf: GlobalPublishedItemLight,
                                  uid: String = UUID.randomUUID().toString,
