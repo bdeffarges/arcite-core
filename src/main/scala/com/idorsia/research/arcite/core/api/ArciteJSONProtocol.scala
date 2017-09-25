@@ -233,7 +233,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
 
         case Seq(JsString(name), JsString(description), owner) ⇒
           Experiment(name, description, owner.convertTo[Owner], None, ExpState.NEW,
-      ExperimentalDesign (), Map[String, String] () )
+            ExperimentalDesign(), Map[String, String]())
 
         case _ => throw DeserializationException("could not deserialize.")
       }
@@ -286,7 +286,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
       case _ => throw DeserializationException("could not deserialize.")
     }
 
-    def read(value: JsValue):TransformSource = ???
+    def read(value: JsValue): TransformSource = ???
   }
 
   implicit val sourceRawDataJson: RootJsonFormat[SetRawData] = jsonFormat3(SetRawData)
@@ -314,7 +314,6 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val foundExperimentsJson: RootJsonFormat[FoundExperiments] = jsonFormat1(FoundExperiments)
   implicit val someExperimentsJson: RootJsonFormat[SomeExperiments] = jsonFormat2(SomeExperiments)
   implicit val addExperimentResponseJson: RootJsonFormat[AddExperiment] = jsonFormat1(AddExperiment)
-  implicit val cloneExperimentNewPropsJson: RootJsonFormat[CloneExperimentNewProps] = jsonFormat3(CloneExperimentNewProps)
   implicit val addedExpJson: RootJsonFormat[AddedExperiment] = jsonFormat1(AddedExperiment)
   implicit val addDesignJson: RootJsonFormat[AddDesign] = jsonFormat2(AddDesign)
   implicit val okJson: RootJsonFormat[OkTransfReceived] = jsonFormat1(OkTransfReceived)
@@ -508,6 +507,37 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val selectableJson: RootJsonFormat[Selectable] = jsonFormat2(Selectable)
   implicit val bunchOfSelectableJson: RootJsonFormat[BunchOfSelectables] = jsonFormat1(BunchOfSelectables)
   implicit val selectedSelectablesJson: RootJsonFormat[SelectedSelectables] = jsonFormat2(SelectedSelectables)
+
+  implicit object CloneExpeNewPropsJson extends RootJsonFormat[CloneExperimentNewProps] {
+    override def read(json: JsValue): CloneExperimentNewProps = {
+      json.asJsObject.getFields("name", "description", "owner", "expDesign", "raw", "userRaw", "userMeta", "userProps")
+      match {
+        case Seq(JsString(name), JsString(description), owner) ⇒
+          CloneExperimentNewProps(name, description, owner.convertTo[Owner])
+        case Seq(JsString(name), JsString(description), owner, expD) ⇒
+          CloneExperimentNewProps(name, description, owner.convertTo[Owner], expDesign = expD.convertTo[Boolean])
+        case Seq(JsString(name), JsString(description), owner, expD, rw) ⇒
+          CloneExperimentNewProps(name, description, owner.convertTo[Owner],
+            expDesign = expD.convertTo[Boolean], raw = rw.convertTo[Boolean])
+        case Seq(JsString(name), JsString(description), owner, expD, rw, urw) ⇒
+          CloneExperimentNewProps(name, description, owner.convertTo[Owner],
+            expDesign = expD.convertTo[Boolean], raw = rw.convertTo[Boolean], userRaw = urw.convertTo[Boolean])
+        case Seq(JsString(name), JsString(description), owner, expD, rw, urw, um) ⇒
+          CloneExperimentNewProps(name, description, owner.convertTo[Owner],
+            expDesign = expD.convertTo[Boolean], raw = rw.convertTo[Boolean],
+            userRaw = urw.convertTo[Boolean], userMeta = um.convertTo[Boolean])
+        case Seq(JsString(name), JsString(description), owner, expD, rw, urw, um, up) ⇒
+          CloneExperimentNewProps(name, description, owner.convertTo[Owner],
+            expDesign = expD.convertTo[Boolean], raw = rw.convertTo[Boolean], userRaw = urw.convertTo[Boolean],
+            userMeta = um.convertTo[Boolean], userProps = up.convertTo[Boolean])
+      }
+    }
+
+    override def write(obj: CloneExperimentNewProps): JsValue = {
+      jsonFormat8(CloneExperimentNewProps).write(obj)
+    }
+  }
+
 }
 
 

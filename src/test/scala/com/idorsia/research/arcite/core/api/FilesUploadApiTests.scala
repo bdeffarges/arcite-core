@@ -46,6 +46,7 @@ class FilesUploadApiTests extends ApiTests {
   var exp1Uid:Option[String] = None // because the uid is created on the server.
   var clonedExp: Option[String] = None
 
+
   "Create a new experiment " should " return the uid of the new experiment " in {
 
     implicit val executionContext = system.dispatcher
@@ -75,6 +76,7 @@ class FilesUploadApiTests extends ApiTests {
     }
   }
 
+
   "adding meta files directly " should " copy the given file to the experiment folder " in {
 
     implicit val executionContext = system.dispatcher
@@ -102,6 +104,7 @@ class FilesUploadApiTests extends ApiTests {
     }
   }
 
+
   "adding raw files directly " should " copy the given file to the experiment folder " in {
 
     implicit val executionContext = system.dispatcher
@@ -128,6 +131,7 @@ class FilesUploadApiTests extends ApiTests {
       assert(r.status == StatusCodes.Created)
     }
   }
+
 
   "Clone an experiment " should " return the uid of the new experiment " in {
 
@@ -161,6 +165,7 @@ class FilesUploadApiTests extends ApiTests {
       assert(clonedExp.isDefined)
     }
   }
+
 
   "retrieve meta data from exp " should " return meta data of original exp " in {
     implicit val executionContext = system.dispatcher
@@ -319,6 +324,7 @@ class FilesUploadApiTests extends ApiTests {
       assert(r.status == StatusCodes.OK)
     }
   }
+
 
   "Delete cloned experiment " should " move the experiment to the deleted folder " in {
 

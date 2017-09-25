@@ -128,12 +128,19 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       if (origExp.isEmpty) {
         sender() ! FailedAddingExperiment(s"could not find original experiment ")
       } else {
-        val cExp = origExp.get.copy(name = cexp.cloneExpProps.name,
+        val orExp = origExp.get
+        val cloneProps = cexp.cloneExpProps
+
+        val expDes = if (cloneProps.expDesign) orExp.design else ExperimentalDesign()
+
+        val userProps: Map[String, String] = if (cloneProps.userProps) orExp.properties else Map.empty
+
+        val cExp = orExp.copy(name = cloneProps.name,
           uid = Some(UUID.randomUUID().toString),
-          description = cexp.cloneExpProps.description,
+          description = cloneProps.description,
           owner = Owner(organization = origExp.get.owner.organization,
-            person = cexp.cloneExpProps.owner.person),
-          state = ExpState.NEW)
+            person = cloneProps.owner.person),
+          state = ExpState.NEW, design = expDes, properties = userProps)
 
         LocalExperiments.saveExperiment(cExp) match {
 
@@ -142,9 +149,9 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
             val orVis = ExperimentFolderVisitor(origExp.get)
             val tgrVis = ExperimentFolderVisitor(expCloned)
 
-            FoldersHelpers.deepLinking(orVis.rawFolderPath, tgrVis.rawFolderPath)
-            FoldersHelpers.deepLinking(orVis.userMetaFolderPath, tgrVis.userMetaFolderPath)
-            FoldersHelpers.deepLinking(orVis.userRawFolderPath, tgrVis.userRawFolderPath)
+            if(cloneProps.raw) FoldersHelpers.deepLinking(orVis.rawFolderPath, tgrVis.rawFolderPath)
+            if(cloneProps.userMeta) FoldersHelpers.deepLinking(orVis.userMetaFolderPath, tgrVis.userMetaFolderPath)
+            if(cloneProps.userRaw) FoldersHelpers.deepLinking(orVis.userRawFolderPath, tgrVis.userRawFolderPath)
 
             eventInfoLoggingAct ! AddLog(expCloned, ExpLog(LogType.CREATED, LogCategory.SUCCESS,
               s"cloned experiment [${origExp.get.uid.get}] ", Some(expCloned.uid.get)))
@@ -666,9 +673,11 @@ object ManageExperiments {
   }
 
 
-  //todo enable cloning with our without copying raw/meta data
   //todo think again, should clone be in the same subfolder? Yes for now.
-  case class CloneExperimentNewProps(name: String, description: String, owner: Owner)
+  case class CloneExperimentNewProps(name: String, description: String, owner: Owner,
+                                     expDesign: Boolean = true, raw: Boolean = true,
+                                     userRaw: Boolean = true, userMeta: Boolean = true,
+                                     userProps: Boolean = true)
 
   case class CloneExperiment(originExp: String, cloneExpProps: CloneExperimentNewProps)
 
