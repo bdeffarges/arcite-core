@@ -2,7 +2,7 @@ package com.idorsia.research.arcite.core.utils
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.StandardOpenOption._
-import java.nio.file.{Files, Paths}
+import java.nio.file.{Files, Path}
 
 import akka.actor.{Actor, ActorLogging, ActorPath, Props}
 import com.idorsia.research.arcite.core
@@ -14,6 +14,7 @@ import com.idorsia.research.arcite.core.transforms._
 import com.idorsia.research.arcite.core.transforms.cluster.MasterWorkerProtocol.WorkerCompleted
 import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.{WorkerJobFailed, WorkerJobSuccessFul}
 import com.typesafe.config.ConfigFactory
+import com.typesafe.scalalogging.LazyLogging
 
 /**
   * arcite-core
@@ -78,11 +79,13 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
             TransformDoneSource(exp, TRANSFORM, Some(tst.srcTransformIDs.mkString(" ; ")))
           case tob: TransformSourceFromObject ⇒
             TransformDoneSource(exp, JSON, None)
-          case _ : Any ⇒
+          case _: Any ⇒
             TransformDoneSource(exp, UNKNOWN, None)
         }
 
         val params = wid.transf.parameters
+
+        val transfFeedBackPath = transfFolder resolve FILE_NAME
 
         import spray.json._
 
@@ -92,8 +95,7 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
               TransformCompletionStatus.SUCCESS, ws.artifacts,
               ws.feedback, "", wid.startTime)
 
-            Files.write(Paths.get(transfFolder.toString, FILE_NAME),
-              fb.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
+            Files.write(transfFeedBackPath, fb.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
 
             Files.write(transfFolder resolve core.successFile, "SUCCESS".getBytes(StandardCharsets.UTF_8), CREATE_NEW)
 
@@ -113,8 +115,7 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
               TransformCompletionStatus.FAILED, Map.empty,
               wf.feedback, wf.errors, wid.startTime)
 
-            Files.write(Paths.get(transfFolder.toString, FILE_NAME),
-              fb.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
+            Files.write(transfFeedBackPath, fb.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
 
             Files.write(transfFolder resolve core.failedFile, "FAILED".getBytes(StandardCharsets.UTF_8), CREATE_NEW)
 
@@ -122,12 +123,15 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
               ExpLog(LogType.TRANSFORM, LogCategory.ERROR,
                 s"transform [${wid.transf.transfDefName.name}] failed", Some(wid.transf.uid)))
         }
+
+        writeTransformHash(transfFolder)
       }
   }
 }
 
-object WriteFeedbackActor {
+object WriteFeedbackActor extends LazyLogging with ArciteJSONProtocol{
   val FILE_NAME = s"${core.arciteFilePrefix}transform_output.json"
+  val DIGEST_FILE_NAME = s"${core.arciteFilePrefix}digest"
   val SUCCESS = "SUCCESS"
   val FAILED = "FAILED"
   val RAW = "RAW"
@@ -139,4 +143,32 @@ object WriteFeedbackActor {
 
   case class WriteFeedback(wid: WorkerCompleted)
 
+  def writeTransformHash(transfPath: Path): Unit = {
+    // write folder digest
+    val transfFeedBackPath = transfPath resolve FILE_NAME
+
+    import spray.json._
+    import scala.collection.convert.wrapAsScala._
+    val tdi = Files.readAllLines(transfFeedBackPath).toList.mkString("\n")
+      .parseJson.convertTo[TransformCompletionFeedback]
+
+    //for the other files, for now we only take the files and folder names to build the hash digest
+    def getAllFilesFoldersNames(f: Path): String = {
+      val currF = f.toFile
+
+      if (currF.isDirectory) {
+        val files = currF.listFiles()
+        currF.getName + files.map(f ⇒ getAllFilesFoldersNames(f.toPath)).mkString("-")
+      } else {
+        s"f-${currF.getName}-s${currF.length}"
+      }
+    }
+
+    val hashInputString = tdi + getAllFilesFoldersNames(transfPath)
+
+    val digest = GetDigest.getDigest(hashInputString)
+    logger.info(s"[tdig1] transform digest ${digest}")
+
+    Files.write(transfPath resolve DIGEST_FILE_NAME, digest.getBytes(StandardCharsets.UTF_8))
+  }
 }

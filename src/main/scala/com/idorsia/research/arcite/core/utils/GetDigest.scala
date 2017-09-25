@@ -10,7 +10,6 @@ import com.typesafe.scalalogging.LazyLogging
   */
 object GetDigest extends LazyLogging {
 
-
   def getDigest(chars: Array[Byte]): String = {
     val md = java.security.MessageDigest.getInstance("SHA-256")
     //    logger.debug(
@@ -20,7 +19,6 @@ object GetDigest extends LazyLogging {
 
     md.digest(chars).map("%02x".format(_)).mkString
   }
-
 
   def getDigest(strg: String): String = {
     val md = java.security.MessageDigest.getInstance("SHA-256")
@@ -33,7 +31,6 @@ object GetDigest extends LazyLogging {
 
     getDigest(Files.readAllBytes(Paths.get(file.getAbsolutePath)))
   }
-
 
   def getFolderContentDigest(folder: File): String = {
     //    logger.debug(s"content digest for folder $folder")

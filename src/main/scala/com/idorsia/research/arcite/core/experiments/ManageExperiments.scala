@@ -582,7 +582,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
     val exp = experiments(experiment)
     val ef = ExperimentFolderVisitor(exp).transformFolderPath
 
-    //todo check whether it exists...
+    //todo check whether it exists... try/catch to avoid deserException
     val f = ef resolve transform resolve WriteFeedbackActor.FILE_NAME
     val tdi = Files.readAllLines(f).toList.mkString("\n").parseJson.convertTo[TransformCompletionFeedback]
 
