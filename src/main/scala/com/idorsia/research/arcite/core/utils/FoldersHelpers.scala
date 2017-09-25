@@ -138,6 +138,26 @@ object FoldersHelpers {
     fileMap
   }
 
+  /**
+    * produces a long string of all files and subfolders names.
+    * To be able to calculate a digest of a file structure without reading the content of the files
+    * to avoid performance issues
+    *
+    * @param f
+    * @return
+    */
+  def getAllFilesAndSubFoldersNames(f: Path): String = {
+    val currF = f.toFile
+
+    if (currF.isDirectory) {
+      val files = currF.listFiles()
+      currF.getName + files.map(f ⇒ getAllFilesAndSubFoldersNames(f.toPath)).mkString("-")
+    } else {
+      s"f-${currF.getName}-s${currF.length}"
+    }
+  }
+
+
 
   sealed trait DeepLinkingFeedback
 

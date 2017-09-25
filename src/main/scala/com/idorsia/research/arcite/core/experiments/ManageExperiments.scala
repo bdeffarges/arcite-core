@@ -498,8 +498,18 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
               LogCategory.ERROR, "set experiment immutable failed.", exp.uid))
         }
 
-        Files.write(ExperimentFolderVisitor(exper.get).immutableStateFile,
+        val visit = ExperimentFolderVisitor(exper.get)
+        Files.write(visit.immutableStateFile,
           "IMMUTABLE".getBytes(StandardCharsets.UTF_8), CREATE)
+
+        Files.write(visit.userMetaFolderPath resolve core.DIGEST_FILE_NAME,
+          FoldersHelpers.getAllFilesAndSubFoldersNames(visit.userMetaFolderPath).getBytes(StandardCharsets.UTF_8))
+
+        Files.write(visit.rawFolderPath resolve core.DIGEST_FILE_NAME,
+          FoldersHelpers.getAllFilesAndSubFoldersNames(visit.rawFolderPath).getBytes(StandardCharsets.UTF_8))
+
+        Files.write(visit.userRawFolderPath resolve core.DIGEST_FILE_NAME,
+          FoldersHelpers.getAllFilesAndSubFoldersNames(visit.userRawFolderPath).getBytes(StandardCharsets.UTF_8))
       }
 
 

@@ -53,6 +53,8 @@ package object core {
 
   val urlPrefix = s"/api/v$apiVersion"
 
+  val DIGEST_FILE_NAME = s"${arciteFilePrefix}digest"
+
   // could be later on in config
   import scala.concurrent.duration._
 

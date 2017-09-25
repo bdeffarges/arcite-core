@@ -131,7 +131,6 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
 
 object WriteFeedbackActor extends LazyLogging with ArciteJSONProtocol{
   val FILE_NAME = s"${core.arciteFilePrefix}transform_output.json"
-  val DIGEST_FILE_NAME = s"${core.arciteFilePrefix}digest"
   val SUCCESS = "SUCCESS"
   val FAILED = "FAILED"
   val RAW = "RAW"
@@ -152,23 +151,11 @@ object WriteFeedbackActor extends LazyLogging with ArciteJSONProtocol{
     val tdi = Files.readAllLines(transfFeedBackPath).toList.mkString("\n")
       .parseJson.convertTo[TransformCompletionFeedback]
 
-    //for the other files, for now we only take the files and folder names to build the hash digest
-    def getAllFilesFoldersNames(f: Path): String = {
-      val currF = f.toFile
-
-      if (currF.isDirectory) {
-        val files = currF.listFiles()
-        currF.getName + files.map(f ⇒ getAllFilesFoldersNames(f.toPath)).mkString("-")
-      } else {
-        s"f-${currF.getName}-s${currF.length}"
-      }
-    }
-
-    val hashInputString = tdi + getAllFilesFoldersNames(transfPath)
+    val hashInputString = tdi + FoldersHelpers.getAllFilesAndSubFoldersNames(transfPath)
 
     val digest = GetDigest.getDigest(hashInputString)
     logger.info(s"[tdig1] transform digest ${digest}")
 
-    Files.write(transfPath resolve DIGEST_FILE_NAME, digest.getBytes(StandardCharsets.UTF_8))
+    Files.write(transfPath resolve core.DIGEST_FILE_NAME, digest.getBytes(StandardCharsets.UTF_8))
   }
 }

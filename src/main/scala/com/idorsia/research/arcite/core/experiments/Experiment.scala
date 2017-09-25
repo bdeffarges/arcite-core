@@ -4,9 +4,7 @@ import java.nio.file.{Path, Paths}
 
 import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.experiments.ExpState.ExpState
-import com.idorsia.research.arcite.core.utils
 import com.idorsia.research.arcite.core.utils._
-import com.typesafe.config.{Config, ConfigFactory}
 
 
 /**
