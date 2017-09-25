@@ -149,9 +149,9 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
             val orVis = ExperimentFolderVisitor(origExp.get)
             val tgrVis = ExperimentFolderVisitor(expCloned)
 
-            if(cloneProps.raw) FoldersHelpers.deepLinking(orVis.rawFolderPath, tgrVis.rawFolderPath)
-            if(cloneProps.userMeta) FoldersHelpers.deepLinking(orVis.userMetaFolderPath, tgrVis.userMetaFolderPath)
-            if(cloneProps.userRaw) FoldersHelpers.deepLinking(orVis.userRawFolderPath, tgrVis.userRawFolderPath)
+            if (cloneProps.raw) FoldersHelpers.deepLinking(orVis.rawFolderPath, tgrVis.rawFolderPath)
+            if (cloneProps.userMeta) FoldersHelpers.deepLinking(orVis.userMetaFolderPath, tgrVis.userMetaFolderPath)
+            if (cloneProps.userRaw) FoldersHelpers.deepLinking(orVis.userRawFolderPath, tgrVis.userRawFolderPath)
 
             eventInfoLoggingAct ! AddLog(expCloned, ExpLog(LogType.CREATED, LogCategory.SUCCESS,
               s"cloned experiment [${origExp.get.uid.get}] ", Some(expCloned.uid.get)))
@@ -502,16 +502,10 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
         Files.write(visit.immutableStateFile,
           "IMMUTABLE".getBytes(StandardCharsets.UTF_8), CREATE)
 
-        Files.write(visit.userMetaFolderPath resolve core.DIGEST_FILE_NAME,
-          FoldersHelpers.getAllFilesAndSubFoldersNames(visit.userMetaFolderPath).getBytes(StandardCharsets.UTF_8))
-
-        Files.write(visit.rawFolderPath resolve core.DIGEST_FILE_NAME,
-          FoldersHelpers.getAllFilesAndSubFoldersNames(visit.rawFolderPath).getBytes(StandardCharsets.UTF_8))
-
-        Files.write(visit.userRawFolderPath resolve core.DIGEST_FILE_NAME,
-          FoldersHelpers.getAllFilesAndSubFoldersNames(visit.userRawFolderPath).getBytes(StandardCharsets.UTF_8))
+        saveDigest(exp, visit.rawFolderPath)
+        saveDigest(exp, visit.userMetaFolderPath)
+        saveDigest(exp, visit.userRawFolderPath)
       }
-
 
     case pa: PublishApi ⇒
       val exp = experiments.get(pa.exp)
@@ -535,6 +529,12 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       sender ! gs
 
     case any: Any ⇒ log.debug(s"don't know what to do with this message $any")
+  }
+
+  private def saveDigest(exp: Experiment, folder: Path): Unit = {
+    Files.write(folder resolve core.DIGEST_FILE_NAME,
+      GetDigest.getDigest(exp.name + exp.uid + exp.design.toString + exp.description +
+        FoldersHelpers.getAllFilesAndSubFoldersNames(folder)).getBytes(StandardCharsets.UTF_8))
   }
 
   private def getTransforms(experiment: String): Set[TransformCompletionFeedback] = {
