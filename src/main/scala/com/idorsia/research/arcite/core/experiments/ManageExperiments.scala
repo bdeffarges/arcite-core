@@ -10,8 +10,9 @@ import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSystem, OneFor
 import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.api.ArciteJSONProtocol
 import com.idorsia.research.arcite.core.api.ArciteService._
+import com.idorsia.research.arcite.core.eventinfo.ArciteAppLogs.AddAppLog
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging._
-import com.idorsia.research.arcite.core.eventinfo.{EventInfoLogging, ExpLog, LogCategory, LogType}
+import com.idorsia.research.arcite.core.eventinfo._
 import com.idorsia.research.arcite.core.experiments.ExperimentActorsManager.StartExperimentsServiceActors
 import com.idorsia.research.arcite.core.experiments.LocalExperiments.{LoadExperiment, SaveExperimentFailed, SaveExperimentSuccessful}
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor
@@ -177,7 +178,8 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       } else if (exp.get.state != ExpState.IMMUTABLE && !ExperimentFolderVisitor(exp.get).isImmutableExperiment) {
         experiments -= uid
         luceneRAMSearchAct ! RemoveFromIndex(exp.get)
-        sender() ! LocalExperiments.safeDeleteExperiment(exp.get)
+        val deleteFeedback = LocalExperiments.deleteExperiment(exp.get)
+        sender() ! deleteFeedback
       } else {
         sender() ! ExperimentDeleteFailed(s"experiment [$uid] can not be deleted, it's immutable. ")
       }

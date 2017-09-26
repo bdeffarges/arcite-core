@@ -16,10 +16,6 @@ package object core {
 
   val apiVersion: String = config.getString("arcite.api.version")
 
-  val archivePath: Path = home resolve "_archives"
-
-  if (!archivePath.toFile.exists) archivePath.toFile.mkdirs()
-
   val dataPath: Path = home resolve "experiments"
 
   if (!dataPath.toFile.exists) dataPath.toFile.mkdirs()
@@ -35,7 +31,6 @@ package object core {
   if (!globalPublishPathIndex.toFile.exists) globalPublishPath.toFile.mkdirs()
 
   logger.debug(s"data Path: $dataPath")
-  logger.debug(s"archive path: $archivePath")
   logger.debug(s"logs path: $logsPath")
   logger.debug(s"publish path: $globalPublishPath")
 

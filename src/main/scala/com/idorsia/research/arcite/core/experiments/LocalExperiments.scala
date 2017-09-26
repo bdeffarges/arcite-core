@@ -7,6 +7,7 @@ import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.api.ArciteJSONProtocol
 import com.idorsia.research.arcite.core.api.ArciteService._
 import com.idorsia.research.arcite.core.utils
+import com.idorsia.research.arcite.core.utils.FoldersHelpers
 import com.typesafe.scalalogging.LazyLogging
 
 object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
@@ -101,6 +102,7 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
 
       Files.write(uidF, exp.uid.get.getBytes(StandardCharsets.UTF_8), CREATE)
 
+      logger.info(s"experiment ${exp} saved!")
       SaveExperimentSuccessful(exp)
 
     } catch {
@@ -108,18 +110,14 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
     }
   }
 
-  def safeDeleteExperiment(exp: Experiment): DeleteExperimentFeedback = {
-    //todo check?
+  def deleteExperiment(exp: Experiment): DeleteExperimentFeedback = {
+
     val expFoldVis = ExperimentFolderVisitor(exp)
 
     try {
-      val p = core.archivePath resolve s"deleted_${utils.getDateForFolderName()}" resolve expFoldVis.relFolderPath
-      p.toFile.mkdirs()
-
-      Files.move(expFoldVis.expFolderPath, p, StandardCopyOption.ATOMIC_MOVE)
-
+      FoldersHelpers.deleteRecursively(expFoldVis.expFolderPath)
+      logger.info(s"experiment ${exp} deleted! ")
       ExperimentDeletedSuccess
-
     } catch {
       case e: Exception ⇒
         logger.error(e.toString)

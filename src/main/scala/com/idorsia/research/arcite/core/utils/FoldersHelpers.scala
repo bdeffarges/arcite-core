@@ -60,6 +60,10 @@ object FoldersHelpers {
     LinkingSuccess
   }
 
+  def deleteRecursively(path: Path): Unit = {
+    deleteRecursively(path.toFile)
+  }
+
   def deleteRecursively(file: File): Unit = {
     if (file.isDirectory) file.listFiles.foreach(deleteRecursively)
 
@@ -156,7 +160,6 @@ object FoldersHelpers {
       s"f-${currF.getName}-s${currF.length}"
     }
   }
-
 
 
   sealed trait DeepLinkingFeedback
