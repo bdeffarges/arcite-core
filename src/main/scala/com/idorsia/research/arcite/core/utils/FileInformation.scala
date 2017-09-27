@@ -3,6 +3,7 @@ package com.idorsia.research.arcite.core.utils
 import java.io.File
 import java.nio.file.{Files, Path}
 
+import com.idorsia.research.arcite.core
 import com.typesafe.scalalogging.LazyLogging
 
 /**
@@ -32,8 +33,8 @@ case class FileVisitor(file: File) {
 
 object FileVisitor extends LazyLogging {
   def getFilesInformation(subFolder: Path, followSymLink: Boolean = true): Set[FileInformation] = {
-      val sf = subFolder.toFile
-    if (sf.isFile) {// todo can be simplified
+    val sf = subFolder.toFile
+    if (sf.isFile && !sf.getName.contains(core.arciteFilePrefix)) {
       Set(FileVisitor(sf).fileInformation)
     } else if (sf.isDirectory) {
       if (!Files.isSymbolicLink(subFolder) || followSymLink) {

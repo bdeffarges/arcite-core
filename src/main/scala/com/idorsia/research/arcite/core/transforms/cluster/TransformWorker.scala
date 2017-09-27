@@ -62,11 +62,16 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
   }
 
   override def supervisorStrategy = OneForOneStrategy() { //todo introduce Arcite exception
-    case _: ActorInitializationException => Stop
+    case _: ActorInitializationException =>
+      log.error("Actor Initialization exception...")
+      Stop
 
-    case _: DeathPactException => Stop
+    case _: DeathPactException =>
+      log.error("Death Pact Exception...")
+      Stop
 
     case excp: Exception =>
+      log.error(s"[@#£ç45%] that's bad... an exception probably occured in the executor actor... ${excp.getMessage}")
       currentTransform foreach { transf ⇒
         sendToMaster(WorkFailed(workerId, transf))
       }
@@ -102,6 +107,7 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
       currentTransform = Some(t)
       workExecutor ! t
       context.become(working)
+      log.info("I'm now in working mode...")
 
 
     case gtd: GetTransfDefId ⇒
