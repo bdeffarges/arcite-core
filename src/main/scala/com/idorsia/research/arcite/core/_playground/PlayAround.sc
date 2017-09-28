@@ -1,4 +1,7 @@
-import scala.collection.immutable.Queue
+//import scala.collection.immutable.Queue
+
+val s = "hello,world,earth,"
+println(s.split(',').length)
 //val m = Map("a" -> "b", "c" -> "d", "e" -> "f", "g" -> "h")
 //val l = List("c", "g")
 //
