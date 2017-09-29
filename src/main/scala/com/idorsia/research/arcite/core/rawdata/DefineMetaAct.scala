@@ -32,19 +32,19 @@ import com.idorsia.research.arcite.core.experiments.{Experiment, ExperimentFolde
   * Created by Bernard Deffarges on 2017/09/14.
   *
   */
-class LinkSrcToMetaAct(actSys: String, requester: ActorRef, expManager: ActorRef,
-                       eventInfoAct: ActorRef) extends Actor with ActorLogging {
+class DefineMetaAct(actSys: String, requester: ActorRef, expManager: ActorRef,
+                    eventInfoAct: ActorRef) extends Actor with ActorLogging {
 
   import DefineRawAndMetaData._
-  import LinkSrcToMetaAct._
+  import DefineMetaAct._
 
   private var experiment: Option[Experiment] = None
-  private var metaDataSet: Option[LinkMetaData] = None
+  private var metaDataSet: Option[DefineMetaData] = None
 
   override def receive: Receive = {
 
-    case srds: LinkMetaData ⇒
-      log.debug(s"*5# linking data from source to meta... $srds")
+    case srds: DefineMetaData ⇒
+      log.debug(s"*5# adding or linking data from source to meta... $srds")
       metaDataSet = Some(srds)
       expManager ! GetExperiment(srds.experiment)
 
@@ -53,17 +53,17 @@ class LinkSrcToMetaAct(actSys: String, requester: ActorRef, expManager: ActorRef
       eff match {
         case ExperimentFound(exp) ⇒
           experiment = Some(exp)
-          self ! CreateSymbolicLink
+          self ! AddMetaData
 
         case _: Any ⇒
-          requester ! MetaDataLinkFailed("could not find experiment")
+          requester ! MetaDataFailed("could not find experiment")
           self ! PoisonPill
       }
 
 
-    case CreateSymbolicLink ⇒
+    case AddMetaData ⇒
 
-      requester ! MetaDataLinkInProgress
+      requester ! MetaDataInProgress
 
       val target = ExperimentFolderVisitor(experiment.get).userMetaFolderPath
 
@@ -71,14 +71,19 @@ class LinkSrcToMetaAct(actSys: String, requester: ActorRef, expManager: ActorRef
       log.info(s"file size: ${files.size}")
 
       files.map { f ⇒
-        val link = target resolve f.getName
-        if (!link.toFile.exists) {
-          log.info("create symbolic link to meta data. ")
-          Files.createSymbolicLink(link, f.toPath)
+        val targetP = target resolve f.getName
+        if (!targetP.toFile.exists) {
+          if (f.isFile && f.length() < maxSizeForCopying) {
+            log.info("copy meta file. ")
+            Files.copy(f.toPath, targetP)
+          } else {
+            log.info("create symbolic link to meta data. ")
+            Files.createSymbolicLink(targetP, f.toPath)
+          }
         }
       }
 
-      requester ! MetaDataSetLinked
+      requester ! MetaDataSetDefined
 
       log.debug("@#1 transfer completed successfully. ")
 
@@ -90,11 +95,12 @@ class LinkSrcToMetaAct(actSys: String, requester: ActorRef, expManager: ActorRef
   }
 }
 
-object LinkSrcToMetaAct {
+object DefineMetaAct {
   def props(actSys: String, requester: ActorRef,
             expManager: ActorRef, eventInfoAct: ActorRef) =
-    Props(classOf[LinkSrcToMetaAct], actSys, requester, expManager, eventInfoAct)
+    Props(classOf[DefineMetaAct], actSys, requester, expManager, eventInfoAct)
 
-  case object CreateSymbolicLink
+  val maxSizeForCopying = 100000000L // about 90 MB
+  case object AddMetaData
 
 }

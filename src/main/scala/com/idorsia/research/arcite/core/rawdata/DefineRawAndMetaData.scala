@@ -37,8 +37,8 @@ class DefineRawAndMetaData(expManagerAct: ActorRef, eventInfo: ActorRef) extends
       rrda ! rrd
 
 
-    case mds: LinkMetaData ⇒
-      val srdsa = context.actorOf(LinkSrcToMetaAct.props(actSys, sender(), expManagerAct, eventInfo))
+    case mds: DefineMetaData ⇒
+      val srdsa = context.actorOf(DefineMetaAct.props(actSys, sender(), expManagerAct, eventInfo))
       srdsa ! mds
 
 
@@ -94,16 +94,17 @@ object DefineRawAndMetaData extends ArciteJSONProtocol with LazyLogging {
   case class RawDataSetFailed(error: String) extends RawDataSetResponse
 
 
-  case class LinkMetaData(experiment: String, files: Set[String])
+
+  case class DefineMetaData(experiment: String, files: Set[String])
 
 
-  sealed trait MetaLinkResponse
+  sealed trait MetaResponse
 
-  case object MetaDataSetLinked extends MetaLinkResponse
+  case object MetaDataSetDefined extends MetaResponse
 
-  case object MetaDataLinkInProgress extends MetaLinkResponse
+  case object MetaDataInProgress extends MetaResponse
 
-  case class MetaDataLinkFailed(error: String) extends MetaLinkResponse
+  case class MetaDataFailed(error: String) extends MetaResponse
 
 
   case class RemoveMetaData(experiment: String, files: Set[String])

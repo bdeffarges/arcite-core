@@ -298,7 +298,7 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
       defineRawDataAct forward rrd
 
 
-    case lmd: LinkMetaData ⇒
+    case lmd: DefineMetaData ⇒
       defineRawDataAct forward lmd
 
 

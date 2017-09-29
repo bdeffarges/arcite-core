@@ -8,7 +8,7 @@ import com.idorsia.research.arcite.core.TestHelpers
 import com.idorsia.research.arcite.core.experiments.ExperimentUID
 import com.idorsia.research.arcite.core.experiments.ManageExperiments.AddExperiment
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor.GetFilesFromSource
-import com.idorsia.research.arcite.core.rawdata.DefineRawAndMetaData.{LinkMetaData, RemoveAllRaw, RemoveRawData, SetRawData}
+import com.idorsia.research.arcite.core.rawdata.DefineRawAndMetaData.{DefineMetaData, RemoveAllRaw, RemoveRawData, SetRawData}
 import com.idorsia.research.arcite.core.utils.FilesInformation
 
 import scala.concurrent.Future
@@ -172,7 +172,7 @@ class SourceFilesApiTests extends ApiTests {
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)
 
-    val jsonRequest = ByteString(LinkMetaData(exp1.uid.get,
+    val jsonRequest = ByteString(DefineMetaData(exp1.uid.get,
       Set("/arcite/raw_data/microarrays/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_1_1.txt",
         "/arcite/raw_data/microarrays/AMS0100/161125_br_257236312183_S01_GE2_1105_Oct12_1_2.txt")).toJson.prettyPrint)
 

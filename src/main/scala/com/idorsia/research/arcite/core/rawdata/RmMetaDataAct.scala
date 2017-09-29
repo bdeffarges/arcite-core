@@ -55,7 +55,7 @@ class RmMetaDataAct (actSys: String, requester: ActorRef, expManager: ActorRef,
           }
 
         case _: Any ⇒
-          requester ! MetaDataLinkFailed("could not find experiment where meta data should be linked. ")
+          requester ! MetaDataFailed("could not find experiment where meta data should be linked. ")
           self ! PoisonPill
       }
 

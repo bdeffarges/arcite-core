@@ -1,7 +1,20 @@
 //import scala.collection.immutable.Queue
+def sizeToString(fileSize: Long): String = {
+  if (fileSize < 1024) s"$fileSize B"
+  else {
+    val z = (63 - java.lang.Long.numberOfLeadingZeros(fileSize)) / 10
+    val res = (fileSize.toDouble / (1L << (z * 10))).toInt
+    val uni = "KMGTPE" (z - 1)
+    s"""$res ${uni}B"""
+  }
+}
 
-val s = "hello,world,earth,"
-println(s.split(',').length)
+println(sizeToString(1023))
+println(sizeToString(1024))
+println(sizeToString(1025))
+println(sizeToString(1000000000L))
+//val s = "hello,world,earth,"
+//println(s.split(',').length)
 //val m = Map("a" -> "b", "c" -> "d", "e" -> "f", "g" -> "h")
 //val l = List("c", "g")
 //

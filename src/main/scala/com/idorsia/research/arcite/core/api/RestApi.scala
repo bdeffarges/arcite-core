@@ -148,8 +148,8 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(rmRawData).mapTo[RmRawDataResponse]
   }
 
-  def linkMetaDataFromSource(metaData: LinkMetaData) = {
-    arciteService.ask(metaData).mapTo[MetaLinkResponse]
+  private[api] def defineMetaData(metaData: DefineMetaData) = {
+    arciteService.ask(metaData).mapTo[MetaResponse]
   }
 
   def deleteMetaData(rmMetaData: RemoveMetaData): Future[RmMetaDataResponse] = {
@@ -773,13 +773,13 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
     path("from_source") {
       post {
         logger.debug(s"adding meta data (files from mounted source)...")
-        entity(as[LinkMetaData]) {
+        entity(as[DefineMetaData]) {
           lmd ⇒
-            val saved: Future[MetaLinkResponse] = linkMetaDataFromSource(lmd)
+            val saved: Future[MetaResponse] = defineMetaData(lmd)
             onSuccess(saved) {
-              case MetaDataSetLinked ⇒ complete(Created -> SuccessMessage(" meta data linked "))
-              case MetaDataLinkInProgress ⇒ complete(OK -> SuccessMessage(" meta data almost linked "))
-              case MetaDataLinkFailed(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
+              case MetaDataSetDefined ⇒ complete(Created -> SuccessMessage(" meta data linked "))
+              case MetaDataInProgress ⇒ complete(OK -> SuccessMessage(" meta data almost linked "))
+              case MetaDataFailed(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
             }
         }
       }
