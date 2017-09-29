@@ -1,5 +1,6 @@
 package com.idorsia.research.arcite.core
 
+import java.nio.file.{Files, Path, StandardOpenOption}
 import java.text.SimpleDateFormat
 import java.util.Date
 
@@ -54,4 +55,14 @@ package object utils {
   lazy val almostTenYearsAgo = new Date(System.currentTimeMillis() - (10 * 365 * 24 * 3600 * 1000L))
 
   lazy val almostTenYearsAgoAsString = dateDefaultFormatter.format(almostTenYearsAgo)
+
+  def concatFiles(target: Path, files: Seq[Path]): Unit = {
+
+    val outputStream = Files.newOutputStream(target, StandardOpenOption.CREATE_NEW, StandardOpenOption.APPEND)
+
+    files.foreach(f ⇒ Files.copy(f, outputStream))
+
+    outputStream.close()
+  }
+
 }
