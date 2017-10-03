@@ -65,4 +65,14 @@ package object utils {
     outputStream.close()
   }
 
+
+  def getEnoughButNotTooMuchForUserInfo(stg: String, maxLength: Int = 400): String = {
+    if (stg.length <= maxLength) {
+      stg
+    } else {
+      stg.substring(0, maxLength / 2) +
+        "..." +
+        stg.substring(Math.max(maxLength / 2, stg.length - maxLength / 2), stg.length)
+    }
+  }
 }
