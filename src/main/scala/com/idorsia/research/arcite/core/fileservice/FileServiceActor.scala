@@ -43,7 +43,7 @@ class FileServiceActor(mounts: Option[Map[String, SourceInformation]]) extends A
 
   import FileServiceActor._
 
-  private var sourceFolders = Map[String, SourceInformation]() ++ mounts.getOrElse(Map())
+  private var sourceFolders: Map[String, SourceInformation] = mounts.getOrElse(Map.empty)
 
   override def receive: Receive = {
     case sInfo: SourceInformation ⇒

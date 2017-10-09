@@ -273,7 +273,7 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(getFiles).mapTo[FilesInformation]
   }
 
-  private[api] def publish(pubInf: PublishInfo): Future[PublishFeedback] = {
+  private[api] def publish(pubInf: PublishInfo): Future[PublishFeedback] = {//todo describe in api
     arciteService.ask(pubInf).mapTo[PublishFeedback]
   }
 
