@@ -83,7 +83,7 @@ class GlobPublishRoute(arciteService: ActorRef,
       }
   }
 
-  private[api] def getGPItem(uid: String): Future[PublishResponse] = { //todo in jira and rest API description
+  private[api] def getGPItem(uid: String): Future[PublishResponse] = {
     arciteService.ask(GetGlobalPublishedItem(uid)).mapTo[PublishResponse]
   }
 

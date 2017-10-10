@@ -512,12 +512,12 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
         case Seq(JsString(experiment), JsString(transfDefUID)) ⇒
           RunTransformOnObject(experiment, transfDefUID)
 
-        case Seq(JsString(experiment), JsString(transfDefUID), JsObject(parameters)) ⇒
-          RunTransformOnObject(experiment, transfDefUID, parameters.toMap[String, String])
+        case Seq(JsString(experiment), JsString(transfDefUID), parameters) ⇒
+          RunTransformOnObject(experiment, transfDefUID, parameters.convertTo[Map[String, String]])
 
-        case Seq(JsString(experiment), JsString(transfDefUID), JsObject(parameters), JsArray(selectables)) ⇒
+        case Seq(JsString(experiment), JsString(transfDefUID), parameters, selectables) ⇒
           RunTransformOnObject(experiment, transfDefUID,
-            parameters.toMap[String, String], selectables.toSet[SelectedSelectables])
+            parameters.convertTo[Map[String, String]], selectables.convertTo[Set[SelectedSelectables]])
       }
     }
 
@@ -531,13 +531,12 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
         case Seq(JsString(experiment), JsString(transfDefUID), JsString(transformOrigin)) ⇒
           RunTransformOnTransform(experiment, transfDefUID, transformOrigin)
 
-        case Seq(JsString(experiment), JsString(transfDefUID), JsString(transformOrigin), JsObject(parameters)) ⇒
-          RunTransformOnTransform(experiment, transfDefUID, transformOrigin, parameters.toMap[String, String])
+        case Seq(JsString(experiment), JsString(transfDefUID), JsString(transformOrigin), parameters) ⇒
+          RunTransformOnTransform(experiment, transfDefUID, transformOrigin, parameters.convertTo[Map[String, String]])
 
-        case Seq(JsString(experiment), JsString(transfDefUID), JsString(transformOrigin),
-        JsObject(parameters), JsArray(selectables)) ⇒
+        case Seq(JsString(experiment), JsString(transfDefUID), JsString(transformOrigin), parameters, selectables) ⇒
           RunTransformOnTransform(experiment, transfDefUID, transformOrigin,
-            parameters.toMap[String, String], selectables.toSet[SelectedSelectables])
+            parameters.convertTo[Map[String, String]], selectables.convertTo[Set[SelectedSelectables]])
       }
     }
 
@@ -548,17 +547,16 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
     override def read(json: JsValue): RunTransformOnTransforms = {
       json.asJsObject.getFields("experiment", "transfDefUID", "transformOrigin",
         "parameters", "selectables") match {
-        case Seq(JsString(experiment), JsString(transfDefUID), JsArray(transformOrigin)) ⇒
-          RunTransformOnTransforms(experiment, transfDefUID, transformOrigin.toSet[String])
+        case Seq(JsString(experiment), JsString(transfDefUID), transformOrigin) ⇒
+          RunTransformOnTransforms(experiment, transfDefUID, transformOrigin.convertTo[Set[String]])
 
-        case Seq(JsString(experiment), JsString(transfDefUID), JsArray(transformOrigin), JsObject(parameters)) ⇒
-          RunTransformOnTransforms(experiment, transfDefUID, transformOrigin.toSet[String],
-            parameters.toMap[String, String])
+        case Seq(JsString(experiment), JsString(transfDefUID), transformOrigin, parameters) ⇒
+          RunTransformOnTransforms(experiment, transfDefUID, transformOrigin.convertTo[Set[String]],
+            parameters.convertTo[Map[String, String]])
 
-        case Seq(JsString(experiment), JsString(transfDefUID), JsArray(transformOrigin),
-        JsObject(parameters), JsArray(selectables)) ⇒
-          RunTransformOnTransforms(experiment, transfDefUID, transformOrigin.toSet[String],
-            parameters.toMap[String, String], selectables.toSet[SelectedSelectables])
+        case Seq(JsString(experiment), JsString(transfDefUID), transformOrigin, parameters, selectables) ⇒
+          RunTransformOnTransforms(experiment, transfDefUID,  transformOrigin.convertTo[Set[String]],
+            parameters.convertTo[Map[String, String]], selectables.convertTo[Set[SelectedSelectables]])
       }
     }
 

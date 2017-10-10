@@ -202,7 +202,9 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
   private val metaActor = context.actorSelection(metaInfoActPath)
 
   //publish global actor
-  private val pubGlobActor = context.actorOf(GlobalPublishActor.props)
+  private val pubGlobActor = context.actorOf(GlobalPublishActor.props, "global_publish")
+  log.info(s"***** publish global actor: ${pubGlobActor.path.toStringWithoutAddress}")
+  println(s"***** publish global actor: ${pubGlobActor.path.toStringWithoutAddress}")
 
   import ArciteService._
 

@@ -3,10 +3,11 @@ package com.idorsia.research.arcite.core.fileservice
 import java.io.File
 import java.nio.file.Path
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, Props}
 import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor}
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor.SourceInformation
+import com.idorsia.research.arcite.core.publish.GlobalPublishActor.{GetAllGlobPublishedItems, GlobalPublishedItem, SearchGlobPublishedAsFInfo}
 import com.idorsia.research.arcite.core.utils.{FileInformation, FileVisitor, FilesInformation}
 import com.typesafe.config.ConfigFactory
 
@@ -39,13 +40,22 @@ import com.typesafe.config.ConfigFactory
   * -to map a source mount as raw data source.
   *
   */
-class FileServiceActor(mounts: Option[Map[String, SourceInformation]]) extends Actor with ActorLogging {
+class FileServiceActor(mounts: Map[String, SourceInformation]) extends Actor with ActorLogging {
 
   import FileServiceActor._
 
-  private var sourceFolders: Map[String, SourceInformation] = mounts.getOrElse(Map.empty)
+  private var sourceFolders: Map[String, SourceInformation] = mounts + (GlobPublishedSource.name -> GlobPublishedSource)
+
+  private val conf = ConfigFactory.load()
+  private val actSys = conf.getString("akka.uri")
+
+  private val gloPubSelect = s"${actSys}/user/arcite-services/global_publish"
+  private val gloPubAct = context.actorSelection(ActorPath.fromString(gloPubSelect))
+  log.info(s"****** connect event info actor [$gloPubSelect] actor: $gloPubAct")
+
 
   override def receive: Receive = {
+
     case sInfo: SourceInformation ⇒
       sourceFolders += ((sInfo.name, sInfo))
 
@@ -58,8 +68,16 @@ class FileServiceActor(mounts: Option[Map[String, SourceInformation]]) extends A
     case GetFilesFromSource(source, subFolder) ⇒
       val sourceF = sourceFolders.get(source)
       if (sourceF.isDefined) {
-        sender() ! FilesInformation(
-          FileVisitor.getFilesInformationOneLevel(sourceF.get.path, subFolder: _*).toSeq.sortBy(_.name))
+        if (sourceF.get == GlobPublishedSource) {
+          log.debug(s"{{#%} asking glob. publish actor ")
+          gloPubAct forward SearchGlobPublishedAsFInfo(subFolder, 100)
+        } else {
+          val sinf = FilesInformation(FileVisitor
+            .getFilesInformationOneLevel(sourceF.get.path, subFolder: _*).toSeq.sortBy(_.name))
+
+          sender() ! sinf
+        }
+
       } else sender() ! FilesInformation()
 
 
@@ -104,12 +122,12 @@ object FileServiceActor {
 
   import scala.collection.JavaConverters._
 
-  lazy val mounts: Option[Map[String, SourceInformation]] = {
+  lazy val mounts: Map[String, SourceInformation] = {
     if (config.hasPath("arcite.mounts")) {
-      Some(config.getConfigList("arcite.mounts").asScala
+      config.getConfigList("arcite.mounts").asScala
         .map(v ⇒ (v.getString("name"), SourceInformation(v.getString("name"), v.getString("description"),
-          new File(v.getString("path")).toPath))).toMap)
-    } else None
+          new File(v.getString("path")).toPath))).toMap
+    } else Map.empty
   }
 
   def props(): Props = Props(classOf[FileServiceActor], mounts)
@@ -143,6 +161,8 @@ object FileServiceActor {
   case class SourceInformation(name: String, description: String, path: Path) {
     override def toString: String = s"$name, $description (${path.toString})"
   }
+
+  object GlobPublishedSource extends SourceInformation("arcite published", "published with arcite", core.globalPublishPath)
 
   case class GetFilesFromSource(sourceName: String, subFolder: Seq[String] = Seq.empty)
 

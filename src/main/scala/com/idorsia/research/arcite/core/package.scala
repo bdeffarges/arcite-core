@@ -26,9 +26,7 @@ package object core {
 
   val globalPublishPath: Path = home resolve "published"
 
-  val globalPublishPathIndex: Path = globalPublishPath resolve "index"
-
-  if (!globalPublishPathIndex.toFile.exists) globalPublishPath.toFile.mkdirs()
+  if (!globalPublishPath.toFile.exists) globalPublishPath.toFile.mkdirs()
 
   logger.debug(s"data Path: $dataPath")
   logger.debug(s"logs path: $logsPath")

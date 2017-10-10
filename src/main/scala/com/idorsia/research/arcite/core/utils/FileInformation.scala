@@ -4,6 +4,7 @@ import java.io.File
 import java.nio.file.{Files, Path}
 
 import com.idorsia.research.arcite.core
+import com.idorsia.research.arcite.core.utils
 import com.typesafe.scalalogging.LazyLogging
 
 /**
@@ -15,7 +16,14 @@ case class FilesInformation(files: Seq[FileInformation] = Seq.empty)
 
 case class FileVisitor(file: File) {
   require(file.exists())
+  import FileVisitor._
 
+  lazy val fileInformation: FileInformation =
+    FileInformation(file.getAbsolutePath, file.getName,
+      sizeToString(file.length()), if (file.isDirectory) "folder" else "file")
+}
+
+object FileVisitor extends LazyLogging {
   def sizeToString(fileSize: Long): String = {
     if (fileSize < 1024) s"$fileSize B"
     else {
@@ -26,12 +34,11 @@ case class FileVisitor(file: File) {
     }
   }
 
-  lazy val fileInformation: FileInformation =
-    FileInformation(file.getAbsolutePath, file.getName,
-      sizeToString(file.length()), if (file.isDirectory) "folder" else "file")
-}
+  def sizeOfFileIfItExists(file: String): String = {
+    val f = new File(file)
+    if (f.exists()) sizeToString(f.length()) else sizeToString(0L)
+  }
 
-object FileVisitor extends LazyLogging {
   def getFilesInformation(subFolder: Path, followSymLink: Boolean = true): Set[FileInformation] = {
     val sf = subFolder.toFile
     if (sf.isFile && !sf.getName.contains(core.arciteFilePrefix)) {

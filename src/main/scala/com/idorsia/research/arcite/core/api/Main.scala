@@ -12,6 +12,7 @@ import com.idorsia.research.arcite.core.eventinfo.ArciteAppLogs.AddAppLog
 import com.idorsia.research.arcite.core.experiments.ExperimentActorsManager
 import com.idorsia.research.arcite.core.transforms.cluster.ManageTransformCluster
 import com.typesafe.config.ConfigFactory
+import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.Future
 
@@ -38,9 +39,13 @@ import scala.concurrent.Future
   * Created by Bernard Deffarges on 2016/11/22.
   *
   */
-object Main extends App {
+object Main extends App with LazyLogging {
+
   println(args.mkString(" ; "))
   println(s"config environment file: ${System.getProperty("config.resource")}")
+
+  logger.info(args.mkString(" ; "))
+  logger.info(s"config environment file: ${System.getProperty("config.resource")}")
 
   ManageTransformCluster.defaultTransformClusterStartFromConf()
 
@@ -59,6 +64,7 @@ object Main extends App {
   import akka.http.scaladsl.server.Directives._
 
   import scala.concurrent.duration.{Duration, FiniteDuration}
+
   val t = config.getString("akka.http.server.request-timeout")
   val d = Duration(t)
   val requestTimeout = FiniteDuration(d.length, d.unit)
