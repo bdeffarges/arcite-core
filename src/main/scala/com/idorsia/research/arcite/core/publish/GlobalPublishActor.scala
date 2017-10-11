@@ -143,8 +143,10 @@ class GlobalPublishActor extends Actor with ActorLogging with ArciteJSONProtocol
 
       val filesInfosFromSearch = searchR
         .flatMap(item ⇒ item.items.map(iz ⇒ (item.description, iz))).groupBy(a ⇒ a._1)
-        .flatMap(b ⇒ b._2.zipWithIndex.map(c ⇒ (s"${b._1}${c._2}", c._1._2)))
-        .map(item ⇒ FileInformation(item._2, item._1, FileVisitor.sizeOfFileIfItExists(item._2))).toSeq
+        .flatMap { b ⇒
+          if (b._2.size > 1) b._2.zipWithIndex.map(c ⇒ (s"${b._1}${c._2}", c._1._2))
+          else b._2.map(c ⇒ (b._1, b._2.head._2))
+        }.map(item ⇒ FileInformation(item._2, item._1, FileVisitor.sizeOfFileIfItExists(item._2))).toSeq
 
       sender() ! FilesInformation(filesInfosFromSearch)
 
@@ -221,7 +223,8 @@ class GlobalPublishActor extends Actor with ActorLogging with ArciteJSONProtocol
     var results: List[GlobalPublishedItem] = List.empty
 
     // search for description
-    try {//todo remove?
+    try {
+      //todo remove?
       val descHit = indexSearcher.search(new TermQuery(new Term(LUCENE_DESCRIPTION, input.toLowerCase)), maxHits)
       if (descHit.totalHits > 0) {
         //        log.debug(s"found ${descHit.totalHits} in field description in RAM index")

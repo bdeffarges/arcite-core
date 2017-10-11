@@ -45,7 +45,7 @@ class SetSrcRawDataAct (actSys: String, requester: ActorRef, expManager: ActorRe
   override def receive: Receive = {
 
     case srds: SetRawData ⇒
-      log.debug(s"%4* transferring data from source... $srds")
+      log.debug(s"[%444] transferring data from source... $srds")
       rawDataSet = Some(srds)
       expManager ! GetExperiment(srds.experiment)
 
