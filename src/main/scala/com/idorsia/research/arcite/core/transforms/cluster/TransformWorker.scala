@@ -71,7 +71,7 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
       Stop
 
     case excp: Exception =>
-      log.error(s"[@#£ç45%] that's bad... an exception probably occured in the executor actor... ${excp.getMessage}")
+      log.error(s"[@#£ç45%] that's bad... an exception probably occurred in the executor actor... ${excp.getMessage}")
       currentTransform foreach { transf ⇒
         sendToMaster(WorkFailed(workerId, transf))
       }

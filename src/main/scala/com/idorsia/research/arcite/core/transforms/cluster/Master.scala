@@ -6,8 +6,10 @@ import akka.cluster.client.ClusterClientReceptionist
 import akka.persistence.PersistentActor
 import com.idorsia.research.arcite.core.transforms.TransfDefMsg._
 import com.idorsia.research.arcite.core.transforms.cluster.Frontend._
-import com.idorsia.research.arcite.core.transforms.cluster.MasterWorkerProtocol.WorkIsReady
+import com.idorsia.research.arcite.core.transforms.cluster.MasterWorkerProtocol.{WorkIsReady, WorkerCompleted}
+import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.WorkerJobFailed
 import com.idorsia.research.arcite.core.transforms.{Transform, TransformDefinitionIdentity}
+import com.idorsia.research.arcite.core.utils
 import com.idorsia.research.arcite.core.utils.WriteFeedbackActor
 import com.idorsia.research.arcite.core.utils.WriteFeedbackActor.WriteFeedback
 
@@ -149,7 +151,6 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       }
 
 
-
     case wp: MasterWorkerProtocol.WorkerInProgress ⇒
       log.info(s"got Work in Progress update: ${wp.percentCompleted} % of worker ${wp.workerId}")
       persist(WorkInProgress(wp.transf, wp.percentCompleted)) { event ⇒
@@ -177,6 +178,17 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       for ((workerId, s@WorkerState(_, Busy(workId, timeout), _)) ← workers) {
         if (timeout.isOverdue) {
           log.info(s"Work timed out: ${workId}")
+          val ws = workers.get(workerId)
+          if (ws.isDefined) {
+            val wst = ws.get.status
+            wst match {
+              case Busy(t, _) ⇒
+                val wc = WorkerCompleted(workerId, t,
+                  WorkerJobFailed("time out", "time out, transform process seem to be lost"),
+                  utils.getCurrentDateAsString())
+                feedbackActor ! WriteFeedback(wc)
+            }
+          }
           workers -= workerId
           persist(WorkerTimedOut(workId)) { event ⇒
             workState = workState.updated(event)

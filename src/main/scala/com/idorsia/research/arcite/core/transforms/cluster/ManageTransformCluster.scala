@@ -151,13 +151,13 @@ object ManageTransformCluster {
   }
 
   def startTestWorkers(): Unit = {
-    ManageTransformCluster.addWorker(WorkExecUpperCase.definition)
-    ManageTransformCluster.addWorker(WorkExecUpperCase.definition)
-    ManageTransformCluster.addWorker(WorkExecLowerCase.definition)
-    ManageTransformCluster.addWorker(WorkExecLowerCase.definition)
-    ManageTransformCluster.addWorker(WorkExecProd.definition)
-    ManageTransformCluster.addWorker(WorkExecProd.definition)
-    ManageTransformCluster.addWorker(WorkExecDuplicateText.definition)
-    ManageTransformCluster.addWorker(WorkExecDuplicateText.definition)
+    addWorker(WorkExecUpperCase.definition)
+    addWorker(WorkExecUpperCase.definition)
+    addWorker(WorkExecLowerCase.definition)
+    addWorker(WorkExecLowerCase.definition)
+    addWorker(WorkExecProd.definition)
+    addWorker(WorkExecProd.definition)
+    addWorker(WorkExecDuplicateText.definition)
+    addWorker(WorkExecDuplicateText.definition)
   }
 }
