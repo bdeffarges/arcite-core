@@ -156,7 +156,7 @@ dockerCommands := Seq(
   Cmd("ENTRYPOINT", "bin/arcite-core"))
 
 dockerRepository := Some("gaia:5000")
-dockerAlias := DockerAlias(dockerRepository.value, Some("core"), packageName.value, Some(version.value))
+dockerAlias := DockerAlias(dockerRepository.value, Some("arcite"), packageName.value, Some(version.value))
 
 
 licenses := Seq(("CC0", url("http://creativecommons.org/publicdomain/zero/1.0")))
