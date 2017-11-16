@@ -62,7 +62,7 @@ class WorkExecUpperCase extends Actor with ActorLogging with ArciteJSONProtocol 
             val filesMap = listFiles.zipWithIndex.map(fi ⇒ s"file${fi._2}" -> fi._1).toMap
 
             sender() ! WorkerJobSuccessFul("to Upper case completed", filesMap, Set(
-              Selectable("result files", listFiles.map(f ⇒ SelectableItem(f,f)).toSet)))
+              Selectable("result files", listFiles.map(f ⇒ SelectableItem(f, f)).toSet)))
           } else {
             sender() ! WorkerJobFailed("to Upper case failed ", "did not find previous transform output file.")
           }
@@ -72,14 +72,16 @@ class WorkExecUpperCase extends Actor with ActorLogging with ArciteJSONProtocol 
           val expVisFolder = ExperimentFolderVisitor(tfr.experiment)
           var listFiles: List[String] = Nil
 
-          (expVisFolder.userRawFolderPath.toFile.listFiles ++ expVisFolder.rawFolderPath.toFile.listFiles)
-            .filterNot(fn ⇒ ExperimentFolderVisitor.isInternalFile(fn.getName)).map { f ⇒
+          expVisFolder.getAllRawFiles.map { f ⇒
             val textUpperC = Files.readAllLines(f.toPath).mkString("\n").toUpperCase()
-            listFiles = s"Uppercase_${f.getName}" :: listFiles
-            val p = Paths.get(TransformHelper(t).getTransformFolder().toString, listFiles.head)
+            val ffn = s"Uppercase_${f.getName}"
+            listFiles = ffn :: listFiles
+            val p = TransformHelper(t).getTransformFolder() resolve ffn
             Files.write(p, textUpperC.getBytes(StandardCharsets.UTF_8), CREATE_NEW)
           }
-          sender() ! WorkerJobSuccessFul("to Upper case completed", Map("fileList" -> listFiles.mkString("\n")))
+          val filesMap = listFiles.zipWithIndex.map(fi ⇒ s"file${fi._2}" -> fi._1).toMap
+          sender() ! WorkerJobSuccessFul("to Upper case completed", filesMap,
+            Set(Selectable("result files", listFiles.map(f ⇒ SelectableItem(f, f)).toSet)))
       }
 
     case GetTransfDefId(wi) ⇒

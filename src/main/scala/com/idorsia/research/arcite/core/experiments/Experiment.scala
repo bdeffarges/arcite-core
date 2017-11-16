@@ -1,5 +1,6 @@
 package com.idorsia.research.arcite.core.experiments
 
+import java.io.File
 import java.nio.file.{Path, Paths}
 
 import com.idorsia.research.arcite.core
@@ -33,6 +34,8 @@ case class ExperimentSummary(name: String, description: String, owner: Owner, ui
 
 case class ExperimentFolderVisitor(exp: Experiment) {
   require(exp.uid.isDefined)
+
+  import ExperimentFolderVisitor._
 
   val name: String = exp.name
 
@@ -100,6 +103,10 @@ case class ExperimentFolderVisitor(exp: Experiment) {
 
   def isImmutableExperiment: Boolean = immutableStateFile.toFile.exists()
 
+  def getAllRawFiles: Set[File] = {
+    (userRawFolderPath.toFile.listFiles ++ rawFolderPath.toFile.listFiles)
+      .filterNot(fn ⇒ isInternalFile(fn.getName)).toSet
+  }
 }
 
 object ExperimentFolderVisitor {
@@ -108,7 +115,8 @@ object ExperimentFolderVisitor {
   val publishedFileExtension = "_published.json"
   val publishedRemovedFileExtension = "_removed.json"
 
-  def isInternalFile(name: String): Boolean = name == defaultMetaFileName || name == metaFileInPublicFolder
+  def isInternalFile(name: String): Boolean = name == defaultMetaFileName ||
+    name == metaFileInPublicFolder || name.contains(core.arciteFilePrefix)
 }
 
 /**

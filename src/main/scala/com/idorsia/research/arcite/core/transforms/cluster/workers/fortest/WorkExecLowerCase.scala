@@ -102,8 +102,7 @@ class WorkExecLowerCase extends Actor with ActorLogging with ArciteJSONProtocol 
             log.debug("got a fail message, failing on purpose to test failure behavior...")
             sender() ! WorkerJobFailed("failing on purpose for tests...")
           } else {
-            (expVisFolder.userRawFolderPath.toFile.listFiles ++ expVisFolder.rawFolderPath.toFile.listFiles)
-              .filterNot(fn ⇒ ExperimentFolderVisitor.isInternalFile(fn.getName)).map { f ⇒
+            expVisFolder.getAllRawFiles.map { f ⇒
               val textLowerC = Files.readAllLines(f.toPath).mkString("\n").toLowerCase()
               listFiles = s"lowercase_${f.getName}" :: listFiles
               val p = Paths.get(TransformHelper(t).getTransformFolder().toString, listFiles.head)
