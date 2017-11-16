@@ -46,6 +46,7 @@ class WorkExecUpperCase extends Actor with ActorLogging with ArciteJSONProtocol 
           val transfFolder = ExperimentFolderVisitor(tfFtf.experiment).transformFolderPath
           val path = transfFolder resolve tfFtf.srcTransformID
           val feedbF = path resolve WriteFeedbackActor.FILE_NAME
+
           if (feedbF.toFile.exists()) {
             val tdi = Files.readAllLines(feedbF).toList.mkString("\n").parseJson.convertTo[TransformCompletionFeedback]
             var listFiles: List[String] = Nil
