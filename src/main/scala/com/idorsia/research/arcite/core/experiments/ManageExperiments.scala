@@ -10,11 +10,11 @@ import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSystem, OneFor
 import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.api.ArciteJSONProtocol
 import com.idorsia.research.arcite.core.api.ArciteService._
-import com.idorsia.research.arcite.core.eventinfo.ArciteAppLogs.AddAppLog
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging._
 import com.idorsia.research.arcite.core.eventinfo._
 import com.idorsia.research.arcite.core.experiments.ExperimentActorsManager.StartExperimentsServiceActors
 import com.idorsia.research.arcite.core.experiments.LocalExperiments.{LoadExperiment, SaveExperimentFailed, SaveExperimentSuccessful}
+import com.idorsia.research.arcite.core.experiments.ManageExperiments.RebuildExperiments
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor._
 import com.idorsia.research.arcite.core.publish.PublishActor
@@ -72,9 +72,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
 
   private val luceneRAMSearchAct = context.system.actorOf(Props(classOf[ArciteLuceneRamIndex]), "experiments_lucene_index")
 
-  private var experiments: Map[String, Experiment] = LocalExperiments.loadAllLocalExperiments()
-
-  experiments.values.foreach(exp ⇒ luceneRAMSearchAct ! IndexExperiment(exp))
+  private var experiments: Map[String, Experiment] = Map.empty
 
   private val managePublished = context.actorOf(Props(classOf[PublishActor], eventInfoLoggingAct), "publish_actor")
 
@@ -89,11 +87,17 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
   override val supervisorStrategy: SupervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 20 seconds) {
       case _: FileSystemException ⇒ Restart
-      case _: Exception ⇒ Escalate
+      case _: Exception ⇒ Escalate //todo should be more caught exceptions
     }
 
-
   override def receive: Receive = {
+    case RebuildExperiments ⇒ // todo can be improved once there will be more experiments
+      log.info("******* rebuilding experiments list ***********")
+      experiments = LocalExperiments.loadAllExperiments()
+      log.info("******* ******* rebuilding lucene RAM index ***********")
+      luceneRAMSearchAct ! IndexExperiments(experiments.values.toSet)
+      log.info("******* ******* ******* experiments reloaded ***********")
+
 
     case AddExperiment(experiment) ⇒
       if (core.organization.experimentTypes.exists(_.packagePath == experiment.owner.organization)) {
@@ -533,6 +537,8 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
     case any: Any ⇒ log.debug(s"don't know what to do with this message $any")
   }
 
+
+
   private def saveDigest(exp: Experiment, folder: Path): Unit = {
     Files.write(folder resolve core.DIGEST_FILE_NAME,
       GetDigest.getDigest(exp.name + exp.uid + exp.design.toString + exp.description +
@@ -669,6 +675,7 @@ object ManageExperiments {
 
   case class DeleteExperiment(uid: String)
 
+  case object RebuildExperiments
 
   sealed trait HideUnhide {
     def uid: String
@@ -808,6 +815,10 @@ class ExperimentActorsManager extends Actor with ActorLogging {
       context.system.scheduler.schedule(45 seconds, 10 minutes) {
         eventInfoLoggingAct ! BuildRecentLastUpdate
         eventInfoLoggingAct ! BuildRecentLogs
+      }
+
+      context.system.scheduler.schedule(1 second, 2 minutes) {
+        manExpActor ! RebuildExperiments
       }
   }
 

@@ -22,7 +22,7 @@ import org.apache.lucene.store.RAMDirectory
   */
 class ArciteLuceneRamIndex extends Actor with ActorLogging {
 
-  val directory = new RAMDirectory
+  private val directory = new RAMDirectory
 
   private lazy val executors = Executors.newCachedThreadPool
 
@@ -31,19 +31,11 @@ class ArciteLuceneRamIndex extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case IndexExperiment(exp) ⇒
+      addExperiment(exp)
 
-      val d = new Document
-      d.add(new TextField(luc_name, exp.name, Field.Store.NO))
-      d.add(new TextField(luc_description, exp.description, Field.Store.NO))
 
-      val content =
-        s"""${exp.name} ${exp.description} ${exp.design.description}
-           |${exp.design.samples.mkString(" ")} ${exp.owner}""".toLowerCase
-
-      d.add(new TextField(luc_content, content, Field.Store.NO))
-      d.add(new StringField(luc_uid, exp.uid.get, Field.Store.YES))
-      indexWriter.addDocument(d)
-      indexWriter.commit()
+    case IndexExperiments(exps: Set[Experiment]) ⇒
+      exps.foreach(exp ⇒ addExperiment(exp))
 
 
     case RemoveFromIndex(exp) ⇒
@@ -51,9 +43,29 @@ class ArciteLuceneRamIndex extends Actor with ActorLogging {
       indexWriter.commit()
 
 
+    case Clear ⇒
+      indexWriter.deleteAll()
+      indexWriter.commit()
+
+
     case se: SearchExperimentsWithReq ⇒
       val searchR = search(se.search.search, se.search.maxHits)
       sender() ! FoundExperimentsWithReq(searchR, se.forWhom)
+  }
+
+  private def addExperiment(exp: Experiment) = {
+    val d = new Document
+    d.add(new TextField(luc_name, exp.name, Field.Store.NO))
+    d.add(new TextField(luc_description, exp.description, Field.Store.NO))
+
+    val content =
+      s"""${exp.name} ${exp.description} ${exp.design.description}
+         |${exp.design.samples.mkString(" ")} ${exp.owner}""".toLowerCase
+
+    d.add(new TextField(luc_content, content, Field.Store.NO))
+    d.add(new StringField(luc_uid, exp.uid.get, Field.Store.YES))
+    indexWriter.addDocument(d)
+    indexWriter.commit()
   }
 
   /**
@@ -134,11 +146,15 @@ object ArciteLuceneRamIndex {
 
   case class IndexExperiment(experiment: Experiment) extends TalkToLuceneRamDir
 
+  case class IndexExperiments(experiment: Set[Experiment]) extends TalkToLuceneRamDir
+
   case class RemoveFromIndex(experiment: Experiment) extends TalkToLuceneRamDir
 
   case class AddCondition(condition: Condition) extends TalkToLuceneRamDir
 
   case class Search(text: String) extends TalkToLuceneRamDir
+
+  case object Clear extends TalkToLuceneRamDir
 
   case class FoundExperiment(digest: String, where: String, order: Int)
 

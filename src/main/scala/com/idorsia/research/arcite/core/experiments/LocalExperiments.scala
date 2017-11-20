@@ -23,20 +23,13 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
 
   case class SaveExperimentFailed(error: String) extends SaveExperimentFeedback
 
-  def loadAllLocalExperiments(): Map[String, Experiment] = {
-
-    logger.debug(s"loading all experiments from local network ${core.dataPath}... ")
-
-    loadAllExperiments()
-  }
-
-
   /**
     * read all experiments in a folder and its subfolder...
     *
     * @return
     */
-  private def loadAllExperiments(): Map[String, Experiment] = {
+  def loadAllExperiments(): Map[String, Experiment] = {
+    logger.debug(s"loading all experiments from home ${core.dataPath}... ")
 
     //todo while going deeper should verify match between structure and name/organization
     // todo when to check digest?
