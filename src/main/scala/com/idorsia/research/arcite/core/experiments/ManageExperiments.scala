@@ -190,7 +190,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
 
       val exp = experiments.get(uid)
 
-      if (exp.isDefined) {
+      if (exp.isDefined && !ExperimentFolderVisitor(exp.get).isImmutableExperiment) {
         val nexp = exp.get.copy(design = design.design)
 
         LocalExperiments.saveExperiment(nexp) match {
@@ -204,7 +204,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
             sender() ! FailedAddingDesign(error)
         }
       } else {
-        sender() ! FailedAddingDesign("It seems the experiment does not exist.")
+        sender() ! FailedAddingDesign("either the experiment does not exist or it's immutable.")
       }
 
 
