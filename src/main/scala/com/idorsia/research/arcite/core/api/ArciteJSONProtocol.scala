@@ -293,7 +293,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val rmRawDataJson: RootJsonFormat[RemoveRawData] = jsonFormat2(RemoveRawData)
   implicit val rmAllRawDataJson: RootJsonFormat[RemoveAllRaw] = jsonFormat1(RemoveAllRaw)
 
-  implicit val globalPublishedItemLightJson: RootJsonFormat[GlobalPublishedItemLight] = jsonFormat3(GlobalPublishedItemLight)
+  implicit val globalPublishedItemLightJson: RootJsonFormat[GlobalPublishedItemLight] = jsonFormat5(GlobalPublishedItemLight)
   implicit val globalPublishedItemJson: RootJsonFormat[GlobalPublishedItem] = jsonFormat3(GlobalPublishedItem)
   implicit val publishGlobItemJson: RootJsonFormat[PublishGlobalItem] = jsonFormat1(PublishGlobalItem)
   implicit val getGlobPubItemJson: RootJsonFormat[GetGlobalPublishedItem] = jsonFormat1(GetGlobalPublishedItem)

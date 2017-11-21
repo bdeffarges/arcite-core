@@ -279,6 +279,7 @@ object GlobalPublishActor {
   val LUCENE_CONTENT = "content"
 
   case class GlobalPublishedItemLight(description: String, items: Seq[String],
+                                      experiment: String, transform: String,
                                       owner: Owner = DefaultOwner.anonymous)
 
 
