@@ -14,6 +14,7 @@ import akka.stream.scaladsl.FileIO
 import akka.util.Timeout
 import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.api.ArciteService._
+import com.idorsia.research.arcite.core.api.swagger.SwDocService
 import com.idorsia.research.arcite.core.eventinfo.ArciteAppLogs.GetAppLogs
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.{InfoLogs, MostRecentLogs, ReadLogs, RecentAllLastUpdates}
 import com.idorsia.research.arcite.core.experiments.{ExperimentFolderVisitor, ExperimentUID}
@@ -320,10 +321,11 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             organizationRoute ~
             treeOfTransforms ~
             runningJobsFeedbackRoute ~
-          new GlobPublishRoute(arciteService, executionContext, requestTimeout).publishRoute ~
+          new GlobPublishRoute(arciteService, executionContext, requestTimeout).route ~
             defaultRoute
         }
       } ~
+      SwDocService.routes~
       defaultError
   }
 

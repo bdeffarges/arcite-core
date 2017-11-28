@@ -5,7 +5,7 @@ organization := "com.idorsia.research.arcite"
 
 name := "arcite-core"
 
-version := "1.81.0"
+version := "1.82.0"
 
 scalaVersion := "2.11.8"
 
@@ -57,8 +57,8 @@ resolvers ++= Seq(
 
 
 libraryDependencies ++= {
-  val akkaVersion = "2.5.3"
-  val akkaHttpVersion = "10.0.9"
+  val akkaVersion = "2.5.6"
+  val akkaHttpVersion = "10.0.10"
   val luceneVersion = "6.5.0"
 
   Seq(
@@ -96,6 +96,9 @@ libraryDependencies ++= {
     "org.iq80.leveldb" % "leveldb" % "0.9",
     "org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8",
     "commons-io" % "commons-io" % "2.5",
+    "io.swagger" % "swagger-jaxrs" % "1.5.16",
+    "com.github.swagger-akka-http" %% "swagger-akka-http" % "0.11.1",
+    "ch.megard" %% "akka-http-cors" % "0.2.2",
     "org.scalacheck" %% "scalacheck" % "1.13.5" % "test",
     "org.specs2" %% "specs2-core" % "3.8.9" % "test",
     "org.scalactic" %% "scalactic" % "3.0.1",
