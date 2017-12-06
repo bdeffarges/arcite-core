@@ -10,7 +10,10 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.util.Timeout
 import com.typesafe.scalalogging.LazyLogging
 import com.idorsia.research.arcite.core.publish.GlobalPublishActor._
+import javax.ws.rs.Path
 
+import akka.http.scaladsl.server.Directives
+import io.swagger.annotations._
 
 /**
   * arcite-core
@@ -36,10 +39,23 @@ import com.idorsia.research.arcite.core.publish.GlobalPublishActor._
   *
   */
 
+@Api(value = "/hello", produces = "application/json")
+@Path("/hello")
 class GlobPublishRoute(arciteService: ActorRef,
                        implicit val executionContext: ExecutionContext, //todo improve implicits?
-                       implicit val requestTimeout: Timeout) extends ArciteJSONProtocol with LazyLogging {
+                       implicit val requestTimeout: Timeout)
+  extends Directives with ArciteJSONProtocol with LazyLogging {
 
+  def route = publishRoute
+
+  @ApiOperation(value = "Add integers", nickname = "addIntegers", httpMethod = "POST", response = classOf[SuccessMessage])
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "body", value = "\"numbers\" to sum", required = true,
+      dataTypeClass = classOf[GlobalPublishedItemLight], paramType = "body")
+  ))
+  @ApiResponses(Array(
+    new ApiResponse(code = 500, message = "Internal server error")
+  ))
   def publishRoute = pathPrefix("publish") {
     path(Segment) { uid ⇒
       pathEnd {
