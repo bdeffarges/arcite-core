@@ -28,12 +28,14 @@ object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
     *
     * @return
     */
-  def loadAllExperiments(): Map[String, Experiment] = {
+  private[experiments] def loadAllExperiments(): Map[String, Experiment] = {
     logger.debug(s"loading all experiments from home ${core.dataPath}... ")
 
     //todo while going deeper should verify match between structure and name/organization
     // todo when to check digest?
-    var map = Map[String, Experiment]()
+    // todo add exception handling in case structure or files are not castable through json
+
+    var map: Map[String, Experiment] = Map.empty
 
     def deeperUntilMeta(currentFolder: Path) {
       //      logger.debug(s"currentFolder: $currentFolder")

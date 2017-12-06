@@ -35,6 +35,8 @@ class ArciteLuceneRamIndex extends Actor with ActorLogging {
 
 
     case IndexExperiments(exps: Set[Experiment]) ⇒
+      indexWriter.deleteAll()
+      indexWriter.commit()
       exps.foreach(exp ⇒ addExperiment(exp))
 
 

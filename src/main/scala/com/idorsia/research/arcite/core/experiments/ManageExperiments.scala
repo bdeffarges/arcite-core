@@ -91,12 +91,14 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
     }
 
   override def receive: Receive = {
-    case RebuildExperiments ⇒ // todo can be improved once there will be more experiments
+    case RebuildExperiments ⇒ // todo should be improved once there will be a lot of experiments
       log.info("******* rebuilding experiments list ***********")
       experiments = LocalExperiments.loadAllExperiments()
       log.info("******* ******* rebuilding lucene RAM index ***********")
       luceneRAMSearchAct ! IndexExperiments(experiments.values.toSet)
+      log.info(s"memory situation= ${MemoryUsage.meminMBAsString()}")
       log.info("******* ******* ******* experiments reloaded ***********")
+
 
 
     case AddExperiment(experiment) ⇒
@@ -817,7 +819,7 @@ class ExperimentActorsManager extends Actor with ActorLogging {
         eventInfoLoggingAct ! BuildRecentLogs
       }
 
-      context.system.scheduler.schedule(1 second, 2 minutes) {
+      context.system.scheduler.schedule(30 second, 10 seconds) {
         manExpActor ! RebuildExperiments
       }
   }
