@@ -111,7 +111,7 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
 
 
     case gtd: GetTransfDefId ⇒
-      log.info(s"asked for my workerType ")
+      log.debug(s"asked for my workerType ")
       workExecutor ! gtd
 
 
@@ -133,7 +133,7 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
 
 
     case _: Transform ⇒
-      log.info("Yikes. Master told me to do work, while I'm working.")
+      log.debug("Yikes. Master told me to do work, while I'm working.")
 
 
     case gtd: GetTransfDefId ⇒
@@ -142,7 +142,7 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
 
 
     case a: Any ⇒
-      log.error(s"does not know how to process message $a")
+      log.error(s"-[éàäè] does not know how to process message $a")
   }
 
   def waitForWorkIsDoneAck(result: WorkerJobCompletion): Receive = {

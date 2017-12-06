@@ -5,7 +5,7 @@
         </encoder>
     </appender>
 
-    <logger name="com" level="debug">
+    <logger name="com.idorsia.research" level="debug">
         <appender-ref ref="STDOUT"/>
     </logger>
 
