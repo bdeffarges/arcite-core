@@ -5,6 +5,7 @@ import java.util.UUID
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.event.slf4j.Logger
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives.{getFromFile, _}
@@ -336,19 +337,11 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             defaultRoute
         }
       } ~
-      defaultError
-  }
-
-  private def defaultError = {
-    get {
-      complete(BadRequest -> "Nothing on this url.")
-    }
+      defaultRoute
   }
 
   def defaultRoute = {
-    get {
-      complete(OK -> apiSpec.stripMargin)
-    }
+    redirect(s"/api/v${apiVersion}/sw-ui", StatusCodes.PermanentRedirect)
   }
 
 
