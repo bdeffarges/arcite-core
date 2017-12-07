@@ -53,7 +53,7 @@ class GlobPubTests extends ApiTests {
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnection(host, port)
 
-    val jsonRequest = ByteString(GlobalPublishedItemLight(description1, Seq("/arcite/test/data"),
+    val jsonRequest = ByteString(GlobalPublishedItemLight(description1, Seq("/arcite/test/data"),"","",
       TestHelpers.owner1).toJson.prettyPrint)
 
     val postRequest = HttpRequest(
@@ -80,7 +80,7 @@ class GlobPubTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val jsonRequest = ByteString(GlobalPublishedItemLight(description2,
-      Seq("/arcite/hello/world"), TestHelpers.owner1).toJson.prettyPrint)
+      Seq("/arcite/hello/world"), "","",TestHelpers.owner1).toJson.prettyPrint)
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
@@ -107,7 +107,7 @@ class GlobPubTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val jsonRequest = ByteString(GlobalPublishedItemLight(description3,
-      Seq("/arcite/hello/neptune"), TestHelpers.owner1).toJson.prettyPrint)
+      Seq("/arcite/hello/neptune"), "","",TestHelpers.owner1).toJson.prettyPrint)
 
     val postRequest = HttpRequest(
       HttpMethods.POST,

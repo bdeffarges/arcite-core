@@ -14,7 +14,8 @@ import akka.stream.scaladsl.FileIO
 import akka.util.Timeout
 import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.api.ArciteService._
-import com.idorsia.research.arcite.core.api.swagger.SwDocService
+import com.idorsia.research.arcite.core.api.Main.config
+import com.idorsia.research.arcite.core.api.swagger.{SwDocService, SwUI}
 import com.idorsia.research.arcite.core.eventinfo.ArciteAppLogs.GetAppLogs
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.{InfoLogs, MostRecentLogs, ReadLogs, RecentAllLastUpdates}
 import com.idorsia.research.arcite.core.experiments.{ExperimentFolderVisitor, ExperimentUID}
@@ -67,6 +68,12 @@ trait ArciteServiceApi extends LazyLogging {
   private[api] val apiSpec = config.getString("arcite.api.specification")
 
   private[api] val apiVersion = config.getString("arcite.api.version")
+
+  private[api] val host = config.getString("http.host")
+
+  private[api] val port = config.getInt("http.port")
+
+  private[api] val apiPath = s"http://${host}:${port}/api/v${apiVersion}/swagger.json"
 
   def createArciteApi(): ActorRef
 
@@ -274,7 +281,8 @@ trait ArciteServiceApi extends LazyLogging {
     arciteService.ask(getFiles).mapTo[FilesInformation]
   }
 
-  private[api] def publish(pubInf: PublishInfo): Future[PublishFeedback] = {//todo describe in api
+  private[api] def publish(pubInf: PublishInfo): Future[PublishFeedback] = {
+    //todo describe in api
     arciteService.ask(pubInf).mapTo[PublishFeedback]
   }
 
@@ -321,11 +329,13 @@ trait RestRoutes extends ArciteServiceApi with MatrixMarshalling with ArciteJSON
             organizationRoute ~
             treeOfTransforms ~
             runningJobsFeedbackRoute ~
-          new GlobPublishRoute(arciteService, executionContext, requestTimeout).route ~
+            new GlobPublishRoute(arciteService)(executionContext, requestTimeout).publishRoute ~
+            SwDocService.routes ~
+//            new SwUI(apiPath).route ~
+            new SwUI().route ~
             defaultRoute
         }
       } ~
-      SwDocService.routes~
       defaultError
   }
 

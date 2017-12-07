@@ -34,7 +34,7 @@ package object core {
 
   // because of Docker and absolute paths vs mounted directory.
   // So we can always substitute this folder at later stage.
-  lazy val homeFolderAsVariable = "${arcite.home.experiments}"
+  lazy val homeFolderAsVariable = "${arcite.home.experiments}" //substituted at the docker deployment level
 
   //to avoid as much as possible file collision, we prefix internal arcite files with a strange prefix
   val arciteFilePrefix = "##@ArCiTe8@@$__"

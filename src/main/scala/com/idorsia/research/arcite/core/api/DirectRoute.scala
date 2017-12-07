@@ -1,13 +1,14 @@
 package com.idorsia.research.arcite.core.api
 
-import java.io.File
 
-import akka.http.scaladsl.server.Directives.{complete, getFromBrowseableDirectory, getFromFile, onSuccess, path, pathEnd, pathPrefix, _}
+import akka.http.scaladsl.server.Directives.{complete, getFromBrowseableDirectory, onSuccess, path, pathPrefix, _}
+
 import akka.actor.ActorRef
+
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes.BadRequest
 import akka.http.scaladsl.server
-import akka.http.scaladsl.server.{Directive1, PathMatchers}
+
 import com.idorsia.research.arcite.core.api.ArciteService.{ExperimentFound, ExperimentFoundFeedback, GetExperiment, NoExperimentFound}
 import com.idorsia.research.arcite.core.experiments.ExperimentFolderVisitor
 import com.typesafe.scalalogging.LazyLogging
@@ -56,7 +57,7 @@ class DirectRoute(arciteService: ActorRef) extends LazyLogging {
         logger.info("direct route returning files or directory listing.")
         pathPrefix(Segment) { experiment ⇒
           onSuccess(getExperiment(experiment)) {
-            case NoExperimentFound ⇒ complete(BadRequest -> "no experiment found for this UID")
+            case NoExperimentFound ⇒ complete(BadRequest -> "no experiment found for this uid")
             case ExperimentFound(exp) ⇒ {
               val visit = ExperimentFolderVisitor(exp)
               pathPrefix("transform") {

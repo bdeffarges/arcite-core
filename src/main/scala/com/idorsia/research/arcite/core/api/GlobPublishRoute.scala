@@ -1,19 +1,22 @@
 package com.idorsia.research.arcite.core.api
 
-import scala.concurrent.{ExecutionContext, Future}
-import akka.actor.ActorRef
+
+import scala.concurrent.Future
 import akka.http.scaladsl.model.StatusCodes.{BadRequest, Created, OK}
-import akka.http.scaladsl.server.Directives.{as, complete, delete, entity, get, onSuccess, parameters, pathPrefix, post}
-import akka.pattern.ask
-import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import akka.util.Timeout
 import com.typesafe.scalalogging.LazyLogging
 import com.idorsia.research.arcite.core.publish.GlobalPublishActor._
 import javax.ws.rs.Path
 
+import scala.concurrent.ExecutionContext
+import akka.actor.ActorRef
 import akka.http.scaladsl.server.Directives
+import akka.pattern.ask
+import akka.util.Timeout
 import io.swagger.annotations._
+
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
 
 /**
   * arcite-core
@@ -39,16 +42,13 @@ import io.swagger.annotations._
   *
   */
 
-@Api(value = "/hello", produces = "application/json")
-@Path("/hello")
-class GlobPublishRoute(arciteService: ActorRef,
-                       implicit val executionContext: ExecutionContext, //todo improve implicits?
-                       implicit val requestTimeout: Timeout)
-  extends Directives with ArciteJSONProtocol with LazyLogging {
+@Api(value = "/publish", produces = "application/json")
+@Path("/publish")
+class GlobPublishRoute(arciteService: ActorRef)
+                      (implicit val executionContext: ExecutionContext, //todo improve implicits?
+                       implicit val requestTimeout: Timeout) extends Directives with ArciteJSONProtocol with LazyLogging {
 
-  def route = publishRoute
-
-  @ApiOperation(value = "Add integers", nickname = "addIntegers", httpMethod = "POST", response = classOf[SuccessMessage])
+  @ApiOperation(value = "publish global artifacts.", nickname = "publishGlobal", httpMethod = "POST", response = classOf[SuccessMessage])
   @ApiImplicitParams(Array(
     new ApiImplicitParam(name = "body", value = "\"numbers\" to sum", required = true,
       dataTypeClass = classOf[GlobalPublishedItemLight], paramType = "body")
@@ -66,13 +66,13 @@ class GlobPublishRoute(arciteService: ActorRef,
             case GlobPubError(error) ⇒ complete(BadRequest -> ErrorMessage(s"error removing [$error]"))
           }
         } ~
-        get {
-          logger.info(s"get published items for uid: $uid")
-          onSuccess(getGPItem(uid)) {
-            case FoundGlobPubItem(gpItem) ⇒ complete(OK -> gpItem)
-            case DidNotFindGlobPubItem ⇒ complete(BadRequest)
+          get {
+            logger.info(s"get published items for uid: $uid")
+            onSuccess(getGPItem(uid)) {
+              case FoundGlobPubItem(gpItem) ⇒ complete(OK -> gpItem)
+              case DidNotFindGlobPubItem ⇒ complete(BadRequest)
+            }
           }
-        }
       }
     } ~
       parameters('search, 'maxHits ? 100) { (search, maxHits) ⇒
