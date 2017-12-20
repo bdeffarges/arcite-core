@@ -6,10 +6,9 @@ import java.util.concurrent.TimeUnit
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.{TestKit, TestProbe}
 import com.idorsia.research.arcite.core.TestHelpers._
-import com.idorsia.research.arcite.core.api.ArciteService.AddedExperiment
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging
 import com.idorsia.research.arcite.core.experiments.LocalExperiments.{LoadExperiment, SaveExperimentSuccessful}
-import com.idorsia.research.arcite.core.experiments.ManageExperiments.AddExperiment
+import com.idorsia.research.arcite.core.experiments.ManageExperiments.{AddExperiment, AddedExperiment}
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{BeforeAndAfterAll, MustMatchers, WordSpecLike}
 

@@ -3,14 +3,8 @@ package com.idorsia.research.arcite.core.rawdata
 import java.io.File
 import java.nio.file.Files
 
-import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.idorsia.research.arcite.core.api.ArciteJSONProtocol
-import com.idorsia.research.arcite.core.api.ArciteService.{ExperimentFound, ExperimentFoundFeedback, GetExperiment}
-import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.AddLog
-import com.idorsia.research.arcite.core.eventinfo.{ExpLog, LogCategory, LogType}
-import com.idorsia.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor}
-import com.idorsia.research.arcite.core.rawdata.TransferSelectedRawData._
-import com.idorsia.research.arcite.core.rawdata.TransferSelectedRawFile.TransferFiles
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 

@@ -37,7 +37,7 @@ import spray.json._
   * Created by Bernard Deffarges on 2017/07/25.
   *
   */
-class SourceFilesApiTests extends ApiTests {
+class SourceFilesApiTests extends ApiTests with ExpJsonProto {
 
   var exp1 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment1)
 

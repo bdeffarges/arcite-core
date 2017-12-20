@@ -6,6 +6,7 @@ import java.nio.file._
 import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.api.ArciteJSONProtocol
 import com.idorsia.research.arcite.core.api.ArciteService._
+import com.idorsia.research.arcite.core.experiments.ManageExperiments._
 import com.idorsia.research.arcite.core.utils
 import com.idorsia.research.arcite.core.utils.FoldersHelpers
 import com.typesafe.scalalogging.LazyLogging

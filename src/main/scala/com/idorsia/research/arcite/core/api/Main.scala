@@ -7,6 +7,7 @@ import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.headers.{Allow, RawHeader}
 import akka.http.scaladsl.server.{MethodRejection, RejectionHandler}
 import akka.stream.ActorMaterializer
+import akka.util.Timeout
 import com.idorsia.research.arcite.core.eventinfo.{ArciteAppLog, LogCategory}
 import com.idorsia.research.arcite.core.eventinfo.ArciteAppLogs.AddAppLog
 import com.idorsia.research.arcite.core.experiments.ExperimentActorsManager
@@ -68,11 +69,13 @@ object Main extends App with LazyLogging {
   val t = config.getString("akka.http.server.request-timeout")
   val d = Duration(t)
   val requestTimeout = FiniteDuration(d.length, d.unit)
+  implicit val timeout = Timeout(requestTimeout)
 
-  // create the top service actor (for children actor like the logging actor, many others sit under the Exp. Manager)
   private val arciteAppService = system.actorOf(AppServiceActorsManager.props(), "arcite_app_service")
 
-  val api = new RestApi(system, requestTimeout).routes
+  // create the top service actor (for children actor like the logging actor, many others sit under the Exp. Manager)
+
+  val api = new RestApi(system).routes
 
   implicit val materializer = ActorMaterializer()
 

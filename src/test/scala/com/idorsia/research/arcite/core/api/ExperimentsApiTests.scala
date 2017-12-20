@@ -8,11 +8,11 @@ import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.util.ByteString
+import com._
 import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.TestHelpers
-import com.idorsia.research.arcite.core.api.ArciteService.{AddedExperiment, AllExperiments, ExperimentFound}
-import com.idorsia.research.arcite.core.experiments.{Experiment, ExperimentSummary, ExperimentUID}
-import com.idorsia.research.arcite.core.experiments.ManageExperiments.{AddExpProps, AddExperiment, ChangeDescription, RmExpProps}
+import com.idorsia.research.arcite.core.experiments.{Experiment, ExperimentUID}
+import com.idorsia.research.arcite.core.experiments.ManageExperiments._
 import com.idorsia.research.arcite.core.secure.WithToken
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
@@ -45,7 +45,7 @@ import scala.concurrent.Future
   * Created by Bernard Deffarges on 2016/11/10.
   *
   */
-class ExperimentsApiTests extends ApiTests {
+class ExperimentsApiTests extends ApiTests with ExpJsonProto {
 
   private val wrongExp = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment4)
   private var exp1 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment1)

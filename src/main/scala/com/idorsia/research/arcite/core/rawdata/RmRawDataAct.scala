@@ -1,7 +1,7 @@
 package com.idorsia.research.arcite.core.rawdata
 
 import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props}
-import com.idorsia.research.arcite.core.api.ArciteService.{ExperimentFound, ExperimentFoundFeedback, GetExperiment}
+import com.idorsia.research.arcite.core.experiments.ManageExperiments.{ExperimentFound, ExperimentFoundFeedback, GetExperiment}
 import com.idorsia.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor}
 
 /**

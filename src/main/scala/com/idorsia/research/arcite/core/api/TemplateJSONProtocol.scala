@@ -28,8 +28,8 @@ import com.idorsia.research.arcite.core.transforms.cluster.workers.fortest.WorkE
 import com.idorsia.research.arcite.core.transftree.TreeOfTransfOutcome.TreeOfTransfOutcome
 import com.idorsia.research.arcite.core.transftree.TreeOfTransformsManager.CurrentlyRunningToT
 import com.idorsia.research.arcite.core.transftree.{ToTNoFeedback, _}
-import com.idorsia.research.arcite.core.{ExperimentType, Organization, utils}
 import com.idorsia.research.arcite.core.utils._
+import com.idorsia.research.arcite.core.{ExperimentType, Organization, utils}
 import spray.json.{DefaultJsonProtocol, JsString, RootJsonFormat, _}
 
 /**
@@ -55,7 +55,7 @@ import spray.json.{DefaultJsonProtocol, JsString, RootJsonFormat, _}
   * Created by Bernard Deffarges on 2016/09/14.
   *
   */
-trait ArciteJSONProtocol extends DefaultJsonProtocol {
+trait TemplateJSONProtocol extends DefaultJsonProtocol {
   //todo split up JSON marshalling by domain (like the routes)
 
   implicit val uidJson: RootJsonFormat[UniqueID] = jsonFormat1(UniqueID)
@@ -306,6 +306,12 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val manyTransformersJson: RootJsonFormat[ManyTransfDefs] = jsonFormat1(ManyTransfDefs)
   implicit val oneTransformersJson: RootJsonFormat[OneTransfDef] = jsonFormat1(OneTransfDef)
 
+  implicit val foundExperimentJson: RootJsonFormat[FoundExperiment] = jsonFormat3(FoundExperiment)
+  implicit val foundExperimentsJson: RootJsonFormat[FoundExperiments] = jsonFormat1(FoundExperiments)
+  implicit val someExperimentsJson: RootJsonFormat[SomeExperiments] = jsonFormat2(SomeExperiments)
+  implicit val addExperimentResponseJson: RootJsonFormat[AddExperiment] = jsonFormat1(AddExperiment)
+  implicit val addedExpJson: RootJsonFormat[AddedExperiment] = jsonFormat1(AddedExperiment)
+  implicit val addDesignJson: RootJsonFormat[AddDesign] = jsonFormat2(AddDesign)
   implicit val okJson: RootJsonFormat[OkTransfReceived] = jsonFormat1(OkTransfReceived)
 
 

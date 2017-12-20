@@ -3,7 +3,7 @@ package com.idorsia.research.arcite.core.search
 import java.util.concurrent.Executors
 
 import akka.actor.{Actor, ActorLogging, ActorRef}
-import com.idorsia.research.arcite.core.api.ArciteService.{SearchExperiments, SearchExperimentsWithReq}
+import com.idorsia.research.arcite.core.experiments.ManageExperiments.SearchExperimentsWithReq
 import com.idorsia.research.arcite.core.experiments.{Condition, Experiment}
 import com.idorsia.research.arcite.core.search.ArciteLuceneRamIndex._
 import org.apache.lucene.analysis.Analyzer

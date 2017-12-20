@@ -1,12 +1,8 @@
 package com.idorsia.research.arcite.core.api
 
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{HttpEntity, HttpRequest, HttpResponse, StatusCodes}
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.stream.scaladsl.{Flow, Sink, Source}
-import com.idorsia.research.arcite.core
-import com.idorsia.research.arcite.core.api.ArciteService.AllExperiments
-import com.idorsia.research.arcite.core.meta.DesignCategories.{AllCategories, SimpleCondition}
-import org.scalatest.Failed
 
 import scala.concurrent.Future
 import spray.json._
@@ -45,25 +41,25 @@ class MetaInfoApiTests extends ApiTests {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri =s"$urlPrefix/meta_info/categories")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri = s"$urlPrefix/meta_info/categories")).via(connectionFlow).runWith(Sink.head)
 
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
 
-//      import scala.concurrent.duration._
-//      val f = r.entity.toStrict(5 seconds).map(_.data.decodeString("UTF-8"))
-//
-//      f onComplete {
-//        case Success(stg) ⇒
-//          val cats = stg.parseJson.convertTo[AllCategories]
-//          assert(cats.categories.size > 100000000)
-//          assert(cats.categories.contains("Cell_adLine"))
-//          assert(cats.categories.contains("wash"))
-//        //
-//        case _ ⇒ Failed
-//      }
-//
-//      assert(true)
+      //      import scala.concurrent.duration._
+      //      val f = r.entity.toStrict(5 seconds).map(_.data.decodeString("UTF-8"))
+      //
+      //      f onComplete {
+      //        case Success(stg) ⇒
+      //          val cats = stg.parseJson.convertTo[AllCategories]
+      //          assert(cats.categories.size > 100000000)
+      //          assert(cats.categories.contains("Cell_adLine"))
+      //          assert(cats.categories.contains("wash"))
+      //        //
+      //        case _ ⇒ Failed
+      //      }
+      //
+      //      assert(true)
     }
   }
 }

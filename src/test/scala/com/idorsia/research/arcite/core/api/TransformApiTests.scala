@@ -39,7 +39,7 @@ import scala.concurrent.Future
   * Created by Bernard Deffarges on 2016/11/10.
   *
   */
-class TransformApiTests extends ApiTests {
+class TransformApiTests extends ApiTests with ExpJsonProto {
 
   val exp1 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment1)
   var exp1Uid: Option[String] = None // because the uid is created on the server.

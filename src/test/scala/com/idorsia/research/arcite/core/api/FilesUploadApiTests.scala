@@ -39,7 +39,7 @@ import scala.concurrent.Future
   * Created by Bernard Deffarges on 2016/11/10.
   *
   */
-class FilesUploadApiTests extends ApiTests {
+class FilesUploadApiTests extends ApiTests with ExpJsonProto {
 
   val exp1 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment1)
 

@@ -679,6 +679,15 @@ object ManageExperiments {
 
   case object RebuildExperiments
 
+  case class GetAllExperiments(page: Int = 0, max: Int = 100)
+
+  case class SearchExperiments(search: String, maxHits: Int)
+
+  case class SearchExperimentsWithReq(search: SearchExperiments, forWhom: ActorRef)
+
+  case class GetExperiment(uid: String)
+
+
   sealed trait HideUnhide {
     def uid: String
 
@@ -692,7 +701,6 @@ object ManageExperiments {
   case class Unhide(uid: String) extends HideUnhide {
     override def hide: Boolean = false
   }
-
 
   //todo think again, should clone be in the same subfolder? Yes for now.
   case class CloneExperimentNewProps(name: String, description: String, owner: Owner,
@@ -772,6 +780,74 @@ object ManageExperiments {
 
   case class SelectedSelectables(selectableType: String, items: Set[String])
 
+  // responses
+  sealed trait ExperimentsResponse
+
+  case object EmptyListOfExperiments extends ExperimentsResponse
+
+  //todo could provide where it was found
+  case class SomeExperiments(totalResults: Int, experiments: List[ExperimentSummary]) extends ExperimentsResponse
+
+  case class AllExperiments(experiments: List[ExperimentSummary]) extends ExperimentsResponse
+
+
+  sealed trait AddExperimentResponse
+
+  case class AddedExperiment(uid: String) extends AddExperimentResponse
+
+  case class FailedAddingExperiment(error: String) extends AddExperimentResponse
+
+
+  sealed trait AddDesignFeedback
+
+  case object AddedDesignSuccess extends AddDesignFeedback
+
+  case class FailedAddingDesign(error: String) extends AddDesignFeedback
+
+
+  sealed trait HideUnHideFeedback
+
+  case object HideUnhideSuccess extends HideUnHideFeedback
+
+  case class FailedHideUnhide(error: String) extends HideUnHideFeedback
+
+
+  sealed trait AddedPropertiesFeedback
+
+  case object AddedPropertiesSuccess extends AddedPropertiesFeedback
+
+  case class FailedAddingProperties(error: String) extends AddedPropertiesFeedback
+
+
+  sealed trait RemovePropertiesFeedback
+
+  case object RemovePropertiesSuccess extends RemovePropertiesFeedback
+
+  case class FailedRemovingProperties(error: String) extends RemovePropertiesFeedback
+
+
+  sealed trait DescriptionChangeFeedback
+
+  case object DescriptionChangeOK extends DescriptionChangeFeedback
+
+  case class DescriptionChangeFailed(error: String) extends DescriptionChangeFeedback
+
+
+  sealed trait ExperimentFoundFeedback
+
+  case class ExperimentFound(exp: Experiment) extends ExperimentFoundFeedback
+
+  case class ExperimentsFound(exp: Set[Experiment]) extends ExperimentFoundFeedback
+
+  case object NoExperimentFound extends ExperimentFoundFeedback
+
+
+  sealed trait DeleteExperimentFeedback
+
+  case object ExperimentDeletedSuccess extends DeleteExperimentFeedback
+
+  case class ExperimentDeleteFailed(error: String) extends DeleteExperimentFeedback
+
 }
 
 class ExperimentActorsManager extends Actor with ActorLogging {
@@ -836,6 +912,7 @@ object ExperimentActorsManager {
   case object StartExperimentsServiceActors
 
   def startExperimentActorSystem(): Unit = topActor ! StartExperimentsServiceActors
+
 }
 
 

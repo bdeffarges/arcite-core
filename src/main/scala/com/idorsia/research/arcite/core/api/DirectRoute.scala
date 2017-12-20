@@ -2,18 +2,15 @@ package com.idorsia.research.arcite.core.api
 
 
 import akka.http.scaladsl.server.Directives.{complete, getFromBrowseableDirectory, onSuccess, path, pathPrefix, _}
-
 import akka.actor.ActorRef
-
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes.BadRequest
 import akka.http.scaladsl.server
-
-import com.idorsia.research.arcite.core.api.ArciteService.{ExperimentFound, ExperimentFoundFeedback, GetExperiment, NoExperimentFound}
 import com.idorsia.research.arcite.core.experiments.ExperimentFolderVisitor
 import com.typesafe.scalalogging.LazyLogging
 import akka.pattern.ask
 import akka.util.Timeout
+import com.idorsia.research.arcite.core.experiments.ManageExperiments.{ExperimentFound, ExperimentFoundFeedback, GetExperiment, NoExperimentFound}
 import com.typesafe.config.ConfigFactory
 
 /**
