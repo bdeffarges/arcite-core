@@ -28,8 +28,8 @@ import com.idorsia.research.arcite.core.transforms.cluster.workers.fortest.WorkE
 import com.idorsia.research.arcite.core.transftree.TreeOfTransfOutcome.TreeOfTransfOutcome
 import com.idorsia.research.arcite.core.transftree.TreeOfTransformsManager.CurrentlyRunningToT
 import com.idorsia.research.arcite.core.transftree.{ToTNoFeedback, _}
-import com.idorsia.research.arcite.core.{ExperimentType, Organization, utils}
 import com.idorsia.research.arcite.core.utils._
+import com.idorsia.research.arcite.core.{ExperimentType, Organization, utils}
 import spray.json.{DefaultJsonProtocol, JsString, RootJsonFormat, _}
 
 /**
@@ -55,7 +55,8 @@ import spray.json.{DefaultJsonProtocol, JsString, RootJsonFormat, _}
   * Created by Bernard Deffarges on 2016/09/14.
   *
   */
-trait ArciteJSONProtocol extends DefaultJsonProtocol {
+trait __TemplateJSONProtocol extends DefaultJsonProtocol {
+  //todo split up JSON marshalling by domain (like the routes)
 
   implicit val uidJson: RootJsonFormat[UniqueID] = jsonFormat1(UniqueID)
 
@@ -64,6 +65,54 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
     override def read(json: JsValue): Date = utils.getAsDate(json.toString())
 
     override def write(date: Date): JsValue = JsString(utils.getDateAsStrg(date))
+  }
+
+  implicit object TransfParamJsonFormat extends RootJsonFormat[ParameterType] {
+    override def write(obj: ParameterType): JsValue = obj match {
+      case ParameterType.PREDEFINED_VALUE ⇒
+        JsString("PREDEFINED_VALUE")
+      case ParameterType.FREE_TEXT ⇒
+        JsString("FREE_TEXT")
+      case ParameterType.INT_NUMBER ⇒
+        JsString("INT_NUMBER")
+      case ParameterType.FLOAT_NUMBER ⇒
+        JsString("FLOAT_NUMBER")
+    }
+
+    override def read(json: JsValue): ParameterType = {
+      ParameterType.withName(json.convertTo[String])
+    }
+  }
+
+  implicit val transfParamFreeTextJson: RootJsonFormat[FreeText] = jsonFormat4(FreeText)
+  implicit val transfParamIntNumberJson: RootJsonFormat[IntNumber] = jsonFormat6(IntNumber)
+  implicit val transfParamFloatNumberJson: RootJsonFormat[FloatNumber] = jsonFormat6(FloatNumber)
+  implicit val transfParamFloatPredefinedValsJson: RootJsonFormat[PredefinedValues] = jsonFormat6(PredefinedValues)
+
+  implicit object TransformParametersJsonFormat extends RootJsonFormat[TransformParameter] {
+    override def write(obj: TransformParameter): JsValue = obj match {
+      case ft: FreeText ⇒
+        ft.toJson
+      case in: IntNumber ⇒
+        in.toJson
+      case fn: FloatNumber ⇒
+        fn.toJson
+      case pv: PredefinedValues ⇒
+        pv.toJson
+    }
+
+    override def read(json: JsValue): TransformParameter = {
+      json.asJsObject.getFields("parameterType").head.convertTo[ParameterType] match {
+        case ParameterType.FREE_TEXT ⇒
+          json.convertTo[FreeText]
+        case ParameterType.INT_NUMBER ⇒
+          json.convertTo[IntNumber]
+        case ParameterType.FLOAT_NUMBER ⇒
+          json.convertTo[FloatNumber]
+        case ParameterType.PREDEFINED_VALUE ⇒
+          json.convertTo[PredefinedValues]
+      }
+    }
   }
 
   implicit object expLogJsonFormat extends RootJsonFormat[ExpLog] {
@@ -112,6 +161,18 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   }
 
 
+  implicit object TransformStatusJsonFormat extends RootJsonFormat[TransformCompletionStatus] {
+    def write(c: TransformCompletionStatus) = JsString(c.toString)
+
+    def read(value: JsValue) = value match {
+      case JsString("SUCCESS") ⇒ TransformCompletionStatus.SUCCESS
+      case JsString("COMPLETED_WITH_WARNINGS") ⇒ TransformCompletionStatus.COMPLETED_WITH_WARNINGS
+      case JsString("FAILED") ⇒ TransformCompletionStatus.FAILED
+      case _ ⇒ deserializationError("Transform status expected ")
+    }
+  }
+
+
   implicit val generalFailureJson: RootJsonFormat[GeneralFailure] = jsonFormat1(GeneralFailure)
 
   implicit object OwnerJsonFormat extends RootJsonFormat[Owner] {
@@ -134,6 +195,14 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
       }
     }
   }
+
+
+  implicit val conditionJson: RootJsonFormat[Condition] = jsonFormat3(Condition)
+  implicit val simpleConditionJson: RootJsonFormat[SimpleCondition] = jsonFormat2(SimpleCondition)
+  implicit val allCategoriesJson: RootJsonFormat[AllCategories] = jsonFormat1(AllCategories)
+  implicit val conditionForSampleJson: RootJsonFormat[Sample] = jsonFormat1(Sample)
+  implicit val experimentalDesignJson: RootJsonFormat[ExperimentalDesign] = jsonFormat2(ExperimentalDesign)
+
 
   implicit object ExperimentJSonFormat extends RootJsonFormat[Experiment] {
     override def read(json: JsValue): Experiment = {
@@ -237,6 +306,12 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
   implicit val manyTransformersJson: RootJsonFormat[ManyTransfDefs] = jsonFormat1(ManyTransfDefs)
   implicit val oneTransformersJson: RootJsonFormat[OneTransfDef] = jsonFormat1(OneTransfDef)
 
+  implicit val foundExperimentJson: RootJsonFormat[FoundExperiment] = jsonFormat3(FoundExperiment)
+  implicit val foundExperimentsJson: RootJsonFormat[FoundExperiments] = jsonFormat1(FoundExperiments)
+  implicit val someExperimentsJson: RootJsonFormat[SomeExperiments] = jsonFormat2(SomeExperiments)
+  implicit val addExperimentResponseJson: RootJsonFormat[AddExperiment] = jsonFormat1(AddExperiment)
+  implicit val addedExpJson: RootJsonFormat[AddedExperiment] = jsonFormat1(AddedExperiment)
+  implicit val addDesignJson: RootJsonFormat[AddDesign] = jsonFormat2(AddDesign)
   implicit val okJson: RootJsonFormat[OkTransfReceived] = jsonFormat1(OkTransfReceived)
 
 

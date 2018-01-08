@@ -102,19 +102,19 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
   private val fileServiceActPath = s"${actSys}/user/exp_actors_manager/file_service"
 
   //todo move it to another executor
-  private val expManager = context.actorSelection(ActorPath.fromString(expManSelect))
+  private[api] val expManager = context.actorSelection(ActorPath.fromString(expManSelect))
   log.info(s"****** connect exp Manager [$expManSelect] actor: $expManager")
 
-  private val defineRawDataAct = context.actorSelection(ActorPath.fromString(rawDSelect))
+  private[api] val defineRawDataAct = context.actorSelection(ActorPath.fromString(rawDSelect))
   log.info(s"****** connect raw [$rawDSelect] actor: $defineRawDataAct")
 
-  private val eventInfoAct = context.actorSelection(ActorPath.fromString(eventInfoSelect))
+  private[api] val eventInfoAct = context.actorSelection(ActorPath.fromString(eventInfoSelect))
   log.info(s"****** connect event info actor [$eventInfoSelect] actor: $eventInfoAct")
 
-  private val fileServiceAct = context.actorSelection(ActorPath.fromString(fileServiceActPath))
+  private[api] val fileServiceAct = context.actorSelection(ActorPath.fromString(fileServiceActPath))
   log.info(s"****** connect file service actor [$fileServiceActPath] actor: $fileServiceAct")
 
-  private val treeOfTransformActor = context.actorSelection(
+  private[api] val treeOfTransformActor = context.actorSelection(
     ActorPath.fromString(TreeOfTransformActorSystem.treeOfTransfActPath))
   log.info(s"****** connect to TreeOfTransform service actor: $treeOfTransformActor")
 
@@ -124,72 +124,15 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
   private val metaActor = context.actorSelection(metaInfoActPath)
 
   //publish global actor
-  private val pubGlobActor = context.actorOf(GlobalPublishActor.props, "global_publish")
+  private[api] val pubGlobActor = context.actorOf(GlobalPublishActor.props, "global_publish")
   log.info(s"***** publish global actor: ${pubGlobActor.path.toStringWithoutAddress}")
   println(s"***** publish global actor: ${pubGlobActor.path.toStringWithoutAddress}")
 
   import ArciteService._
 
   override def receive = {
-    case gae: GetAllExperiments ⇒
-      expManager forward GetAllExperiments(gae.page, gae.max)
-
-
-    case se: SearchExperiments ⇒
-      expManager forward se
-
-
-    case ge: GetExperiment ⇒
-      expManager forward ge
-
-
-    case ae: AddExperiment ⇒
-      expManager forward ae
-
-
-    case ce: CloneExperiment ⇒
-      expManager forward ce
-
-
-    case de: DeleteExperiment ⇒
-      expManager forward de
-
-
-    case unh: Unhide ⇒
-      expManager forward unh
-
-
-    case hide: Hide ⇒
-      expManager forward hide
-
-
-    case d: AddDesign ⇒
-      expManager forward d
-
-
-    case p: AddExpProperties ⇒
-      expManager forward p
-
-
-    case p: RemoveExpProperties ⇒
-      expManager forward p
-
-
-    case gat: GetTransforms ⇒
-      expManager forward gat
-
-
-    case getTots: GetToTs ⇒
-      expManager forward getTots
-
-
-    case GetAllTransforms ⇒
-      expManager forward GetAllTransforms
-
-
-    case got: GetOneTransform ⇒
-      expManager forward got
-
+    case expMsg: ExperimentMsg ⇒
+      expManager forward expMsg
 
     case fileUp: MoveUploadedFile ⇒
       expManager forward fileUp

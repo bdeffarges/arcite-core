@@ -85,6 +85,7 @@ class RestApi(system: ActorSystem)(implicit timeout: Timeout) extends ArciteJSON
 
   //todo refactor routes into different classes by category
   import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+  import scala.concurrent.duration._
 
   //todo try cors again with lomigmegard/akka-http-cors
   val corsHeaders = List(RawHeader("Access-Control-Allow-Origin", "*"),
@@ -95,6 +96,7 @@ class RestApi(system: ActorSystem)(implicit timeout: Timeout) extends ArciteJSON
     new DirectRoute(arciteService).directRoute ~
       pathPrefix("api") {
         pathPrefix(s"v$apiVersion") {
+          new ExpRoutes(arciteService)(executionContext, Timeout(2.seconds)).routes ~
             rawDataRoute ~
             metaDataRoute ~
             getTransformsRoute ~
@@ -112,7 +114,7 @@ class RestApi(system: ActorSystem)(implicit timeout: Timeout) extends ArciteJSON
             organizationRoute ~
             treeOfTransforms ~
             runningJobsFeedbackRoute ~
-            new GlobPublishRoute(arciteService)(executionContext, timeout).publishRoute ~
+            new GlobPublishRoutes(arciteService)(executionContext, timeout).publishRoute ~
             SwDocService.routes ~
             //            new SwUI(apiPath).route ~
             new SwUI().route ~

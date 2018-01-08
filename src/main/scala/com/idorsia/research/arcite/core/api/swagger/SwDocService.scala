@@ -2,7 +2,7 @@ package com.idorsia.research.arcite.core.api.swagger
 
 import com.github.swagger.akka.SwaggerHttpService
 import com.github.swagger.akka.model.Info
-import com.idorsia.research.arcite.core.api.GlobPublishRoute
+import com.idorsia.research.arcite.core.api.GlobPublishRoutes
 import io.swagger.models.ExternalDocs
 import io.swagger.models.auth.BasicAuthDefinition
 /**
@@ -29,7 +29,7 @@ import io.swagger.models.auth.BasicAuthDefinition
   *
   */
 object SwDocService extends SwaggerHttpService {
-  override val apiClasses: Set[Class[_]] = Set(classOf[GlobPublishRoute])
+  override val apiClasses: Set[Class[_]] = Set(classOf[GlobPublishRoutes])
   override val host = "localhost:12345"
   override val info = Info(version = "1.0")
   override val externalDocs = Some(new ExternalDocs("Core Docs", "http://acme.com/docs"))

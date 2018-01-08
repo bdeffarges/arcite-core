@@ -49,15 +49,13 @@ import com.idorsia.research.arcite.core.utils._
   * Created by Bernard Deffarges on 2017/12/07.
   *
   */
-class ExpService(expActor: ActorRef)(implicit executionContext: ExecutionContext)
+class ExpRoutes(expActor: ActorRef)(implicit executionContext: ExecutionContext,
+                                    implicit val timeout: Timeout)
   extends Directives with ExpJsonProto with LazyLogging {
 
   import com.idorsia.research.arcite.core.experiments.ManageExperiments._
 
-
-  implicit val timeout = Timeout(2.seconds)
-
-  def routes = experimentsRoute ~ experimentRoute
+  private[api] val routes = experimentsRoute ~ experimentRoute
 
   private def experimentsRoute = path("experiments") {
 
@@ -72,7 +70,7 @@ class ExpService(expActor: ActorRef)(implicit executionContext: ExecutionContext
       }
     } ~
       parameters('search, 'maxHits ? 100) { (search, maxHits) ⇒
-         val exps: Future[SomeExperiments] =
+        val exps: Future[SomeExperiments] =
           expActor.ask(SearchExperiments(search, maxHits)).mapTo[SomeExperiments]
         onSuccess(exps) { fe ⇒
           complete(OK -> fe)

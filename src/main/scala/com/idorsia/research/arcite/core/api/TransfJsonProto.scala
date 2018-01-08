@@ -14,7 +14,6 @@ import com.idorsia.research.arcite.core.meta.DesignCategories.{AllCategories, Si
 import com.idorsia.research.arcite.core.publish.GlobalPublishActor.{GetAllGlobPublishedItems, _}
 import com.idorsia.research.arcite.core.publish.PublishActor.{PublishInfo, PublishInfoLight, PublishedInfo, RemovePublished}
 import com.idorsia.research.arcite.core.rawdata.DefineRawAndMetaData.{DefineMetaData, RemoveAllRaw, RemoveMetaData, RemoveRawData, SetRawData}
-import com.idorsia.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments}
 import com.idorsia.research.arcite.core.secure.WithToken
 import com.idorsia.research.arcite.core.transforms.ParameterType.ParameterType
 import com.idorsia.research.arcite.core.transforms.RunTransform._
@@ -55,17 +54,7 @@ import spray.json.{DefaultJsonProtocol, JsString, RootJsonFormat, _}
   * Created by Bernard Deffarges on 2016/09/14.
   *
   */
-trait TemplateJSONProtocol extends DefaultJsonProtocol {
-  //todo split up JSON marshalling by domain (like the routes)
-
-  implicit val uidJson: RootJsonFormat[UniqueID] = jsonFormat1(UniqueID)
-
-  implicit object DateJsonFormat extends RootJsonFormat[Date] {
-
-    override def read(json: JsValue): Date = utils.getAsDate(json.toString())
-
-    override def write(date: Date): JsValue = JsString(utils.getDateAsStrg(date))
-  }
+trait TransfJsonProto extends ArciteJSONProtocol {
 
   implicit object TransfParamJsonFormat extends RootJsonFormat[ParameterType] {
     override def write(obj: ParameterType): JsValue = obj match {
@@ -115,52 +104,6 @@ trait TemplateJSONProtocol extends DefaultJsonProtocol {
     }
   }
 
-  implicit object expLogJsonFormat extends RootJsonFormat[ExpLog] {
-
-    def write(obj: ExpLog): JsValue = {
-      JsObject(
-        "type" -> JsString(obj.logType.toString),
-        "category" -> JsString(obj.logCat.toString),
-        "uid" -> JsString(s"${if (obj.uid.isDefined) obj.uid.get}"),
-        "date" -> JsString(utils.getDateAsStrg(obj.date)),
-        "message" -> JsString(obj.message))
-    }
-
-    def read(json: JsValue): ExpLog = {
-      json.asJsObject.getFields("type", "category", "uid", "date", "message") match {
-        case Seq(JsString(logType), JsString(logCat), JsString(uid), JsString(date), JsString(message)) ⇒
-          ExpLog(LogType.withName(logType), LogCategory.withName(logCat),
-            message, utils.getAsDate(date), if (uid.length > 0) Some(uid) else None)
-
-        case _ => throw DeserializationException("could not deserialize.")
-
-      }
-    }
-  }
-
-  implicit object LogCatJsonFormat extends RootJsonFormat[LogCategory] {
-    def write(c: LogCategory) = JsString(c.toString)
-
-    def read(value: JsValue) = LogCategory.withName(value.toString())
-  }
-
-  implicit val logInfoJson: RootJsonFormat[InfoLogs] = jsonFormat1(InfoLogs)
-
-  implicit val appLogJson: RootJsonFormat[ArciteAppLog] = jsonFormat3(ArciteAppLog)
-
-  implicit object ExpStateJsonFormat extends RootJsonFormat[ExpState] {
-    def write(c: ExpState) = JsString(c.toString)
-
-    def read(value: JsValue) = value match {
-      case JsString("NEW") ⇒ ExpState.NEW
-      case JsString("IMMUTABLE") ⇒ ExpState.IMMUTABLE
-      case JsString("PUBLISHED") ⇒ ExpState.PUBLISHED
-      case JsString("REMOTE") ⇒ ExpState.REMOTE
-      case _ ⇒ ExpState.NEW
-    }
-  }
-
-
   implicit object TransformStatusJsonFormat extends RootJsonFormat[TransformCompletionStatus] {
     def write(c: TransformCompletionStatus) = JsString(c.toString)
 
@@ -172,94 +115,6 @@ trait TemplateJSONProtocol extends DefaultJsonProtocol {
     }
   }
 
-
-  implicit val generalFailureJson: RootJsonFormat[GeneralFailure] = jsonFormat1(GeneralFailure)
-
-  implicit object OwnerJsonFormat extends RootJsonFormat[Owner] {
-
-    override def write(owner: Owner): JsValue = {
-      JsObject(
-        "organization" -> JsString(owner.organization),
-        "person" -> JsString(owner.person)
-      )
-    }
-
-    override def read(json: JsValue): Owner = {
-      json.asJsObject.getFields("organization", "person") match {
-        case Seq(JsString(organization), JsString(person)) ⇒
-          Owner(organization, person)
-
-        case _ => throw DeserializationException(
-          """could not deserialize to Owner, expected {organization : String,
-            | person : String""".stripMargin)
-      }
-    }
-  }
-
-
-  implicit val conditionJson: RootJsonFormat[Condition] = jsonFormat3(Condition)
-  implicit val simpleConditionJson: RootJsonFormat[SimpleCondition] = jsonFormat2(SimpleCondition)
-  implicit val allCategoriesJson: RootJsonFormat[AllCategories] = jsonFormat1(AllCategories)
-  implicit val conditionForSampleJson: RootJsonFormat[Sample] = jsonFormat1(Sample)
-  implicit val experimentalDesignJson: RootJsonFormat[ExperimentalDesign] = jsonFormat2(ExperimentalDesign)
-
-
-  implicit object ExperimentJSonFormat extends RootJsonFormat[Experiment] {
-    override def read(json: JsValue): Experiment = {
-      json.asJsObject.getFields("name", "description", "owner", "uid", "state", "design", "properties", "hidden") match {
-        case Seq(JsString(name), JsString(description), owner, JsString(uid), state, design, properties, hidden) ⇒
-          Experiment(name, description, owner.convertTo[Owner], Some(uid), state.convertTo[ExpState],
-            design.convertTo[ExperimentalDesign], properties.convertTo[Map[String, String]], hidden.convertTo[Boolean])
-
-        case Seq(JsString(name), JsString(description), owner, JsString(uid), state, design, properties) ⇒
-          Experiment(name, description, owner.convertTo[Owner], Some(uid), state.convertTo[ExpState],
-            design.convertTo[ExperimentalDesign], properties.convertTo[Map[String, String]])
-
-        case Seq(JsString(name), JsString(description), owner, state, design, properties) ⇒
-          Experiment(name, description, owner.convertTo[Owner], None, state.convertTo[ExpState],
-            design.convertTo[ExperimentalDesign], properties.convertTo[Map[String, String]])
-
-        case Seq(JsString(name), JsString(description), owner, design, properties) ⇒
-          Experiment(name, description, owner.convertTo[Owner], None, ExpState.NEW,
-            design.convertTo[ExperimentalDesign], properties.convertTo[Map[String, String]])
-
-        case Seq(JsString(name), JsString(description), owner, design) ⇒
-          Experiment(name, description, owner.convertTo[Owner], None, ExpState.NEW,
-            design.convertTo[ExperimentalDesign], Map[String, String]())
-
-        case Seq(JsString(name), JsString(description), owner, properties) ⇒
-          Experiment(name, description, owner.convertTo[Owner], None, ExpState.NEW,
-            ExperimentalDesign(), properties.convertTo[Map[String, String]])
-
-        case Seq(JsString(name), JsString(description), owner) ⇒
-          Experiment(name, description, owner.convertTo[Owner], None, ExpState.NEW,
-            ExperimentalDesign(), Map[String, String]())
-
-        case _ => throw DeserializationException("could not deserialize.")
-      }
-    }
-
-    override def write(exp: Experiment): JsValue = {
-      JsObject(
-        "name" -> JsString(exp.name),
-        "description" -> JsString(exp.description),
-        "uid" -> exp.uid.fold(JsString(""))(JsString(_)),
-        "owner" -> exp.owner.toJson,
-        "state" -> exp.state.toJson,
-        "design" -> exp.design.toJson,
-        "properties" -> exp.properties.toJson,
-        "hidden" -> exp.hidden.toJson
-      )
-    }
-  }
-
-
-  implicit val experimentSummaryJson: RootJsonFormat[ExperimentSummary] = jsonFormat7(ExperimentSummary)
-
-
-  implicit val stateJSon: RootJsonFormat[State] = jsonFormat1(State)
-
-  implicit val withTokenJSon: RootJsonFormat[WithToken] = jsonFormat1(WithToken)
 
   implicit object TransformSourceJsonFormat extends RootJsonFormat[TransformSource] {
 
@@ -306,12 +161,6 @@ trait TemplateJSONProtocol extends DefaultJsonProtocol {
   implicit val manyTransformersJson: RootJsonFormat[ManyTransfDefs] = jsonFormat1(ManyTransfDefs)
   implicit val oneTransformersJson: RootJsonFormat[OneTransfDef] = jsonFormat1(OneTransfDef)
 
-  implicit val foundExperimentJson: RootJsonFormat[FoundExperiment] = jsonFormat3(FoundExperiment)
-  implicit val foundExperimentsJson: RootJsonFormat[FoundExperiments] = jsonFormat1(FoundExperiments)
-  implicit val someExperimentsJson: RootJsonFormat[SomeExperiments] = jsonFormat2(SomeExperiments)
-  implicit val addExperimentResponseJson: RootJsonFormat[AddExperiment] = jsonFormat1(AddExperiment)
-  implicit val addedExpJson: RootJsonFormat[AddedExperiment] = jsonFormat1(AddedExperiment)
-  implicit val addDesignJson: RootJsonFormat[AddDesign] = jsonFormat2(AddDesign)
   implicit val okJson: RootJsonFormat[OkTransfReceived] = jsonFormat1(OkTransfReceived)
 
 

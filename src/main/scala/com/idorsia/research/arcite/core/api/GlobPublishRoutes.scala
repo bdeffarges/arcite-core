@@ -44,8 +44,8 @@ import scala.concurrent.duration._
 
 @Api(value = "/publish", produces = "application/json")
 @Path("/publish")
-class GlobPublishRoute(arciteService: ActorRef)
-                      (implicit val executionContext: ExecutionContext, //todo improve implicits?
+class GlobPublishRoutes(arciteService: ActorRef)
+                       (implicit val executionContext: ExecutionContext, //todo improve implicits?
                        implicit val requestTimeout: Timeout) extends Directives with ArciteJSONProtocol with LazyLogging {
 
   @ApiOperation(value = "publish global artifacts.", nickname = "publishGlobal", httpMethod = "POST", response = classOf[SuccessMessage])

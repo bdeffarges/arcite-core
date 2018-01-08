@@ -1,6 +1,5 @@
 package com.idorsia.research.arcite.core.api
 
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
@@ -69,6 +68,7 @@ object Main extends App with LazyLogging {
   val t = config.getString("akka.http.server.request-timeout")
   val d = Duration(t)
   val requestTimeout = FiniteDuration(d.length, d.unit)
+
   implicit val timeout = Timeout(requestTimeout)
 
   private val arciteAppService = system.actorOf(AppServiceActorsManager.props(), "arcite_app_service")
@@ -111,6 +111,3 @@ object Main extends App with LazyLogging {
       system.terminate()
   }
 }
-
-
-

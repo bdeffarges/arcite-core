@@ -100,7 +100,6 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
       log.info("******* ******* ******* experiments reloaded ***********")
 
 
-
     case AddExperiment(experiment) ⇒
       if (core.organization.experimentTypes.exists(_.packagePath == experiment.owner.organization)) {
         //has to be one of the defined
@@ -540,7 +539,6 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with Arcite
   }
 
 
-
   private def saveDigest(exp: Experiment, folder: Path): Unit = {
     Files.write(folder resolve core.DIGEST_FILE_NAME,
       GetDigest.getDigest(exp.name + exp.uid + exp.design.toString + exp.description +
@@ -673,22 +671,24 @@ object ManageExperiments {
 
   case class State(experiments: Set[Experiment] = Set())
 
-  case class AddExperiment(experiment: Experiment)
+  trait ExperimentMsg
 
-  case class DeleteExperiment(uid: String)
+  case class AddExperiment(experiment: Experiment) extends ExperimentMsg
 
-  case object RebuildExperiments
+  case class DeleteExperiment(uid: String) extends ExperimentMsg
 
-  case class GetAllExperiments(page: Int = 0, max: Int = 100)
+  case object RebuildExperiments extends ExperimentMsg
 
-  case class SearchExperiments(search: String, maxHits: Int)
+  case class GetAllExperiments(page: Int = 0, max: Int = 100) extends ExperimentMsg
+
+  case class SearchExperiments(search: String, maxHits: Int) extends ExperimentMsg
 
   case class SearchExperimentsWithReq(search: SearchExperiments, forWhom: ActorRef)
 
-  case class GetExperiment(uid: String)
+  case class GetExperiment(uid: String) extends ExperimentMsg
 
 
-  sealed trait HideUnhide {
+  sealed trait HideUnhide extends ExperimentMsg {
     def uid: String
 
     def hide: Boolean
@@ -706,35 +706,33 @@ object ManageExperiments {
   case class CloneExperimentNewProps(name: String, description: String, owner: Owner,
                                      expDesign: Boolean = true, raw: Boolean = true,
                                      userRaw: Boolean = true, userMeta: Boolean = true,
-                                     userProps: Boolean = true)
+                                     userProps: Boolean = true) extends ExperimentMsg
 
-  case class CloneExperiment(originExp: String, cloneExpProps: CloneExperimentNewProps)
+  case class CloneExperiment(originExp: String, cloneExpProps: CloneExperimentNewProps) extends ExperimentMsg
 
-  case class AddDesign(experiment: String, design: ExperimentalDesign)
+  case class AddDesign(experiment: String, design: ExperimentalDesign) extends ExperimentMsg
 
-  case class AddExpProps(properties: Map[String, String])
+  case class AddExpProps(properties: Map[String, String]) extends ExperimentMsg
 
-  case class RmExpProps(properties: List[String])
+  case class RmExpProps(properties: List[String]) extends ExperimentMsg
 
-  case class ChangeDescription(description: String)
+  case class ChangeDescription(description: String) extends ExperimentMsg
 
-  case class ChangeDescriptionOfExperiment(experiment: String, description: String)
+  case class ChangeDescriptionOfExperiment(experiment: String, description: String) extends ExperimentMsg
 
-  case class AddExpProperties(exp: String, properties: Map[String, String])
+  case class AddExpProperties(exp: String, properties: Map[String, String]) extends ExperimentMsg
 
-  case class RemoveExpProperties(exp: String, properties: List[String])
+  case class RemoveExpProperties(exp: String, properties: List[String]) extends ExperimentMsg
 
-  case class Experiments(exps: Set[Experiment])
+  case class GetTransforms(experiment: String)extends ExperimentMsg
 
-  case class GetTransforms(experiment: String)
+  case class GetRunningTransforms(experiment: String)extends ExperimentMsg
 
-  case class GetRunningTransforms(experiment: String)
+  case object GetAllTransforms extends ExperimentMsg
 
-  case object GetAllTransforms
+  case class GetOneTransform(transf: String) extends ExperimentMsg
 
-  case class GetOneTransform(transf: String)
-
-  case class GetToTs(experiment: String)
+  case class GetToTs(experiment: String) extends ExperimentMsg
 
   case class TransformsForExperiment(transforms: Set[TransformCompletionFeedback])
 
@@ -744,9 +742,9 @@ object ManageExperiments {
 
   case class OneTransformFeedback(feedback: Option[TransformCompletionFeedback])
 
-  case class GetTransfDefFromExpAndTransf(experiment: String, transform: String)
+  case class GetTransfDefFromExpAndTransf(experiment: String, transform: String) extends ExperimentMsg
 
-  case class GetTransfCompletionFromExpAndTransf(experiment: String, transform: String)
+  case class GetTransfCompletionFromExpAndTransf(experiment: String, transform: String) extends ExperimentMsg
 
   case class FoundTransformDefinition(transfFeedback: TransformCompletionFeedback)
 
