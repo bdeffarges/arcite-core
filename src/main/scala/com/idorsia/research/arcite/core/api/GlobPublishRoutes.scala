@@ -9,10 +9,11 @@ import com.idorsia.research.arcite.core.publish.GlobalPublishActor._
 import javax.ws.rs.Path
 
 import scala.concurrent.ExecutionContext
-import akka.actor.ActorRef
+import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.server.Directives
 import akka.pattern.ask
 import akka.util.Timeout
+import com.idorsia.research.arcite.core.publish.GlobalPublishActor
 import io.swagger.annotations._
 
 import scala.concurrent.ExecutionContext
@@ -44,9 +45,13 @@ import scala.concurrent.duration._
 
 @Api(value = "/publish", produces = "application/json")
 @Path("/publish")
-class GlobPublishRoutes(arciteService: ActorRef)
+class GlobPublishRoutes(system: ActorSystem)
                        (implicit val executionContext: ExecutionContext, //todo improve implicits?
                        implicit val requestTimeout: Timeout) extends Directives with ArciteJSONProtocol with LazyLogging {
+
+  //publish global actor
+  private val pubGlobActor = system.actorOf(GlobalPublishActor.props, "global_publish")
+  logger.info(s"***** publish global actor: ${pubGlobActor.path.toStringWithoutAddress}")
 
   @ApiOperation(value = "publish global artifacts.", nickname = "publishGlobal", httpMethod = "POST", response = classOf[SuccessMessage])
   @ApiImplicitParams(Array(
@@ -100,24 +105,23 @@ class GlobPublishRoutes(arciteService: ActorRef)
   }
 
   private[api] def getGPItem(uid: String): Future[PublishResponse] = {
-    arciteService.ask(GetGlobalPublishedItem(uid)).mapTo[PublishResponse]
+    pubGlobActor.ask(GetGlobalPublishedItem(uid)).mapTo[PublishResponse]
   }
 
   private[api] def getAllGPItems(maxHits: Int): Future[FoundGlobPubItems] = {
-    arciteService.ask(GetAllGlobPublishedItems(maxHits)).mapTo[FoundGlobPubItems]
+    pubGlobActor.ask(GetAllGlobPublishedItems(maxHits)).mapTo[FoundGlobPubItems]
   }
 
   private[api] def searchGPI(search: String, maxHits: Int): Future[FoundGlobPubItems] = {
-    arciteService.ask(SearchGlobalPublishedItems(search, maxHits)).mapTo[FoundGlobPubItems]
+    pubGlobActor.ask(SearchGlobalPublishedItems(search, maxHits)).mapTo[FoundGlobPubItems]
   }
 
   private[api] def publishGPI(pubItem: GlobalPublishedItemLight): Future[PublishResponse] = {
-    arciteService.ask(PublishGlobalItem(pubItem)).mapTo[PublishResponse]
+    pubGlobActor.ask(PublishGlobalItem(pubItem)).mapTo[PublishResponse]
   }
 
   private[api] def rmGPI(uid: String): Future[PublishResponse] = {
-    arciteService.ask(RmGloPubItem(uid)).mapTo[PublishResponse]
+    pubGlobActor.ask(RmGloPubItem(uid)).mapTo[PublishResponse]
   }
-
 }
 

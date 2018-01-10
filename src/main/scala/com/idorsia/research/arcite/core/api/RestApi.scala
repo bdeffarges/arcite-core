@@ -3,7 +3,7 @@ package com.idorsia.research.arcite.core.api
 import java.nio.file.{Path, Paths}
 import java.util.UUID
 
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.{ActorLogging, ActorPath, ActorRef, ActorSystem}
 import akka.event.slf4j.Logger
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes._
@@ -13,13 +13,11 @@ import akka.http.scaladsl.server._
 import akka.pattern.ask
 import akka.stream.scaladsl.FileIO
 import akka.util.Timeout
-
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Failure
-
 import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.api.ArciteService._
 import com.idorsia.research.arcite.core.api.Main.config
@@ -30,6 +28,8 @@ import com.idorsia.research.arcite.core.experiments.{ExperimentFolderVisitor, Ex
 import com.idorsia.research.arcite.core.experiments.ManageExperiments._
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor._
 import com.idorsia.research.arcite.core.meta.DesignCategories.{AllCategories, GetCategories}
+import com.idorsia.research.arcite.core.meta.MetaInfoActors
+import com.idorsia.research.arcite.core.publish.GlobalPublishActor
 import com.idorsia.research.arcite.core.publish.PublishActor._
 import com.idorsia.research.arcite.core.rawdata.DefineRawAndMetaData._
 import com.idorsia.research.arcite.core.secure.WithToken
@@ -79,6 +79,43 @@ class RestApi(system: ActorSystem)(implicit timeout: Timeout) extends ArciteJSON
 
   private[api] val apiPath = s"http://${host}:${port}/api/v${apiVersion}/swagger.json"
 
+  private val conf = ConfigFactory.load().getConfig("experiments-manager")
+  private val actSys = conf.getString("akka.uri")
+
+  private val expManSelect = s"${actSys}/user/exp_actors_manager/experiments_manager"
+  private val rawDSelect = s"${actSys}/user/exp_actors_manager/define_raw_data"
+  private val eventInfoSelect = s"${actSys}/user/exp_actors_manager/event_logging_info"
+  private val fileServiceActPath = s"${actSys}/user/exp_actors_manager/file_service"
+
+  //todo move it to another executor
+  private[api] val expManager = system.actorSelection(ActorPath.fromString(expManSelect))
+  logger.info(s"****** connect exp Manager [$expManSelect] actor: $expManager")
+
+  private[api] val defineRawDataAct = system.actorSelection(ActorPath.fromString(rawDSelect))
+  logger.info(s"****** connect raw [$rawDSelect] actor: $defineRawDataAct")
+
+  private[api] val eventInfoAct = system.actorSelection(ActorPath.fromString(eventInfoSelect))
+  logger.info(s"****** connect event info actor [$eventInfoSelect] actor: $eventInfoAct")
+
+  private[api] val fileServiceAct = system.actorSelection(ActorPath.fromString(fileServiceActPath))
+  logger.info(s"****** connect file service actor [$fileServiceActPath] actor: $fileServiceAct")
+
+  private[api] val treeOfTransformActor = system.actorSelection(
+    ActorPath.fromString(TreeOfTransformActorSystem.treeOfTransfActPath))
+  logger.info(s"****** connect to TreeOfTransform service actor: $treeOfTransformActor")
+
+  private val conf2 = ConfigFactory.load().getConfig("meta-info-actor-system")
+  private val metaActSys = conf2.getString("akka.uri")
+  private val metaInfoActPath = s"${metaActSys}/user/${MetaInfoActors.getMetaInfoActorName}"
+  private val metaActor = system.actorSelection(metaInfoActPath)
+
+  //publish global actor
+  private[api] val pubGlobActor = system.actorOf(GlobalPublishActor.props, "global_publish")
+  logger.info(s"***** publish global actor: ${pubGlobActor.path.toStringWithoutAddress}")
+  println(s"***** publish global actor: ${pubGlobActor.path.toStringWithoutAddress}")
+
+  import ArciteService._
+
   private[api] lazy val arciteService = system.actorOf(ArciteService.props, ArciteService.name)
 
   private val executionContext = system.dispatcher
@@ -96,14 +133,10 @@ class RestApi(system: ActorSystem)(implicit timeout: Timeout) extends ArciteJSON
     new DirectRoute(arciteService).directRoute ~
       pathPrefix("api") {
         pathPrefix(s"v$apiVersion") {
-          new ExpRoutes(arciteService)(executionContext, Timeout(2.seconds)).routes ~
+          new ExpRoutes(system)(executionContext, Timeout(2.seconds)).routes ~
+          new TransfRoutes(system)(executionContext, Timeout(2.seconds)).routes ~
             rawDataRoute ~
             metaDataRoute ~
-            getTransformsRoute ~
-            getOneTransformRoute ~
-            runTransformRoute ~
-            transformFeedbackRoute ~
-            allTransformsFeedbackRoute ~
             allLastUpdatesRoute ~
             allExperimentsRecentLogs ~
             metaInfoRoute ~
@@ -113,7 +146,6 @@ class RestApi(system: ActorSystem)(implicit timeout: Timeout) extends ArciteJSON
             appLogs ~
             organizationRoute ~
             treeOfTransforms ~
-            runningJobsFeedbackRoute ~
             new GlobPublishRoutes(arciteService)(executionContext, timeout).publishRoute ~
             SwDocService.routes ~
             //            new SwUI(apiPath).route ~
@@ -136,39 +168,6 @@ class RestApi(system: ActorSystem)(implicit timeout: Timeout) extends ArciteJSON
       }
     }
   }
-  def getTransformsRoute = path("transform_definitions") {
-    parameter('search, 'maxHits ? 10) {
-      (search, maxHits) ⇒
-        logger.debug(
-          s"""GET on /transform_definitions,
-                 should return all transform definitions searching for ${search}""")
-        onSuccess(findTransfDefs(search, maxHits)) {
-          case ManyTransfDefs(tdis) ⇒ complete(OK -> tdis)
-          case NoTransfDefFound ⇒ complete(NotFound -> ErrorMessage("empty"))
-        }
-    } ~
-      get {
-        logger.debug("GET on /transform_definitions, should return all transform definitions")
-        onSuccess(getAllTransfDefs) {
-          case ManyTransfDefs(tdis) ⇒ complete(OK -> tdis)
-          case NoTransfDefFound ⇒ complete(NotFound -> ErrorMessage("empty"))
-        }
-      }
-  }
-
-  def getOneTransformRoute = pathPrefix("transform_definition" / Segment) {
-    transform ⇒
-      pathEnd {
-        get {
-          logger.debug(s"get transform definition for uid: = $transform")
-          onSuccess(getTransfDef(transform)) {
-            case NoTransfDefFound ⇒ complete(NotFound -> ErrorMessage("error"))
-            case OneTransfDef(tr) ⇒ complete(OK -> tr)
-          }
-        }
-      }
-  }
-
   def rawDataRoute = pathPrefix("raw_data") {
     path("from_source") {
       post {
@@ -245,82 +244,6 @@ class RestApi(system: ActorSystem)(implicit timeout: Timeout) extends ArciteJSON
       }
   }
 
-  def runTransformRoute = pathPrefix("run_transform") {
-    path("on_raw_data") {
-      post {
-        logger.debug("running a transform on the raw data from an experiment.")
-        entity(as[RunTransformOnRawData]) {
-          rtf ⇒
-            val saved: Future[TransformJobReceived] = runTransformFromRaw(rtf)
-            onSuccess(saved) {
-              case ok: OkTransfReceived ⇒ complete(OK -> ok)
-              case TransfNotReceived(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
-            }
-        }
-      }
-    } ~
-      path("on_transform") {
-        post {
-          logger.debug("running a transform from a previous transform ")
-          entity(as[RunTransformOnTransform]) { rtf ⇒
-            val saved: Future[TransformJobReceived] = runTransformFromTransform(rtf)
-            onSuccess(saved) {
-              case ok: OkTransfReceived ⇒ complete(OK -> ok)
-              case TransfNotReceived(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
-            }
-          }
-        }
-      } ~
-      pathEnd {
-        post {
-          logger.debug("running a transform from a JS structure as definition object ")
-          entity(as[RunTransformOnObject]) {
-            rtf ⇒
-              val saved: Future[TransformJobReceived] = runTransformFromObject(rtf)
-              onSuccess(saved) {
-                case ok: OkTransfReceived ⇒ complete(OK -> ok)
-                case TransfNotReceived(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
-              }
-          }
-        }
-      }
-  }
-
-  //todo not yet push but only pull for job status...
-  def transformFeedbackRoute = pathPrefix("job_status" / Segment) {
-    workID ⇒
-      pathEnd {
-        get {
-          logger.debug(s"ask for job status? $workID")
-          onSuccess(jobStatus(QueryWorkStatus(workID))) {
-            case WorkLost(uid) ⇒ complete(OK -> SuccessMessage(s"job $uid was lost"))
-            case WorkCompleted(t) ⇒ complete(OK -> SuccessMessage(s"job is completed"))
-            case WorkInProgress(t, p) ⇒ complete(OK -> SuccessMessage(s"job is running, $p % completed"))
-            case WorkAccepted(t) ⇒ complete(OK -> SuccessMessage("job queued..."))
-          }
-        }
-      }
-  }
-
-  def allTransformsFeedbackRoute = path("all_jobs_status") {
-    get {
-      logger.debug("ask for all job status...")
-      onSuccess(getAllJobsStatus()) {
-        case jfb: AllJobsFeedback ⇒ complete(OK -> jfb)
-        case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning an usefull info."))
-      }
-    }
-  }
-
-  def runningJobsFeedbackRoute = path("running_jobs_status") {
-    get {
-      logger.debug("ask for all running job status...")
-      onSuccess(getRunningJobsStatus()) {
-        case jfb: RunningJobsFeedback ⇒ complete(OK -> jfb.jobsInProgress)
-        case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning an usefull info."))
-      }
-    }
-  }
 
   def allLastUpdatesRoute = path("all_last_updates") {
     get {
@@ -542,18 +465,6 @@ class RestApi(system: ActorSystem)(implicit timeout: Timeout) extends ArciteJSON
     arciteService.ask(rmMetaData).mapTo[RmMetaDataResponse]
   }
 
-  def getAllTransfDefs = {
-    arciteService.ask(GetAllTransfDefs).mapTo[MsgFromTransfDefsManager]
-  }
-
-  def findTransfDefs(search: String, maxHits: Int = 10) = {
-    arciteService.ask(FindTransfDefs(search, maxHits)).mapTo[MsgFromTransfDefsManager]
-  }
-
-  def getTransfDef(digest: String) = {
-    arciteService.ask(GetTransfDef(digest)).mapTo[MsgFromTransfDefsManager]
-  }
-
   def getAllRawFiles(digest: String) = {
     arciteService.ask(InfoAboutRawFiles(digest)).mapTo[FilesInformation]
   }
@@ -568,26 +479,6 @@ class RestApi(system: ActorSystem)(implicit timeout: Timeout) extends ArciteJSON
 
   private[api] def getAllMetaFiles(digest: String) = {
     arciteService.ask(InfoAboutMetaFiles(digest)).mapTo[FilesInformation]
-  }
-
-  private[api] def runTransformFromRaw(runTransform: RunTransformOnRawData) = {
-    arciteService.ask(runTransform).mapTo[TransformJobReceived]
-  }
-
-  private[api] def runTransformFromObject(runTransform: RunTransformOnObject) = {
-    arciteService.ask(runTransform).mapTo[TransformJobReceived]
-  }
-
-  private[api] def runTransformFromTransform(runTransform: RunTransformOnTransform) = {
-    arciteService.ask(runTransform).mapTo[TransformJobReceived]
-  }
-
-  private[api] def getAllTransformsForExperiment(exp: String) = {
-    arciteService.ask(GetTransforms(exp)).mapTo[TransformsForExperiment]
-  }
-
-  private[api] def getSelectableForTransform(exp: String, transf: String) = {
-    arciteService.ask(GetSelectable(exp, transf)).mapTo[Option[BunchOfSelectables]]
   }
 
   private[api] def getAllToTForExperiment(exp: String) = {
@@ -616,18 +507,6 @@ class RestApi(system: ActorSystem)(implicit timeout: Timeout) extends ArciteJSON
 
   private[api] def getTreeOfTransformStatus(uid: String) = {
     arciteService.ask(GetFeedbackOnTreeOfTransf(uid)).mapTo[ToTFeedback]
-  }
-
-  private[api] def jobStatus(qws: QueryWorkStatus) = {
-    arciteService.ask(qws).mapTo[WorkStatus]
-  }
-
-  private[api] def getAllJobsStatus() = {
-    arciteService.ask(GetAllJobsStatus).mapTo[AllJobsFeedback]
-  }
-
-  private[api] def getRunningJobsStatus() = {
-    arciteService.ask(GetRunningJobsStatus).mapTo[RunningJobsFeedback]
   }
 
   private[api] def fileUploaded(experiment: String, filePath: Path, meta: Boolean) = {

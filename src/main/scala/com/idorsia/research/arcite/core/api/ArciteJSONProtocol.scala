@@ -59,12 +59,14 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
 
   implicit val uidJson: RootJsonFormat[UniqueID] = jsonFormat1(UniqueID)
 
+
   implicit object DateJsonFormat extends RootJsonFormat[Date] {
 
     override def read(json: JsValue): Date = utils.getAsDate(json.toString())
 
     override def write(date: Date): JsValue = JsString(utils.getDateAsStrg(date))
   }
+
 
   implicit object expLogJsonFormat extends RootJsonFormat[ExpLog] {
 
@@ -89,15 +91,19 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
     }
   }
 
+
   implicit object LogCatJsonFormat extends RootJsonFormat[LogCategory] {
     def write(c: LogCategory) = JsString(c.toString)
 
     def read(value: JsValue) = LogCategory.withName(value.toString())
   }
 
+
   implicit val logInfoJson: RootJsonFormat[InfoLogs] = jsonFormat1(InfoLogs)
 
+
   implicit val appLogJson: RootJsonFormat[ArciteAppLog] = jsonFormat3(ArciteAppLog)
+
 
   implicit object ExpStateJsonFormat extends RootJsonFormat[ExpState] {
     def write(c: ExpState) = JsString(c.toString)
@@ -113,6 +119,7 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
 
 
   implicit val generalFailureJson: RootJsonFormat[GeneralFailure] = jsonFormat1(GeneralFailure)
+
 
   implicit object OwnerJsonFormat extends RootJsonFormat[Owner] {
 
@@ -135,107 +142,29 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
     }
   }
 
-  implicit object ExperimentJSonFormat extends RootJsonFormat[Experiment] {
-    override def read(json: JsValue): Experiment = {
-      json.asJsObject.getFields("name", "description", "owner", "uid", "state", "design", "properties", "hidden") match {
-        case Seq(JsString(name), JsString(description), owner, JsString(uid), state, design, properties, hidden) ⇒
-          Experiment(name, description, owner.convertTo[Owner], Some(uid), state.convertTo[ExpState],
-            design.convertTo[ExperimentalDesign], properties.convertTo[Map[String, String]], hidden.convertTo[Boolean])
-
-        case Seq(JsString(name), JsString(description), owner, JsString(uid), state, design, properties) ⇒
-          Experiment(name, description, owner.convertTo[Owner], Some(uid), state.convertTo[ExpState],
-            design.convertTo[ExperimentalDesign], properties.convertTo[Map[String, String]])
-
-        case Seq(JsString(name), JsString(description), owner, state, design, properties) ⇒
-          Experiment(name, description, owner.convertTo[Owner], None, state.convertTo[ExpState],
-            design.convertTo[ExperimentalDesign], properties.convertTo[Map[String, String]])
-
-        case Seq(JsString(name), JsString(description), owner, design, properties) ⇒
-          Experiment(name, description, owner.convertTo[Owner], None, ExpState.NEW,
-            design.convertTo[ExperimentalDesign], properties.convertTo[Map[String, String]])
-
-        case Seq(JsString(name), JsString(description), owner, design) ⇒
-          Experiment(name, description, owner.convertTo[Owner], None, ExpState.NEW,
-            design.convertTo[ExperimentalDesign], Map[String, String]())
-
-        case Seq(JsString(name), JsString(description), owner, properties) ⇒
-          Experiment(name, description, owner.convertTo[Owner], None, ExpState.NEW,
-            ExperimentalDesign(), properties.convertTo[Map[String, String]])
-
-        case Seq(JsString(name), JsString(description), owner) ⇒
-          Experiment(name, description, owner.convertTo[Owner], None, ExpState.NEW,
-            ExperimentalDesign(), Map[String, String]())
-
-        case _ => throw DeserializationException("could not deserialize.")
-      }
-    }
-
-    override def write(exp: Experiment): JsValue = {
-      JsObject(
-        "name" -> JsString(exp.name),
-        "description" -> JsString(exp.description),
-        "uid" -> exp.uid.fold(JsString(""))(JsString(_)),
-        "owner" -> exp.owner.toJson,
-        "state" -> exp.state.toJson,
-        "design" -> exp.design.toJson,
-        "properties" -> exp.properties.toJson,
-        "hidden" -> exp.hidden.toJson
-      )
-    }
-  }
-
-
-  implicit val experimentSummaryJson: RootJsonFormat[ExperimentSummary] = jsonFormat7(ExperimentSummary)
-
-
-  implicit val stateJSon: RootJsonFormat[State] = jsonFormat1(State)
-
-  implicit val withTokenJSon: RootJsonFormat[WithToken] = jsonFormat1(WithToken)
-
-  implicit object TransformSourceJsonFormat extends RootJsonFormat[TransformSource] {
-
-    def write(ts: TransformSource) = ts match {
-      case tsc: TransformSourceFromRaw ⇒
-        JsObject(
-          "type" -> JsString(tsc.getClass.getSimpleName),
-          "hello" -> JsString(tsc.getClass.getSimpleName)) //todo to implement
-
-
-      case tsc: TransformSourceFromObject ⇒
-        JsObject("exp_" -> ExperimentJSonFormat.write(tsc.experiment))
-
-
-      case tsc: TransformSourceFromRaw ⇒
-        JsObject("test" -> ExperimentJSonFormat.write(tsc.experiment))
-
-      //      case tsc: TransformSourceRegex ⇒
-      //        JsObject("type" -> JsString(tsc.getClass.getSimpleName))
-
-      //      case tsc: TransformAsSource4Transform ⇒
-      //        JsObject("type" -> JsString(tsc.getClass.getSimpleName))
-
-      case _ => throw DeserializationException("could not deserialize.")
-    }
-
-    def read(value: JsValue): TransformSource = ???
-  }
 
   implicit val sourceRawDataJson: RootJsonFormat[SetRawData] = jsonFormat3(SetRawData)
+
   implicit val rmRawDataJson: RootJsonFormat[RemoveRawData] = jsonFormat2(RemoveRawData)
+
   implicit val rmAllRawDataJson: RootJsonFormat[RemoveAllRaw] = jsonFormat1(RemoveAllRaw)
 
+
   implicit val globalPublishedItemLightJson: RootJsonFormat[GlobalPublishedItemLight] = jsonFormat5(GlobalPublishedItemLight)
+
   implicit val globalPublishedItemJson: RootJsonFormat[GlobalPublishedItem] = jsonFormat3(GlobalPublishedItem)
+
   implicit val publishGlobItemJson: RootJsonFormat[PublishGlobalItem] = jsonFormat1(PublishGlobalItem)
+
   implicit val getGlobPubItemJson: RootJsonFormat[GetGlobalPublishedItem] = jsonFormat1(GetGlobalPublishedItem)
+
   implicit val getAllGlobPubItemsJson: RootJsonFormat[GetAllGlobPublishedItems] = jsonFormat1(GetAllGlobPublishedItems)
 
 
   implicit val sourceMetaDataJson: RootJsonFormat[DefineMetaData] = jsonFormat2(DefineMetaData)
+
   implicit val rmMetaDataJson: RootJsonFormat[RemoveMetaData] = jsonFormat2(RemoveMetaData)
 
-  implicit val manyTransformersJson: RootJsonFormat[ManyTransfDefs] = jsonFormat1(ManyTransfDefs)
-  implicit val oneTransformersJson: RootJsonFormat[OneTransfDef] = jsonFormat1(OneTransfDef)
 
   implicit val okJson: RootJsonFormat[OkTransfReceived] = jsonFormat1(OkTransfReceived)
 
@@ -267,252 +196,29 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
     }
   }
 
-  implicit val transformDescJsonFormat: RootJsonFormat[TransformDescription] = jsonFormat4(TransformDescription)
-  implicit val transformDefIdentJsonFormat: RootJsonFormat[TransformDefinitionIdentity] = jsonFormat3(TransformDefinitionIdentity)
 
   implicit val rmFileJson: RootJsonFormat[RmFile] = jsonFormat1(RmFile)
 
-  implicit val getTransfDefJson: RootJsonFormat[GetTransfDef] = jsonFormat1(GetTransfDef)
-
-  implicit val transformJSon: RootJsonFormat[Transform] = jsonFormat4(Transform)
-  implicit val getAllJobsFeedbackJson: RootJsonFormat[AllJobsFeedback] = jsonFormat4(AllJobsFeedback)
-  implicit val workInProgressJson: RootJsonFormat[WorkInProgress] = jsonFormat2(WorkInProgress)
-  implicit val runningJobsFeedbackJson: RootJsonFormat[RunningJobsFeedback] = jsonFormat1(RunningJobsFeedback)
-
-  implicit val feedbackSourceJsonFormat: RootJsonFormat[TransformDoneSource] = jsonFormat3(TransformDoneSource)
-  implicit val transformfeedbackJsonFormat: RootJsonFormat[TransformCompletionFeedback] = jsonFormat10(TransformCompletionFeedback)
-  implicit val runningTransformFeedbackJsonFormat: RootJsonFormat[RunningTransformFeedback] = jsonFormat5(RunningTransformFeedback)
-
-  implicit val addPropertiesJSonFormat: RootJsonFormat[AddExpProps] = jsonFormat1(AddExpProps)
-  implicit val rmPropertiesJSonFormat: RootJsonFormat[RmExpProps] = jsonFormat1(RmExpProps)
-  implicit val newDescriptionJSonFormat: RootJsonFormat[ChangeDescription] = jsonFormat1(ChangeDescription)
-
   implicit val fileInfoJsonFormat: RootJsonFormat[FileInformation] = jsonFormat4(FileInformation)
+
   implicit val filesInfoJsonFormat: RootJsonFormat[FilesInformation] = jsonFormat1(FilesInformation)
+
   implicit val allFilesInfoJsonFormat: RootJsonFormat[AllFilesInformation] = jsonFormat3(AllFilesInformation)
 
-  implicit val expCreatedJson: RootJsonFormat[ExperimentCreated] = jsonFormat2(ExperimentCreated)
+
   implicit val successMessageJson: RootJsonFormat[SuccessMessage] = jsonFormat1(SuccessMessage)
+
   implicit val errorMessageJson: RootJsonFormat[ErrorMessage] = jsonFormat1(ErrorMessage)
 
-  implicit val expUIDJson: RootJsonFormat[ExperimentUID] = jsonFormat1(ExperimentUID)
-
-  implicit val failedAddPropsJson: RootJsonFormat[FailedAddingProperties] = jsonFormat1(FailedAddingProperties)
-  implicit val failedRmPropsJson: RootJsonFormat[FailedRemovingProperties] = jsonFormat1(FailedRemovingProperties)
 
   implicit val sourceFolderJson: RootJsonFormat[SourceFoldersAsString] = jsonFormat1(SourceFoldersAsString)
 
   implicit val getFilesFolderJson: RootJsonFormat[GetFilesFromSource] = jsonFormat2(GetFilesFromSource)
 
+
   implicit val expTypesJson: RootJsonFormat[ExperimentType] = jsonFormat3(ExperimentType)
+
   implicit val organizationJson: RootJsonFormat[Organization] = jsonFormat4(Organization)
-  // for test workers
-  implicit val toLowerCaseJson: RootJsonFormat[ToLowerCase] = jsonFormat1(ToLowerCase)
-  implicit val toUpperCaseJson: RootJsonFormat[ToUpperCase] = jsonFormat1(ToUpperCase)
-
-  // for tree of transforms
-  implicit val totDefInfoJson: RootJsonFormat[TreeOfTransformInfo] = jsonFormat5(TreeOfTransformInfo)
-
-  implicit val treeOFTransfStartedJson: RootJsonFormat[TreeOfTransformStarted] = jsonFormat1(TreeOfTransformStarted)
-
-  implicit object TreeFoTransfOutcomeJson extends RootJsonFormat[TreeOfTransfOutcome] {
-    override def write(obj: TreeOfTransfOutcome): JsValue = {
-      JsObject("outcome" -> JsString(obj.toString))
-    }
-
-    import TreeOfTransfOutcome._
-
-    override def read(json: JsValue): TreeOfTransfOutcome = json match {
-      case JsString("SUCCESS") ⇒ SUCCESS
-      case JsString("PARTIAL_SUCCESS") ⇒ PARTIAL_SUCCESS
-      case JsString("FAILED") ⇒ FAILED
-      case JsString("IN_PROGRESS") ⇒ IN_PROGRESS
-    }
-  }
-
-  implicit object TreeOfTransfNodeFeedbackJsonFormat extends RootJsonFormat[TreeOfTransfNodeFeedback] {
-    override def write(ttnfb: TreeOfTransfNodeFeedback): JsValue = {
-      JsObject(
-        "transfUID" -> JsString(ttnfb.transfUID),
-        "outcome" -> JsString(ttnfb.outcome.toString)
-      )
-    }
-
-    override def read(json: JsValue): TreeOfTransfNodeFeedback = {
-      json.asJsObject.getFields("transfUID", "outcome") match {
-        case Seq(JsString(transfUID), JsString("SUCCESS")) ⇒
-          TreeOfTransfNodeFeedback(transfUID, TreeOfTransfNodeOutcome.SUCCESS)
-        case Seq(JsString(transfUID), JsString("FAILED")) ⇒
-          TreeOfTransfNodeFeedback(transfUID, TreeOfTransfNodeOutcome.SUCCESS)
-      }
-
-    }
-  }
-
-  implicit object ProceedWithTreeOfTransfJson extends RootJsonFormat[ProceedWithTreeOfTransf] {
-    override def write(obj: ProceedWithTreeOfTransf): JsValue = {
-      JsObject(
-        "experiment" -> JsString(obj.experiment),
-        "treeOfTransformUID" -> JsString(obj.treeOfTransformUID),
-        "properties" -> obj.properties.toJson,
-        "startingTransform" -> (if (obj.startingTransform.isDefined) JsString(obj.startingTransform.get) else JsString("None")),
-        "exclusions" -> obj.exclusions.toJson
-      )
-    }
-
-    override def read(json: JsValue): ProceedWithTreeOfTransf = {
-      json.asJsObject
-        .getFields("experiment", "treeOfTransformUID", "properties", "startingTransform", "exclusions") match {
-        case Seq(JsString(experiment), JsString(treeOfTrans), props, JsString(startingTransf), exclusions) ⇒
-          ProceedWithTreeOfTransf(experiment, treeOfTrans, props.convertTo[Map[String, String]],
-            startingTransform = if (startingTransf == "None") None else Some(startingTransf),
-            exclusions.convertTo[Set[String]])
-      }
-    }
-  }
-
-  //todo needed?
-  implicit object TreeOfTransFeedbackJson extends RootJsonFormat[ToTFeedbackDetails] {
-    override def write(ttfb: ToTFeedbackDetails): JsValue = {
-      JsObject(
-        "uid" -> JsString(ttfb.uid),
-        "name" -> ttfb.name.toJson,
-        "treeOfTransform" -> JsString(ttfb.treeOfTransform),
-        "properties" -> ttfb.properties.toJson,
-        "startFromRaw" -> JsBoolean(ttfb.startFromRaw),
-        "originTransf" -> JsString(ttfb.originTransform.fold("None")(stg ⇒ stg)),
-        "start" -> JsString(utils.getDateAsStringMS(ttfb.start)),
-        "end" -> JsString(utils.getDateAsStringMS(ttfb.end)),
-        "success" -> JsNumber(ttfb.percentageSuccess),
-        "completed" -> JsNumber(ttfb.percentageCompleted),
-        "outcome" -> JsString(ttfb.outcome.toString),
-        "nodesFeedback" -> ttfb.nodesFeedback.toJson
-      )
-    }
-
-    override def read(json: JsValue): ToTFeedbackDetails = {
-      json.asJsObject.getFields("uid", "name", "treeOfTransform", "properties", "startFromRaw", "originTransf",
-        "start", "end", "success", "completed", "outcome", "nodesFeedback") match {
-        case Seq(JsString(uid), name, JsString(treeOfTrans), props, JsBoolean(startFromRaw), JsString(origin),
-        JsString(start), JsString(end), JsNumber(success), JsNumber(completed),
-        JsString(outcome), nodesFeedback) ⇒
-          ToTFeedbackDetails(uid = uid, name = name.convertTo[FullName], treeOfTransform = treeOfTrans,
-            properties = props.convertTo[Map[String, String]],
-            startFromRaw = startFromRaw,
-            originTransform = if (origin == "None") None else Some(origin),
-            start = utils.getAsDateMS(start).getTime, end = utils.getAsDateMS(end).getTime,
-            percentageSuccess = success.toInt, percentageCompleted = completed.toInt,
-            outcome = TreeOfTransfOutcome.withName(outcome),
-            nodesFeedback = nodesFeedback.convertTo[List[TreeOfTransfNodeFeedback]])
-
-        case _ => throw DeserializationException(s"could not deserialize $json")
-      }
-    }
-
-  }
-
-  implicit val toTNoFeedbackJson: RootJsonFormat[ToTNoFeedback] = jsonFormat1(ToTNoFeedback)
-  implicit val toTFeedbackDetailsJson: RootJsonFormat[ToTFeedbackDetailsForApi] = jsonFormat12(ToTFeedbackDetailsForApi)
-  implicit val currentlyRunningToTJson: RootJsonFormat[CurrentlyRunningToT] = jsonFormat1(CurrentlyRunningToT)
-
-  implicit val publishInfoLiJson: RootJsonFormat[PublishInfoLight] = jsonFormat3(PublishInfoLight)
-  implicit val publishInfoJson: RootJsonFormat[PublishInfo] = jsonFormat4(PublishInfo)
-  implicit val publishedInfoJson: RootJsonFormat[PublishedInfo] = jsonFormat3(PublishedInfo)
-  implicit val rmpublishedInfoJson: RootJsonFormat[RemovePublished] = jsonFormat2(RemovePublished)
-
-  implicit val selectableItemJson: RootJsonFormat[SelectableItem] = jsonFormat2(SelectableItem)
-  implicit val selectableJson: RootJsonFormat[Selectable] = jsonFormat2(Selectable)
-  implicit val bunchOfSelectableJson: RootJsonFormat[BunchOfSelectables] = jsonFormat1(BunchOfSelectables)
-  implicit val selectedSelectablesJson: RootJsonFormat[SelectedSelectables] = jsonFormat2(SelectedSelectables)
-
-  implicit val runTransformOnRawDataJson: RootJsonFormat[RunTransformOnRawData] = jsonFormat3(RunTransformOnRawData)
-
-  implicit object RunTransOnObjectJson extends RootJsonFormat[RunTransformOnObject] {
-    override def read(json: JsValue): RunTransformOnObject = {
-      json.asJsObject.getFields("experiment", "transfDefUID", "parameters", "selectables") match {
-        case Seq(JsString(experiment), JsString(transfDefUID)) ⇒
-          RunTransformOnObject(experiment, transfDefUID)
-
-        case Seq(JsString(experiment), JsString(transfDefUID), parameters) ⇒
-          RunTransformOnObject(experiment, transfDefUID, parameters.convertTo[Map[String, String]])
-
-        case Seq(JsString(experiment), JsString(transfDefUID), parameters, selectables) ⇒
-          RunTransformOnObject(experiment, transfDefUID,
-            parameters.convertTo[Map[String, String]], selectables.convertTo[Set[SelectedSelectables]])
-      }
-    }
-
-    override def write(obj: RunTransformOnObject): JsValue = jsonFormat4(RunTransformOnObject).write(obj)
-  }
-
-  implicit object RunTransFromTransJson extends RootJsonFormat[RunTransformOnTransform] {
-    override def read(json: JsValue): RunTransformOnTransform = {
-      json.asJsObject.getFields("experiment", "transfDefUID", "transformOrigin",
-        "parameters", "selectables") match {
-        case Seq(JsString(experiment), JsString(transfDefUID), JsString(transformOrigin)) ⇒
-          RunTransformOnTransform(experiment, transfDefUID, transformOrigin)
-
-        case Seq(JsString(experiment), JsString(transfDefUID), JsString(transformOrigin), parameters) ⇒
-          RunTransformOnTransform(experiment, transfDefUID, transformOrigin, parameters.convertTo[Map[String, String]])
-
-        case Seq(JsString(experiment), JsString(transfDefUID), JsString(transformOrigin), parameters, selectables) ⇒
-          RunTransformOnTransform(experiment, transfDefUID, transformOrigin,
-            parameters.convertTo[Map[String, String]], selectables.convertTo[Set[SelectedSelectables]])
-      }
-    }
-
-    override def write(obj: RunTransformOnTransform): JsValue = jsonFormat5(RunTransformOnTransform).write(obj)
-  }
-
-  implicit object RunTransFromTransformsJson extends RootJsonFormat[RunTransformOnTransforms] {
-    override def read(json: JsValue): RunTransformOnTransforms = {
-      json.asJsObject.getFields("experiment", "transfDefUID", "transformOrigin",
-        "parameters", "selectables") match {
-        case Seq(JsString(experiment), JsString(transfDefUID), transformOrigin) ⇒
-          RunTransformOnTransforms(experiment, transfDefUID, transformOrigin.convertTo[Set[String]])
-
-        case Seq(JsString(experiment), JsString(transfDefUID), transformOrigin, parameters) ⇒
-          RunTransformOnTransforms(experiment, transfDefUID, transformOrigin.convertTo[Set[String]],
-            parameters.convertTo[Map[String, String]])
-
-        case Seq(JsString(experiment), JsString(transfDefUID), transformOrigin, parameters, selectables) ⇒
-          RunTransformOnTransforms(experiment, transfDefUID,  transformOrigin.convertTo[Set[String]],
-            parameters.convertTo[Map[String, String]], selectables.convertTo[Set[SelectedSelectables]])
-      }
-    }
-
-    override def write(obj: RunTransformOnTransforms): JsValue = jsonFormat5(RunTransformOnTransforms).write(obj)
-  }
-
-  implicit object CloneExpeNewPropsJson extends RootJsonFormat[CloneExperimentNewProps] {
-    override def read(json: JsValue): CloneExperimentNewProps = {
-      json.asJsObject.getFields("name", "description", "owner", "expDesign", "raw", "userRaw", "userMeta", "userProps")
-      match {
-        case Seq(JsString(name), JsString(description), owner) ⇒
-          CloneExperimentNewProps(name, description, owner.convertTo[Owner])
-        case Seq(JsString(name), JsString(description), owner, expD) ⇒
-          CloneExperimentNewProps(name, description, owner.convertTo[Owner], expDesign = expD.convertTo[Boolean])
-        case Seq(JsString(name), JsString(description), owner, expD, rw) ⇒
-          CloneExperimentNewProps(name, description, owner.convertTo[Owner],
-            expDesign = expD.convertTo[Boolean], raw = rw.convertTo[Boolean])
-        case Seq(JsString(name), JsString(description), owner, expD, rw, urw) ⇒
-          CloneExperimentNewProps(name, description, owner.convertTo[Owner],
-            expDesign = expD.convertTo[Boolean], raw = rw.convertTo[Boolean], userRaw = urw.convertTo[Boolean])
-        case Seq(JsString(name), JsString(description), owner, expD, rw, urw, um) ⇒
-          CloneExperimentNewProps(name, description, owner.convertTo[Owner],
-            expDesign = expD.convertTo[Boolean], raw = rw.convertTo[Boolean],
-            userRaw = urw.convertTo[Boolean], userMeta = um.convertTo[Boolean])
-        case Seq(JsString(name), JsString(description), owner, expD, rw, urw, um, up) ⇒
-          CloneExperimentNewProps(name, description, owner.convertTo[Owner],
-            expDesign = expD.convertTo[Boolean], raw = rw.convertTo[Boolean], userRaw = urw.convertTo[Boolean],
-            userMeta = um.convertTo[Boolean], userProps = up.convertTo[Boolean])
-      }
-    }
-
-    override def write(obj: CloneExperimentNewProps): JsValue = {
-      jsonFormat8(CloneExperimentNewProps).write(obj)
-    }
-  }
 
 }
 

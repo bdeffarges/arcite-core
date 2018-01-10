@@ -8,7 +8,7 @@ import java.util.UUID
 import akka.actor.SupervisorStrategy.{Escalate, Restart}
 import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSystem, OneForOneStrategy, Props, SupervisorStrategy}
 import com.idorsia.research.arcite.core
-import com.idorsia.research.arcite.core.api.ArciteJSONProtocol
+import com.idorsia.research.arcite.core.api.{ArciteJSONProtocol, ExpJsonProto}
 import com.idorsia.research.arcite.core.api.ArciteService._
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging._
 import com.idorsia.research.arcite.core.eventinfo._
@@ -54,7 +54,8 @@ import spray.json.DeserializationException
   *
   */
 
-class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor with ArciteJSONProtocol with ActorLogging {
+class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor
+  with ExpJsonProto with ActorLogging {
 
   import ManageExperiments._
 

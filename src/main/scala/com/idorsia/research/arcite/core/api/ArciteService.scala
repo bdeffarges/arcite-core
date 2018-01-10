@@ -123,11 +123,6 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
   private val metaInfoActPath = s"${metaActSys}/user/${MetaInfoActors.getMetaInfoActorName}"
   private val metaActor = context.actorSelection(metaInfoActPath)
 
-  //publish global actor
-  private[api] val pubGlobActor = context.actorOf(GlobalPublishActor.props, "global_publish")
-  log.info(s"***** publish global actor: ${pubGlobActor.path.toStringWithoutAddress}")
-  println(s"***** publish global actor: ${pubGlobActor.path.toStringWithoutAddress}")
-
   import ArciteService._
 
   override def receive = {
@@ -153,10 +148,6 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
       expManager forward pi
 
 
-    case gs: GetSelectable ⇒
-      expManager forward gs
-
-
     case rds: SetRawData ⇒
       defineRawDataAct forward rds
 
@@ -171,36 +162,6 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
     case rmd: RemoveMetaData ⇒
       defineRawDataAct forward rmd
-
-
-   case GetAllTransfDefs ⇒
-      ManageTransformCluster.getNextFrontEnd() forward GetAllTransfDefs
-
-
-    case ft: FindTransfDefs ⇒
-      ManageTransformCluster.getNextFrontEnd() forward ft
-
-
-    case gtd: GetTransfDef ⇒
-      ManageTransformCluster.getNextFrontEnd() forward gtd
-
-
-    case pwt: ProceedWithTransform ⇒
-      context.system.actorOf(ScatGathTransform.props(sender(), expManager)) ! pwt
-      expManager ! MakeImmutable(pwt.experiment)
-
-
-    // messages to workers cluster
-    case qws: QueryWorkStatus ⇒
-      ManageTransformCluster.getNextFrontEnd() forward qws
-
-
-    case GetAllJobsStatus ⇒
-      ManageTransformCluster.getNextFrontEnd() forward GetAllJobsStatus
-
-
-    case GetRunningJobsStatus ⇒
-      ManageTransformCluster.getNextFrontEnd() forward GetRunningJobsStatus
 
 
     case RecentAllLastUpdates ⇒
@@ -240,11 +201,6 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
     case GetCategories ⇒
       metaActor forward GetCategories
-
-
-      // global publish
-    case gpa : GlobalPublishApi ⇒
-      pubGlobActor forward gpa
 
 
     //don't know what to do with this message...
