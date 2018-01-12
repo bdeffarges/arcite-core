@@ -5,7 +5,7 @@ import java.nio.file.{Files, Path}
 import akka.actor.Actor.Receive
 import akka.actor.{Actor, ActorLogging, Props}
 import com.idorsia.research.arcite.core
-import com.idorsia.research.arcite.core.api.ArciteJSONProtocol
+import com.idorsia.research.arcite.core.api.{ArciteJSONProtocol, ExpJsonProto}
 import com.idorsia.research.arcite.core.experiments.Experiment
 import com.idorsia.research.arcite.core.meta.DesignCategories.{AllCategories, GetCategories, RebuildDesignCategories, SimpleCondition}
 
@@ -32,7 +32,7 @@ import com.idorsia.research.arcite.core.meta.DesignCategories.{AllCategories, Ge
   * Created by Bernard Deffarges on 2017/02/03.
   *
   */
-class DesignCategories extends Actor with ActorLogging {
+class DesignCategories extends Actor with ExpJsonProto with ActorLogging {
 
   import scala.concurrent.duration._
 
@@ -54,7 +54,7 @@ class DesignCategories extends Actor with ActorLogging {
   }
 }
 
-class CategoriesRebuilder extends Actor with ActorLogging with ArciteJSONProtocol {
+class CategoriesRebuilder extends Actor with ExpJsonProto with ActorLogging {
 
   import spray.json._
   import scala.collection.convert.wrapAsScala._

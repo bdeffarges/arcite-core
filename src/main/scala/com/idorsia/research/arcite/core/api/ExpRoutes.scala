@@ -3,7 +3,7 @@ package com.idorsia.research.arcite.core.api
 import java.nio.file.{Path, Paths}
 import java.util.UUID
 
-import akka.actor.{ActorPath, ActorRef, ActorSystem}
+import akka.actor.{ActorPath, ActorSystem}
 import akka.http.scaladsl.model.StatusCodes.OK
 import akka.stream.scaladsl.FileIO
 import akka.http.scaladsl.model.StatusCodes._
@@ -11,12 +11,11 @@ import akka.http.scaladsl.server.Directives
 import akka.pattern.ask
 import akka.util.Timeout
 
-import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Failure
 import com.typesafe.scalalogging.LazyLogging
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import com.idorsia.research.arcite.core.api.ArciteService._
+import com.idorsia.research.arcite.core.api.GlobServices._
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.{InfoLogs, ReadLogs}
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor.AllFilesInformation
 import com.idorsia.research.arcite.core.publish.PublishActor._
@@ -50,7 +49,9 @@ import com.typesafe.config.ConfigFactory
 class ExpRoutes(system: ActorSystem)
                (implicit executionContext: ExecutionContext,
                 implicit val timeout: Timeout)
-  extends Directives with ExpJsonProto with LazyLogging {
+  extends Directives
+    with ExpJsonProto with TransfJsonProto with TofTransfJsonProto
+    with LazyLogging {
 
   private val conf = ConfigFactory.load().getConfig("experiments-manager")
   private val actSys = conf.getString("akka.uri")

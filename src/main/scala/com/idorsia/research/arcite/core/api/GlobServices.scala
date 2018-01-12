@@ -1,23 +1,14 @@
 package com.idorsia.research.arcite.core.api
 
-import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, Props}
+import akka.actor.{Actor, ActorLogging, ActorPath, Props}
 import akka.util.Timeout
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.{MostRecentLogs, ReadLogs, RecentAllLastUpdates}
-import com.idorsia.research.arcite.core.experiments.ManageExperiments.{GetAllTransforms, _}
-import com.idorsia.research.arcite.core.experiments.{Experiment, ExperimentSummary}
+import com.idorsia.research.arcite.core.experiments.ManageExperiments._
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor.{GetFilesFromSource, GetSourceFolders}
 import com.idorsia.research.arcite.core.meta.DesignCategories.GetCategories
 import com.idorsia.research.arcite.core.meta.MetaInfoActors
-import com.idorsia.research.arcite.core.publish.GlobalPublishActor.GlobalPublishApi
-import com.idorsia.research.arcite.core.publish.{GlobalPublishActor, PublishActor}
 import com.idorsia.research.arcite.core.publish.PublishActor.PublishApi
 import com.idorsia.research.arcite.core.rawdata.DefineRawAndMetaData._
-import com.idorsia.research.arcite.core.transforms.RunTransform._
-import com.idorsia.research.arcite.core.transforms.TransfDefMsg._
-import com.idorsia.research.arcite.core.transforms.cluster.Frontend.{GetAllJobsStatus, GetRunningJobsStatus, QueryWorkStatus}
-import com.idorsia.research.arcite.core.transforms.cluster.{ManageTransformCluster, ScatGathTransform}
-import com.idorsia.research.arcite.core.transftree.{GetAllRunningToT, GetFeedbackOnTreeOfTransf, ProceedWithTreeOfTransf, TreeOfTransformActorSystem}
-import com.idorsia.research.arcite.core.transftree.TreeOfTransformsManager.GetTreeOfTransformInfo
 import com.idorsia.research.arcite.core.utils.RemoveFile
 import com.typesafe.config.ConfigFactory
 
@@ -43,13 +34,12 @@ import com.typesafe.config.ConfigFactory
   *
   * Created by deffabe1 on 2/29/16.
   */
-object ArciteService {
-  def props(implicit timeout: Timeout) = Props(classOf[ArciteService], timeout)
+object GlobServices {
+  def props(implicit timeout: Timeout) = Props(classOf[GlobServices], timeout)
 
   def name = "arcite-services"
 
   case class GeneralFailure(info: String)
-
 
   sealed trait MoveUploadedFile {
     def experiment: String
@@ -91,7 +81,7 @@ object ArciteService {
 }
 
 
-class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
+class GlobServices(implicit timeout: Timeout) extends Actor with ActorLogging {
 
   private val conf = ConfigFactory.load().getConfig("experiments-manager")
   private val actSys = conf.getString("akka.uri")
@@ -114,16 +104,16 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
   private[api] val fileServiceAct = context.actorSelection(ActorPath.fromString(fileServiceActPath))
   log.info(s"****** connect file service actor [$fileServiceActPath] actor: $fileServiceAct")
 
-  private[api] val treeOfTransformActor = context.actorSelection(
-    ActorPath.fromString(TreeOfTransformActorSystem.treeOfTransfActPath))
-  log.info(s"****** connect to TreeOfTransform service actor: $treeOfTransformActor")
-
   private val conf2 = ConfigFactory.load().getConfig("meta-info-actor-system")
+
   private val metaActSys = conf2.getString("akka.uri")
+
   private val metaInfoActPath = s"${metaActSys}/user/${MetaInfoActors.getMetaInfoActorName}"
+
   private val metaActor = context.actorSelection(metaInfoActPath)
 
-  import ArciteService._
+
+  import GlobServices._
 
   override def receive = {
     case expMsg: ExperimentMsg ⇒
@@ -182,21 +172,6 @@ class ArciteService(implicit timeout: Timeout) extends Actor with ActorLogging {
 
     case gf: GetFilesFromSource ⇒
       fileServiceAct forward gf
-
-
-    case GetTreeOfTransformInfo ⇒
-      treeOfTransformActor forward GetTreeOfTransformInfo
-
-    case pwtt: ProceedWithTreeOfTransf ⇒
-      treeOfTransformActor forward pwtt
-
-
-    case GetAllRunningToT ⇒
-      treeOfTransformActor forward GetAllRunningToT
-
-
-    case getFeedback: GetFeedbackOnTreeOfTransf ⇒
-      treeOfTransformActor forward getFeedback
 
 
     case GetCategories ⇒

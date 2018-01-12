@@ -5,6 +5,7 @@ import com.idorsia.research.arcite.core.transftree._
 import com.idorsia.research.arcite.core.transftree.TreeOfTransformsManager.CurrentlyRunningToT
 import com.idorsia.research.arcite.core.utils
 import com.idorsia.research.arcite.core.utils.FullName
+
 import spray.json._
 
 /**
@@ -30,14 +31,11 @@ import spray.json._
   * Created by Bernard Deffarges on 2018/01/09.
   *
   */
-class TreeOfTransJsonProto extends ArciteJSONProtocol {
+trait TofTransfJsonProto extends ArciteJSONProtocol {
 
-  // for tree of transforms
   implicit val totDefInfoJson: RootJsonFormat[TreeOfTransformInfo] = jsonFormat5(TreeOfTransformInfo)
 
-
   implicit val treeOFTransfStartedJson: RootJsonFormat[TreeOfTransformStarted] = jsonFormat1(TreeOfTransformStarted)
-
 
   implicit object TreeFoTransfOutcomeJson extends RootJsonFormat[TreeOfTransfOutcome] {
     override def write(obj: TreeOfTransfOutcome): JsValue = {
@@ -96,8 +94,6 @@ class TreeOfTransJsonProto extends ArciteJSONProtocol {
     }
   }
 
-
-  //todo needed?
   implicit object TreeOfTransFeedbackJson extends RootJsonFormat[ToTFeedbackDetails] {
     override def write(ttfb: ToTFeedbackDetails): JsValue = {
       JsObject(
@@ -136,7 +132,6 @@ class TreeOfTransJsonProto extends ArciteJSONProtocol {
     }
 
   }
-
 
   implicit val toTNoFeedbackJson: RootJsonFormat[ToTNoFeedback] = jsonFormat1(ToTNoFeedback)
 

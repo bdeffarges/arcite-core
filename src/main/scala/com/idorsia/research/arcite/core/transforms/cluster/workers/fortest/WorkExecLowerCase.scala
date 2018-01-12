@@ -6,7 +6,7 @@ import java.nio.file.StandardOpenOption._
 import java.nio.file.{Files, Paths}
 
 import akka.actor.{Actor, ActorLogging, Props}
-import com.idorsia.research.arcite.core.api.ArciteJSONProtocol
+import com.idorsia.research.arcite.core.api.{ArciteJSONProtocol, TransfJsonProto}
 import com.idorsia.research.arcite.core.experiments.ExperimentFolderVisitor
 import com.idorsia.research.arcite.core.transforms._
 import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.{WorkerJobFailed, WorkerJobSuccessFul}
@@ -41,7 +41,7 @@ import scala.collection.convert.wrapAsScala._
   *
   */
 
-class WorkExecLowerCase extends Actor with ActorLogging with ArciteJSONProtocol {
+class WorkExecLowerCase extends Actor with ActorLogging with TransfJsonProto {
 
   import WorkExecLowerCase._
 

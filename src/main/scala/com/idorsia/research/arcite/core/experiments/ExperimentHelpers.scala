@@ -3,7 +3,7 @@ package com.idorsia.research.arcite.core.experiments
 import java.nio.file.Files
 
 import com.idorsia.research.arcite.core
-import com.idorsia.research.arcite.core.api.ArciteJSONProtocol
+import com.idorsia.research.arcite.core.api.{ArciteJSONProtocol, ExpJsonProto, TransfJsonProto}
 import com.idorsia.research.arcite.core.transforms.TransformCompletionFeedback
 import com.idorsia.research.arcite.core.utils.WriteFeedbackActor
 
@@ -31,7 +31,7 @@ import com.idorsia.research.arcite.core.utils.WriteFeedbackActor
   *
   *
   */
-class ExperimentHelpers(experiment: Experiment) extends ArciteJSONProtocol {
+class ExperimentHelpers(experiment: Experiment) extends ExpJsonProto with TransfJsonProto {
 
   lazy val successfullTransforms: Set[TransformCompletionFeedback] = {
     import spray.json._

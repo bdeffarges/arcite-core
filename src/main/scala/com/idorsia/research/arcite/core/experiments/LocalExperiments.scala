@@ -4,14 +4,13 @@ import java.nio.charset.StandardCharsets
 import java.nio.file._
 
 import com.idorsia.research.arcite.core
-import com.idorsia.research.arcite.core.api.ArciteJSONProtocol
-import com.idorsia.research.arcite.core.api.ArciteService._
+import com.idorsia.research.arcite.core.api.{ArciteJSONProtocol, ExpJsonProto}
 import com.idorsia.research.arcite.core.experiments.ManageExperiments._
 import com.idorsia.research.arcite.core.utils
 import com.idorsia.research.arcite.core.utils.FoldersHelpers
 import com.typesafe.scalalogging.LazyLogging
 
-object LocalExperiments extends LazyLogging with ArciteJSONProtocol {
+object LocalExperiments extends LazyLogging with ExpJsonProto {
 
   val EXPERIMENT_FILE_NAME = "experiment"
   val EXPERIMENT_UID_FILE_NAME = "uid"

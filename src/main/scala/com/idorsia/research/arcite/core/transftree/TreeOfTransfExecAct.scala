@@ -6,8 +6,8 @@ import java.util.UUID
 
 import akka.actor.{Actor, ActorLogging, ActorSelection, PoisonPill, Props}
 import com.idorsia.research.arcite.core
-import com.idorsia.research.arcite.core.api.ArciteJSONProtocol
-import com.idorsia.research.arcite.core.api.ArciteService._
+import com.idorsia.research.arcite.core.api.{ArciteJSONProtocol, TofTransfJsonProto}
+import com.idorsia.research.arcite.core.api.GlobServices._
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.AddLog
 import com.idorsia.research.arcite.core.eventinfo.LogCategory.LogCategory
 import com.idorsia.research.arcite.core.eventinfo._
@@ -47,7 +47,7 @@ import com.idorsia.research.arcite.core.utils.LoggingHelper
 class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelection,
                           treeOfTransformDefinition: TreeOfTransformDefinition, uid: String)
 
-  extends Actor with ActorLogging with ArciteJSONProtocol {
+  extends Actor with TofTransfJsonProto with ActorLogging {
 
   private val allTofTNodes = treeOfTransformDefinition.allNodes
   private val allTofTDefID = treeOfTransformDefinition.allNodes.map(_.transfDefUID).toSet
@@ -385,7 +385,9 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
 
   private def saveFeedback = {
     import spray.json._
+
     val file = ExperimentFolderVisitor(expFound.get.exp).treeOfTransfFolderPath resolve s"$uid${core.feedbackfile}"
+
     Files.write(file, feedback.toJson.prettyPrint.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE_NEW)
   }
 }

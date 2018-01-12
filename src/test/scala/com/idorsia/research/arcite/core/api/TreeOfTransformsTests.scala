@@ -38,7 +38,7 @@ import scala.concurrent.Future
   * Created by Bernard Deffarges on 2016/12/14.
   *
   */
-class TreeOfTransformsTests extends ApiTests with ExpJsonProto {
+class TreeOfTransformsTests extends ApiTests with ExpJsonProto with TransfJsonProto with TofTransfJsonProto {
 
   private var exp1 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment1)
   private var transfDef1: Option[TreeOfTransformInfo] = None

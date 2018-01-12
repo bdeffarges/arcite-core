@@ -79,7 +79,7 @@ object Main extends App with LazyLogging {
 
   implicit val materializer = ActorMaterializer()
 
-  val corsHeaders = List(RawHeader("Access-Control-Allow-Origin", "*"),
+  private val corsHeaders = List(RawHeader("Access-Control-Allow-Origin", "*"),
     RawHeader("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS, DELETE"),
     RawHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization"))
 

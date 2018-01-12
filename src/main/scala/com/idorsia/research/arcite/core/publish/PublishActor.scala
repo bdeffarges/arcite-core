@@ -6,8 +6,8 @@ import java.nio.file.Files
 import java.util.UUID
 
 import akka.actor.{Actor, ActorLogging, ActorRef}
-import com.idorsia.research.arcite.core.api.ArciteJSONProtocol
-import com.idorsia.research.arcite.core.api.ArciteService.{ArtifactPublished, DefaultSuccess}
+import com.idorsia.research.arcite.core.api.{ArciteJSONProtocol, TransfJsonProto}
+import com.idorsia.research.arcite.core.api.GlobServices.{ArtifactPublished, DefaultSuccess}
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.AddLog
 import com.idorsia.research.arcite.core.eventinfo.{ExpLog, LogCategory, LogType}
 import com.idorsia.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor}
@@ -39,7 +39,7 @@ import scala.collection.convert.wrapAsScala._
   * Created by Bernard Deffarges on 2017/02/20.
   *
   */
-class PublishActor(eventInfoAct: ActorRef) extends Actor with ActorLogging with ArciteJSONProtocol {
+class PublishActor(eventInfoAct: ActorRef) extends Actor with ActorLogging with TransfJsonProto {
 
   import PublishActor._
 

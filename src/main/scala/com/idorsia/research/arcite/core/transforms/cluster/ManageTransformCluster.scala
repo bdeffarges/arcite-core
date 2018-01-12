@@ -44,6 +44,7 @@ object ManageTransformCluster {
   private var frontEnds = Seq[ActorRef]()
 
   def defaultTransformClusterStartFromConf(): Unit = {
+    logger.info("starting cluster... starting cluster... starting... cluster... ... ... ... ")
     val bePorts = config.getIntList("transform_cluster.backends.ports")
     val fePorts = config.getInt("transform_cluster.frontends.numberOfports")
     import scala.collection.convert.wrapAsScala._
@@ -52,8 +53,10 @@ object ManageTransformCluster {
   }
 
   def defaultTransformClusterStart(backendPorts: Seq[Int], nbrOffrontEnds: Int): Unit = {
+    logger.info("starting backend nodes... ... ... ")
     backendPorts.foreach(startBackend(_, "backend"))
 
+    logger.info("starting frontend nodes... ... ... ")
     frontEnds = (1 to nbrOffrontEnds).map(_ ⇒ startFrontend(0))
   }
 
@@ -61,10 +64,10 @@ object ManageTransformCluster {
     // todo random for now, instead it should pick-up those that are available
     //
     val i = java.util.concurrent.ThreadLocalRandom.current().nextInt(frontEnds.size)
-    val ar = frontEnds(i)
-    logger.info(s"pickup id[$i] => $ar}")
+    val chosenFE = frontEnds(i)
+    logger.info(s"pickup id[$i] => $chosenFE}")
 
-    ar
+    chosenFE
   }
 
   def startBackend(port: Int, role: String) = {
@@ -76,10 +79,6 @@ object ManageTransformCluster {
     logger.info(s"actor store location: $actorStoreLoc")
 
     val system = ActorSystem(arcTransfActClustSys, conf)
-
-    //todo journal seed node port?
-    startupSharedJournal(system, startStore = port == config.getInt("sharedJournal.port"),
-      path = ActorPath.fromString(actorStoreLoc))
 
     system.actorOf(ClusterSingletonManager.props(
       Master.props(workTimeout),
@@ -108,31 +107,6 @@ object ManageTransformCluster {
       ), s"WorkerClusterClient-$name")
 
     workSystem.actorOf(TransformWorker.props(clusterClient, td), name)
-  }
-
-
-  def startupSharedJournal(system: ActorSystem, startStore: Boolean, path: ActorPath): Unit = {
-    // Start the shared journal on one node (don't crash this SPOF)
-    // This will not be needed with a distributed journal
-    if (startStore) system.actorOf(Props[SharedLeveldbStore], "store")
-
-    // register the shared journal
-    import system.dispatcher
-    implicit val timeout = Timeout(15.seconds)
-
-    val f = system.actorSelection(path) ? Identify(None)
-
-    f.onSuccess {
-      case ActorIdentity(_, Some(ref)) => SharedLeveldbJournal.setStore(ref, system)
-      case _ =>
-        system.log.error("Shared journal not started at {}", path)
-        system.terminate()
-    }
-    f.onFailure {
-      case _ =>
-        system.log.error("Lookup of shared journal at {} timed out", path)
-        system.terminate()
-    }
   }
 
 

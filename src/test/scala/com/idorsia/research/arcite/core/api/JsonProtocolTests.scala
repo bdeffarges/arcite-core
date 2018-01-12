@@ -28,7 +28,8 @@ import org.scalatest.{FlatSpec, Matchers}
   * Created by Bernard Deffarges on 2017/01/24.
   *
   */
-class JsonProtocolTests extends FlatSpec with Matchers with ArciteJSONProtocol {
+class JsonProtocolTests extends FlatSpec with Matchers
+  with ExpJsonProto with TransfJsonProto with TofTransfJsonProto {
 
   import spray.json._
 
@@ -38,7 +39,7 @@ class JsonProtocolTests extends FlatSpec with Matchers with ArciteJSONProtocol {
     val fromJson1 = toJson1.convertTo[FreeText]
     assert(freeText == fromJson1)
 
-    val intNumber = IntNumber("hello.mars","hello mars", Some(123), Some(3), Some(332))
+    val intNumber = IntNumber("hello.mars", "hello mars", Some(123), Some(3), Some(332))
     val toJson2 = intNumber.toJson
     val fromJson2 = toJson2.convertTo[IntNumber]
     assert(intNumber == fromJson2)
@@ -56,7 +57,7 @@ class JsonProtocolTests extends FlatSpec with Matchers with ArciteJSONProtocol {
   }
 
   "TransformParameter back and forth to json with NONE " should "produce json and read json " in {
-    val freeText = FreeText("hello.world","hello world")
+    val freeText = FreeText("hello.world", "hello world")
     val toJson1 = freeText.toJson
     val fromJson1 = toJson1.convertTo[FreeText]
     assert(freeText == fromJson1)
@@ -66,7 +67,7 @@ class JsonProtocolTests extends FlatSpec with Matchers with ArciteJSONProtocol {
     val fromJson2 = toJson2.convertTo[IntNumber]
     assert(intNumber == fromJson2)
 
-    val floatNumber = FloatNumber("hello.jupiter","hello jupiter")
+    val floatNumber = FloatNumber("hello.jupiter", "hello jupiter")
     val toJson3 = floatNumber.toJson
     val fromJson3 = toJson3.convertTo[FloatNumber]
     assert(floatNumber == fromJson3)
@@ -96,7 +97,7 @@ class JsonProtocolTests extends FlatSpec with Matchers with ArciteJSONProtocol {
 
   "to json for transform parameters " should " produce json and read json converting to the right type " in {
 
-    val pdv = PredefinedValues("pdef1", "pre def val", "val1" :: "val2" :: "val3":: Nil)
+    val pdv = PredefinedValues("pdef1", "pre def val", "val1" :: "val2" :: "val3" :: Nil)
 
     val pdvToJ = pdv.toJson
     val pdvFromJ = pdvToJ.convertTo[TransformParameter]

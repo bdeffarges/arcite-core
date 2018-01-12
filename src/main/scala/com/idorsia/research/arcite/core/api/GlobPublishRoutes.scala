@@ -47,7 +47,7 @@ import scala.concurrent.duration._
 @Path("/publish")
 class GlobPublishRoutes(system: ActorSystem)
                        (implicit val executionContext: ExecutionContext, //todo improve implicits?
-                       implicit val requestTimeout: Timeout) extends Directives with ArciteJSONProtocol with LazyLogging {
+                        implicit val requestTimeout: Timeout) extends Directives with ArciteJSONProtocol with LazyLogging {
 
   //publish global actor
   private val pubGlobActor = system.actorOf(GlobalPublishActor.props, "global_publish")
@@ -104,23 +104,23 @@ class GlobPublishRoutes(system: ActorSystem)
       }
   }
 
-  private[api] def getGPItem(uid: String): Future[PublishResponse] = {
+  private def getGPItem(uid: String): Future[PublishResponse] = {
     pubGlobActor.ask(GetGlobalPublishedItem(uid)).mapTo[PublishResponse]
   }
 
-  private[api] def getAllGPItems(maxHits: Int): Future[FoundGlobPubItems] = {
+  private def getAllGPItems(maxHits: Int): Future[FoundGlobPubItems] = {
     pubGlobActor.ask(GetAllGlobPublishedItems(maxHits)).mapTo[FoundGlobPubItems]
   }
 
-  private[api] def searchGPI(search: String, maxHits: Int): Future[FoundGlobPubItems] = {
+  private def searchGPI(search: String, maxHits: Int): Future[FoundGlobPubItems] = {
     pubGlobActor.ask(SearchGlobalPublishedItems(search, maxHits)).mapTo[FoundGlobPubItems]
   }
 
-  private[api] def publishGPI(pubItem: GlobalPublishedItemLight): Future[PublishResponse] = {
+  private def publishGPI(pubItem: GlobalPublishedItemLight): Future[PublishResponse] = {
     pubGlobActor.ask(PublishGlobalItem(pubItem)).mapTo[PublishResponse]
   }
 
-  private[api] def rmGPI(uid: String): Future[PublishResponse] = {
+  private def rmGPI(uid: String): Future[PublishResponse] = {
     pubGlobActor.ask(RmGloPubItem(uid)).mapTo[PublishResponse]
   }
 }

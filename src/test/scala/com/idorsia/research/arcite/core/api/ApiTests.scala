@@ -41,7 +41,8 @@ import scala.concurrent.Future
   * Created by Bernard Deffarges on 2016/11/10.
   *
   */
-class ApiTests extends AsyncFlatSpec with Matchers with ArciteJSONProtocol
+class ApiTests extends AsyncFlatSpec with Matchers
+  with ExpJsonProto with TransfJsonProto
   with LazyLogging with Eventually {
 
   val config = ConfigFactory.load()

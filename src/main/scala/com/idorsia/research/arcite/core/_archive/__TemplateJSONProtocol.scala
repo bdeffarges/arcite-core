@@ -1,8 +1,9 @@
-package com.idorsia.research.arcite.core.api
+package com.idorsia.research.arcite.core._archive
 
 import java.util.Date
 
-import com.idorsia.research.arcite.core.api.ArciteService._
+import com.idorsia.research.arcite.core.api.GlobServices._
+import com.idorsia.research.arcite.core.api.{ErrorMessage, SuccessMessage, UniqueID}
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.InfoLogs
 import com.idorsia.research.arcite.core.eventinfo.LogCategory.LogCategory
 import com.idorsia.research.arcite.core.eventinfo.{ArciteAppLog, ExpLog, LogCategory, LogType}
@@ -366,7 +367,6 @@ trait __TemplateJSONProtocol extends DefaultJsonProtocol {
   implicit val filesInfoJsonFormat: RootJsonFormat[FilesInformation] = jsonFormat1(FilesInformation)
   implicit val allFilesInfoJsonFormat: RootJsonFormat[AllFilesInformation] = jsonFormat3(AllFilesInformation)
 
-  implicit val expCreatedJson: RootJsonFormat[ExperimentCreated] = jsonFormat2(ExperimentCreated)
   implicit val successMessageJson: RootJsonFormat[SuccessMessage] = jsonFormat1(SuccessMessage)
   implicit val errorMessageJson: RootJsonFormat[ErrorMessage] = jsonFormat1(ErrorMessage)
 

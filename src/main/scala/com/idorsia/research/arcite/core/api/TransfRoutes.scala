@@ -6,12 +6,13 @@ import akka.http.scaladsl.model.StatusCodes.{OK, _}
 import akka.http.scaladsl.server.Directives
 import akka.pattern.ask
 import akka.util.Timeout
-import com.idorsia.research.arcite.core.experiments.ManageExperiments.MakeImmutable
+
 import com.idorsia.research.arcite.core.transforms.RunTransform.{ProceedWithTransform, RunTransformOnObject, RunTransformOnRawData, RunTransformOnTransform}
 import com.idorsia.research.arcite.core.transforms.TransfDefMsg._
 import com.idorsia.research.arcite.core.transforms.cluster.Frontend._
 import com.idorsia.research.arcite.core.transforms.cluster.WorkState._
 import com.idorsia.research.arcite.core.transforms.cluster.{ManageTransformCluster, ScatGathTransform}
+
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 
@@ -54,7 +55,9 @@ class TransfRoutes(system: ActorSystem)
 
   private val services = system.actorOf(Props(classOf[TransformService], timeout))
 
-  private[api] val routes = getTransformsRoute ~ getOneTransformRoute
+  private[api] val routes = getTransformsRoute ~ getOneTransformRoute ~
+    runTransformRoute ~ transformFeedbackRoute ~ allTransformsFeedbackRoute ~ runningJobsFeedbackRoute ~
+    allTransformsRoute ~ oneTransformRoute
 
   private def getTransformsRoute = path("transform_definitions") {
     parameter('search, 'maxHits ? 10) {
@@ -89,7 +92,7 @@ class TransfRoutes(system: ActorSystem)
       }
   }
 
-  def runTransformRoute = pathPrefix("run_transform") {
+  private def runTransformRoute = pathPrefix("run_transform") {
     path("on_raw_data") {
       post {
         logger.debug("running a transform on the raw data from an experiment.")
@@ -130,7 +133,7 @@ class TransfRoutes(system: ActorSystem)
       }
   }
 
-  def transformFeedbackRoute = pathPrefix("job_status" / Segment) {
+  private def transformFeedbackRoute = pathPrefix("job_status" / Segment) {
     workID ⇒
       pathEnd {
         get {
@@ -145,7 +148,7 @@ class TransfRoutes(system: ActorSystem)
       }
   }
 
-  def allTransformsFeedbackRoute = path("all_jobs_status") {
+  private def allTransformsFeedbackRoute = path("all_jobs_status") {
     get {
       logger.debug("ask for all job status...")
       onSuccess(getAllJobsStatus()) {
@@ -155,12 +158,34 @@ class TransfRoutes(system: ActorSystem)
     }
   }
 
-  def runningJobsFeedbackRoute = path("running_jobs_status") {
+  private def runningJobsFeedbackRoute = path("running_jobs_status") {
     get {
       logger.debug("ask for all running job status...")
       onSuccess(getRunningJobsStatus()) {
         case jfb: RunningJobsFeedback ⇒ complete(OK -> jfb.jobsInProgress)
         case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning an usefull info."))
+      }
+    }
+  }
+
+  private def allTransformsRoute = path("all_transforms") {
+    get {
+      logger.info("get all transforms for all experiments ")
+      onSuccess(getAllTransforms()) {
+        case ManyTransforms(tdis) ⇒ complete(OK -> tdis)
+        case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning all transforms."))
+      }
+    }
+  }
+
+  private def oneTransformRoute = pathPrefix("transform") {
+    path(Segment) { transf ⇒
+      get {
+        logger.info("get one transform feedback ")
+        onSuccess(getOneTransformFeedback(transf)) {
+          case OneTransformFeedback(tfb) ⇒ complete(OK -> tfb)
+          case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning all transforms."))
+        }
       }
     }
   }
@@ -204,33 +229,41 @@ class TransfRoutes(system: ActorSystem)
   private def getRunningJobsStatus() = {
     services.ask(GetRunningJobsStatus).mapTo[RunningJobsFeedback]
   }
-}
 
-
-private[api] class TransformService(expManager: ActorRef)
-                                   (implicit timeout: Timeout) extends Actor with ActorLogging {
-
-  override def receive: Receive = {
-    case pwt: ProceedWithTransform ⇒
-      context.system.actorOf(ScatGathTransform.props(sender(), expManager)) ! pwt
-      expManager ! MakeImmutable(pwt.experiment)
-
-
-    case qws: QueryWorkStatus ⇒
-      ManageTransformCluster.getNextFrontEnd() forward qws
-
-
-    case GetAllJobsStatus ⇒
-      ManageTransformCluster.getNextFrontEnd() forward GetAllJobsStatus
-
-
-    case GetRunningJobsStatus ⇒
-      ManageTransformCluster.getNextFrontEnd() forward GetRunningJobsStatus
-
-
+  private[api] def getAllTransforms() = {
+    expManager.ask(GetAllTransforms).mapTo[ManyTransforms]
   }
-}
 
+  private[api] def getOneTransformFeedback(transf: String) = {
+    expManager.ask(GetOneTransform(transf)).mapTo[OneTransformFeedback]
+  }
+
+  class TransformService(expManager: ActorRef)
+                        (implicit timeout: Timeout) extends Actor with ActorLogging {
+
+    override def receive: Receive = {
+      case pwt: ProceedWithTransform ⇒
+        context.system.actorOf(ScatGathTransform.props(sender(), expManager)) ! pwt
+        expManager ! MakeImmutable(pwt.experiment)
+
+
+      case qws: QueryWorkStatus ⇒
+        ManageTransformCluster.getNextFrontEnd() forward qws
+
+
+      case GetAllJobsStatus ⇒
+        ManageTransformCluster.getNextFrontEnd() forward GetAllJobsStatus
+
+
+      case GetRunningJobsStatus ⇒
+        ManageTransformCluster.getNextFrontEnd() forward GetRunningJobsStatus
+
+      case a: Any ⇒
+        log.error(s"[TransfService 1039d] don't know what to do with message ${a.toString}")
+    }
+  }
+
+}
 
 
 

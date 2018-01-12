@@ -71,6 +71,7 @@ trait ExpJsonProto extends ArciteJSONProtocol {
     }
 
     import spray.json._
+
     override def write(exp: Experiment): JsValue = {
       JsObject(
         "name" -> JsString(exp.name),
@@ -103,24 +104,6 @@ trait ExpJsonProto extends ArciteJSONProtocol {
 
   implicit val addDesignJson: RootJsonFormat[AddDesign] = jsonFormat2(AddDesign)
 
-  implicit object ExpStateJsonFormat extends RootJsonFormat[ExpState] {
-    def write(c: ExpState) = JsString(c.toString)
-
-    def read(value: JsValue) = value match {
-      case JsString("NEW") ⇒ ExpState.NEW
-      case JsString("IMMUTABLE") ⇒ ExpState.IMMUTABLE
-      case JsString("PUBLISHED") ⇒ ExpState.PUBLISHED
-      case JsString("REMOTE") ⇒ ExpState.REMOTE
-      case _ ⇒ ExpState.NEW
-    }
-  }
-
-  implicit val conditionJson: RootJsonFormat[Condition] = jsonFormat3(Condition)
-  implicit val simpleConditionJson: RootJsonFormat[SimpleCondition] = jsonFormat2(SimpleCondition)
-  implicit val allCategoriesJson: RootJsonFormat[AllCategories] = jsonFormat1(AllCategories)
-  implicit val conditionForSampleJson: RootJsonFormat[Sample] = jsonFormat1(Sample)
-  implicit val experimentalDesignJson: RootJsonFormat[ExperimentalDesign] = jsonFormat2(ExperimentalDesign)
-
   implicit val experimentSummaryJson: RootJsonFormat[ExperimentSummary] = jsonFormat7(ExperimentSummary)
 
   implicit val stateJSon: RootJsonFormat[State] = jsonFormat1(State)
@@ -133,15 +116,11 @@ trait ExpJsonProto extends ArciteJSONProtocol {
 
   implicit val newDescriptionJSonFormat: RootJsonFormat[ChangeDescription] = jsonFormat1(ChangeDescription)
 
-  implicit val expCreatedJson: RootJsonFormat[ExperimentCreated] = jsonFormat2(ExperimentCreated)
-
   implicit val expUIDJson: RootJsonFormat[ExperimentUID] = jsonFormat1(ExperimentUID)
 
   implicit val failedAddPropsJson: RootJsonFormat[FailedAddingProperties] = jsonFormat1(FailedAddingProperties)
 
   implicit val failedRmPropsJson: RootJsonFormat[FailedRemovingProperties] = jsonFormat1(FailedRemovingProperties)
-
-  implicit val expTypesJson: RootJsonFormat[ExperimentType] = jsonFormat3(ExperimentType)
 
 
   implicit object CloneExpeNewPropsJson extends RootJsonFormat[CloneExperimentNewProps] {

@@ -5,7 +5,7 @@ import java.nio.file.StandardOpenOption._
 import java.nio.file.{Files, Paths}
 
 import akka.actor.{Actor, ActorLogging, Props}
-import com.idorsia.research.arcite.core.api.ArciteJSONProtocol
+import com.idorsia.research.arcite.core.api.{ArciteJSONProtocol, TransfJsonProto}
 import com.idorsia.research.arcite.core.experiments.ExperimentFolderVisitor
 import com.idorsia.research.arcite.core.experiments.ManageExperiments.{Selectable, SelectableItem}
 import com.idorsia.research.arcite.core.transforms._
@@ -16,7 +16,7 @@ import spray.json._
 
 import scala.collection.convert.wrapAsScala._
 
-class WorkExecUpperCase extends Actor with ActorLogging with ArciteJSONProtocol {
+class WorkExecUpperCase extends Actor with ActorLogging with TransfJsonProto {
 
   import WorkExecUpperCase._
 

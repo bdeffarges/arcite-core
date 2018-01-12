@@ -8,8 +8,8 @@ import java.util.UUID
 import akka.actor.SupervisorStrategy.{Escalate, Restart}
 import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSystem, OneForOneStrategy, Props, SupervisorStrategy}
 import com.idorsia.research.arcite.core
-import com.idorsia.research.arcite.core.api.{ArciteJSONProtocol, ExpJsonProto}
-import com.idorsia.research.arcite.core.api.ArciteService._
+import com.idorsia.research.arcite.core.api.GlobServices._
+import com.idorsia.research.arcite.core.api.{ExpJsonProto, TofTransfJsonProto, TransfJsonProto}
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging._
 import com.idorsia.research.arcite.core.eventinfo._
 import com.idorsia.research.arcite.core.experiments.ExperimentActorsManager.StartExperimentsServiceActors
@@ -27,6 +27,7 @@ import com.idorsia.research.arcite.core.transftree.{ToTFeedbackDetails, ToTFeedb
 import com.idorsia.research.arcite.core.utils
 import com.idorsia.research.arcite.core.utils._
 import com.typesafe.config.ConfigFactory
+import com.typesafe.scalalogging.LazyLogging
 import org.slf4j.LoggerFactory
 import spray.json.DeserializationException
 
@@ -55,7 +56,7 @@ import spray.json.DeserializationException
   */
 
 class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor
-  with ExpJsonProto with ActorLogging {
+  with ExpJsonProto with TransfJsonProto with TofTransfJsonProto with ActorLogging {
 
   import ManageExperiments._
 
@@ -82,7 +83,6 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor
   import spray.json._
 
   import scala.collection.convert.wrapAsScala._
-
   import scala.concurrent.duration._
 
   override val supervisorStrategy: SupervisorStrategy =
@@ -725,9 +725,9 @@ object ManageExperiments {
 
   case class RemoveExpProperties(exp: String, properties: List[String]) extends ExperimentMsg
 
-  case class GetTransforms(experiment: String)extends ExperimentMsg
+  case class GetTransforms(experiment: String) extends ExperimentMsg
 
-  case class GetRunningTransforms(experiment: String)extends ExperimentMsg
+  case class GetRunningTransforms(experiment: String) extends ExperimentMsg
 
   case object GetAllTransforms extends ExperimentMsg
 
@@ -894,14 +894,14 @@ class ExperimentActorsManager extends Actor with ActorLogging {
         eventInfoLoggingAct ! BuildRecentLogs
       }
 
-      context.system.scheduler.schedule(30 second, 10 seconds) {
+      context.system.scheduler.schedule(10 second, 60 seconds) {
         manExpActor ! RebuildExperiments
       }
   }
 
 }
 
-object ExperimentActorsManager {
+object ExperimentActorsManager extends LazyLogging {
   private val config = ConfigFactory.load()
 
   val actSystem = ActorSystem("experiments-actor-system", config.getConfig("experiments-manager"))
@@ -912,6 +912,7 @@ object ExperimentActorsManager {
 
   def startExperimentActorSystem(): Unit = topActor ! StartExperimentsServiceActors
 
+  logger.info("experiments actor system has started...")
 }
 
 

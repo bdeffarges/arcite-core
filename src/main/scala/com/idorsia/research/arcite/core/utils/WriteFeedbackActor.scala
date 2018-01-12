@@ -6,7 +6,7 @@ import java.nio.file.{Files, Path}
 
 import akka.actor.{Actor, ActorLogging, ActorPath, Props}
 import com.idorsia.research.arcite.core
-import com.idorsia.research.arcite.core.api.ArciteJSONProtocol
+import com.idorsia.research.arcite.core.api.{ArciteJSONProtocol, ExpJsonProto, TransfJsonProto}
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.AddLog
 import com.idorsia.research.arcite.core.eventinfo.{ExpLog, LogCategory, LogType}
 import com.idorsia.research.arcite.core.experiments.ManageExperiments.BunchOfSelectables
@@ -39,7 +39,9 @@ import com.typesafe.scalalogging.LazyLogging
   * Created by Bernard Deffarges on 2016/10/10.
   *
   */
-class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol {
+class WriteFeedbackActor extends Actor
+  with ExpJsonProto with TransfJsonProto
+  with ActorLogging {
 
   import WriteFeedbackActor._
 
@@ -129,7 +131,7 @@ class WriteFeedbackActor extends Actor with ActorLogging with ArciteJSONProtocol
   }
 }
 
-object WriteFeedbackActor extends LazyLogging with ArciteJSONProtocol{
+object WriteFeedbackActor extends LazyLogging with TransfJsonProto {
   val FILE_NAME = s"${core.arciteFilePrefix}transform_output.json"
   val SUCCESS = "SUCCESS"
   val FAILED = "FAILED"

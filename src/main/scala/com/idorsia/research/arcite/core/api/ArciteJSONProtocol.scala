@@ -2,34 +2,19 @@ package com.idorsia.research.arcite.core.api
 
 import java.util.Date
 
-import com.idorsia.research.arcite.core.api.ArciteService._
+import com.idorsia.research.arcite.core.api.GlobServices._
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.InfoLogs
 import com.idorsia.research.arcite.core.eventinfo.LogCategory.LogCategory
 import com.idorsia.research.arcite.core.eventinfo.{ArciteAppLog, ExpLog, LogCategory, LogType}
 import com.idorsia.research.arcite.core.experiments.ExpState.ExpState
-import com.idorsia.research.arcite.core.experiments.ManageExperiments.{BunchOfSelectables, _}
 import com.idorsia.research.arcite.core.experiments._
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor._
 import com.idorsia.research.arcite.core.meta.DesignCategories.{AllCategories, SimpleCondition}
 import com.idorsia.research.arcite.core.publish.GlobalPublishActor.{GetAllGlobPublishedItems, _}
-import com.idorsia.research.arcite.core.publish.PublishActor.{PublishInfo, PublishInfoLight, PublishedInfo, RemovePublished}
 import com.idorsia.research.arcite.core.rawdata.DefineRawAndMetaData.{DefineMetaData, RemoveAllRaw, RemoveMetaData, RemoveRawData, SetRawData}
-import com.idorsia.research.arcite.core.search.ArciteLuceneRamIndex.{FoundExperiment, FoundExperiments}
-import com.idorsia.research.arcite.core.secure.WithToken
-import com.idorsia.research.arcite.core.transforms.ParameterType.ParameterType
-import com.idorsia.research.arcite.core.transforms.RunTransform._
-import com.idorsia.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, ManyTransfDefs, OneTransfDef}
-import com.idorsia.research.arcite.core.transforms.TransformCompletionStatus.TransformCompletionStatus
-import com.idorsia.research.arcite.core.transforms._
 import com.idorsia.research.arcite.core.transforms.cluster.Frontend.OkTransfReceived
-import com.idorsia.research.arcite.core.transforms.cluster.WorkState.{AllJobsFeedback, RunningJobsFeedback, WorkInProgress}
-import com.idorsia.research.arcite.core.transforms.cluster.workers.fortest.WorkExecLowerCase.ToLowerCase
-import com.idorsia.research.arcite.core.transforms.cluster.workers.fortest.WorkExecUpperCase.ToUpperCase
-import com.idorsia.research.arcite.core.transftree.TreeOfTransfOutcome.TreeOfTransfOutcome
-import com.idorsia.research.arcite.core.transftree.TreeOfTransformsManager.CurrentlyRunningToT
-import com.idorsia.research.arcite.core.transftree.{ToTNoFeedback, _}
-import com.idorsia.research.arcite.core.{ExperimentType, Organization, utils}
 import com.idorsia.research.arcite.core.utils._
+import com.idorsia.research.arcite.core.{ExperimentType, Organization, utils}
 import spray.json.{DefaultJsonProtocol, JsString, RootJsonFormat, _}
 
 /**
@@ -220,6 +205,16 @@ trait ArciteJSONProtocol extends DefaultJsonProtocol {
 
   implicit val organizationJson: RootJsonFormat[Organization] = jsonFormat4(Organization)
 
+
+  implicit val conditionJson: RootJsonFormat[Condition] = jsonFormat3(Condition)
+
+  implicit val simpleConditionJson: RootJsonFormat[SimpleCondition] = jsonFormat2(SimpleCondition)
+
+  implicit val conditionForSampleJson: RootJsonFormat[Sample] = jsonFormat1(Sample)
+
+  implicit val experimentalDesignJson: RootJsonFormat[ExperimentalDesign] = jsonFormat2(ExperimentalDesign)
+
+  implicit val allCategoriesJson: RootJsonFormat[AllCategories] = jsonFormat1(AllCategories)
 }
 
 
