@@ -97,7 +97,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor
       experiments = LocalExperiments.loadAllExperiments()
       log.info("******* ******* rebuilding lucene RAM index ***********")
       luceneRAMSearchAct ! IndexExperiments(experiments.values.toSet)
-      log.info(s"memory situation= ${MemoryUsage.meminMBAsString()}")
+      log.info(MemoryUsage.meminMBAsString())
       log.info("******* ******* ******* experiments reloaded ***********")
 
 
@@ -315,6 +315,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor
         .map(e ⇒ ExperimentSummary(e._1.name, e._1.description, e._1.owner,
           e._1.uid.get, utils.getDateAsStrg(e._2.date), e._1.state, e._1.hidden))
 
+      logger.debug("found {} experiments. ", allExps.size)
       sender() ! AllExperiments(allExps)
 
 

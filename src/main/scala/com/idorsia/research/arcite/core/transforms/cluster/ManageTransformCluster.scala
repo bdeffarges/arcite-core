@@ -3,19 +3,15 @@ package com.idorsia.research.arcite.core.transforms.cluster
 import java.util.UUID
 
 import scala.concurrent.duration._
-import akka.pattern.ask
-import akka.actor.{ActorIdentity, ActorPath, ActorRef, ActorSystem, AddressFromURIString, Identify, PoisonPill, Props, RootActorPath}
+import akka.actor.{ActorRef, ActorSystem, AddressFromURIString, PoisonPill, Props, RootActorPath}
 import akka.cluster.client.{ClusterClient, ClusterClientSettings}
 import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings}
 import akka.japi.Util._
-import akka.persistence.journal.leveldb.{SharedLeveldbJournal, SharedLeveldbStore}
-import akka.util.Timeout
 import com.idorsia.research.arcite.core.transforms.TransformDefinition
 import com.idorsia.research.arcite.core.transforms.cluster.workers.fortest.{WorkExecDuplicateText, WorkExecLowerCase, WorkExecProd, WorkExecUpperCase}
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 
-import scala.concurrent.forkjoin.ThreadLocalRandom
 
 /**
   * Created by deffabe1 on 7/22/16.
@@ -44,7 +40,7 @@ object ManageTransformCluster {
   private var frontEnds = Seq[ActorRef]()
 
   def defaultTransformClusterStartFromConf(): Unit = {
-    logger.info("starting cluster... starting cluster... starting... cluster... ... ... ... ")
+    logger.info("starting cluster...")
     val bePorts = config.getIntList("transform_cluster.backends.ports")
     val fePorts = config.getInt("transform_cluster.frontends.numberOfports")
     import scala.collection.convert.wrapAsScala._
@@ -78,7 +74,7 @@ object ManageTransformCluster {
     val actorStoreLoc = s"akka.tcp://$arcTransfActClustSys@${conf.getString("store")}"
     logger.info(s"actor store location: $actorStoreLoc")
 
-    val system = ActorSystem(arcTransfActClustSys, conf)
+    val system = ActorSystem(arcTransfActClustSys, conf) // we start a new actor system for each backend
 
     system.actorOf(ClusterSingletonManager.props(
       Master.props(workTimeout),
@@ -91,7 +87,7 @@ object ManageTransformCluster {
     val conf = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port).
       withFallback(config.getConfig("transform_cluster"))
 
-    val system = ActorSystem(arcTransfActClustSys, conf)
+    val system = ActorSystem(arcTransfActClustSys, conf)// we start a new actor system for each frontend as well
 
     system.actorOf(Props[Frontend], "frontend")
   }

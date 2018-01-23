@@ -1,6 +1,6 @@
 package com.idorsia.research.arcite.core.transforms.cluster
 
-import akka.actor.{ActorLogging, ActorRef, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.cluster.Cluster
 import akka.cluster.client.ClusterClientReceptionist
 import akka.persistence.PersistentActor
@@ -15,7 +15,6 @@ import com.idorsia.research.arcite.core.utils.WriteFeedbackActor.WriteFeedback
 
 import scala.concurrent.duration.{Deadline, FiniteDuration}
 
-//todo because of event sourcing, it will also include saved jobs...
 object Master {
 
   def props(workTimeout: FiniteDuration): Props = Props(classOf[Master], workTimeout)
@@ -34,8 +33,7 @@ object Master {
 
 }
 
-//todo timeout should be defined by worker or job type
-class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogging {
+class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging {
 
   import Master._
   import WorkState._
@@ -44,11 +42,6 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
 
   private val feedbackActor = context.actorOf(WriteFeedbackActor.props())
 
-  // persistenceId must include cluster role to support multiple masters
-  override def persistenceId: String = Cluster(context.system).selfRoles.find(_.startsWith("backend-")) match {
-    case Some(role) ⇒ role + "-master"
-    case None ⇒ "master"
-  }
 
   // workers state is not event sourced
   private var workers = Map[String, WorkerState]()
@@ -65,15 +58,7 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
   override def postStop(): Unit = cleanupTask.cancel()
 
 
-  override def receiveRecover: Receive = {
-    case event: WorkStatus =>
-      // only update current state by applying the event, no side effects
-      workState = workState.updated(event)
-      log.info(s"Replayed ${event}")
-  }
-
-
-  override def receiveCommand: Receive = {
+  override def receive: Receive = {
     case MasterWorkerProtocol.RegisterWorker(workerId) ⇒
       log.info(s"received RegisterWorker for $workerId")
       if (workers.contains(workerId)) {
@@ -103,12 +88,10 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
               if (w.nonEmpty) {
                 //todo maybe we don't need both checks
                 val transf = w.get
-                persist(WorkInProgress(transf)) { event =>
-                  log.info(s"Giving worker [$workerId] something to do [${transf.transfDefName.toString}]")
-                  workState = workState.updated(event)
-                  workers += (workerId -> s.copy(status = Busy(transf, Deadline.now + workTimeout)))
-                  sender() ! transf
-                }
+                log.info(s"Giving worker [$workerId] something to do [${transf.transfDefName.toString}]")
+                workState = workState.updated(WorkInProgress(transf))
+                workers += (workerId -> s.copy(status = Busy(transf, Deadline.now + workTimeout)))
+                sender() ! transf
               }
             }
 
@@ -131,12 +114,9 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       } else {
         log.info(s"Work ${wid.transf} is done by worker ${wid.workerId}")
         changeWorkerToIdle(wid.workerId, wid.transf)
-        persist(WorkState.WorkCompleted(wid.transf)) { event ⇒
-          workState = workState.updated(event)
-
-          // Ack back to original sender
-          sender() ! MasterWorkerProtocol.Ack(wid.transf)
-        }
+        workState = workState.updated(WorkState.WorkCompleted(wid.transf))
+        // Ack back to original sender
+        sender() ! MasterWorkerProtocol.Ack(wid.transf)
       }
 
 
@@ -144,18 +124,14 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
       if (workState.isInProgress(workerId)) {
         log.info("Work {} failed by worker {}", transf, workerId)
         changeWorkerToIdle(workerId, transf)
-        persist(WorkerFailed(transf)) { event ⇒
-          workState = workState.updated(event)
-          notifyWorkers()
-        }
+        workState = workState.updated(WorkerFailed(transf))
+        notifyWorkers()
       }
 
 
     case wp: MasterWorkerProtocol.WorkerInProgress ⇒
       log.info(s"got Work in Progress update: ${wp.percentCompleted} % of worker ${wp.workerId}")
-      persist(WorkInProgress(wp.transf, wp.percentCompleted)) { event ⇒
-        workState = workState.updated(event)
-      }
+      workState = workState.updated(WorkInProgress(wp.transf, wp.percentCompleted))
 
 
     case transf: Transform =>
@@ -166,11 +142,9 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
         sender() ! Master.Ack(transf)
       } else {
         log.info(s"transform [${transf.uid}] accepted.")
-        persist(WorkAccepted(transf)) { event ⇒
-          sender() ! Master.Ack(transf)
-          workState = workState.updated(event)
-          notifyWorkers()
-        }
+        sender() ! Master.Ack(transf)
+        workState = workState.updated(WorkAccepted(transf))
+        notifyWorkers()
       }
 
 
@@ -190,10 +164,8 @@ class Master(workTimeout: FiniteDuration) extends PersistentActor with ActorLogg
             }
           }
           workers -= workerId
-          persist(WorkerTimedOut(workId)) { event ⇒
-            workState = workState.updated(event)
-            notifyWorkers()
-          }
+          workState = workState.updated(WorkerTimedOut(workId))
+          notifyWorkers()
         }
       }
 

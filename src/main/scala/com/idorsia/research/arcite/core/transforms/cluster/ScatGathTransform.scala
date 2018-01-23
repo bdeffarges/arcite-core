@@ -2,13 +2,13 @@ package com.idorsia.research.arcite.core.transforms.cluster
 
 import java.util.UUID
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSelection, Props}
 import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.experiments.ManageExperiments._
 import com.idorsia.research.arcite.core.transforms.RunTransform._
 import com.idorsia.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, MsgFromTransfDefsManager, OneTransfDef}
 import com.idorsia.research.arcite.core.transforms.{TransformParameterHelper, _}
-import com.idorsia.research.arcite.core.transforms.cluster.Frontend.{TransfNotReceived, OkTransfReceived}
+import com.idorsia.research.arcite.core.transforms.cluster.Frontend.{OkTransfReceived, TransfNotReceived}
 import com.idorsia.research.arcite.core.transforms.cluster.ScatGathTransform.PrepareTransform
 
 
@@ -35,7 +35,7 @@ import com.idorsia.research.arcite.core.transforms.cluster.ScatGathTransform.Pre
   * Created by Bernard Deffarges on 2016/09/23.
   *
   */
-class ScatGathTransform(requester: ActorRef, expManager: ActorRef) extends Actor with ActorLogging {
+class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends Actor with ActorLogging {
   //todo get expManager actor from path
   //todo too many vars !
 
@@ -170,7 +170,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorRef) extends Actor
 
 object ScatGathTransform {
 
-  def props(reqRef: ActorRef, expManag: ActorRef) = Props(classOf[ScatGathTransform], reqRef, expManag)
+  def props(reqRef: ActorRef, expManag: ActorSelection) = Props(classOf[ScatGathTransform], reqRef, expManag)
 
   sealed trait TransformResponse
 

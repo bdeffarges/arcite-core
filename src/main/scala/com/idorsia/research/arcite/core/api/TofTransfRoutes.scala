@@ -6,10 +6,9 @@ import akka.http.scaladsl.model.StatusCodes.{BadRequest, OK}
 import akka.http.scaladsl.server.Directives
 import akka.pattern.ask
 import akka.util.Timeout
-
 import com.idorsia.research.arcite.core.transftree.TreeOfTransformsManager._
 import com.idorsia.research.arcite.core.transftree._
-
+import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -43,7 +42,7 @@ class TofTransfRoutes(system: ActorSystem)
     with TofTransfJsonProto with TransfJsonProto
     with LazyLogging {
 
-  private val services = system.actorOf(Props(classOf[ToTransfService], timeout))
+  private val services = system.actorOf(Props(classOf[ToTransfService]))
 
   def routes = treeOfTransforms
 
@@ -108,30 +107,31 @@ class TofTransfRoutes(system: ActorSystem)
     services.ask(GetFeedbackOnTreeOfTransf(uid)).mapTo[ToTFeedback]
   }
 
-  private class ToTransfService(expManager: ActorRef)
-                               (implicit timeout: Timeout) extends Actor with ActorLogging {
-
-    private val toTransfAct = context.actorSelection(
-      ActorPath.fromString(TreeOfTransformActorSystem.treeOfTransfActPath))
-    log.info(s"****** connect to TreeOfTransform service actor: $toTransfAct")
-
-
-    override def receive: Receive = {
-      case GetTreeOfTransformInfo ⇒
-        toTransfAct forward GetTreeOfTransformInfo
-
-      case pwtt: ProceedWithTreeOfTransf ⇒
-        toTransfAct forward pwtt
-
-
-      case GetAllRunningToT ⇒
-        toTransfAct forward GetAllRunningToT
-
-
-      case getFeedback: GetFeedbackOnTreeOfTransf ⇒
-        toTransfAct forward getFeedback
-
-    }
-  }
-
 }
+
+class ToTransfService extends Actor with ActorLogging {
+
+  private val toTransfAct = context.actorSelection(
+    ActorPath.fromString(TreeOfTransformActorSystem.treeOfTransfActPath))
+  log.info(s"****** connect to TreeOfTransform service actor: $toTransfAct")
+
+
+  override def receive: Receive = {
+    case GetTreeOfTransformInfo ⇒
+      toTransfAct forward GetTreeOfTransformInfo
+
+    case pwtt: ProceedWithTreeOfTransf ⇒
+      toTransfAct forward pwtt
+
+
+    case GetAllRunningToT ⇒
+      toTransfAct forward GetAllRunningToT
+
+
+    case getFeedback: GetFeedbackOnTreeOfTransf ⇒
+      toTransfAct forward getFeedback
+
+  }
+}
+
+

@@ -1,18 +1,17 @@
 package com.idorsia.research.arcite.core.api
 
-import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSystem, Props}
+import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSelection, ActorSystem, Props}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.StatusCodes.{OK, _}
 import akka.http.scaladsl.server.Directives
 import akka.pattern.ask
 import akka.util.Timeout
-
+import com.idorsia.research.arcite.core.experiments.ManageExperiments.MakeImmutable
 import com.idorsia.research.arcite.core.transforms.RunTransform.{ProceedWithTransform, RunTransformOnObject, RunTransformOnRawData, RunTransformOnTransform}
 import com.idorsia.research.arcite.core.transforms.TransfDefMsg._
 import com.idorsia.research.arcite.core.transforms.cluster.Frontend._
 import com.idorsia.research.arcite.core.transforms.cluster.WorkState._
 import com.idorsia.research.arcite.core.transforms.cluster.{ManageTransformCluster, ScatGathTransform}
-
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 
@@ -53,7 +52,7 @@ class TransfRoutes(system: ActorSystem)
 
   import com.idorsia.research.arcite.core.experiments.ManageExperiments._
 
-  private val services = system.actorOf(Props(classOf[TransformService], timeout))
+  private val services = system.actorOf(TransformService.props(expManager), "transform_services")
 
   private[api] val routes = getTransformsRoute ~ getOneTransformRoute ~
     runTransformRoute ~ transformFeedbackRoute ~ allTransformsFeedbackRoute ~ runningJobsFeedbackRoute ~
@@ -238,31 +237,35 @@ class TransfRoutes(system: ActorSystem)
     expManager.ask(GetOneTransform(transf)).mapTo[OneTransformFeedback]
   }
 
-  class TransformService(expManager: ActorRef)
-                        (implicit timeout: Timeout) extends Actor with ActorLogging {
 
-    override def receive: Receive = {
-      case pwt: ProceedWithTransform ⇒
-        context.system.actorOf(ScatGathTransform.props(sender(), expManager)) ! pwt
-        expManager ! MakeImmutable(pwt.experiment)
+}
 
+class TransformService(expManager: ActorSelection) extends Actor with ActorLogging {
 
-      case qws: QueryWorkStatus ⇒
-        ManageTransformCluster.getNextFrontEnd() forward qws
+  override def receive: Receive = {
+    case pwt: ProceedWithTransform ⇒
+      context.system.actorOf(ScatGathTransform.props(sender(), expManager)) ! pwt
+      expManager ! MakeImmutable(pwt.experiment)
 
 
-      case GetAllJobsStatus ⇒
-        ManageTransformCluster.getNextFrontEnd() forward GetAllJobsStatus
+    case qws: QueryWorkStatus ⇒
+      ManageTransformCluster.getNextFrontEnd() forward qws
 
 
-      case GetRunningJobsStatus ⇒
-        ManageTransformCluster.getNextFrontEnd() forward GetRunningJobsStatus
+    case GetAllJobsStatus ⇒
+      ManageTransformCluster.getNextFrontEnd() forward GetAllJobsStatus
 
-      case a: Any ⇒
-        log.error(s"[TransfService 1039d] don't know what to do with message ${a.toString}")
-    }
+
+    case GetRunningJobsStatus ⇒
+      ManageTransformCluster.getNextFrontEnd() forward GetRunningJobsStatus
+
+    case a: Any ⇒
+      log.error(s"[TransfService 1039d] don't know what to do with message ${a.toString}")
   }
+}
 
+object TransformService {
+  def props(expM: ActorSelection) : Props = Props(classOf[TransformService],expM)
 }
 
 

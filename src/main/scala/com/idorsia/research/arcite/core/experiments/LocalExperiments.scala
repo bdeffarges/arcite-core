@@ -64,13 +64,15 @@ object LocalExperiments extends LazyLogging with ExpJsonProto {
   def loadExperiment(path: Path): Option[Experiment] = {
     import spray.json._
     import scala.collection.convert.wrapAsScala._
-    logger.debug(s"loading experiment for ${path}")
+//    logger.debug(s"loading experiment for ${path}")
 
     try {
       val exp: Experiment = Files.readAllLines(path).toList.mkString("\n").parseJson.convertTo[Experiment]
       Some(exp)
     } catch {
-      case e: Exception ⇒ None //todo will propagate the exception as information
+      case e: Exception ⇒
+        logger.error(s"loading experiment ${path.toString} failed: ${e.toString}")
+        None //todo will propagate the exception as information
     }
   }
 
