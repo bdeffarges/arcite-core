@@ -315,7 +315,8 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor
         .map(e ⇒ ExperimentSummary(e._1.name, e._1.description, e._1.owner,
           e._1.uid.get, utils.getDateAsStrg(e._2.date), e._1.state, e._1.hidden))
 
-      logger.debug("found {} experiments. ", allExps.size)
+      log.debug("found {} experiments. ", allExps.size)
+      log.debug(s"sender = ${sender().toString()}")
       sender() ! AllExperiments(allExps)
 
 
@@ -334,11 +335,12 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor
       val resp = foundExperiments.experiments.map(f ⇒ experiments(f.digest))
         .map(f ⇒ ExperimentSummary(f.name, f.description, f.owner,
           f.uid.get, utils.getDateAsStrg(readLastExpLog(f).date), f.state, f.hidden))
+
       requester ! SomeExperiments(resp.size, resp)
 
 
     case GetExperiment(uid) ⇒
-      log.debug(s"retrieving experiment with digest: $uid")
+      log.debug(s"retrieving experiment from uid: $uid")
       val exp = experiments.get(uid)
       if (exp.isDefined) {
         val ex = LocalExperiments.loadExperiment(ExperimentFolderVisitor(exp.get).experimentFilePath)
@@ -780,12 +782,11 @@ object ManageExperiments {
 
   case class SelectedSelectables(selectableType: String, items: Set[String])
 
-  // responses
+
   sealed trait ExperimentsResponse
 
   case object EmptyListOfExperiments extends ExperimentsResponse
 
-  //todo could provide where it was found
   case class SomeExperiments(totalResults: Int, experiments: List[ExperimentSummary]) extends ExperimentsResponse
 
   case class AllExperiments(experiments: List[ExperimentSummary]) extends ExperimentsResponse

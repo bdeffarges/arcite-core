@@ -86,6 +86,8 @@ trait ExpJsonProto extends ArciteJSONProtocol {
     }
   }
 
+  implicit val experimentSummaryJson: RootJsonFormat[ExperimentSummary] = jsonFormat7(ExperimentSummary)
+
   implicit val searchExperimentsJson: RootJsonFormat[SearchExperiments] = jsonFormat2(SearchExperiments)
 
   implicit val allExperimentsJson: RootJsonFormat[AllExperiments] = jsonFormat1(AllExperiments)
@@ -103,8 +105,6 @@ trait ExpJsonProto extends ArciteJSONProtocol {
   implicit val addedExpJson: RootJsonFormat[AddedExperiment] = jsonFormat1(AddedExperiment)
 
   implicit val addDesignJson: RootJsonFormat[AddDesign] = jsonFormat2(AddDesign)
-
-  implicit val experimentSummaryJson: RootJsonFormat[ExperimentSummary] = jsonFormat7(ExperimentSummary)
 
   implicit val stateJSon: RootJsonFormat[State] = jsonFormat1(State)
 

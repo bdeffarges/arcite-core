@@ -83,16 +83,17 @@ class ExpRoutes(system: ActorSystem)
         }
       } ~
       parameters('page ? 0, 'max ? 100) { (page, max) ⇒
-        logger.debug("GET on /experiments, should return all experiments")
-        val allExp = expManager.ask(GetAllExperiments(page, max)).mapTo[AllExperiments]
+        logger.debug(s"GET on /experiments, should return $max experiments from page $page")
+        val allExp: Future[AllExperiments]  = expManager.ask(GetAllExperiments(page, max)).mapTo[AllExperiments]
         onSuccess(allExp) { exps ⇒
           complete(OK -> exps)
         }
       } ~
       get {
         logger.debug("GET on /experiments, should return all experiments")
-        val allExp = expManager.ask(GetAllExperiments()).mapTo[AllExperiments]
+        val allExp: Future[AllExperiments] = expManager.ask(GetAllExperiments()).mapTo[AllExperiments]
         onSuccess(allExp) { exps ⇒
+          logger.debug(s"${exps.experiments.size} found...")
           complete(OK -> exps)
         }
       }
