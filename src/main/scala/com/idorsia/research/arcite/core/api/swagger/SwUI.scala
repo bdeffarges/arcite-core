@@ -35,6 +35,7 @@ class SwUI(pathToApi: String = "http://localhost:8084/api/v1/api-docs/swagger.js
 
   def route: server.Route = {
     redirectToNoTrailingSlashIfPresent(StatusCodes.MovedPermanently) {
+      logger.debug("swagger ui... ...")
       path("sw-ui") {
         complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, htmlIndex(pathToApi)))
       } ~

@@ -57,6 +57,6 @@ object AppServiceActorsManager {
     }
   }
 
-  object LogMemUsage
+  private object LogMemUsage
 
 }

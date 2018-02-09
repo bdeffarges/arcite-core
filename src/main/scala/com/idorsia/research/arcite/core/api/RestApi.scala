@@ -94,8 +94,7 @@ class RestApi(system: ActorSystem)
             rawDataRoute ~ metaDataRoute ~ allLastUpdatesRoute ~
             allExperimentsRecentLogs ~ metaInfoRoute ~
             dataSourcesRoute ~ appLogsRoute ~ organizationRoute ~
-            SwDocService.routes ~ swui ~
-            defaultRoute
+            SwDocService.routes ~ swui
         }
       } ~
       defaultRoute

@@ -414,8 +414,9 @@ class ExpRoutes(system: ActorSystem)
     } ~
       pathEnd {
         post {
-          logger.info(s"adding a new experiment... ")
+          logger.info(s"adding a new experiment... ...")
           entity(as[AddExperiment]) { addExp ⇒
+            logger.info(s"new exp: $addExp")
             val saved: Future[AddExperimentResponse] = expManager.ask(addExp).mapTo[AddExperimentResponse]
             onSuccess(saved) {
               case addExp: AddedExperiment ⇒ complete(Created -> addExp)
