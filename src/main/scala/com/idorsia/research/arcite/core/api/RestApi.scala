@@ -96,8 +96,7 @@ class RestApi(system: ActorSystem)
             dataSourcesRoute ~ appLogsRoute ~ organizationRoute ~
             SwDocService.routes ~ swui
         }
-      } ~
-      defaultRoute
+      }
   }
 
   private def defaultRoute = {

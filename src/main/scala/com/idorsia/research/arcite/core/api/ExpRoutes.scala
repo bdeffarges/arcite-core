@@ -8,20 +8,24 @@ import akka.http.scaladsl.model.StatusCodes.OK
 import akka.stream.scaladsl.FileIO
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+
 import akka.pattern.ask
 import akka.util.Timeout
 
 import scala.concurrent.{ExecutionContext, Future}
+
 import scala.util.Failure
+
 import com.typesafe.scalalogging.LazyLogging
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import com.typesafe.config.ConfigFactory
+
 import com.idorsia.research.arcite.core.api.GlobServices._
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.{InfoLogs, ReadLogs}
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor.AllFilesInformation
 import com.idorsia.research.arcite.core.publish.PublishActor._
 import com.idorsia.research.arcite.core.secure.WithToken
 import com.idorsia.research.arcite.core.utils._
-import com.typesafe.config.ConfigFactory
 
 /**
   * arcite-core
@@ -84,7 +88,7 @@ class ExpRoutes(system: ActorSystem)
       } ~
       parameters('page ? 0, 'max ? 100) { (page, max) ⇒
         logger.debug(s"GET on /experiments, should return $max experiments from page $page")
-        val allExp: Future[AllExperiments]  = expManager.ask(GetAllExperiments(page, max)).mapTo[AllExperiments]
+        val allExp: Future[AllExperiments] = expManager.ask(GetAllExperiments(page, max)).mapTo[AllExperiments]
         onSuccess(allExp) { exps ⇒
           complete(OK -> exps)
         }
@@ -414,10 +418,9 @@ class ExpRoutes(system: ActorSystem)
     } ~
       pathEnd {
         post {
-          logger.info(s"adding a new experiment... ...")
-          entity(as[AddExperiment]) { addExp ⇒
-            logger.info(s"new exp: $addExp")
-            val saved: Future[AddExperimentResponse] = expManager.ask(addExp).mapTo[AddExperimentResponse]
+          logger.info(s"... ... adding a new experiment... ...")
+          entity(as[AddExperiment]) { exp ⇒
+            val saved: Future[AddExperimentResponse] = expManager.ask(exp).mapTo[AddExperimentResponse]
             onSuccess(saved) {
               case addExp: AddedExperiment ⇒ complete(Created -> addExp)
               case FailedAddingExperiment(msg) ⇒ complete(Conflict -> ErrorMessage(msg))
