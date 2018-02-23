@@ -246,3 +246,23 @@
 //
 //a("AAAA")
 
+//val s: Seq[String] = "-d adf +dd".split("\\s")
+//
+//val s1 = ("multiqc" +: s).toList
+//
+//s1 ++ (Seq("elle", "adfa", "sadf") :+ "--outdir" :+ "Blalb")
+//"   ".trim.split("\\s").map(_.trim).filter(_.nonEmpty).length
+
+//"\\d+".r.pattern.matcher("333").matches()
+//
+//val m : Map[String, String] = Map("helle" -> "34")
+//
+//"\\d+".r.pattern.matcher(m.getOrElse("hellea", "")).matches()
+
+//val rgx = ".{3,50}\\_L\\d{1,5}\\_.{2,40}\\.fastq\\.gz".r
+//
+//rgx.findFirstIn("Undetermined_S0_L004_R1_001.fastq.gz").fold("undefined.fastq.gz")(_.replaceAll("L(\\d{3,4})", "L_ALL"))
+//rgx.findFirstIn("Undetermined_S0_L001_R1_001.fastq.gz").fold("undefined.fastq.gz")(_.replaceAll("L(\\d{3,4})", "L_ALL"))
+//rgx.findFirstIn("Undetermined_S0_L0002_R1_001.fastq.gz").fold("undefined.fastq.gz")(_.replaceAll("L(\\d{3,4})", "L_ALL"))
+//rgx.findFirstIn("Undetermined_S0_L00043_R1_001.fastq.gz").fold("undefined.fastq.gz")(_.replaceAll("L(\\d{3,4})", "L_ALL"))
+

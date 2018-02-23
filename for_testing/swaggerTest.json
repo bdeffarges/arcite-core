@@ -1,0 +1,160 @@
+{
+  "swagger" : "2.0",
+  "info" : {
+    "description" : "",
+    "version" : "1.0",
+    "title" : "",
+    "termsOfService" : ""
+  },
+  "host" : "127.0.0.1:8084/api/v1",
+  "basePath" : "/",
+  "tags" : [ {
+    "name" : "experiment"
+  } ],
+  "schemes" : [ "http" ],
+  "paths" : {
+    "/experiment/{experiment}/transforms" : {
+      "get" : {
+        "tags" : [ "experiment" ],
+        "summary" : "All transforms of an experiment",
+        "description" : "",
+        "operationId" : "getTransforms",
+        "parameters" : [ {
+          "in" : "body",
+          "name" : "body",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "body",
+          "name" : "body",
+          "description" : "hello world",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/definitions/ExperimentMsg"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "$ref" : "#/definitions/TransformsForExperiment"
+            }
+          },
+          "500" : {
+            "description" : "Internal server error"
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions" : {
+    "basicAuth" : {
+      "type" : "basic"
+    }
+  },
+  "definitions" : {
+    "TransformCompletionFeedback" : {
+      "type" : "object",
+      "required" : [ "artifacts", "endTime", "errors", "feedback", "parameters", "source", "startTime", "status", "transform", "transformDefinition" ],
+      "properties" : {
+        "transform" : {
+          "type" : "string"
+        },
+        "transformDefinition" : {
+          "$ref" : "#/definitions/FullName"
+        },
+        "source" : {
+          "$ref" : "#/definitions/TransformDoneSource"
+        },
+        "parameters" : {
+          "type" : "object",
+          "additionalProperties" : {
+            "type" : "string"
+          }
+        },
+        "status" : {
+          "$ref" : "#/definitions/Value"
+        },
+        "artifacts" : {
+          "type" : "object",
+          "additionalProperties" : {
+            "type" : "string"
+          }
+        },
+        "feedback" : {
+          "type" : "string"
+        },
+        "errors" : {
+          "type" : "string"
+        },
+        "startTime" : {
+          "type" : "string"
+        },
+        "endTime" : {
+          "type" : "string"
+        }
+      }
+    },
+    "Value" : {
+      "type" : "object"
+    },
+    "TransformDoneSource" : {
+      "type" : "object",
+      "required" : [ "experiment", "kindOfSource" ],
+      "properties" : {
+        "experiment" : {
+          "type" : "string"
+        },
+        "kindOfSource" : {
+          "type" : "string"
+        },
+        "fromTransform" : {
+          "type" : "string"
+        }
+      }
+    },
+    "ExperimentMsg" : {
+      "type" : "object"
+    },
+    "FullName" : {
+      "type" : "object",
+      "required" : [ "asUID", "name", "organization", "shortName", "version" ],
+      "properties" : {
+        "organization" : {
+          "type" : "string"
+        },
+        "name" : {
+          "type" : "string"
+        },
+        "shortName" : {
+          "type" : "string"
+        },
+        "version" : {
+          "type" : "string"
+        },
+        "asUID" : {
+          "type" : "string"
+        }
+      }
+    },
+    "TransformsForExperiment" : {
+      "type" : "object",
+      "required" : [ "transforms" ],
+      "properties" : {
+        "transforms" : {
+          "type" : "array",
+          "uniqueItems" : true,
+          "items" : {
+            "$ref" : "#/definitions/TransformCompletionFeedback"
+          }
+        }
+      }
+    }
+  },
+  "externalDocs" : {
+    "description" : "Core Docs",
+    "url" : "http://acme.com/docs"
+  }
+}

@@ -46,7 +46,6 @@ class ApiTests extends AsyncFlatSpec with Matchers
   with LazyLogging with Eventually {
 
   val config = ConfigFactory.load()
-  val refApi = config.getString("arcite.api.specification").stripMargin
 
   val host = config.getString("http.host")
   val port = config.getInt("http.port")

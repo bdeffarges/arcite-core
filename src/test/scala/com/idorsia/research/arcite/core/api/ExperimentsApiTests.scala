@@ -1,22 +1,13 @@
 package com.idorsia.research.arcite.core.api
 
-import java.util.UUID
-
-import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.util.ByteString
-import com._
-import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.TestHelpers
-import com.idorsia.research.arcite.core.experiments.{Experiment, ExperimentUID}
 import com.idorsia.research.arcite.core.experiments.ManageExperiments._
+import com.idorsia.research.arcite.core.experiments.{Experiment, ExperimentUID}
 import com.idorsia.research.arcite.core.secure.WithToken
-import com.typesafe.config.ConfigFactory
-import com.typesafe.scalalogging.LazyLogging
-import org.scalatest.{AsyncFlatSpec, Matchers}
 import spray.json._
 
 import scala.concurrent.Future
@@ -61,8 +52,7 @@ class ExperimentsApiTests extends ApiTests with ExpJsonProto {
       Source.single(HttpRequest(uri =s"$urlPrefix")).via(connectionFlow).runWith(Sink.head)
 
     responseFuture.map { r ⇒
-      assert(r.status == StatusCodes.OK)
-      assert(r.entity.asInstanceOf[HttpEntity.Strict].data.decodeString("UTF-8") == refApi)
+      assert(r.status == StatusCodes.NotFound)
     }
   }
 

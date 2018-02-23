@@ -5,11 +5,11 @@ organization := "com.idorsia.research.arcite"
 
 name := "arcite-core"
 
-version := "1.84.18"
+version := "1.84.21"
 
 scalaVersion := "2.11.8"
 
-crossScalaVersions := Seq(scalaVersion.value,"2.12.1")
+crossScalaVersions := Seq(scalaVersion.value,"2.12.4")
 
 scmInfo := Some(
   ScmInfo(
@@ -57,8 +57,8 @@ resolvers ++= Seq(
 
 
 libraryDependencies ++= {
-  val akkaVersion = "2.5.6"
-  val akkaHttpVersion = "10.0.10"
+  val akkaVersion = "2.5.9"
+  val akkaHttpVersion = "10.1.0-RC2"
   val luceneVersion = "6.5.0"
 
   Seq(
@@ -96,8 +96,10 @@ libraryDependencies ++= {
     "org.iq80.leveldb" % "leveldb" % "0.9",
     "org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8",
     "commons-io" % "commons-io" % "2.5",
-    "io.swagger" % "swagger-jaxrs" % "1.5.17",
-    "com.github.swagger-akka-http" %% "swagger-akka-http" % "0.11.2",
+    "io.swagger" % "swagger-jaxrs" % "1.5.18",
+    "com.github.swagger-akka-http" %% "swagger-akka-http" % "0.13.0",
+    "javax.xml.bind" % "jaxb-api" % "2.3.0", //https://github.com/swagger-akka-http/swagger-akka-http/issues/62
+    "org.slf4j" % "slf4j-simple" % "1.7.25",
     "ch.megard" %% "akka-http-cors" % "0.2.2",
     "org.scalacheck" %% "scalacheck" % "1.13.5" % "test",
     "org.specs2" %% "specs2-core" % "3.8.9" % "test",

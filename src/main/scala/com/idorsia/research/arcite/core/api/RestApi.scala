@@ -2,7 +2,7 @@ package com.idorsia.research.arcite.core.api
 
 import java.nio.file.Path
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, Props}
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.headers.RawHeader
@@ -68,7 +68,7 @@ class RestApi(system: ActorSystem)
 
   private lazy val globServices = system.actorOf(GlobServices.props, GlobServices.name)
 
-  private val executionContext = system.dispatcher
+  private implicit val executionContext = system.dispatcher
 
   import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 
@@ -79,18 +79,19 @@ class RestApi(system: ActorSystem)
     RawHeader("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS, DELETE"),
     RawHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization"))
 
-
-  private val expRoutes = new ExpRoutes(system)(executionContext, Timeout(2.seconds)).routes
+  private val expRoutes = new ExperimentRoutes(system)(executionContext, Timeout(2.seconds)).routes
+  private val expsRoutes = new ExperimentsRoutes(system)(executionContext, Timeout(2.seconds)).routes
   private val transfRoutes = new TransfRoutes(system)(executionContext, Timeout(2.seconds)).routes
   private val tofTransfRoutes = new TofTransfRoutes(system)(executionContext, timeout).routes
-  private val globPubRoutes = new GlobPublishRoutes(system)(executionContext, timeout).publishRoute
+  private val globPubRoutes = new GlobPublishRoutes(system)(executionContext, timeout).routes
   private val swui = new SwUI().route
 
-  def routes: Route = respondWithHeaders(corsHeaders) {
+  //no arguments in the method to avoid problems with Swagger
+    def routes: Route = respondWithHeaders(corsHeaders) {
     new DirectRoute(globServices).directRoute ~
       pathPrefix("api") {
         pathPrefix(s"v$apiVersion") {
-          expRoutes ~ transfRoutes ~ tofTransfRoutes ~ globPubRoutes ~
+          expsRoutes ~ expRoutes ~ transfRoutes ~ tofTransfRoutes ~ globPubRoutes ~
             rawDataRoute ~ metaDataRoute ~ allLastUpdatesRoute ~
             allExperimentsRecentLogs ~ metaInfoRoute ~
             dataSourcesRoute ~ appLogsRoute ~ organizationRoute ~
