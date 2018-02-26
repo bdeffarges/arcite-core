@@ -66,20 +66,12 @@ class ExperimentRoutes(system: ActorSystem)
   import com.idorsia.research.arcite.core.experiments.ManageExperiments._
 
   private[api] val routes = pathPrefix("experiment") {
-    withExperimentsRoutes ~ postRoute
+    getTransforms ~ selectableTransformGet ~ totRoute ~ getFiles ~ allGet ~ rawGet ~
+      userRawGet ~ metaGet ~ publishedRouteDel ~ publishedRouteGet ~ designRoute ~
+      hidePostRoute ~ unhide ~ getLogsRoute ~ addProps ~ delProps ~
+      updateDescription ~ cloneRoute ~ getRoute ~ deleteRoute ~
+      fileUploadRoute ~ publishPost ~ postRoute
   }
-
-  private def withExperimentsRoutes =
-    getTransforms ~ selectableTransformGet ~
-      totRoute ~ getFiles ~
-      publishedRoute ~ designRoute ~
-      hidePostRoute ~ unhide ~
-      getLogsRoute ~ propertiesRoute ~
-      updateDescription ~ cloneRoute ~
-      pathEnd {
-        getRoute ~ deleteRoute
-      } ~
-      fileUploadRoute ~ publishPost
 
 
   @Path("/{experiment}/transforms")
@@ -191,6 +183,16 @@ class ExperimentRoutes(system: ActorSystem)
     }
   }
 
+  @Path("/{experiment}/meta")
+  @ApiOperation(value = "Returns all meta files for an experiment", notes = "", nickname = "meta",
+    httpMethod = "GET", response = classOf[FilesInformation])
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "experiment", value = "experiment uid", required = false, dataType = "string", paramType = "path")
+  ))
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "Return all files for experiment", response = classOf[FilesInformation]),
+    new ApiResponse(code = 500, message = "Internal server error")
+  ))
   private def metaGet = path(Segment / "meta") { experiment ⇒
     get {
       logger.info(s"returning all META files for experiment: $experiment")
@@ -200,6 +202,16 @@ class ExperimentRoutes(system: ActorSystem)
     }
   }
 
+  @Path("/{experiment}/user_raw")
+  @ApiOperation(value = "Returns all raw files uploaded by y user for an experiment", notes = "", nickname = "userRaw",
+    httpMethod = "GET", response = classOf[FilesInformation])
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "experiment", value = "experiment uid", required = false, dataType = "string", paramType = "path")
+  ))
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "Return all user raw files for an experiment", response = classOf[FilesInformation]),
+    new ApiResponse(code = 500, message = "Internal server error")
+  ))
   private def userRawGet = path(Segment / "user_raw") { experiment ⇒
     get {
       logger.info(s"returning all user uploaded RAW files for experiment: $experiment")
@@ -209,6 +221,16 @@ class ExperimentRoutes(system: ActorSystem)
     }
   }
 
+  @Path("/{experiment}/raw")
+  @ApiOperation(value = "Returns all raw files for an experiment", notes = "", nickname = "raw",
+    httpMethod = "GET", response = classOf[FilesInformation])
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "experiment", value = "experiment uid", required = false, dataType = "string", paramType = "path")
+  ))
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "Return raw files for experiment", response = classOf[FilesInformation]),
+    new ApiResponse(code = 500, message = "Internal server error")
+  ))
   private def rawGet = path(Segment / "raw") { experiment ⇒
     get {
       logger.info(s"returning all RAW files for experiment: $experiment")
@@ -218,6 +240,16 @@ class ExperimentRoutes(system: ActorSystem)
     }
   }
 
+  @Path("/{experiment}/")
+  @ApiOperation(value = "Returns all files for an experiment", notes = "", nickname = "AllFiles",
+    httpMethod = "GET", response = classOf[FilesInformation])
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "experiment", value = "experiment uid", required = false, dataType = "string", paramType = "path")
+  ))
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "Return all files for experiment", response = classOf[AllFilesInformation]),
+    new ApiResponse(code = 500, message = "Internal server error")
+  ))
   private def allGet = path(Segment) { experiment ⇒
     get {
       logger.info(s"returning all files for experiment: $experiment")
@@ -257,6 +289,16 @@ class ExperimentRoutes(system: ActorSystem)
     }
   }
 
+  @Path("/{experiment}/tots")
+  @ApiOperation(value = "Returns all tree of transforms for an experiment", notes = "", nickname = "files",
+    httpMethod = "GET", response = classOf[FilesInformation])
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "experiment", value = "experiment uid", required = false, dataType = "string", paramType = "path")
+  ))
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "Return all tree of transforms for experiment", response = classOf[ToTsForExperiment]),
+    new ApiResponse(code = 500, message = "Internal server error")
+  ))
   private def totRoute = path(Segment / "tots") { experiment ⇒
     get {
       logger.info(s"get all ToTs for experiment= $experiment")
@@ -266,8 +308,17 @@ class ExperimentRoutes(system: ActorSystem)
     }
   }
 
-  private def publishedRoute = publishedRouteDel ~ publishedRouteGet
-
+  @Path("/{experiment}/published")
+  @ApiOperation(value = "delete a published artifact. ", notes = "", nickname = "deletePublished",
+    httpMethod = "DELETE", response = classOf[DefaultFeedback])
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "experiment", value = "experiment uid", required = false, dataType = "string", paramType = "path"),
+    new ApiImplicitParam(name = "published artifact", value = "artifact uid", required = false, dataType = "string", paramType = "path")
+  ))
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "artifact deleted. ", response = classOf[DefaultFeedback]),
+    new ApiResponse(code = 500, message = "Internal server error")
+  ))
   private def publishedRouteDel = path(Segment / "published") { experiment ⇒
     path(Segment) { p ⇒
       delete {
@@ -281,6 +332,16 @@ class ExperimentRoutes(system: ActorSystem)
     }
   }
 
+  @Path("/{experiment}/published")
+  @ApiOperation(value = "get all published artifacts.", notes = "", nickname = "getArtifact",
+    httpMethod = "GET", response = classOf[DefaultFeedback])
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "experiment", value = "experiment uid", required = false, dataType = "string", paramType = "path")
+  ))
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "artifact published. ", response = classOf[Published]),
+    new ApiResponse(code = 500, message = "Internal server error")
+  ))
   private def publishedRouteGet = path(Segment / "published") { experiment ⇒
     get {
       logger.info(s"get all published for experiment: $experiment")
@@ -292,7 +353,17 @@ class ExperimentRoutes(system: ActorSystem)
     }
   }
 
-  private def publishPost(experiment: String) = path("publish") {
+  @Path("/{experiment}/publish")
+  @ApiOperation(value = "publish an artifact. ", notes = "", nickname = "publish",
+    httpMethod = "POST", response = classOf[DefaultFeedback])
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "experiment", value = "experiment uid", required = false, dataType = "string", paramType = "path")
+  ))
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "artifact published ", response = classOf[DefaultFeedback]),
+    new ApiResponse(code = 500, message = "Internal server error")
+  ))
+  private def publishPost = path(Segment / "publish") { experiment ⇒
     post {
       logger.info("adding published artifact. ")
       entity(as[PublishInfoLight]) { pubInf ⇒
@@ -308,7 +379,7 @@ class ExperimentRoutes(system: ActorSystem)
     }
   }
 
-  private def designRoute(experiment: String) = pathPrefix("design") {
+  private def designRoute = pathPrefix(Segment / "design") { experiment ⇒
     pathEnd {
       post {
         logger.info("adding design to experiment.")
@@ -323,7 +394,7 @@ class ExperimentRoutes(system: ActorSystem)
     }
   }
 
-  private def hidePostRoute(experiment: String) = path("hide") {
+  private def hidePostRoute = path(Segment / "hide") { experiment ⇒
     post {
       logger.info("hidding experiment. ")
       entity(as[WithToken]) { wt ⇒
@@ -337,7 +408,7 @@ class ExperimentRoutes(system: ActorSystem)
     }
   }
 
-  private def unhide(experiment: String) = path("unhide") {
+  private def unhide = path(Segment / "unhide") { experiment ⇒
     post {
       logger.info("unhidding experiment.")
       entity(as[WithToken]) { wt ⇒
@@ -350,7 +421,7 @@ class ExperimentRoutes(system: ActorSystem)
     }
   }
 
-  private def getLogsRoute(experiment: String) = pathPrefix("logs") {
+  private def getLogsRoute = pathPrefix(Segment / "logs") { experiment ⇒
     parameters('page ? 0, 'max ? 100) { (page, max) ⇒
       logger.debug(s"get logs for experiment [${experiment}] pages= $page items= $max")
       val getLogs = expManager.ask(ReadLogs(experiment, page, max)).mapTo[InfoLogs]
@@ -360,29 +431,24 @@ class ExperimentRoutes(system: ActorSystem)
     }
   }
 
-  private def propertiesRoute(experiment: String) = {
-    path("properties") {
-      pathEnd {
-        postProps(experiment) ~ delProps(experiment)
-      }
-    }
-  }
 
-  private def postProps(experiment: String) = post {
-    logger.info("adding properties to experiment.")
-    entity(as[AddExpProps]) { props ⇒
-      val saved: Future[AddedPropertiesFeedback] =
-        expManager.ask(AddExpProperties(experiment, props.properties))
-          .mapTo[AddedPropertiesFeedback]
-      onSuccess(saved) {
-        case AddedPropertiesSuccess ⇒ complete(Created -> SuccessMessage("properties added successfully."))
-        case adp: FailedAddingProperties ⇒ complete(BadRequest -> adp)
+  private def addProps = path(Segment / "properties") { experiment ⇒
+    post {
+      logger.info("adding properties to experiment.")
+      entity(as[AddExpProps]) { props ⇒
+        val saved: Future[AddedPropertiesFeedback] =
+          expManager.ask(AddExpProperties(experiment, props.properties))
+            .mapTo[AddedPropertiesFeedback]
+        onSuccess(saved) {
+          case AddedPropertiesSuccess ⇒ complete(Created -> SuccessMessage("properties added successfully."))
+          case adp: FailedAddingProperties ⇒ complete(BadRequest -> adp)
+        }
       }
     }
   }
 
 
-  private def delProps(experiment: String) = delete {
+  private def delProps = path(Segment / "properties") { experiment ⇒
     logger.info("deleting properties from experiment.")
     entity(as[RmExpProps]) { props ⇒
       val removed: Future[RemovePropertiesFeedback] =
@@ -395,53 +461,53 @@ class ExperimentRoutes(system: ActorSystem)
     }
   }
 
-  private def updateDescription(experiment: String) = path("description") {
-    pathEnd {
-      put {
-        logger.info(s"updating description of $experiment")
-        entity(as[ChangeDescription]) { desc ⇒
-          val saved: Future[DescriptionChangeFeedback] =
-            expManager.ask(ChangeDescriptionOfExperiment(experiment, desc.description)).mapTo[DescriptionChangeFeedback]
-          onSuccess(saved) {
-            case DescriptionChangeOK ⇒ complete(OK -> SuccessMessage("description changed successfully."))
-            case dcf: DescriptionChangeFailed ⇒ complete(BadRequest -> ErrorMessage(dcf.error))
-          }
+  private def updateDescription = path(Segment / "description") { experiment ⇒
+    put {
+      logger.info(s"updating description of $experiment")
+      entity(as[ChangeDescription]) { desc ⇒
+        val saved: Future[DescriptionChangeFeedback] =
+          expManager.ask(ChangeDescriptionOfExperiment(experiment, desc.description)).mapTo[DescriptionChangeFeedback]
+        onSuccess(saved) {
+          case DescriptionChangeOK ⇒ complete(OK -> SuccessMessage("description changed successfully."))
+          case dcf: DescriptionChangeFailed ⇒ complete(BadRequest -> ErrorMessage(dcf.error))
         }
       }
     }
   }
 
-  private def cloneRoute(experiment: String) = path("clone") {
-    pathEnd {
-      post {
-        logger.info("cloning experiment. ")
-        entity(as[CloneExperimentNewProps]) { exp ⇒
-          val saved: Future[AddExperimentResponse] =
-            expManager.ask(CloneExperiment(experiment, exp)).mapTo[AddExperimentResponse]
-          onSuccess(saved) {
-            case addExp: AddedExperiment ⇒ complete(Created -> addExp)
-            case FailedAddingExperiment(msg) ⇒ complete(Conflict -> ErrorMessage(msg))
-          }
+  private def cloneRoute = path(Segment / "clone") { experiment ⇒
+    post {
+      logger.info("cloning experiment. ")
+      entity(as[CloneExperimentNewProps]) { exp ⇒
+        val saved: Future[AddExperimentResponse] =
+          expManager.ask(CloneExperiment(experiment, exp)).mapTo[AddExperimentResponse]
+        onSuccess(saved) {
+          case addExp: AddedExperiment ⇒ complete(Created -> addExp)
+          case FailedAddingExperiment(msg) ⇒ complete(Conflict -> ErrorMessage(msg))
         }
       }
     }
   }
 
-  private def getRoute(experiment: String) = get {
-    logger.info(s"get experiment: = $experiment")
-    val getExp = expManager.ask(GetExperiment(experiment)).mapTo[ExperimentFoundFeedback]
-    onSuccess(getExp) {
-      case NoExperimentFound ⇒ complete(BadRequest -> ErrorMessage("no experiment found. "))
-      case ExperimentFound(exp) ⇒ complete(OK -> exp)
+  private def getRoute = path(Segment) { experiment ⇒
+    get {
+      logger.info(s"get experiment: = $experiment")
+      val getExp = expManager.ask(GetExperiment(experiment)).mapTo[ExperimentFoundFeedback]
+      onSuccess(getExp) {
+        case NoExperimentFound ⇒ complete(BadRequest -> ErrorMessage("no experiment found. "))
+        case ExperimentFound(exp) ⇒ complete(OK -> exp)
+      }
     }
   }
 
-  private def deleteRoute(experiment: String) = delete {
-    logger.info(s"deleting experiment: $experiment")
-    val delExp = expManager.ask(DeleteExperiment(experiment)).mapTo[DeleteExperimentFeedback]
-    onSuccess(delExp) {
-      case ExperimentDeletedSuccess ⇒ complete(OK -> SuccessMessage(s"experiment $experiment deleted."))
-      case ExperimentDeleteFailed(error) ⇒ complete(Locked -> ErrorMessage(error))
+  private def deleteRoute = path(Segment) { experiment ⇒
+    delete {
+      logger.info(s"deleting experiment: $experiment")
+      val delExp = expManager.ask(DeleteExperiment(experiment)).mapTo[DeleteExperimentFeedback]
+      onSuccess(delExp) {
+        case ExperimentDeletedSuccess ⇒ complete(OK -> SuccessMessage(s"experiment $experiment deleted."))
+        case ExperimentDeleteFailed(error) ⇒ complete(Locked -> ErrorMessage(error))
+      }
     }
   }
 

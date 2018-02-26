@@ -2,7 +2,6 @@ package com.idorsia.research.arcite.core.api.swagger
 
 import com.github.swagger.akka.SwaggerHttpService
 import com.github.swagger.akka.model.Info
-import com.idorsia.research.arcite.core.api.tryout.{HelloService}
 import com.idorsia.research.arcite.core.api.{ExperimentRoutes, ExperimentsRoutes, GlobPublishRoutes}
 import io.swagger.models.ExternalDocs
 import io.swagger.models.auth.BasicAuthDefinition
@@ -31,7 +30,7 @@ import io.swagger.models.auth.BasicAuthDefinition
   *
   */
 object SwDocService extends SwaggerHttpService {
-  override val apiClasses: Set[Class[_]] = Set(classOf[HelloService], classOf[ExperimentsRoutes], classOf[ExperimentRoutes])
+  override val apiClasses: Set[Class[_]] = Set(classOf[ExperimentsRoutes], classOf[ExperimentRoutes])
 
   override val host = "127.0.0.1:8084/api/v1"
   override val info = Info(version = "1.0")
