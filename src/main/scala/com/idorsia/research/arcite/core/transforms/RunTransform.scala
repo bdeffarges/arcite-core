@@ -27,6 +27,9 @@ import com.idorsia.research.arcite.core.experiments.ManageExperiments.SelectedSe
   */
 object RunTransform {
 
+  /**
+    * at least for a transform we need and experiment, a transform definition and maybe some parameters.
+    */
   sealed trait ProceedWithTransform {
     def experiment: String
 
@@ -37,39 +40,67 @@ object RunTransform {
   }
 
 
+  /**
+    * a transform can start from raw data
+    *
+    * @param experiment
+    * @param transfDefUID
+    * @param parameters
+    */
   case class RunTransformOnRawData(experiment: String, transfDefUID: String,
                                    parameters: Map[String, String] = Map.empty) extends ProceedWithTransform
 
 
+  /**
+    * rarely a transform can start on a set of selectable objects
+    *
+    * @param experiment
+    * @param transfDefUID
+    * @param parameters
+    * @param selectables
+    */
   case class RunTransformOnObject(experiment: String, transfDefUID: String,
                                   parameters: Map[String, String] = Map.empty,
                                   selectables: Set[SelectedSelectables] = Set.empty) extends ProceedWithTransform
 
 
-  case class RunTransformOnTransform(experiment: String, transfDefUID: String, transformOrigin: String,
-                                     parameters: Map[String, String] = Map.empty,
+  /**
+    * in most cases a transform is started from the results of a previous transform
+    *
+    * @param experiment
+    * @param transfDefUID
+    * @param transformOrigin
+    * @param parameters
+    * @param selectables
+    */
+  case class RunTransformOnTransform(experiment: String, transfDefUID: String,
+                                     transformOrigin: String, parameters: Map[String, String] = Map.empty,
                                      selectables: Set[SelectedSelectables] = Set.empty) extends ProceedWithTransform
-
-
-  case class RunTransformOnTransforms(experiment: String, transfDefUID: String, transformOrigins: Set[String],
-                                     parameters: Map[String, String] = Map.empty,
-                                     selectables: Set[SelectedSelectables] = Set.empty) extends ProceedWithTransform
-
 
   /**
     * a user can also run a transform on the results of multiple other transforms from
-    * different experiments
+    * different experiments. In that case, there will be a main previous transform and
+    * a serie of other transforms from maybe other experiments with maybe some selectables.
+    *
+    * @param experiment
+    * @param transform
+    * @param selectables
     */
-  case class ExpAndTransf(experiment: String, transform: String)
+  case class ExperimentTransform(experiment: String, transform: String, selectables: Map[String, String] = Map.empty) {
+    override def toString: String = s"[exp=$experiment/transf:$transform]"
+  }
 
-  case class SelectedArtifact(name: String, path: String)
-
-  case class SelectedArtifacts(expAndTransf: ExpAndTransf, artifacts: Set[SelectedArtifact])
-
-
-  case class RunTransfOnXExpandXTransf(experiment: String, transfDefUID: String,
-                                       transformOrigins: Set[ExpAndTransf],
+  /**
+    *
+    * @param experiment
+    * @param transfDefUID
+    * @param transformOrigin
+    * @param otherInheritedTransforms
+    * @param parameters
+    * @param selectables
+    */
+  case class RunTransformOnXTransforms(experiment: String, transfDefUID: String, transformOrigin: String,
+                                       otherInheritedTransforms: Set[ExperimentTransform],
                                        parameters: Map[String, String] = Map.empty,
-                                       selectedArtifacts: Set[SelectedArtifacts] = Set.empty) extends ProceedWithTransform
-
+                                       selectables: Set[SelectedSelectables] = Set.empty) extends ProceedWithTransform
 }

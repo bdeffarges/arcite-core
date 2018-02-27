@@ -539,25 +539,25 @@ trait __TemplateJSONProtocol extends DefaultJsonProtocol {
     override def write(obj: RunTransformOnTransform): JsValue = jsonFormat5(RunTransformOnTransform).write(obj)
   }
 
-  implicit object RunTransFromTransformsJson extends RootJsonFormat[RunTransformOnTransforms] {
-    override def read(json: JsValue): RunTransformOnTransforms = {
-      json.asJsObject.getFields("experiment", "transfDefUID", "transformOrigin",
-        "parameters", "selectables") match {
-        case Seq(JsString(experiment), JsString(transfDefUID), transformOrigin) ⇒
-          RunTransformOnTransforms(experiment, transfDefUID, transformOrigin.convertTo[Set[String]])
-
-        case Seq(JsString(experiment), JsString(transfDefUID), transformOrigin, parameters) ⇒
-          RunTransformOnTransforms(experiment, transfDefUID, transformOrigin.convertTo[Set[String]],
-            parameters.convertTo[Map[String, String]])
-
-        case Seq(JsString(experiment), JsString(transfDefUID), transformOrigin, parameters, selectables) ⇒
-          RunTransformOnTransforms(experiment, transfDefUID,  transformOrigin.convertTo[Set[String]],
-            parameters.convertTo[Map[String, String]], selectables.convertTo[Set[SelectedSelectables]])
-      }
-    }
-
-    override def write(obj: RunTransformOnTransforms): JsValue = jsonFormat5(RunTransformOnTransforms).write(obj)
-  }
+//  implicit object RunTransFromTransformsJson extends RootJsonFormat[RunTransformOnTransforms] {
+//    override def read(json: JsValue): RunTransformOnTransforms = {
+//      json.asJsObject.getFields("experiment", "transfDefUID", "transformOrigin",
+//        "parameters", "selectables") match {
+//        case Seq(JsString(experiment), JsString(transfDefUID), transformOrigin) ⇒
+//          RunTransformOnTransforms(experiment, transfDefUID, transformOrigin.convertTo[Set[String]])
+//
+//        case Seq(JsString(experiment), JsString(transfDefUID), transformOrigin, parameters) ⇒
+//          RunTransformOnTransforms(experiment, transfDefUID, transformOrigin.convertTo[Set[String]],
+//            parameters.convertTo[Map[String, String]])
+//
+//        case Seq(JsString(experiment), JsString(transfDefUID), transformOrigin, parameters, selectables) ⇒
+//          RunTransformOnTransforms(experiment, transfDefUID,  transformOrigin.convertTo[Set[String]],
+//            parameters.convertTo[Map[String, String]], selectables.convertTo[Set[SelectedSelectables]])
+//      }
+//    }
+//
+//    override def write(obj: RunTransformOnTransforms): JsValue = jsonFormat5(RunTransformOnTransforms).write(obj)
+//  }
 
   implicit object CloneExpeNewPropsJson extends RootJsonFormat[CloneExperimentNewProps] {
     override def read(json: JsValue): CloneExperimentNewProps = {
