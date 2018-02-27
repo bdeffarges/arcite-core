@@ -3,7 +3,7 @@ package com.idorsia.research.arcite.core.api
 import com.idorsia.research.arcite.core.experiments.ManageExperiments.{BunchOfSelectables, _}
 import com.idorsia.research.arcite.core.publish.PublishActor.{PublishInfo, PublishInfoLight, PublishedInfo, RemovePublished}
 import com.idorsia.research.arcite.core.transforms.ParameterType.ParameterType
-import com.idorsia.research.arcite.core.transforms.RunTransform._
+import com.idorsia.research.arcite.core.transforms.RunTransform.{ExperimentTransform, _}
 import com.idorsia.research.arcite.core.transforms.TransfDefMsg.{GetTransfDef, ManyTransfDefs, OneTransfDef}
 import com.idorsia.research.arcite.core.transforms.TransformCompletionStatus.TransformCompletionStatus
 import com.idorsia.research.arcite.core.transforms._
@@ -148,7 +148,6 @@ trait TransfJsonProto extends ExpJsonProto {
   implicit val runningTransformFeedbackJsonFormat: RootJsonFormat[RunningTransformFeedback] = jsonFormat5(RunningTransformFeedback)
 
 
-
   implicit val publishInfoLiJson: RootJsonFormat[PublishInfoLight] = jsonFormat3(PublishInfoLight)
 
   implicit val publishInfoJson: RootJsonFormat[PublishInfo] = jsonFormat4(PublishInfo)
@@ -156,7 +155,6 @@ trait TransfJsonProto extends ExpJsonProto {
   implicit val publishedInfoJson: RootJsonFormat[PublishedInfo] = jsonFormat3(PublishedInfo)
 
   implicit val rmpublishedInfoJson: RootJsonFormat[RemovePublished] = jsonFormat2(RemovePublished)
-
 
 
   implicit val selectableItemJson: RootJsonFormat[SelectableItem] = jsonFormat2(SelectableItem)
@@ -212,24 +210,30 @@ trait TransfJsonProto extends ExpJsonProto {
     override def write(obj: RunTransformOnTransform): JsValue = jsonFormat5(RunTransformOnTransform).write(obj)
   }
 
-  implicit object RunTransFromTransformsJson extends RootJsonFormat[RunTransformOnTransforms] {
-    override def read(json: JsValue): RunTransformOnTransforms = {
+  implicit val expTransfJson: RootJsonFormat[ExperimentTransform] = jsonFormat3(ExperimentTransform)
+
+  implicit object RunTransFromTransformsJson extends RootJsonFormat[RunTransformOnXTransforms] {
+    override def read(json: JsValue): RunTransformOnXTransforms = {
       json.asJsObject.getFields("experiment", "transfDefUID", "transformOrigin",
-        "parameters", "selectables") match {
-        case Seq(JsString(experiment), JsString(transfDefUID), transformOrigin) ⇒
-          RunTransformOnTransforms(experiment, transfDefUID, transformOrigin.convertTo[Set[String]])
+        "otherInheritedTransforms", "parameters", "selectables") match {
+        case Seq(JsString(experiment), JsString(transfDefUID), JsString(transformOrigin), otherInheritedTransforms) ⇒
+          RunTransformOnXTransforms(experiment, transfDefUID, transformOrigin,
+            otherInheritedTransforms.convertTo[Set[ExperimentTransform]])
 
-        case Seq(JsString(experiment), JsString(transfDefUID), transformOrigin, parameters) ⇒
-          RunTransformOnTransforms(experiment, transfDefUID, transformOrigin.convertTo[Set[String]],
-            parameters.convertTo[Map[String, String]])
+        case Seq(JsString(experiment), JsString(transfDefUID),
+        JsString(transformOrigin), otherInheritedTransforms, parameters) ⇒
+          RunTransformOnXTransforms(experiment, transfDefUID, transformOrigin,
+            otherInheritedTransforms.convertTo[Set[ExperimentTransform]], parameters.convertTo[Map[String, String]])
 
-        case Seq(JsString(experiment), JsString(transfDefUID), transformOrigin, parameters, selectables) ⇒
-          RunTransformOnTransforms(experiment, transfDefUID,  transformOrigin.convertTo[Set[String]],
+        case Seq(JsString(experiment), JsString(transfDefUID), JsString(transformOrigin),
+        otherInheritedTransforms, parameters, selectables) ⇒
+          RunTransformOnXTransforms(experiment, transfDefUID, transformOrigin,
+            otherInheritedTransforms.convertTo[Set[ExperimentTransform]],
             parameters.convertTo[Map[String, String]], selectables.convertTo[Set[SelectedSelectables]])
       }
     }
 
-    override def write(obj: RunTransformOnTransforms): JsValue = jsonFormat5(RunTransformOnTransforms).write(obj)
+    override def write(obj: RunTransformOnXTransforms): JsValue = jsonFormat6(RunTransformOnXTransforms).write(obj)
   }
 
 

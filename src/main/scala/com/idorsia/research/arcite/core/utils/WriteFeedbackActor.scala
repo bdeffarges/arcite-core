@@ -77,8 +77,8 @@ class WriteFeedbackActor extends Actor
             TransformDoneSource(exp, RAW, None)
           case tst: TransformSourceFromTransform ⇒
             TransformDoneSource(exp, TRANSFORM, Some(tst.srcTransformID))
-          case tst: TransformSourceFromTransforms ⇒
-            TransformDoneSource(exp, TRANSFORM, Some(tst.srcTransformIDs.mkString(" ; ")))
+          case tst: TransformSourceFromXTransforms ⇒
+            TransformDoneSource(exp, TRANSFORM, Some(tst.srcMainTransformID + tst.otherTransforms.mkString(" ; ")))
           case tob: TransformSourceFromObject ⇒
             TransformDoneSource(exp, JSON, None)
           case _: Any ⇒

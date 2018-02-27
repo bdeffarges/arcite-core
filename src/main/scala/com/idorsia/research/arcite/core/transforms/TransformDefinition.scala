@@ -7,6 +7,7 @@ import java.util.UUID
 import akka.actor.Props
 import com.idorsia.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor}
 import com.idorsia.research.arcite.core.transforms.ParameterType.ParameterType
+import com.idorsia.research.arcite.core.transforms.RunTransform.ExperimentTransform
 import com.idorsia.research.arcite.core.transforms.TransformCompletionStatus.TransformCompletionStatus
 import com.idorsia.research.arcite.core.utils
 import com.idorsia.research.arcite.core.utils.{FullName, GetDigest}
@@ -17,8 +18,10 @@ import com.idorsia.research.arcite.core.utils.{FullName, GetDigest}
   */
 
 // todo what about transforms that inherit from many transforms...
-// todo transforms should have a stamp/digest to make sure they cannot be changed without changing their version after having being used at least once
-// todo in the transform completion data we should also keep some digest from the produced artifact, to avoid changes
+// todo transforms should have a stamp/digest to make sure they cannot be changed
+// without changing their version after having being used at least once
+// todo in the transform completion data we should also keep some digest
+// from the produced artifact, to avoid changes
 
 /**
   * description of a transform, its purpose, what it consumes and what it produces
@@ -52,7 +55,6 @@ case class TransformDefinitionIdentity(fullName: FullName, description: Transfor
   */
 case class TransformDefinition(transDefIdent: TransformDefinitionIdentity, actorProps: () ⇒ Props)
 
-
 /**
   * Where to find the source data for the transform
   *
@@ -65,15 +67,22 @@ case class TransformSourceFromRaw(experiment: Experiment) extends TransformSourc
 
 case class TransformSourceFromTransform(experiment: Experiment, srcTransformID: String) extends TransformSource
 
-case class TransformSourceFromTransforms(experiment: Experiment, srcTransformIDs: Set[String]) extends TransformSource
+/**
+  * a transform can be started from a previous transform (in the same experiment) or a set of transforms
+  * from previous experiments.
+  *
+  * @param experiment
+  * @param srcMainTransformID
+  * @param otherTransforms
+  */
+case class TransformSourceFromXTransforms(experiment: Experiment,
+                                          srcMainTransformID: String,
+                                          otherTransforms: Set[ExperimentTransform]) extends TransformSource
 
 case class TransformSourceFromObject(experiment: Experiment) extends TransformSource
 
 case class TransformSourceFromTransformsAndRaw(experiment: Experiment,
                                                srcTransfomrIDs: Set[String]) extends TransformSource
-
-//todo introduce transform from data structure. We could persist the transform results but at the same time use the in memory structure for the next transform.
-
 
 /**
   * the actual transform that contains all information for the instance of a transform.
