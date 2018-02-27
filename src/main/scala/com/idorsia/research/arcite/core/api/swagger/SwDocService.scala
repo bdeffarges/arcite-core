@@ -2,7 +2,8 @@ package com.idorsia.research.arcite.core.api.swagger
 
 import com.github.swagger.akka.SwaggerHttpService
 import com.github.swagger.akka.model.Info
-import com.idorsia.research.arcite.core.api.{ExperimentRoutes, ExperimentsRoutes, GlobPublishRoutes}
+import com.idorsia.research.arcite.core.api._
+import com.typesafe.config.ConfigFactory
 import io.swagger.models.ExternalDocs
 import io.swagger.models.auth.BasicAuthDefinition
 
@@ -30,11 +31,16 @@ import io.swagger.models.auth.BasicAuthDefinition
   *
   */
 object SwDocService extends SwaggerHttpService {
-  override val apiClasses: Set[Class[_]] = Set(classOf[ExperimentsRoutes], classOf[ExperimentRoutes])
+  val config = ConfigFactory.load()
+  val hst = config.getString("http.host")
+  val prt = config.getInt("http.port")
 
-  override val host = "127.0.0.1:8084/api/v1"
+  override val apiClasses: Set[Class[_]] = Set(classOf[ExperimentsRoutes], classOf[ExperimentRoutes],
+    classOf[DirectRoute], classOf[GlobPublishRoutes], classOf[TofTransfRoutes], classOf[TransfRoutes])
+
+  override val host = s"$hst:${prt}/api/v1"
   override val info = Info(version = "1.0")
-  override val externalDocs = Some(new ExternalDocs("Core Docs", "http://acme.com/docs"))
+//  override val externalDocs = Some(new ExternalDocs("Core Docs", "http://acme.com/docs"))
   override val securitySchemeDefinitions = Map("basicAuth" -> new BasicAuthDefinition())
-  override val unwantedDefinitions = Seq("Function1", "Function1RequestContextFutureRouteResult")
+//  override val unwantedDefinitions = Seq("Function1", "Function1RequestContextFutureRouteResult")
 }

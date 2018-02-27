@@ -1,15 +1,18 @@
 package com.idorsia.research.arcite.core.api
 
-import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSystem, Props}
+import javax.ws.rs.Path
+
+import akka.actor.{Actor, ActorLogging, ActorPath, ActorSystem, Props}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.StatusCodes.{BadRequest, OK}
 import akka.http.scaladsl.server.Directives
 import akka.pattern.ask
 import akka.util.Timeout
+import com.idorsia.research.arcite.core.experiments.ManageExperiments.{SearchExperiments, SomeExperiments}
 import com.idorsia.research.arcite.core.transftree.TreeOfTransformsManager._
 import com.idorsia.research.arcite.core.transftree._
-import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
+import io.swagger.annotations._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -36,6 +39,8 @@ import scala.concurrent.{ExecutionContext, Future}
   * Created by Bernard Deffarges on 2018/01/11.
   *
   */
+@Api(value = "tree of transforms", produces = "application/json")
+@Path("tree_of_transforms")
 class TofTransfRoutes(system: ActorSystem)
                      (implicit executionContext: ExecutionContext, implicit val timeout: Timeout)
   extends Directives
@@ -46,13 +51,22 @@ class TofTransfRoutes(system: ActorSystem)
 
   def routes = treeOfTransforms
 
+  @ApiOperation(value = "get status of tree of transforms ", nickname = "ToT status",
+    httpMethod = "GET", response = classOf[SomeExperiments])
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "status", value = "\"string\" to search for in experiments", required = true,
+      dataTypeClass = classOf[SearchExperiments], paramType = "body")
+  ))
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "status found. ")
+  ))
   private def treeOfTransforms = pathPrefix("tree_of_transforms") {
     pathPrefix("status") {
-      path(Segment) { Segment ⇒
+      path(Segment) { totUID ⇒
         pathEnd {
           get {
-            logger.info(s"getting status of treeOfTransform: $Segment")
-            onSuccess(getTreeOfTransformStatus(Segment)) {
+            logger.info(s"getting status of treeOfTransform: $totUID")
+            onSuccess(getTreeOfTransformStatus(totUID)) {
               case totFeedback: ToTFeedbackDetailsForApi ⇒ complete(OK -> totFeedback)
               case totFb: ToTNoFeedback ⇒ complete(BadRequest -> s"No info. about this ToT ${totFb.uid}")
             }
@@ -66,7 +80,6 @@ class TofTransfRoutes(system: ActorSystem)
               case crtot: CurrentlyRunningToT ⇒ complete(OK -> crtot)
               case NoRunningToT ⇒ complete(BadRequest, "something went wrong. ")
             }
-
           }
         }
     } ~
