@@ -66,7 +66,7 @@ class ExperimentRoutes(system: ActorSystem)
   import com.idorsia.research.arcite.core.experiments.ManageExperiments._
 
   private[api] val routes = pathPrefix("experiment") {
-    getTransforms ~ selectableTransformGet ~ totRoute ~ getFiles ~ allGet ~ rawGet ~
+    getTransforms ~ selectableTransformGet ~ totRoute ~ getFiles ~ rawGet ~
       userRawGet ~ metaGet ~ publishedRouteDel ~ publishedRouteGet ~ designRoute ~
       hidePostRoute ~ unhide ~ getLogsRoute ~ addProps ~ delProps ~
       updateDescription ~ cloneRoute ~ getRoute ~ deleteRoute ~
@@ -236,25 +236,6 @@ class ExperimentRoutes(system: ActorSystem)
       logger.info(s"returning all RAW files for experiment: $experiment")
       onSuccess(expManager.ask(InfoAboutRawFiles(experiment)).mapTo[FilesInformation]) {
         case FilesInformation(ffi) ⇒ complete(OK -> ffi)
-      }
-    }
-  }
-
-  @Path("/{experiment}/")
-  @ApiOperation(value = "Returns all files for an experiment", notes = "", nickname = "AllFiles",
-    httpMethod = "GET", response = classOf[FilesInformation])
-  @ApiImplicitParams(Array(
-    new ApiImplicitParam(name = "experiment", value = "experiment uid", required = false, dataType = "string", paramType = "path")
-  ))
-  @ApiResponses(Array(
-    new ApiResponse(code = 200, message = "Return all files for experiment", response = classOf[AllFilesInformation]),
-    new ApiResponse(code = 500, message = "Internal server error")
-  ))
-  private def allGet = path(Segment) { experiment ⇒
-    get {
-      logger.info(s"returning all files for experiment: $experiment")
-      onSuccess(expManager.ask(InfoAboutAllFiles(experiment)).mapTo[AllFilesInformation]) {
-        case afi: AllFilesInformation ⇒ complete(OK -> afi)
       }
     }
   }

@@ -17,7 +17,8 @@ import com.idorsia.research.arcite.core.utils._
   *
   *
   */
-case class Experiment(name: String, description: String, owner: Owner, uid: Option[String] = None, state: ExpState = ExpState.NEW,
+case class Experiment(name: String, description: String, owner: Owner,
+                      uid: Option[String] = None, state: ExpState = ExpState.NEW,
                       design: ExperimentalDesign = ExperimentalDesign(),
                       properties: Map[String, String] = Map(), hidden: Boolean = false)
 
