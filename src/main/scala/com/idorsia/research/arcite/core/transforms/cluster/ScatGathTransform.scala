@@ -36,8 +36,6 @@ import com.idorsia.research.arcite.core.transforms.cluster.ScatGathTransform.Pre
   *
   */
 class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends Actor with ActorLogging {
-  //todo get expManager actor from path
-  //todo too many vars !
 
   private var expFound: Option[ExperimentFound] = None
 
@@ -77,7 +75,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
           if (otd.transfDefId.fullName.asUID == procWTransf.get.transfDefUID) {
             transfDef = Some(otd.transfDefId)
             procWTransf.get match {
-              case ptft: RunTransformOnTransform ⇒
+              case ptft: ProceedWithTransfOnTransf ⇒
                 context.become(waitForDependingTransformToComplete)
                 transfUID = Some(UUID.randomUUID().toString)
                 expManager ! GetTransfCompletionFromExpAndTransf(ptft.experiment, ptft.transformOrigin)
@@ -85,7 +83,6 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
               case _ ⇒
                 self ! PrepareTransform
             }
-
           } else {
             val error =
               s"""transform uid does not seem to match [${otd.transfDefId.fullName.asUID}] with
@@ -93,7 +90,6 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
             log.error(error)
             requester ! TransfNotReceived(error)
           }
-
 
         case _ ⇒
           requester ! TransfNotReceived("could not find ONE transform definition for given id.")
@@ -127,14 +123,32 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
               Transform(td.fullName, TransformSourceFromTransform(exp, transfOrigin), parameters)
           }
 
+        case RunTransformOnXTransforms(_, _, _, otherTransfs, _, _) ⇒ //todo needs improvements
+          expManager ! GetTransformPath(otherTransfs)
+
         case _ ⇒
           requester ! TransfNotReceived("Transform not implemented yet")
       }
 
 
     case FoundTransformDefinition(transfFeedback) ⇒
-        self ! PrepareTransform
+      self ! PrepareTransform
 
+
+    case tPaths: TransfPaths ⇒ //todo needs improvements
+      val td = transfDef.get
+
+      val parameters = TransformParameterHelper
+        .getParamsWithDefaults(procWTransf.get.parameters, td.description.transformParameters)
+
+      val exp = expFound.get.exp
+      log.debug(s"preparing for transform on multiple transform (got all inherited transforms informations)...")
+
+      procWTransf.get match {
+        case RunTransformOnXTransforms(_, _, transfOrigin, otherTransfs, _, _) ⇒
+          ManageTransformCluster.getNextFrontEnd() !
+            Transform(td.fullName, TransformSourceFromXTransforms(exp, transfOrigin, tPaths.transfPaths), parameters, transfUID.get)
+      }
 
     case msg: Any ⇒
       log.debug(s"returning message $msg to requester...")
@@ -148,7 +162,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
       context.unbecome()
       log.info(s"was waiting for [$time] for transform to complete, done now, can proceed with next step get transform definition....")
       procWTransf.get match {
-        case ptft: RunTransformOnTransform ⇒
+        case ptft: ProceedWithTransfOnTransf ⇒
           expManager ! GetTransfDefFromExpAndTransf(ptft.experiment, ptft.transformOrigin)
       }
 

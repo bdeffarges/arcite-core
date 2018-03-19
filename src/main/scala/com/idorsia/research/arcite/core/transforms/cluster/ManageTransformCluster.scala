@@ -8,7 +8,7 @@ import akka.cluster.client.{ClusterClient, ClusterClientSettings}
 import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings}
 import akka.japi.Util._
 import com.idorsia.research.arcite.core.transforms.TransformDefinition
-import com.idorsia.research.arcite.core.transforms.cluster.workers.fortest.{WorkExecDuplicateText, WorkExecLowerCase, WorkExecProd, WorkExecUpperCase}
+import com.idorsia.research.arcite.core.transforms.cluster.workers.fortest._
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 
@@ -129,5 +129,7 @@ object ManageTransformCluster {
     addWorker(WorkExecProd.definition)
     addWorker(WorkExecDuplicateText.definition)
     addWorker(WorkExecDuplicateText.definition)
+    addWorker(WorkExecMergeText.definition)
+    addWorker(WorkExecMergeText.definition)
   }
 }

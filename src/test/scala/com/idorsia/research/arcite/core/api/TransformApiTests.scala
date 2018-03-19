@@ -43,6 +43,8 @@ class TransformApiTests extends ApiTests with ExpJsonProto {
 
   val exp1 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment1)
   var exp1Uid: Option[String] = None // because the uid is created on the server.
+  val exp2 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment1)
+  var exp2Uid: Option[String] = None // because the uid is created on the server.
   var selectables: Option[BunchOfSelectables] = None
 
   private var transfDef1: Option[TransformDefinitionIdentity] = None
@@ -201,7 +203,37 @@ class TransformApiTests extends ApiTests with ExpJsonProto {
     }
   }
 
-  "start upper case transform on experiment " should " return the transform job uid " in {
+  "Create a second experiment " should " return the uid of the new experiment which we can then delete " in {
+
+    implicit val executionContext = system.dispatcher
+    import spray.json._
+
+    val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+      Http().outgoingConnection(host, port)
+
+
+    val jsonRequest = ByteString(AddExperiment(exp2).toJson.prettyPrint)
+
+    val postRequest = HttpRequest(
+      HttpMethods.POST,
+      uri = s"$urlPrefix/experiment",
+      entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
+
+    val responseFuture: Future[HttpResponse] =
+      Source.single(postRequest).via(connectionFlow).runWith(Sink.head)
+
+    responseFuture.map { r ⇒
+      logger.info(r.toString())
+      assert(r.status == StatusCodes.Created)
+
+      exp2Uid = Some(r.entity.asInstanceOf[HttpEntity.Strict]
+        .data.decodeString("UTF-8").parseJson.convertTo[ExperimentUID].uid)
+
+      assert(exp2Uid.isDefined)
+    }
+  }
+
+  "start upper case transform on experiment exp1 " should " return the transform job uid " in {
 
     implicit val executionContext = system.dispatcher
 
@@ -388,6 +420,8 @@ class TransformApiTests extends ApiTests with ExpJsonProto {
       assert(selectables.get.selectables.nonEmpty)
     }
   }
+
+
 }
 
 

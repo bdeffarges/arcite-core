@@ -64,6 +64,10 @@ object RunTransform {
                                   selectables: Set[SelectedSelectables] = Set.empty) extends ProceedWithTransform
 
 
+  sealed trait ProceedWithTransfOnTransf extends ProceedWithTransform {
+    def transformOrigin: String
+  }
+
   /**
     * in most cases a transform is started from the results of a previous transform
     *
@@ -75,7 +79,7 @@ object RunTransform {
     */
   case class RunTransformOnTransform(experiment: String, transfDefUID: String,
                                      transformOrigin: String, parameters: Map[String, String] = Map.empty,
-                                     selectables: Set[SelectedSelectables] = Set.empty) extends ProceedWithTransform
+                                     selectables: Set[SelectedSelectables] = Set.empty) extends ProceedWithTransfOnTransf
 
   /**
     * a user can also run a transform on the results of multiple other transforms from
@@ -87,7 +91,7 @@ object RunTransform {
     * @param selectables
     */
   case class ExperimentTransform(experiment: String, transform: String, selectables: Map[String, String] = Map.empty) {
-    override def toString: String = s"[exp=$experiment/transf:$transform]"
+    override def toString: String = s"[exp=$experiment/transf:$transform] (${selectables.size} selectables)"
   }
 
   /**
@@ -102,5 +106,5 @@ object RunTransform {
   case class RunTransformOnXTransforms(experiment: String, transfDefUID: String, transformOrigin: String,
                                        otherInheritedTransforms: Set[ExperimentTransform],
                                        parameters: Map[String, String] = Map.empty,
-                                       selectables: Set[SelectedSelectables] = Set.empty) extends ProceedWithTransform
+                                       selectables: Set[SelectedSelectables] = Set.empty) extends ProceedWithTransfOnTransf
 }

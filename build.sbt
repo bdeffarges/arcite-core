@@ -32,16 +32,16 @@ scalacOptions ++= Seq(
   , "-language:postfixOps"
 )
 
-credentials += Credentials("Sonatype Nexus Repository Manager", "bioinfo.it.actelion.com", "deployment", "biodeploy")
+credentials += Credentials("Sonatype Nexus Repository Manager", "nexus.idorsia.com", "deployment", "biodeploy")
 
 publishMavenStyle := true
 
 publishTo := {
-  val nexus = "http://bioinfo.it.actelion.com/nexus/content/repositories"
+  val nexus = "http://nexus.idorsia.com/repository/"
   if (version.value.toString.trim.endsWith("SNAPSHOT"))
-    Some("snapshots" at nexus + "/snapshots")
+    Some("snapshots" at nexus + "/idorsia-snapshots")
   else
-    Some("releases" at nexus + "/releases")
+    Some("releases" at nexus + "/idorsia-releases")
 }
 
 resolvers ++= Seq(
@@ -160,7 +160,7 @@ dockerCommands := Seq(
   Cmd("USER", "arcite"),
   Cmd("ENTRYPOINT", "bin/arcite-core"))
 
-dockerRepository := Some("gaia:5000")
+dockerRepository := Some("arcite-api.idorsia.com/repository/docker-ai")
 dockerAlias := DockerAlias(dockerRepository.value, Some("arcite"), packageName.value, Some(version.value))
 
 
