@@ -67,6 +67,9 @@ case class TransformSourceFromRaw(experiment: Experiment) extends TransformSourc
 
 case class TransformSourceFromTransform(experiment: Experiment, srcTransformID: String) extends TransformSource
 
+case class ExpTransfAndSelection(experiment: Experiment, transform: String,
+                                 selectables: Map[String, String] = Map.empty)
+
 /**
   * a transform can be started from a previous transform (in the same experiment) or a set of transforms
   * from previous experiments.
@@ -77,12 +80,10 @@ case class TransformSourceFromTransform(experiment: Experiment, srcTransformID: 
   */
 case class TransformSourceFromXTransforms(experiment: Experiment,
                                           srcMainTransformID: String,
-                                          otherTransforms: Set[ExperimentTransform]) extends TransformSource
+                                          otherTransforms: Set[ExpTransfAndSelection]) extends TransformSource
 
 case class TransformSourceFromObject(experiment: Experiment) extends TransformSource
 
-case class TransformSourceFromTransformsAndRaw(experiment: Experiment,
-                                               srcTransfomrIDs: Set[String]) extends TransformSource
 
 /**
   * the actual transform that contains all information for the instance of a transform.

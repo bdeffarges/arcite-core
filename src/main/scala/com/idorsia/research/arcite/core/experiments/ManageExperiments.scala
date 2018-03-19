@@ -22,7 +22,8 @@ import com.idorsia.research.arcite.core.publish.PublishActor._
 import com.idorsia.research.arcite.core.rawdata.DefineRawAndMetaData
 import com.idorsia.research.arcite.core.search.ArciteLuceneRamIndex
 import com.idorsia.research.arcite.core.search.ArciteLuceneRamIndex._
-import com.idorsia.research.arcite.core.transforms.TransformCompletionFeedback
+import com.idorsia.research.arcite.core.transforms.RunTransform.ExperimentTransform
+import com.idorsia.research.arcite.core.transforms.{ExpTransfAndSelection, TransformCompletionFeedback}
 import com.idorsia.research.arcite.core.transftree.{ToTFeedbackDetails, ToTFeedbackDetailsForApi, ToTFeedbackHelper}
 import com.idorsia.research.arcite.core.utils
 import com.idorsia.research.arcite.core.utils._
@@ -349,6 +350,31 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor
       } else {
         sender() ! NoExperimentFound
       }
+
+
+    case GetExperiments(uids) ⇒
+      log.debug(s"retrieving experiment from uid: ${uids.mkString(" ; ")}")
+
+      val exps = uids.map(uid ⇒ experiments.get(uid))
+        .filter(_.isDefined)
+        .map(exp ⇒ LocalExperiments.loadExperiment(ExperimentFolderVisitor(exp.get).experimentFilePath))
+        .filter(_.isDefined)
+        .map(_.get)
+
+      sender() ! ExperimentsFound(exps)
+
+
+    case GetTransformPath(expTrans) ⇒
+      log.debug(s"retrieving experiment from uid: ${expTrans.mkString(" ; ")}")
+
+      val expTr = expTrans.map(et ⇒ (experiments.get(et.experiment), et))
+        .filter(_._1.isDefined)
+        .map(et ⇒ (LocalExperiments.loadExperiment(ExperimentFolderVisitor(et._1.get).experimentFilePath),
+          et._2.transform, et._2.selectables))
+          .filter(_._1.isDefined)
+        .map(et ⇒ ExpTransfAndSelection(et._1.get, et._2, et._3))
+
+      sender() ! TransfPaths(expTr)
 
 
     case GetAllExperimentsLastUpdate ⇒
@@ -691,6 +717,10 @@ object ManageExperiments {
 
   case class GetExperiment(uid: String) extends ExperimentMsg
 
+  case class GetExperiments(uids: Set[String]) extends ExperimentMsg
+
+  case class GetTransformPath(expTrans: Set[ExperimentTransform]) extends ExperimentMsg
+
 
   sealed trait HideUnhide extends ExperimentMsg {
     def uid: String
@@ -841,6 +871,8 @@ object ManageExperiments {
   case class ExperimentsFound(exp: Set[Experiment]) extends ExperimentFoundFeedback
 
   case object NoExperimentFound extends ExperimentFoundFeedback
+
+  case class TransfPaths(transfPaths: Set[ExpTransfAndSelection])
 
 
   sealed trait DeleteExperimentFeedback
