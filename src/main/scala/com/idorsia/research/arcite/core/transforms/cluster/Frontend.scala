@@ -27,7 +27,7 @@ class Frontend extends Actor with ActorLogging {
 
   import Frontend._
 
-  //todo change dispatcher/Executor
+  //todo change dispatcher/Executor?
   import context.dispatcher
 
   private val masterProxy = context.actorOf(

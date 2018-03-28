@@ -41,11 +41,14 @@ import scala.concurrent.Future
   */
 object Main extends App with LazyLogging {
 
-  println(args.mkString(" ; "))
-  println(s"config environment file: ${System.getProperty("config.resource")}")
+  val argsString = args.mkString(" ; ")
+  val configEnvAsString = s"config environment file: ${System.getProperty("config.resource")}"
 
-  logger.info(args.mkString(" ; "))
-  logger.info(s"config environment file: ${System.getProperty("config.resource")}")
+  println(argsString)
+  println(configEnvAsString)
+
+  logger.info(argsString)
+  logger.info(configEnvAsString)
 
   ManageTransformCluster.defaultTransformClusterStartFromConf()
 

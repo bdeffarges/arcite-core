@@ -19,15 +19,15 @@ import org.slf4j.LoggerFactory
 object ManageTransformCluster {
   val logger = LoggerFactory.getLogger(ManageTransformCluster.getClass)
 
-  val arcTransfActClustSys = "ArcTransfActClustSys"
+  val arcClusterSyst: String = "ArciteClusterSystem"
+  val arcWorkerActSys: String = "ArciteWorkersActorSystem"
 
-  val arcWorkerActSys = "ArcWorkerActSys"
-
-  val workTimeout = 36.hours // default max timeOut
+  val workTimeout = 24.hours // default max timeOut
 
   val config = ConfigFactory.load()
 
   val workConf = config.getConfig("transform_worker")
+  logger.info(s"transform worker actor system config: ${workConf.toString}")
 
   private val workSystem = ActorSystem(arcWorkerActSys, workConf)
 
@@ -40,10 +40,11 @@ object ManageTransformCluster {
   private var frontEnds = Seq[ActorRef]()
 
   def defaultTransformClusterStartFromConf(): Unit = {
-    logger.info("starting cluster...")
+    logger.info("starting Arcite workers cluster...")
     val bePorts = config.getIntList("transform_cluster.backends.ports")
     val fePorts = config.getInt("transform_cluster.frontends.numberOfports")
     import scala.collection.convert.wrapAsScala._
+
     defaultTransformClusterStart(bePorts.toIndexedSeq.map(_.intValue()), fePorts)
     startTestWorkers()
   }
@@ -71,10 +72,7 @@ object ManageTransformCluster {
       withFallback(ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port)).
       withFallback(config.getConfig("transform_cluster"))
 
-    val actorStoreLoc = s"akka.tcp://$arcTransfActClustSys@${conf.getString("store")}"
-    logger.info(s"actor store location: $actorStoreLoc")
-
-    val system = ActorSystem(arcTransfActClustSys, conf) // we start a new actor system for each backend
+    val system = ActorSystem(arcClusterSyst, conf) // we start a new actor system for each backend
 
     system.actorOf(ClusterSingletonManager.props(
       Master.props(workTimeout),
@@ -87,7 +85,7 @@ object ManageTransformCluster {
     val conf = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port).
       withFallback(config.getConfig("transform_cluster"))
 
-    val system = ActorSystem(arcTransfActClustSys, conf)// we start a new actor system for each frontend as well
+    val system = ActorSystem(arcClusterSyst, conf)// we start a new actor system for each frontend as well
 
     system.actorOf(Props[Frontend], "frontend")
   }

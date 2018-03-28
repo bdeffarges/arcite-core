@@ -92,12 +92,19 @@ class RestApi(system: ActorSystem)
       pathPrefix("api") {
         pathPrefix(s"v$apiVersion") {
           expsRoutes ~ expRoutes ~ transfRoutes ~ tofTransfRoutes ~ globPubRoutes ~
-            rawDataRoute ~ metaDataRoute ~ allLastUpdatesRoute ~
+            rawDataRoute ~ metaDataRoute ~ allLastUpdatesRoute ~ pingRoute ~
             allExperimentsRecentLogs ~ metaInfoRoute ~
             dataSourcesRoute ~ appLogsRoute ~ organizationRoute ~
             SwDocService.routes ~ swui
         }
       }
+  }
+
+  private def pingRoute = path("ping") {
+    get {
+      logger.debug("health check route.")
+      complete(OK -> "pong")
+    }
   }
 
   private def defaultRoute = {

@@ -5,7 +5,7 @@ organization := "com.idorsia.research.arcite"
 
 name := "arcite-core"
 
-version := "1.84.22"
+version := "1.85.12"
 
 scalaVersion := "2.11.8"
 
@@ -37,7 +37,7 @@ credentials += Credentials("Sonatype Nexus Repository Manager", "nexus.idorsia.c
 publishMavenStyle := true
 
 publishTo := {
-  val nexus = "http://nexus.idorsia.com/repository/"
+  val nexus = "https://nexus.idorsia.com/repository/"
   if (version.value.toString.trim.endsWith("SNAPSHOT"))
     Some("snapshots" at nexus + "/idorsia-snapshots")
   else
@@ -160,7 +160,8 @@ dockerCommands := Seq(
   Cmd("USER", "arcite"),
   Cmd("ENTRYPOINT", "bin/arcite-core"))
 
-dockerRepository := Some("arcite-api.idorsia.com/repository/docker-ai")
+dockerRepository := Some("nexus-docker.idorsia.com")
+
 dockerAlias := DockerAlias(dockerRepository.value, Some("arcite"), packageName.value, Some(version.value))
 
 
