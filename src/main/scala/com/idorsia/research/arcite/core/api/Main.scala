@@ -104,7 +104,7 @@ object Main extends App with LazyLogging {
   bindingFuture.map { serverBinding ⇒
     arciteAppService ! AddAppLog(ArciteAppLog(LogCategory.INFO,
       s"application started successfully, listening on port ${serverBinding.localAddress}"))
-    println("starting RestApi...")
+    println(s"starting RestApi on ${host.toString}:${port}...")
     println(s"akka.loglevel ${config.getString("akka.loglevel")}")
   }.onFailure {
     case ex: Exception ⇒

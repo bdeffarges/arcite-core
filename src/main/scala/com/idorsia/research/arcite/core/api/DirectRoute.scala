@@ -38,7 +38,6 @@ import com.typesafe.config.ConfigFactory
   */
 class DirectRoute(arciteService: ActorRef) extends LazyLogging {
   private[api] val config = ConfigFactory.load()
-  private[api] val apiSpec = config.getString("arcite.api.specification")
 
   private def getExperiment(uid: String) = {
     logger.debug(s"asking for experiment with digest= $uid")

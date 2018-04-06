@@ -74,7 +74,9 @@ object ManageTransformCluster {
       withFallback(ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port)).
       withFallback(config.getConfig("transform_cluster"))
 
+    logger.info(s"starting a new backend with conf: ${conf.toString}")
     val system = ActorSystem(arcClusterSyst, conf) // we start a new actor system for each backend
+    logger.info(s"actor system: ${system.toString}")
 
     system.actorOf(ClusterSingletonManager.props(
       Master.props(workTimeout),
@@ -87,7 +89,9 @@ object ManageTransformCluster {
     val conf = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port).
       withFallback(config.getConfig("transform_cluster"))
 
+    logger.info(s"starting new frontend with conf ${conf.toString}")
     val system = ActorSystem(arcClusterSyst, conf)// we start a new actor system for each frontend as well
+    logger.info(s"actor system: ${system.toString}")
 
     system.actorOf(Props[Frontend], "frontend")
   }
@@ -105,20 +109,6 @@ object ManageTransformCluster {
     workSystem.actorOf(TransformWorker.props(clusterClient, td), name)
   }
 
-
-  /**
-    * to test the cluster
-    *
-    * @param args
-    */
-  def main(args: Array[String]): Unit = {
-    defaultTransformClusterStart(Seq(2551, 2552, 2553, 2554, 2555, 2556, 2557, 2558), 10)
-  }
-
-  def startSomeDefaultClusterForTesting(): Unit = {
-    defaultTransformClusterStart(Seq(2551, 2552, 2553, 2554, 2555, 2556, 2557, 2558), 30)
-    startTestWorkers()
-  }
 
   def startTestWorkers(): Unit = {
     addWorker(WorkExecUpperCase.definition)

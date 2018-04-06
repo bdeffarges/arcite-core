@@ -14,7 +14,7 @@ package object core {
 
   val home: Path = Paths.get(config.getString("arcite.home"))
 
-  val apiVersion: String = config.getString("arcite.api.version")
+  val apiVersion: String = "1"
 
   val dataPath: Path = home resolve "experiments"
 
@@ -44,7 +44,7 @@ package object core {
   val immutableFile = ".immutable"
   val selectable = s"${arciteFilePrefix}selectable.json"
 
-  val urlPrefix = s"/api/v$apiVersion"
+  val urlPrefix = s"/api/v$apiVersion" //todo remove
 
   val DIGEST_FILE_NAME = s"${arciteFilePrefix}digest"
 

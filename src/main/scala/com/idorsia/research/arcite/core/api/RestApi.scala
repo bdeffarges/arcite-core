@@ -53,15 +53,11 @@ class RestApi(system: ActorSystem)
 
   private val config = ConfigFactory.load()
 
-  private val apiSpec = config.getString("arcite.api.specification")
-
-  private val apiVersion = config.getString("arcite.api.version")
-
   private val host = config.getString("http.host")
 
   private val port = config.getInt("http.port")
 
-  val apiPath = s"http://${host}:${port}/api/v${apiVersion}/swagger.json"
+  val apiPath = s"http://${host}:${port}/api/v${core.apiVersion}/swagger.json" // todo remove?
 
   private val conf = ConfigFactory.load().getConfig("experiments-manager")
   private val actSys = conf.getString("akka.uri")
@@ -90,7 +86,7 @@ class RestApi(system: ActorSystem)
     def routes: Route = respondWithHeaders(corsHeaders) {
     new DirectRoute(globServices).directRoute ~
       pathPrefix("api") {
-        pathPrefix(s"v$apiVersion") {
+        pathPrefix(s"v${core.apiVersion}") {
           expsRoutes ~ expRoutes ~ transfRoutes ~ tofTransfRoutes ~ globPubRoutes ~
             rawDataRoute ~ metaDataRoute ~ allLastUpdatesRoute ~ pingRoute ~
             allExperimentsRecentLogs ~ metaInfoRoute ~
@@ -100,6 +96,7 @@ class RestApi(system: ActorSystem)
       }
   }
 
+
   private def pingRoute = path("ping") {
     get {
       logger.debug("health check route.")
@@ -108,7 +105,7 @@ class RestApi(system: ActorSystem)
   }
 
   private def defaultRoute = {
-    redirect(s"/api/v${apiVersion}/sw-ui", StatusCodes.PermanentRedirect)
+    redirect(s"/api/v${core.apiVersion}/sw-ui", StatusCodes.PermanentRedirect)
   }
 
   private def organizationRoute = path("organization") {
