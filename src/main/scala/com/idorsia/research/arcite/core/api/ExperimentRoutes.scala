@@ -176,9 +176,9 @@ class ExperimentRoutes(system: ActorSystem)
   ))
   private def getFiles = path(Segment / "files") { experiment ⇒
     get {
-      logger.info(s"returning all files for experiment: $experiment")
-      onSuccess(expManager.ask(InfoAboutAllFiles(experiment)).mapTo[FilesInformation]) {
-        case FilesInformation(ffi) ⇒ complete(OK -> ffi)
+      logger.info(s"[xcyv] asking fo all files for experiment: $experiment")
+      onSuccess(expManager.ask(InfoAboutAllFiles(experiment)).mapTo[AllFilesInformation]) {
+        case afi: AllFilesInformation ⇒ complete(OK -> afi)
       }
     }
   }
@@ -195,7 +195,7 @@ class ExperimentRoutes(system: ActorSystem)
   ))
   private def metaGet = path(Segment / "meta") { experiment ⇒
     get {
-      logger.info(s"returning all META files for experiment: $experiment")
+      logger.info(s"[xcyw] asking for all META files for experiment: $experiment")
       onSuccess(expManager.ask(InfoAboutMetaFiles(experiment)).mapTo[FilesInformation]) {
         case FilesInformation(ffi) ⇒ complete(OK -> ffi)
       }

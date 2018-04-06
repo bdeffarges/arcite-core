@@ -57,6 +57,6 @@ object AppServiceActorsManager {
     }
   }
 
-  private object LogMemUsage
+  case object LogMemUsage
 
 }

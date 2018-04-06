@@ -488,7 +488,6 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor
     case gmf: InfoAboutAllFiles ⇒
       logger.info("looking for all files list")
       val exp = experiments.get(gmf.experiment)
-      val actRef = sender()
       if (exp.isDefined) {
         fileServiceAct forward GetAllFiles(FromAllFolders(exp.get))
       } else {

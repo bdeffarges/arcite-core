@@ -82,27 +82,36 @@ class FileServiceActor(mounts: Map[String, SourceInformation]) extends Actor wit
 
 
     case GetAllFiles(fromExp) ⇒
-
+      log.debug(s"asking for files for experiment [${fromExp.experiment.uid}]")
       val ev = ExperimentFolderVisitor(fromExp.experiment)
 
       fromExp match {
         case FromUserRawFolder(_) ⇒
           val rawFilesInfo = FilesInformation(
             ev.userRawFolderPath.toFile.listFiles.map(f ⇒ FileVisitor(f).fileInformation))
+          log.info(s"found ${rawFilesInfo.files.size} files...")
           sender() ! rawFilesInfo
 
         case FromRawFolder(_) ⇒
           val rawFilesInfo = FilesInformation(
             ev.rawFolderPath.toFile.listFiles.map(f ⇒ FileVisitor(f).fileInformation))
+          log.info(s"found ${rawFilesInfo.files.size} files...")
           sender() ! rawFilesInfo
 
         case FromMetaFolder(_) ⇒
-          sender() ! FileVisitor.getFilesInformation3(ev.userMetaFolderPath)
+          val metaF = FileVisitor.getFilesInformation3(ev.userMetaFolderPath)
+          log.info(s"found ${metaF.files.size} files...")
+          sender() ! metaF
 
         case FromAllFolders(_) ⇒
-          sender() ! AllFilesInformation(rawFiles = FileVisitor.getFilesInformation(ev.rawFolderPath, false),
+          val allFiles = AllFilesInformation(rawFiles = FileVisitor.getFilesInformation(ev.rawFolderPath, false),
             userRawFiles = FileVisitor.getFilesInformation(ev.userRawFolderPath, false),
             metaFiles = FileVisitor.getFilesInformation(ev.userMetaFolderPath, false))
+
+          val totFiles = allFiles.metaFiles.size + allFiles.rawFiles.size + allFiles.userRawFiles.size
+          log.info(s"found $totFiles files...")
+
+          sender() ! allFiles
       }
 
 

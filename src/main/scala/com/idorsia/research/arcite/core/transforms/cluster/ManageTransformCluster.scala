@@ -19,8 +19,9 @@ import org.slf4j.LoggerFactory
 object ManageTransformCluster {
   val logger = LoggerFactory.getLogger(ManageTransformCluster.getClass)
 
-  val arcClusterSyst: String = "ArciteClusterSystem"
-  val arcWorkerActSys: String = "ArciteWorkersActorSystem"
+  val arcClusterSyst: String = "ArcTransfActClustSys"
+
+  val arcWorkerActSys: String = "ArcWorkerActSys"
 
   val workTimeout = 24.hours // default max timeOut
 
@@ -29,7 +30,8 @@ object ManageTransformCluster {
   val workConf = config.getConfig("transform_worker")
   logger.info(s"transform worker actor system config: ${workConf.toString}")
 
-  private val workSystem = ActorSystem(arcWorkerActSys, workConf)
+  // actor system only for the workers that are started in core, for now only test workers.
+  private lazy val workSystem = ActorSystem(arcWorkerActSys, workConf)
 
   private val workInitialContacts = immutableSeq(workConf.getStringList("contact-points")).map {
     case AddressFromURIString(addr) ⇒ RootActorPath(addr) / "system" / "receptionist"
