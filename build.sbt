@@ -5,7 +5,7 @@ organization := "com.idorsia.research.arcite"
 
 name := "arcite-core"
 
-version := "1.85.31"
+version := "1.86.8"
 
 scalaVersion := "2.11.8"
 
@@ -117,7 +117,7 @@ enablePlugins(DockerPlugin)
 
 enablePlugins(DockerSpotifyClientPlugin)
 
-mainClass in Compile := Some("com.idorsia.research.arcite.core.api.Main")
+mainClass in Compile := Some("com.idorsia.research.arcite.core.Main")
 
 mappings in Universal ++= {
   // optional example illustrating how to copy additional directory
@@ -156,7 +156,7 @@ dockerCommands := Seq(
   Cmd("WORKDIR", "/opt/docker"),
   Cmd("COPY", "opt /opt"),
   Cmd("RUN", """chown -R arcite:arcite ."""),
-  Cmd("EXPOSE", "8084 2551 2552 2553 2554 2555 2556 2557 2558"),
+  Cmd("EXPOSE", "8084"),
   Cmd("USER", "arcite"),
   Cmd("ENTRYPOINT", "bin/arcite-core"))
 
