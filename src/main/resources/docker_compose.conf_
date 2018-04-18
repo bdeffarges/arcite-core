@@ -1,0 +1,166 @@
+include "application" // to be started with -Dconfig.resource=docker_test.conf
+
+arcite {
+  home = /arcite/${arcite.home_name}
+  snapshot = ${arcite.home}/${arcite.snapshot_name}
+  logs = ${arcite.home}/logs
+  file_service {
+    snapshot = ${arcite.home}/${arcite.file_service.snapshot_name}
+  }
+
+  mounts = [
+    {name = "microarray", description = "agilent microarray scanner", path = "/arcite/raw_data/microarrays"},
+    {name = "nextSeq", description = "illumina NextSeq", path = "/arcite/raw_data/mps/nextseq"},
+    {name = "catwalk", description = "catwalk raw data ", path = "/arcite/raw_data/catwalk/"}
+    {name = "meta", description = "meta information, like ref. genomes ", path = "/arcite/meta/"}
+  ]
+}
+
+http {
+  host = "0.0.0.0" // that works once it's in a docker package...
+  port = 8084
+}
+
+rest-api {
+  akka {
+    remote.netty.tcp {
+      hostname = "127.0.0.1"      # external (logical) hostname
+      port = 4444                   # external (logical) port
+
+
+    }
+
+    uri = "akka.tcp://rest-api@rest-api:4444"
+
+    actor {
+      serialize-messages = on
+      serialize-creators = on
+      provider = "akka.remote.RemoteActorRefProvider"
+    }
+  }
+}
+
+transform-worker {
+  akka {
+
+    actor.provider = "akka.cluster.ClusterActorRefProvider"
+
+    remote.netty.tcp.port = 0
+    remote.netty.tcp.hostname = "127.0.0.1"
+
+  }
+
+  contact-points = [
+    "akka.tcp://Arcite-transform-cluster@arcite-cluster-bkend1:4551",
+    "akka.tcp://Arcite-transform-cluster@arcite-cluster-bkend2:4552"]
+}
+
+transform-cluster {
+  akka {
+
+    actor.provider = "akka.cluster.ClusterActorRefProvider"
+
+    remote.netty.tcp {
+      port = 0
+      hostname = "127.0.0.1"
+    }
+
+    cluster {
+      seed-nodes = [
+        "akka.tcp://Arcite-transform-cluster@arcite-cluster-bkend1:4551",
+        "akka.tcp://Arcite-transform-cluster@arcite-cluster-bkend2:4552"]
+
+      auto-down-unreachable-after = 10s
+
+      # Sigar native library extract location during tests.
+      # Note: use per-jvm-instance folder when running multiple jvm on one host.
+      metrics.native-library-extract-folder = ${user.dir}/target/native
+
+      # Disable legacy metrics in akka-cluster.
+      metrics.enabled = off
+    }
+
+    extensions = ["akka.cluster.client.ClusterClientReceptionist"]
+
+    # Enable metrics extension in akka-cluster-metrics.
+    extensions = ["akka.cluster.metrics.ClusterMetricsExtension"]
+  }
+}
+
+experiments-manager {
+  include "application" // todo only include the akka part for here
+
+  akka {
+    actor {
+      provider = "akka.remote.RemoteActorRefProvider"
+    }
+
+    //    remote {
+    enabled-transports = ["akka.remote.netty.tcp", "akka.remote.netty.NettyRemoteTransport"]
+
+    remote {
+      log-remote-lifecycle-events = off
+
+      netty.tcp {
+        hostname = "127.0.0.1"
+        port = 3333
+
+        bind-hostname = "arcite-exp-manager"
+        bind-port = 3333
+      }
+    }
+
+    uri = "akka.tcp://experiments-actor-system@arcite-exp-manager:3333"
+  }
+}
+
+tree-of-transforms-actor-system {
+  akka {
+    actor {
+      provider = "akka.remote.RemoteActorRefProvider"
+
+    }
+
+    enabled-transports = ["akka.remote.netty.tcp", "akka.remote.netty.NettyRemoteTransport"]
+
+    remote {
+      log-remote-lifecycle-events = on
+
+      netty.tcp {
+        hostname = "127.0.0.1"
+        port = 3344
+
+        bind-hostname = "arcite-rest-api" // for now runs in the rest-api node, todo move somewhere else
+        bind-port = 3344
+
+      }
+    }
+
+    uri = "akka.tcp://tree-of-transforms-actor-system@arcite-rest-api:3344"
+  }
+}
+
+meta-info-actor-system {
+  akka {
+    actor {
+      provider = "akka.remote.RemoteActorRefProvider"
+
+    }
+
+    enabled-transports = ["akka.remote.netty.tcp", "akka.remote.netty.NettyRemoteTransport"]
+
+    remote {
+      log-remote-lifecycle-events = on
+
+      netty.tcp {
+        hostname = "127.0.0.1"
+        port = 3345
+
+        bind-hostname = "arcite-rest-api"
+        bind-port = 3345
+      }
+    }
+
+    uri = "akka.tcp://meta-info-actor-system@arcite-rest-api:3345"
+  }
+}
