@@ -11,7 +11,7 @@ import com.idorsia.research.arcite.core.transforms.RunTransform.{ProceedWithTran
 import com.idorsia.research.arcite.core.transforms.TransfDefMsg._
 import com.idorsia.research.arcite.core.transforms.cluster.Frontend._
 import com.idorsia.research.arcite.core.transforms.cluster.WorkState._
-import com.idorsia.research.arcite.core.transforms.cluster.{ManageTransformCluster, ScatGathTransform}
+import com.idorsia.research.arcite.core.transforms.cluster.{FrontendProvider, ManageTransformCluster, ScatGathTransform}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 
@@ -191,17 +191,17 @@ class TransfRoutes(system: ActorSystem)
 
 
   private def getTransfDef(digest: String) = {
-    ManageTransformCluster.getNextFrontEnd()
+    FrontendProvider.getNextFrontend()
       .ask(GetTransfDef(digest)).mapTo[MsgFromTransfDefsManager]
   }
 
   private def getAllTransfDefs = {
-    ManageTransformCluster.getNextFrontEnd()
+    FrontendProvider.getNextFrontend()
       .ask(GetAllTransfDefs).mapTo[MsgFromTransfDefsManager]
   }
 
   private def findTransfDefs(search: String, maxHits: Int = 10) = {
-    ManageTransformCluster.getNextFrontEnd()
+    FrontendProvider.getNextFrontend()
       .ask(FindTransfDefs(search, maxHits)).mapTo[MsgFromTransfDefsManager]
   }
 
@@ -249,15 +249,15 @@ class TransformService(expManager: ActorSelection) extends Actor with ActorLoggi
 
 
     case qws: QueryWorkStatus ⇒
-      ManageTransformCluster.getNextFrontEnd() forward qws
+      FrontendProvider.getNextFrontend() forward qws
 
 
     case GetAllJobsStatus ⇒
-      ManageTransformCluster.getNextFrontEnd() forward GetAllJobsStatus
+      FrontendProvider.getNextFrontend() forward GetAllJobsStatus
 
 
     case GetRunningJobsStatus ⇒
-      ManageTransformCluster.getNextFrontEnd() forward GetRunningJobsStatus
+      FrontendProvider.getNextFrontend() forward GetRunningJobsStatus
 
     case a: Any ⇒
       log.error(s"[TransfService 1039d] don't know what to do with message ${a.toString}")
@@ -265,7 +265,7 @@ class TransformService(expManager: ActorSelection) extends Actor with ActorLoggi
 }
 
 object TransformService {
-  def props(expM: ActorSelection) : Props = Props(classOf[TransformService],expM)
+  def props(expM: ActorSelection): Props = Props(classOf[TransformService], expM)
 }
 
 

@@ -62,7 +62,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
       efr match {
         case ef: ExperimentFound ⇒
           expFound = Some(ef)
-          ManageTransformCluster.getNextFrontEnd() ! GetTransfDef(procWTransf.get.transfDefUID)
+          FrontendProvider.getNextFrontend() ! GetTransfDef(procWTransf.get.transfDefUID)
 
         case _ ⇒
           requester ! TransfNotReceived("could not find experiment for given id.")
@@ -108,18 +108,18 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
       procWTransf.get match {
         case RunTransformOnObject(_, _, _, _) ⇒
           val t = Transform(td.fullName, TransformSourceFromObject(exp), parameters)
-          ManageTransformCluster.getNextFrontEnd() ! t
+          FrontendProvider.getNextFrontend() ! t
 
         case RunTransformOnRawData(_, _, _) ⇒
-          ManageTransformCluster.getNextFrontEnd() !
+          FrontendProvider.getNextFrontend() !
             Transform(td.fullName, TransformSourceFromRaw(exp), parameters)
 
         case RunTransformOnTransform(_, _, transfOrigin, _, _) ⇒
           if (transfUID.nonEmpty) {
-            ManageTransformCluster.getNextFrontEnd() !
+            FrontendProvider.getNextFrontend() !
               Transform(td.fullName, TransformSourceFromTransform(exp, transfOrigin), parameters, transfUID.get)
           } else {
-            ManageTransformCluster.getNextFrontEnd() !
+            FrontendProvider.getNextFrontend() !
               Transform(td.fullName, TransformSourceFromTransform(exp, transfOrigin), parameters)
           }
 
@@ -146,7 +146,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
 
       procWTransf.get match {
         case RunTransformOnXTransforms(_, _, transfOrigin, otherTransfs, _, _) ⇒
-          ManageTransformCluster.getNextFrontEnd() !
+          FrontendProvider.getNextFrontend() !
             Transform(td.fullName, TransformSourceFromXTransforms(exp, transfOrigin, tPaths.transfPaths), parameters, transfUID.get)
       }
 

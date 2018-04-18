@@ -50,7 +50,7 @@ object StartRestApi extends App with LazyLogging {
   val host = config.getString("http.host")
   val port = config.getInt("http.port")
 
-  implicit val system = ActorSystem("rest-api", config)
+  implicit val system = ActorSystem("rest-api", config.getConfig("rest-api"))
   logger.info(s"rest-api actor system: ${system.toString}")
 
   implicit val ec = system.dispatcher
@@ -67,14 +67,14 @@ object StartRestApi extends App with LazyLogging {
   implicit val timeout = Timeout(requestTimeout)
 
   private val arciteAppService = system.actorOf(AppServiceActorsManager.props(), "arcite_app_service")
-  logger.info(s"arcite App. Service= ${arciteAppService.toString()}")
+  logger.info(s"Arcite Application Service actor (for logging, etc.)= ${arciteAppService.toString()}")
 
   // create the top service actor (for children actor like the logging actor, many others sit under the Exp. Manager)
 
   val api = new RestApi(system).routes
   logger.info("api routes created. ")
 
-  implicit val materializer = ActorMaterializer()
+  implicit val materializer = ActorMaterializer() // because of streaming aspect of akka/http
 
   private val corsHeaders = List(RawHeader("Access-Control-Allow-Origin", "*"),
     RawHeader("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS, DELETE"),

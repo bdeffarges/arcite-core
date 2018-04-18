@@ -47,7 +47,7 @@ class TofTransfRoutes(system: ActorSystem)
     with TofTransfJsonProto with TransfJsonProto
     with LazyLogging {
 
-  private val services = system.actorOf(Props(classOf[ToTransfService]))
+  private val services = system.actorOf(Props(classOf[ToTransfService])) //todo should be moved to another AS
 
   def routes = treeOfTransforms
 

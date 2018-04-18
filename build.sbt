@@ -5,7 +5,7 @@ organization := "com.idorsia.research.arcite"
 
 name := "arcite-core"
 
-version := "1.86.8"
+version := "1.86.42"
 
 scalaVersion := "2.11.8"
 
@@ -157,6 +157,10 @@ dockerCommands := Seq(
   Cmd("COPY", "opt /opt"),
   Cmd("RUN", """chown -R arcite:arcite ."""),
   Cmd("EXPOSE", "8084"),
+  Cmd("EXPOSE", "3333"),
+  Cmd("EXPOSE", "3334"),
+  Cmd("EXPOSE", "4444"),
+  Cmd("EXPOSE", "4445"),
   Cmd("USER", "arcite"),
   Cmd("ENTRYPOINT", "bin/arcite-core"))
 
@@ -168,3 +172,5 @@ dockerAlias := DockerAlias(dockerRepository.value, Some("arcite"), packageName.v
 licenses := Seq(("CC0", url("http://creativecommons.org/publicdomain/zero/1.0")))
 
 bashScriptExtraDefines += """addJava "-Dconfig.resource=$ARCITE_CONF""""
+bashScriptExtraDefines += """addJava "-Dlaunch=$LAUNCH""""
+bashScriptExtraDefines += """addJava "-Dport=$PORT""""

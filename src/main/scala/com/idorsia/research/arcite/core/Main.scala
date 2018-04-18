@@ -1,6 +1,8 @@
 package com.idorsia.research.arcite.core
 
 import com.idorsia.research.arcite.core.api.StartRestApi
+import com.idorsia.research.arcite.core.experiments.ExperimentActorsManager
+import com.idorsia.research.arcite.core.transforms.cluster.{FrontendProvider, ManageTransformCluster}
 import com.typesafe.scalalogging.LazyLogging
 
 /**
@@ -28,21 +30,57 @@ import com.typesafe.scalalogging.LazyLogging
   */
 object Main extends App with LazyLogging {
 
-  val lModeProp = System.getProperty("launchMode")
+  val lModeProp = System.getProperty("launch")
   logger.debug(s"launch mode information: $lModeProp")
 
+  val port = System.getProperty("port")
+
   val launchMode =
-    if (lModeProp == null ||lModeProp.size < 1) List(LaunchMode.ALL)
-    else lModeProp.split("\\s").map(_.trim.toUpperCase).map(s ⇒ LaunchMode.withName(s)).toList
+    if (lModeProp == null || lModeProp.size < 1) List(LaunchMode.ALL)
+    else lModeProp.split("\\s").map(_.trim.toUpperCase)
+      .map { s ⇒
+        try {
+          LaunchMode.withName(s)
+        } catch {
+          case exc: Exception ⇒
+            LaunchMode.UNKNOWN
+        }
+      }.toList
 
   logger.info(s"launch mode: $launchMode")
 
   import LaunchMode._
-  if(launchMode.contains(ALL) || launchMode.contains(REST_API)) StartRestApi.main(args)
+
+  if (launchMode.contains(ALL) || launchMode.contains(EXP_MANAGER)) {
+    logger.info("launching experiment Actor system. ")
+    ExperimentActorsManager.startExperimentActorSystem()
+  }
+
+  if (launchMode.contains(ALL) || launchMode.contains(REST_API)) {
+    logger.info("launching rest API Actor system. ")
+    StartRestApi.main(args)
+  }
+
+  if (launchMode.contains(ALL) || launchMode.contains(CLUSTER_BACKEND)
+    || launchMode.contains(CLUSTER_FRONTEND)) {
+    val p = try {
+      port.toInt
+    } catch {
+      case exc: Exception ⇒
+        0
+    }
+    if (launchMode.contains(CLUSTER_BACKEND)) {
+      logger.info("launching cluster backend...")
+      ManageTransformCluster.startBackend(p)
+    } else if (launchMode.contains(CLUSTER_FRONTEND)) {
+      logger.info("launching cluster frontend...")
+      FrontendProvider.startFrontend(p)
+    }
+  }
 }
 
 object LaunchMode extends scala.Enumeration {
   type LaunchMode = Value
-  val ALL, CLUSTER, WORKER, REST_API = Value
+  val ALL, CLUSTER_BACKEND, CLUSTER_FRONTEND, WORKER, REST_API, EXP_MANAGER, UNKNOWN = Value
 }
 

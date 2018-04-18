@@ -52,6 +52,7 @@ class ExperimentsRoutes(system: ActorSystem)
   private val actSys = conf.getString("akka.uri")
   private val expManSelect = s"${actSys}/user/exp_actors_manager/experiments_manager"
   private val expManager = system.actorSelection(ActorPath.fromString(expManSelect))
+
   logger.info(s"****** connect exp Manager [$expManSelect] actor: $expManager")
 
   import com.idorsia.research.arcite.core.experiments.ManageExperiments._
@@ -113,8 +114,7 @@ class ExperimentsRoutes(system: ActorSystem)
         val allExp: Future[AllExperiments] = expManager.ask(GetAllExperiments()).mapTo[AllExperiments]
         onSuccess(allExp) {
           exps ⇒
-            logger.debug(s"${              exps.experiments.size
-            } found...")
+            logger.debug(s"${exps.experiments.size} experiments found...")
             complete(OK -> exps)
         }
       }

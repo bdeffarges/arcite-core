@@ -51,7 +51,7 @@ class GlobPublishRoutes(system: ActorSystem)
                         implicit val requestTimeout: Timeout) extends Directives with ArciteJSONProtocol with LazyLogging {
 
 
-  private val pubGlobActor = system.actorOf(GlobalPublishActor.props, "global_publish")
+  private val pubGlobActor = system.actorOf(GlobalPublishActor.props, "global_publish") //todo should be moved to another AS
   logger.info(s"***** publish global actor: ${pubGlobActor.path.toStringWithoutAddress}")
 
   private[api] val routes = pathPrefix("publish") {

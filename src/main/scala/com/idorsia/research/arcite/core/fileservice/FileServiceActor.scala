@@ -46,10 +46,9 @@ class FileServiceActor(mounts: Map[String, SourceInformation]) extends Actor wit
 
   private var sourceFolders: Map[String, SourceInformation] = mounts + (GlobPublishedSource.name -> GlobPublishedSource)
 
-  private val conf = ConfigFactory.load()
-  private val actSys = conf.getString("akka.uri")
+  private val actSys = ConfigFactory.load().getConfig("experiments-manager").getString("akka.uri")
 
-  private val gloPubSelect = s"${actSys}/user/arcite-services/global_publish"
+  private val gloPubSelect = s"${actSys}/user/arcite-services/global_publish" //todo global publish to be removed
   private val gloPubAct = context.actorSelection(ActorPath.fromString(gloPubSelect))
   log.info(s"****** connect event info actor [$gloPubSelect] actor: $gloPubAct")
 

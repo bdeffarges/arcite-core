@@ -14,7 +14,7 @@ import com.idorsia.research.arcite.core.eventinfo._
 import com.idorsia.research.arcite.core.experiments.ExperimentFolderVisitor
 import com.idorsia.research.arcite.core.experiments.ManageExperiments._
 import com.idorsia.research.arcite.core.transforms.TransfDefMsg._
-import com.idorsia.research.arcite.core.transforms.cluster.ManageTransformCluster
+import com.idorsia.research.arcite.core.transforms.cluster.{FrontendProvider, ManageTransformCluster}
 import com.idorsia.research.arcite.core.transforms.{Transform, TransformDefinitionIdentity, TransformSourceFromRaw, TransformSourceFromTransform}
 import com.idorsia.research.arcite.core.transftree.TreeOfTransfExecAct._
 import com.idorsia.research.arcite.core.transftree.TreeOfTransfNodeOutcome.TreeOfTransfNodeOutcome
@@ -97,7 +97,7 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
 
           context.become(startingTreeOfTransfPhase)
 
-          allTofTDefID.foreach(t ⇒ ManageTransformCluster.getNextFrontEnd() ! GetTransfDef(t))
+          allTofTDefID.foreach(t ⇒ FrontendProvider.getNextFrontend() ! GetTransfDef(t))
 
           eventInfoMgr ! AddLog(ef.exp,
             ExpLog(LogType.TREE_OF_TRANSFORM, LogCategory.SUCCESS,
@@ -159,7 +159,7 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
         Transform(td.fullName, TransformSourceFromRaw(exp), pwtt.properties, tuid)
       }
 
-      ManageTransformCluster.getNextFrontEnd() ! transf
+      FrontendProvider.getNextFrontend() ! transf
 
       logHelp.addEntry("starting the tree scheduler...")
 
@@ -224,7 +224,7 @@ class TreeOfTransfExecAct(expManager: ActorSelection, eventInfoMgr: ActorSelecti
           val transf = Transform(td.get.fullName,
             TransformSourceFromTransform(exp, nn.parentTransform), proceedWithTreeOfTransf.get.properties, tuid)
 
-          ManageTransformCluster.getNextFrontEnd() ! transf
+          FrontendProvider.getNextFrontend() ! transf
 
         } else {
           val msg = s"did not find transform definition for uid: ${nn.treeOfTransformNode.transfDefUID}"

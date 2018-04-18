@@ -9,7 +9,7 @@
         <appender-ref ref="STDOUT"/>
     </logger>
 
-    <logger name="akka" level="off">
+    <logger name="akka" level="debug">
         <appender-ref ref="STDOUT"/>
     </logger>
 

@@ -2,9 +2,9 @@ package com.idorsia.research.arcite.core.api
 
 import java.nio.file.Paths
 import java.util.UUID
-import javax.ws.rs.Path
 
-import akka.actor.{ActorPath, ActorSystem}
+import javax.ws.rs.Path
+import akka.actor.{ActorPath, ActorRef, ActorSystem}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.StatusCodes.{OK, _}
 import akka.http.scaladsl.server.Directives
@@ -60,8 +60,18 @@ class ExperimentRoutes(system: ActorSystem)
   private val conf = ConfigFactory.load().getConfig("experiments-manager")
   private val actSys = conf.getString("akka.uri")
   private val expManSelect = s"${actSys}/user/exp_actors_manager/experiments_manager"
-  private val expManager = system.actorSelection(ActorPath.fromString(expManSelect))
+  private val expManager = system.actorSelection(expManSelect)
   logger.info(s"****** connect exp Manager [$expManSelect] actor: $expManager")
+
+  //testing remote actor
+  logger.info(s"trying to connect to remote actor [$expManager]")
+  expManager ! "are you there?"
+  import scala.concurrent.duration._
+  expManager.resolveOne(3 seconds).onSuccess {
+    case actorRef : ActorRef =>
+      logger.info("We got an answer and an ActorRef")
+      actorRef ! "Thanks.."
+  }
 
   import com.idorsia.research.arcite.core.experiments.ManageExperiments._
 
