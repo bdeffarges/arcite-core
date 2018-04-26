@@ -1,8 +1,8 @@
 package com.idorsia.research.arcite.core.api
 
 import javax.ws.rs.Path
-
-import akka.actor.{ActorPath, ActorSystem}
+import akka.actor.{ActorPath, ActorRef, ActorSystem}
+import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.StatusCodes.OK
 import akka.http.scaladsl.server.Directives
@@ -41,19 +41,12 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 @Api(value = "experiments", produces = "application/json")
 @Path("/experiments")
-class ExperimentsRoutes(system: ActorSystem)
+class ExperimentsRoutes(expManager: ActorRef)
                        (implicit executionContext: ExecutionContext,
                         implicit val timeout: Timeout)
   extends Directives
     with ExpJsonProto with TransfJsonProto with TofTransfJsonProto
     with LazyLogging {
-
-  private val conf = ConfigFactory.load().getConfig("experiments-manager")
-  private val actSys = conf.getString("akka.uri")
-  private val expManSelect = s"${actSys}/user/exp_actors_manager/experiments_manager"
-  private val expManager = system.actorSelection(ActorPath.fromString(expManSelect))
-
-  logger.info(s"****** connect exp Manager [$expManSelect] actor: $expManager")
 
   import com.idorsia.research.arcite.core.experiments.ManageExperiments._
 

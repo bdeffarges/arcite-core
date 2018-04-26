@@ -6,7 +6,7 @@ import java.nio.file.StandardOpenOption._
 import java.nio.file.{Files, Paths}
 
 import akka.actor.{Actor, ActorLogging, Props}
-import com.idorsia.research.arcite.core.api.{ArciteJSONProtocol, TransfJsonProto}
+import com.idorsia.research.arcite.core.api.TransfJsonProto
 import com.idorsia.research.arcite.core.experiments.ExperimentFolderVisitor
 import com.idorsia.research.arcite.core.transforms._
 import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.{WorkerJobFailed, WorkerJobSuccessFul}

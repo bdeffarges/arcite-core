@@ -184,7 +184,7 @@ class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends
 
 object ScatGathTransform {
 
-  def props(reqRef: ActorRef, expManag: ActorSelection) = Props(classOf[ScatGathTransform], reqRef, expManag)
+  def props(reqRef: ActorRef, expManag: ActorRef) = Props(classOf[ScatGathTransform], reqRef, expManag)
 
   sealed trait TransformResponse
 

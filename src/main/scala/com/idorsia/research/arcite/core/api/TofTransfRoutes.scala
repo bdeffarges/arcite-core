@@ -1,8 +1,8 @@
 package com.idorsia.research.arcite.core.api
 
 import javax.ws.rs.Path
-
 import akka.actor.{Actor, ActorLogging, ActorPath, ActorSystem, Props}
+import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.StatusCodes.{BadRequest, OK}
 import akka.http.scaladsl.server.Directives
@@ -47,7 +47,11 @@ class TofTransfRoutes(system: ActorSystem)
     with TofTransfJsonProto with TransfJsonProto
     with LazyLogging {
 
-  private val services = system.actorOf(Props(classOf[ToTransfService])) //todo should be moved to another AS
+  private val props =  ClusterSingletonProxy.props(
+    settings = ClusterSingletonProxySettings(system).withRole("helper"),
+    singletonManagerPath = s"/user/tree-of-transforms-parent")
+
+  private val services = system.actorOf(props) //todo should be moved to another AS
 
   def routes = treeOfTransforms
 
@@ -66,7 +70,7 @@ class TofTransfRoutes(system: ActorSystem)
         pathEnd {
           get {
             logger.info(s"getting status of treeOfTransform: $totUID")
-            onSuccess(getTreeOfTransformStatus(totUID)) {
+            onSuccess(services.ask(GetFeedbackOnTreeOfTransf(totUID)).mapTo[ToTFeedback]) {
               case totFeedback: ToTFeedbackDetailsForApi ⇒ complete(OK -> totFeedback)
               case totFb: ToTNoFeedback ⇒ complete(BadRequest -> s"No info. about this ToT ${totFb.uid}")
             }
@@ -76,7 +80,7 @@ class TofTransfRoutes(system: ActorSystem)
         pathEnd {
           get {
             logger.info("getting status of all treeOfTransforms...")
-            onSuccess(getAllTreeOfTransformsStatus()) {
+            onSuccess(services.ask(GetAllRunningToT).mapTo[RunningToT]) {
               case crtot: CurrentlyRunningToT ⇒ complete(OK -> crtot)
               case NoRunningToT ⇒ complete(BadRequest, "something went wrong. ")
             }
@@ -86,14 +90,14 @@ class TofTransfRoutes(system: ActorSystem)
       pathEnd {
         get {
           logger.info("return all tree of transforms")
-          onSuccess(getTreeOfTransformInfo()) {
+          onSuccess(services.ask(GetTreeOfTransformInfo).mapTo[AllTreeOfTransfInfos]) {
             case AllTreeOfTransfInfos(tots) ⇒ complete(OK -> tots)
           }
         } ~
           post {
             logger.info("starting tree of transform...")
             entity(as[ProceedWithTreeOfTransf]) { pwtt ⇒
-              val started: Future[TreeOfTransfStartFeedback] = startTreeOfTransform(pwtt)
+              val started: Future[TreeOfTransfStartFeedback] = services.ask(pwtt).mapTo[TreeOfTransfStartFeedback]
               onSuccess(started) {
                 case tofs: TreeOfTransformStarted ⇒ complete(OK, tofs)
                 case CouldNotFindTreeOfTransfDef ⇒ complete(BadRequest, "could not find tree of transform definition.")
@@ -102,48 +106,6 @@ class TofTransfRoutes(system: ActorSystem)
             }
           }
       }
-  }
-
-  private def getTreeOfTransformInfo() = {
-    services.ask(GetTreeOfTransformInfo).mapTo[AllTreeOfTransfInfos]
-  }
-
-  private def startTreeOfTransform(ptt: ProceedWithTreeOfTransf) = {
-    services.ask(ptt).mapTo[TreeOfTransfStartFeedback]
-  }
-
-  private def getAllTreeOfTransformsStatus() = {
-    services.ask(GetAllRunningToT).mapTo[RunningToT]
-  }
-
-  private def getTreeOfTransformStatus(uid: String) = {
-    services.ask(GetFeedbackOnTreeOfTransf(uid)).mapTo[ToTFeedback]
-  }
-
-}
-
-class ToTransfService extends Actor with ActorLogging {
-
-  private val toTransfAct = context.actorSelection(
-    ActorPath.fromString(TreeOfTransformActorSystem.treeOfTransfActPath))
-  log.info(s"****** connect to TreeOfTransform service actor: $toTransfAct")
-
-
-  override def receive: Receive = {
-    case GetTreeOfTransformInfo ⇒
-      toTransfAct forward GetTreeOfTransformInfo
-
-    case pwtt: ProceedWithTreeOfTransf ⇒
-      toTransfAct forward pwtt
-
-
-    case GetAllRunningToT ⇒
-      toTransfAct forward GetAllRunningToT
-
-
-    case getFeedback: GetFeedbackOnTreeOfTransf ⇒
-      toTransfAct forward getFeedback
-
   }
 }
 

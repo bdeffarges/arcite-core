@@ -1,8 +1,7 @@
 package com.idorsia.research.arcite.core.api
 
-import java.nio.file.Path
-
 import akka.actor.{ActorSystem, Props}
+import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.headers.RawHeader
@@ -12,12 +11,9 @@ import akka.pattern.ask
 import akka.util.Timeout
 import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.api.swagger.{SwDocService, SwUI}
-import com.idorsia.research.arcite.core.eventinfo.ArciteAppLogs.GetAppLogs
-import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.{InfoLogs, MostRecentLogs, ReadLogs, RecentAllLastUpdates}
-import com.idorsia.research.arcite.core.experiments.ManageExperiments._
+import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.{InfoLogs, MostRecentLogs, RecentAllLastUpdates}
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor._
 import com.idorsia.research.arcite.core.meta.DesignCategories.{AllCategories, GetCategories}
-import com.idorsia.research.arcite.core.publish.PublishActor._
 import com.idorsia.research.arcite.core.rawdata.DefineRawAndMetaData._
 import com.idorsia.research.arcite.core.utils._
 import com.typesafe.config.ConfigFactory
@@ -57,12 +53,20 @@ class RestApi(system: ActorSystem)
 
   private val port = config.getInt("http.port")
 
-  val apiPath = s"http://${host}:${port}/api/v${core.apiVersion}/swagger.json" // todo remove?
+  val apiPath = s"http://${host}:${port}/api/v${core.apiVersion}/swagger.json"
+  logger.info(s"api path: $apiPath")
 
-  private val conf = ConfigFactory.load().getConfig("experiments-manager")
-  private val actSys = conf.getString("akka.uri")
+  private val props = ClusterSingletonProxy.props(
+    settings = ClusterSingletonProxySettings(system).withRole("helper"),
+    singletonManagerPath = "/user/exp_actors_manager")
 
-  private lazy val globServices = system.actorOf(GlobServices.props, GlobServices.name)
+  private val expManager = system.actorOf(props)
+  private lazy val globServices = system.actorOf(Props(classOf[GlobServices], expManager, timeout), GlobServices.name)
+
+  //testing expManager remote actor
+  logger.info(s"trying to connect to remote actor [$expManager]")
+  expManager ! "are you there?"
+  //todo should wait here to check the connection...
 
   private implicit val executionContext = system.dispatcher
 
@@ -75,15 +79,15 @@ class RestApi(system: ActorSystem)
     RawHeader("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS, DELETE"),
     RawHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization"))
 
-  private val expRoutes = new ExperimentRoutes(system)(executionContext, Timeout(2.seconds)).routes
-  private val expsRoutes = new ExperimentsRoutes(system)(executionContext, Timeout(2.seconds)).routes
-  private val transfRoutes = new TransfRoutes(system)(executionContext, Timeout(2.seconds)).routes
+  private val expRoutes = new ExperimentRoutes(expManager)(executionContext, Timeout(2.seconds)).routes
+  private val expsRoutes = new ExperimentsRoutes(expManager)(executionContext, Timeout(2.seconds)).routes
+  private val transfRoutes = new TransfRoutes(system, expManager)(executionContext, Timeout(2.seconds)).routes
   private val tofTransfRoutes = new TofTransfRoutes(system)(executionContext, timeout).routes
   private val globPubRoutes = new GlobPublishRoutes(system)(executionContext, timeout).routes
   private val swui = new SwUI().route
 
   //no arguments in the method to avoid problems with Swagger
-    def routes: Route = respondWithHeaders(corsHeaders) {
+  def routes: Route = respondWithHeaders(corsHeaders) {
     new DirectRoute(globServices).directRoute ~
       pathPrefix("api") {
         pathPrefix(s"v${core.apiVersion}") {

@@ -7,12 +7,9 @@ import java.util.UUID
 
 import akka.actor.SupervisorStrategy.{Escalate, Restart}
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, OneForOneStrategy, PoisonPill, Props, SupervisorStrategy}
-
 import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings}
-
 import akka.management.AkkaManagement
 import akka.management.cluster.bootstrap.ClusterBootstrap
-
 import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.api.GlobServices._
 import com.idorsia.research.arcite.core.api.{ExpJsonProto, TofTransfJsonProto, TransfJsonProto}
@@ -23,6 +20,7 @@ import com.idorsia.research.arcite.core.experiments.LocalExperiments.{LoadExperi
 import com.idorsia.research.arcite.core.experiments.ManageExperiments.RebuildExperiments
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor._
+import com.idorsia.research.arcite.core.meta.MetaInfoActors
 import com.idorsia.research.arcite.core.publish.PublishActor
 import com.idorsia.research.arcite.core.publish.PublishActor._
 import com.idorsia.research.arcite.core.rawdata.DefineRawAndMetaData
@@ -34,10 +32,8 @@ import com.idorsia.research.arcite.core.transforms.{ExpTransfAndSelection, Trans
 import com.idorsia.research.arcite.core.transftree.{ToTFeedbackDetails, ToTFeedbackDetailsForApi, ToTFeedbackHelper}
 import com.idorsia.research.arcite.core.utils
 import com.idorsia.research.arcite.core.utils._
-
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
-
 import org.slf4j.LoggerFactory
 import spray.json.DeserializationException
 
@@ -567,6 +563,10 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef, fileServiceAct: ActorRef)
       val gs = getSelectableFromTransfResults(exp, transf)
       sender ! gs
 
+    case text: String ⇒
+      log.info(s"nice, I received a text message... ${text}")
+      sender ! s"thanks for your text message [${text}], I don't know what you expect..."
+
     case any: Any ⇒ log.debug(s"don't know what to do with this message $any")
   }
 
@@ -888,6 +888,7 @@ object ManageExperiments {
 class ExperimentActorsManager extends Actor with ActorLogging {
 
   import scala.concurrent.duration._
+
   log.info("building up actor hierarchy for experiments management...")
 
   override val supervisorStrategy: OneForOneStrategy =
@@ -927,11 +928,16 @@ class ExperimentActorsManager extends Actor with ActorLogging {
       val writeFeedbackActor = context.actorOf(WriteFeedbackActor.props(eventInfoLoggingAct),
         "write_feedback")
 
+      val metaInfoParentActor: ActorRef = context.actorOf(Props(classOf[MetaInfoActors]),
+        "meta_info")
+
+
       log.info(s"event info log: [$eventInfoLoggingAct]")
       log.info(s"exp manager actor: [$manExpActor]")
       log.info(s"raw data define: [$defineRawDataAct]")
       log.info(s"file service actor: [$fileServiceAct]")
       log.info(s"write feedback actor started: [$writeFeedbackActor]")
+      log.info(s"Meta info parent actor started: [$writeFeedbackActor]")
 
       import context.dispatcher
 

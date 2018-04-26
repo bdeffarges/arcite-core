@@ -1,6 +1,7 @@
 package com.idorsia.research.arcite.core.api
 
 import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSelection, ActorSystem, Props}
+import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.StatusCodes.{OK, _}
 import akka.http.scaladsl.server.Directives
@@ -40,15 +41,9 @@ import scala.concurrent.{ExecutionContext, Future}
   * Created by Bernard Deffarges on 2017/12/07.
   *
   */
-class TransfRoutes(system: ActorSystem)
+class TransfRoutes(system: ActorSystem, expManager: ActorRef)
                   (implicit executionContext: ExecutionContext, implicit val timeout: Timeout)
   extends Directives with TransfJsonProto with LazyLogging {
-
-  private val conf = ConfigFactory.load().getConfig("experiments-manager")
-  private val actSys = conf.getString("akka.uri")
-  private val expManSelect = s"${actSys}/user/exp_actors_manager/experiments_manager"
-  private val expManager = system.actorSelection(ActorPath.fromString(expManSelect))
-  logger.info(s"****** connect exp Manager [$expManSelect] actor: $expManager")
 
   import com.idorsia.research.arcite.core.experiments.ManageExperiments._
 
@@ -240,7 +235,7 @@ class TransfRoutes(system: ActorSystem)
 
 }
 
-class TransformService(expManager: ActorSelection) extends Actor with ActorLogging {
+class TransformService(expManager: ActorRef) extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case pwt: ProceedWithTransform ⇒
@@ -265,7 +260,7 @@ class TransformService(expManager: ActorSelection) extends Actor with ActorLoggi
 }
 
 object TransformService {
-  def props(expM: ActorSelection): Props = Props(classOf[TransformService], expM)
+  def props(expM: ActorRef): Props = Props(classOf[TransformService], expM)
 }
 
 

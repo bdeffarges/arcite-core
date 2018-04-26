@@ -30,7 +30,7 @@ import com.typesafe.config.ConfigFactory
   */
 class MetaInfoActors extends Actor with ActorLogging {
 
-  private val designCatAct = context.actorOf(DesignCategories.props())
+  private val designCatAct = context.actorOf(DesignCategories.props(), "design_categories")
 
   override def receive: Receive = {
 
@@ -40,17 +40,4 @@ class MetaInfoActors extends Actor with ActorLogging {
     case msg : Any ⇒
       log.error(s"don't know what to do with received message: $msg")
   }
-}
-
-object MetaInfoActors {
-  private val actorSystemName = "meta-info-actor-system"
-
-  private val config = ConfigFactory.load().getConfig(actorSystemName)
-  private val actSys = config.getString("akka.uri")
-
-  implicit val system = ActorSystem(actorSystemName, config)
-
-  private val metaInfoParentActor: ActorRef = system.actorOf(Props(classOf[MetaInfoActors]), "meta-info-parent")
-
-  def getMetaInfoActorName: String = "meta-info-parent"
 }

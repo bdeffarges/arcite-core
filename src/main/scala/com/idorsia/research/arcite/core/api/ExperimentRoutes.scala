@@ -5,6 +5,7 @@ import java.util.UUID
 
 import javax.ws.rs.Path
 import akka.actor.{ActorPath, ActorRef, ActorSystem}
+import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.StatusCodes.{OK, _}
 import akka.http.scaladsl.server.Directives
@@ -50,28 +51,13 @@ import scala.util.Failure
   */
 @Api(value = "experiment", produces = "application/json")
 @Path("experiment")
-class ExperimentRoutes(system: ActorSystem)
+class ExperimentRoutes(expManager: ActorRef)
                       (implicit executionContext: ExecutionContext,
                        implicit val timeout: Timeout)
   extends Directives
     with ExpJsonProto with TransfJsonProto with TofTransfJsonProto
     with LazyLogging {
 
-  private val conf = ConfigFactory.load().getConfig("experiments-manager")
-  private val actSys = conf.getString("akka.uri")
-  private val expManSelect = s"${actSys}/user/exp_actors_manager/experiments_manager"
-  private val expManager = system.actorSelection(expManSelect)
-  logger.info(s"****** connect exp Manager [$expManSelect] actor: $expManager")
-
-  //testing remote actor
-  logger.info(s"trying to connect to remote actor [$expManager]")
-  expManager ! "are you there?"
-  import scala.concurrent.duration._
-  expManager.resolveOne(3 seconds).onSuccess {
-    case actorRef : ActorRef =>
-      logger.info("We got an answer and an ActorRef")
-      actorRef ! "Thanks.."
-  }
 
   import com.idorsia.research.arcite.core.experiments.ManageExperiments._
 

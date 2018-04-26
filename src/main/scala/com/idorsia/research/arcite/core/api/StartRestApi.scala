@@ -1,16 +1,18 @@
 package com.idorsia.research.arcite.core.api
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, PoisonPill}
+import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.headers.{Allow, RawHeader}
 import akka.http.scaladsl.server.{MethodRejection, RejectionHandler}
+import akka.management.AkkaManagement
+import akka.management.cluster.bootstrap.ClusterBootstrap
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import com.idorsia.research.arcite.core.eventinfo.ArciteAppLogs.AddAppLog
 import com.idorsia.research.arcite.core.eventinfo.{ArciteAppLog, LogCategory}
-import com.idorsia.research.arcite.core.experiments.ExperimentActorsManager
-import com.idorsia.research.arcite.core.transforms.cluster.ManageTransformCluster
+import com.idorsia.research.arcite.core.transforms.cluster.configWithRole
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 
@@ -47,11 +49,19 @@ object StartRestApi extends App with LazyLogging {
 
   val config = ConfigFactory.load()
 
-  val host = config.getString("http.host")
-  val port = config.getInt("http.port")
+  private val arcClusterSyst: String = config.getString("arcite.cluster.name")
+  private val host = config.getString("http.host")
+  private val port = config.getInt("http.port")
 
-  implicit val system = ActorSystem("rest-api", config.getConfig("rest-api"))
-  logger.info(s"rest-api actor system: ${system.toString}")
+  logger.info("starting cluster node for rest api...")
+  implicit val system = ActorSystem(arcClusterSyst, configWithRole("rest-api"))
+  logger.info(s"actor system= ${system}")
+
+  logger.info("starting akka management...")
+  AkkaManagement(system).start()
+
+  logger.info("starting cluster bootstrap... ")
+  ClusterBootstrap(system).start()
 
   implicit val ec = system.dispatcher
 
@@ -66,12 +76,18 @@ object StartRestApi extends App with LazyLogging {
 
   implicit val timeout = Timeout(requestTimeout)
 
-  private val arciteAppService = system.actorOf(AppServiceActorsManager.props(), "arcite_app_service")
-  logger.info(s"Arcite Application Service actor (for logging, etc.)= ${arciteAppService.toString()}")
+  private val arciteAppService = system.actorOf(
+    ClusterSingletonManager.props(
+      AppServiceActorsManager.props(),
+      PoisonPill,
+      ClusterSingletonManagerSettings(system).withRole("rest-api")
+    ), "arcite_app_service")
+
 
   // create the top service actor (for children actor like the logging actor, many others sit under the Exp. Manager)
 
   val api = new RestApi(system).routes
+
   logger.info("api routes created. ")
 
   implicit val materializer = ActorMaterializer() // because of streaming aspect of akka/http
@@ -92,8 +108,7 @@ object StartRestApi extends App with LazyLogging {
       }
     }.result()
 
-  val bindingFuture: Future[ServerBinding] =
-    Http().bindAndHandle(api, host, port)
+  val bindingFuture: Future[ServerBinding] = Http().bindAndHandle(api, host, port)
 
   bindingFuture.map { serverBinding ⇒
     arciteAppService ! AddAppLog(ArciteAppLog(LogCategory.INFO,

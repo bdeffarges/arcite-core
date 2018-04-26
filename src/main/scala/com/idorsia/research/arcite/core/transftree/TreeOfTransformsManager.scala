@@ -3,10 +3,15 @@ package com.idorsia.research.arcite.core.transftree
 import java.util.UUID
 
 import akka.actor.SupervisorStrategy.Escalate
-import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSystem, OneForOneStrategy, Props, SupervisorStrategy}
+import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSystem, OneForOneStrategy, PoisonPill, Props, SupervisorStrategy}
+import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings}
+import akka.management.AkkaManagement
+import akka.management.cluster.bootstrap.ClusterBootstrap
+import com.idorsia.research.arcite.core.transforms.cluster.configWithRole
 import com.idorsia.research.arcite.core.transftree.TreeOfTransfExecAct.{GetFeedbackOnToT, ImFinished}
 import com.idorsia.research.arcite.core.transftree.TreeOfTransformsManager.AddTofT
 import com.typesafe.config.ConfigFactory
+import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.duration._
 
@@ -142,23 +147,26 @@ object TreeOfTransformsManager {
 }
 
 
-object TreeOfTransformActorSystem {
+object TreeOfTransformActorSystem extends LazyLogging {
+  val config = ConfigFactory.load
 
-  private val actorSystemName = "tree-of-transforms-actor-system"
+  val arcClusterSyst: String = config.getString("arcite.cluster.name")
 
-  private val config = ConfigFactory.load().getConfig(actorSystemName)
-  private val actSys = config.getString("akka.uri")
+  implicit val system = ActorSystem(arcClusterSyst, configWithRole("helper"))
+  logger.info(s"starting actor system (helper): ${system.toString}")
 
-  implicit val system = ActorSystem(actorSystemName, config)
+  logger.info("starting akka management...")
+  AkkaManagement(system).start()
 
-  private val treeOfTransfParentAct: ActorRef = system
-    .actorOf(Props(classOf[TreeOfTransformParentActor]), "tree-of-transforms-parent")
+  logger.info("starting cluster bootstrap... ")
+  ClusterBootstrap(system).start()
 
-  private val treeOfTransfParentActPath = s"${actSys}/user/tree-of-transforms-parent"
-  val treeOfTransfActPath = s"${actSys}/user/tree-of-transforms-parent/tree-of-transforms"
-
-  treeOfTransfParentAct ! AddTofT(DefaultTofT.testTofT1)
-  treeOfTransfParentAct ! AddTofT(DefaultTofT.testTofT2)
+  system.actorOf(
+    ClusterSingletonManager.props(
+      Props(classOf[TreeOfTransformParentActor]),
+      PoisonPill,
+      ClusterSingletonManagerSettings(system).withRole("helper")
+    ), "tree-of-transforms-parent")
 }
 
 

@@ -1,6 +1,6 @@
 package com.idorsia.research.arcite.core.api
 
-import akka.actor.{Actor, ActorLogging, ActorPath, Props}
+import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, Props}
 import akka.util.Timeout
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.{MostRecentLogs, ReadLogs, RecentAllLastUpdates}
 import com.idorsia.research.arcite.core.experiments.ManageExperiments._
@@ -35,7 +35,6 @@ import com.typesafe.config.ConfigFactory
   * Created by deffabe1 on 2/29/16.
   */
 object GlobServices {
-  def props(implicit timeout: Timeout) = Props(classOf[GlobServices], timeout)
 
   def name = "arcite-services"
 
@@ -81,19 +80,14 @@ object GlobServices {
 }
 
 
-class GlobServices(implicit timeout: Timeout) extends Actor with ActorLogging {
+class GlobServices(expManager: ActorRef, timeout: Timeout) extends Actor with ActorLogging {
 
-  private val conf = ConfigFactory.load().getConfig("experiments-manager")
-  private val actSys = conf.getString("akka.uri")
-
-  private val expManSelect = s"${actSys}/user/exp_actors_manager/experiments_manager"
-  private val rawDSelect = s"${actSys}/user/exp_actors_manager/define_raw_data"
-  private val eventInfoSelect = s"${actSys}/user/exp_actors_manager/event_logging_info"
-  private val fileServiceActPath = s"${actSys}/user/exp_actors_manager/file_service"
-
-  //todo move it to another executor
-  private[api] val expManager = context.actorSelection(ActorPath.fromString(expManSelect))
-  log.info(s"****** connect exp Manager [$expManSelect] actor: $expManager")
+  private val actP = expManager.path
+  private val expManSelect = s"${actP}/experiments_manager"
+  private val rawDSelect = s"${actP}/define_raw_data"
+  private val eventInfoSelect = s"${actP}/event_logging_info"
+  private val fileServiceActPath = s"${actP}/file_service"
+  private val metaInfoPath = s"${actP}/meta_info"
 
   private[api] val defineRawDataAct = context.actorSelection(ActorPath.fromString(rawDSelect))
   log.info(s"****** connect raw [$rawDSelect] actor: $defineRawDataAct")
@@ -104,14 +98,8 @@ class GlobServices(implicit timeout: Timeout) extends Actor with ActorLogging {
   private[api] val fileServiceAct = context.actorSelection(ActorPath.fromString(fileServiceActPath))
   log.info(s"****** connect file service actor [$fileServiceActPath] actor: $fileServiceAct")
 
-  private val conf2 = ConfigFactory.load().getConfig("meta-info-actor-system")
-
-  private val metaActSys = conf2.getString("akka.uri")
-
-  private val metaInfoActPath = s"${metaActSys}/user/${MetaInfoActors.getMetaInfoActorName}"
-
-  private val metaActor = context.actorSelection(metaInfoActPath)
-
+  private[api] val metaActor = context.actorSelection(metaInfoPath)
+  log.info(s"**** meta info actor [${metaActor.toString}] started... ")
 
   import GlobServices._
 
