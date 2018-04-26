@@ -1,6 +1,11 @@
 package com.idorsia.research.arcite.core.transforms.cluster
 
+import java.util.UUID
+
 import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.management.AkkaManagement
+import akka.management.cluster.bootstrap.ClusterBootstrap
+import com.idorsia.research.arcite.core.transforms.cluster.ManageTransformCluster.logger
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 
@@ -29,9 +34,7 @@ import com.typesafe.scalalogging.LazyLogging
   */
 object FrontendProvider extends LazyLogging {
 
-  private val config = ConfigFactory.load("transform-cluster")
-
-  private var frontEnds = Map[Int, ActorRef]()
+  private var frontEnds = Map[String, ActorRef]()
 
   private var chosenFEIndex = 0
 
@@ -51,19 +54,20 @@ object FrontendProvider extends LazyLogging {
     chosenFE
   }
 
-  def startFrontend(port: Int): Unit = {
-    logger.info(s"starting new frontend with conf ${config.toString}")
+  def startFrontend(): Unit = {
+    logger.info(s"starting new frontend in arcite cluster...")
 
-    val conf = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port).
-      withFallback(config)
-
-    val system = ActorSystem(ManageTransformCluster.arcClusterSyst, conf)
-
+    val system = ActorSystem(ManageTransformCluster.arcClusterSyst)
     logger.info(s"actor system: ${system.toString}")
 
-    val actR = system.actorOf(Props[Frontend], s"frontend-$port")
+    AkkaManagement(system).start()
+    logger.info("starting akka management...")
+    ClusterBootstrap(system).start()
+    logger.info("starting cluster bootstrap... ")
 
-    frontEnds += port -> actR
+    val actR = system.actorOf(Props[Frontend], "frontend")
+
+    frontEnds += UUID.randomUUID().toString -> actR
   }
 
 }

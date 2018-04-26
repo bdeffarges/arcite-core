@@ -51,8 +51,8 @@ transform-worker {
   }
 
   contact-points = [
-    "akka.tcp://Arcite-transform-cluster@arcite-cluster-bkend1:4551",
-    "akka.tcp://Arcite-transform-cluster@arcite-cluster-bkend2:4552"]
+    "akka.tcp://arcite-cluster-engine@arcite-cluster-bkend1:4551",
+    "akka.tcp://arcite-cluster-engine@arcite-cluster-bkend2:4552"]
 }
 
 transform-cluster {
@@ -67,8 +67,8 @@ transform-cluster {
 
     cluster {
       seed-nodes = [
-        "akka.tcp://Arcite-transform-cluster@arcite-cluster-bkend1:4551",
-        "akka.tcp://Arcite-transform-cluster@arcite-cluster-bkend2:4552"]
+        "akka.tcp://arcite-cluster-engine@arcite-cluster-bkend1:4551",
+        "akka.tcp://arcite-cluster-engine@arcite-cluster-bkend2:4552"]
 
       auto-down-unreachable-after = 10s
 

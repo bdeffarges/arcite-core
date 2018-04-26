@@ -5,11 +5,11 @@ organization := "com.idorsia.research.arcite"
 
 name := "arcite-core"
 
-version := "1.86.42"
+version := "1.86.55"
 
 scalaVersion := "2.11.8"
 
-crossScalaVersions := Seq(scalaVersion.value,"2.12.4")
+crossScalaVersions := Seq(scalaVersion.value, "2.12.4")
 
 scmInfo := Some(
   ScmInfo(
@@ -37,7 +37,7 @@ credentials += Credentials("Sonatype Nexus Repository Manager", "nexus.idorsia.c
 publishMavenStyle := true
 
 publishTo := {
-  val nexus = "https://nexus.idorsia.com/repository/"
+  val nexus = "http://nexus.idorsia.com/repository/"
   if (version.value.toString.trim.endsWith("SNAPSHOT"))
     Some("snapshots" at nexus + "/idorsia-snapshots")
   else
@@ -57,9 +57,10 @@ resolvers ++= Seq(
 
 
 libraryDependencies ++= {
-  val akkaVersion = "2.5.9"
-  val akkaHttpVersion = "10.1.0-RC2"
+  val akkaVersion = "2.5.12"
+  val akkaHttpVersion = "10.1.1"
   val luceneVersion = "6.5.0"
+  val akkaManagementVersion = "0.10.0"
 
   Seq(
     "com.typesafe.akka" %% "akka-actor" % akkaVersion,
@@ -106,7 +107,11 @@ libraryDependencies ++= {
     "org.scalactic" %% "scalactic" % "3.0.1",
     "org.scalatest" %% "scalatest" % "3.0.1" % "test",
     "com.github.agourlay" %% "cornichon" % "0.11.2" % "test",
-    "org.json4s" %% "json4s-jackson" % "3.5.1" % "test")
+    "org.json4s" %% "json4s-jackson" % "3.5.1" % "test",
+    "com.lightbend.akka.management" %% "akka-management-cluster-bootstrap" % akkaManagementVersion,
+    "com.lightbend.akka.management" %% "akka-management" % akkaManagementVersion,
+    "com.lightbend.akka.management" %% "akka-management-cluster-http" % akkaManagementVersion,
+    "com.lightbend.akka.discovery" %% "akka-discovery-marathon-api" % akkaManagementVersion)
 }
 
 enablePlugins(JavaServerAppPackaging)
@@ -157,10 +162,6 @@ dockerCommands := Seq(
   Cmd("COPY", "opt /opt"),
   Cmd("RUN", """chown -R arcite:arcite ."""),
   Cmd("EXPOSE", "8084"),
-  Cmd("EXPOSE", "3333"),
-  Cmd("EXPOSE", "3334"),
-  Cmd("EXPOSE", "4444"),
-  Cmd("EXPOSE", "4445"),
   Cmd("USER", "arcite"),
   Cmd("ENTRYPOINT", "bin/arcite-core"))
 

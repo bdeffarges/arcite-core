@@ -6,7 +6,13 @@ import java.nio.file._
 import java.util.UUID
 
 import akka.actor.SupervisorStrategy.{Escalate, Restart}
-import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSystem, OneForOneStrategy, Props, SupervisorStrategy}
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, OneForOneStrategy, PoisonPill, Props, SupervisorStrategy}
+
+import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings}
+
+import akka.management.AkkaManagement
+import akka.management.cluster.bootstrap.ClusterBootstrap
+
 import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.api.GlobServices._
 import com.idorsia.research.arcite.core.api.{ExpJsonProto, TofTransfJsonProto, TransfJsonProto}
@@ -23,12 +29,15 @@ import com.idorsia.research.arcite.core.rawdata.DefineRawAndMetaData
 import com.idorsia.research.arcite.core.search.ArciteLuceneRamIndex
 import com.idorsia.research.arcite.core.search.ArciteLuceneRamIndex._
 import com.idorsia.research.arcite.core.transforms.RunTransform.ExperimentTransform
+import com.idorsia.research.arcite.core.transforms.cluster.configWithRole
 import com.idorsia.research.arcite.core.transforms.{ExpTransfAndSelection, TransformCompletionFeedback}
 import com.idorsia.research.arcite.core.transftree.{ToTFeedbackDetails, ToTFeedbackDetailsForApi, ToTFeedbackHelper}
 import com.idorsia.research.arcite.core.utils
 import com.idorsia.research.arcite.core.utils._
+
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
+
 import org.slf4j.LoggerFactory
 import spray.json.DeserializationException
 
@@ -56,7 +65,7 @@ import spray.json.DeserializationException
   *
   */
 
-class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor
+class ManageExperiments(eventInfoLoggingAct: ActorRef, fileServiceAct: ActorRef) extends Actor
   with ExpJsonProto with TransfJsonProto with TofTransfJsonProto with ActorLogging {
 
   import ManageExperiments._
@@ -66,12 +75,6 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor
   private val filePath = config.getString("arcite.snapshot")
 
   private val path = Paths.get(filePath)
-
-  private val actSys = config.getConfig("experiments-manager").getString("akka.uri")
-  private val fileServiceActPath = s"${actSys}/user/exp_actors_manager/file_service"
-
-  private val fileServiceAct = context.actorSelection(ActorPath.fromString(fileServiceActPath))
-  log.info(s"connect file service actor [$fileServiceActPath] actor: $fileServiceAct")
 
   private val luceneRAMSearchAct = context.system.actorOf(Props(classOf[ArciteLuceneRamIndex]), "experiments_lucene_index")
 
@@ -371,7 +374,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef) extends Actor
         .filter(_._1.isDefined)
         .map(et ⇒ (LocalExperiments.loadExperiment(ExperimentFolderVisitor(et._1.get).experimentFilePath),
           et._2.transform, et._2.selectables))
-          .filter(_._1.isDefined)
+        .filter(_._1.isDefined)
         .map(et ⇒ ExpTransfAndSelection(et._1.get, et._2, et._3))
 
       sender() ! TransfPaths(expTr)
@@ -885,6 +888,7 @@ object ManageExperiments {
 class ExperimentActorsManager extends Actor with ActorLogging {
 
   import scala.concurrent.duration._
+  log.info("building up actor hierarchy for experiments management...")
 
   override val supervisorStrategy: OneForOneStrategy =
     OneForOneStrategy(maxNrOfRetries = 20, withinTimeRange = 1 minute) {
@@ -908,15 +912,26 @@ class ExperimentActorsManager extends Actor with ActorLogging {
   override def receive: Receive = {
 
     case StartExperimentsServiceActors ⇒
-      val eventInfoLoggingAct = context.actorOf(Props(classOf[EventInfoLogging]), "event_logging_info")
-      val fileServiceAct = context.actorOf(FileServiceActor.props(), "file_service")
-      val manExpActor = context.actorOf(Props(classOf[ManageExperiments], eventInfoLoggingAct), "experiments_manager")
-      val defineRawDataAct = context.actorOf(DefineRawAndMetaData.props(manExpActor, eventInfoLoggingAct), "define_raw_data")
+      val eventInfoLoggingAct = context.actorOf(Props(classOf[EventInfoLogging]),
+        "event_logging_info")
+
+      val fileServiceAct = context.actorOf(FileServiceActor.props(),
+        "file_service")
+
+      val manExpActor = context.actorOf(Props(classOf[ManageExperiments], eventInfoLoggingAct, fileServiceAct),
+        "experiments_manager")
+
+      val defineRawDataAct = context.actorOf(DefineRawAndMetaData.props(manExpActor, eventInfoLoggingAct),
+        "define_raw_data")
+
+      val writeFeedbackActor = context.actorOf(WriteFeedbackActor.props(eventInfoLoggingAct),
+        "write_feedback")
 
       log.info(s"event info log: [$eventInfoLoggingAct]")
       log.info(s"exp manager actor: [$manExpActor]")
       log.info(s"raw data define: [$defineRawDataAct]")
       log.info(s"file service actor: [$fileServiceAct]")
+      log.info(s"write feedback actor started: [$writeFeedbackActor]")
 
       import context.dispatcher
 
@@ -937,15 +952,27 @@ class ExperimentActorsManager extends Actor with ActorLogging {
 object ExperimentActorsManager extends LazyLogging {
   private val config = ConfigFactory.load()
 
-  val actSystem = ActorSystem("experiments-actor-system", config.getConfig("experiments-manager"))
+  val arcClusterSyst: String = config.getString("arcite.cluster.name")
 
-  private val topActor = actSystem.actorOf(Props(classOf[ExperimentActorsManager]), "exp_actors_manager")
+  private val actSystem = ActorSystem(arcClusterSyst, configWithRole("helper"))
+
+  logger.info("starting akka management...")
+  AkkaManagement(actSystem).start()
+
+  logger.info("starting cluster bootstrap... ")
+  ClusterBootstrap(actSystem).start()
+
+  logger.info("starting experiment Actors manager as singleton...")
+  private val topActor = actSystem.actorOf(
+    ClusterSingletonManager.props(Props(classOf[ExperimentActorsManager]),
+      PoisonPill, ClusterSingletonManagerSettings(actSystem).withRole("helper")),
+    "exp_actors_manager")
 
   case object StartExperimentsServiceActors
 
   def startExperimentActorSystem(): Unit = topActor ! StartExperimentsServiceActors
 
-  logger.info("experiments actor system has started...")
+  logger.info("experiments actor is starting in akka cluster...")
 }
 
 

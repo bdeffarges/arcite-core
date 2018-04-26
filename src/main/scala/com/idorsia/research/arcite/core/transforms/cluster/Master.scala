@@ -1,16 +1,14 @@
 package com.idorsia.research.arcite.core.transforms.cluster
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import akka.cluster.Cluster
 import akka.cluster.client.ClusterClientReceptionist
-import akka.persistence.PersistentActor
+import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
 import com.idorsia.research.arcite.core.transforms.TransfDefMsg._
 import com.idorsia.research.arcite.core.transforms.cluster.Frontend._
 import com.idorsia.research.arcite.core.transforms.cluster.MasterWorkerProtocol.{WorkIsReady, WorkerCompleted}
 import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.WorkerJobFailed
 import com.idorsia.research.arcite.core.transforms.{Transform, TransformDefinitionIdentity}
 import com.idorsia.research.arcite.core.utils
-import com.idorsia.research.arcite.core.utils.WriteFeedbackActor
 import com.idorsia.research.arcite.core.utils.WriteFeedbackActor.WriteFeedback
 
 import scala.concurrent.duration.{Deadline, FiniteDuration}
@@ -39,9 +37,6 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging {
   import WorkState._
 
   ClusterClientReceptionist(context.system).registerService(self)
-
-  private val feedbackActor = context.actorOf(WriteFeedbackActor.props())
-
 
   // workers state is not event sourced
   private var workers = Map[String, WorkerState]()
@@ -103,7 +98,7 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging {
 
     case wid: MasterWorkerProtocol.WorkerCompleted ⇒
       // write transform feedback report
-      feedbackActor ! WriteFeedback(wid)
+      proxyToFeedbackActor ! WriteFeedback(wid)
 
       // idempotent
       if (workState.isDone(wid.transf.uid)) {
@@ -160,7 +155,7 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging {
                 val wc = WorkerCompleted(workerId, t,
                   WorkerJobFailed("time out", "time out, transform process seem to be lost"),
                   utils.getCurrentDateAsString())
-                feedbackActor ! WriteFeedback(wc)
+                proxyToFeedbackActor ! WriteFeedback(wc)
             }
           }
           workers -= workerId
@@ -237,7 +232,15 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging {
       // ok, might happen after standby recovery, worker state is not persisted
     }
 
-  // TODO cleanup old workers
-  // TODO cleanup old workIds, doneWorkIds
 
+  private def proxyToFeedbackActor(): ActorRef = {
+
+    val props =
+      ClusterSingletonProxy.props(
+        settings = ClusterSingletonProxySettings(context.system)
+          .withRole("helper"),
+        singletonManagerPath = s"/user/exp_actors_manager/write_feedback")
+
+    context.system.actorOf(props)
+  }
 }

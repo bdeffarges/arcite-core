@@ -4,15 +4,18 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.StandardOpenOption._
 import java.nio.file.{Files, Path}
 
-import akka.actor.{Actor, ActorLogging, ActorPath, Props}
+import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSystem, Props}
+import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
 import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.api.{ArciteJSONProtocol, ExpJsonProto, TransfJsonProto}
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.AddLog
 import com.idorsia.research.arcite.core.eventinfo.{ExpLog, LogCategory, LogType}
+import com.idorsia.research.arcite.core.experiments.ExperimentActorsManager.arcClusterSyst
 import com.idorsia.research.arcite.core.experiments.ManageExperiments.BunchOfSelectables
 import com.idorsia.research.arcite.core.transforms._
 import com.idorsia.research.arcite.core.transforms.cluster.MasterWorkerProtocol.WorkerCompleted
 import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.{WorkerJobFailed, WorkerJobSuccessFul}
+import com.idorsia.research.arcite.core.transforms.cluster.configWithRole
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 
@@ -39,23 +42,9 @@ import com.typesafe.scalalogging.LazyLogging
   * Created by Bernard Deffarges on 2016/10/10.
   *
   */
-class WriteFeedbackActor extends Actor
-  with ExpJsonProto with TransfJsonProto
-  with ActorLogging {
+class WriteFeedbackActor(eventInfoAct: ActorRef) extends Actor  with ExpJsonProto with TransfJsonProto  with ActorLogging {
 
   import WriteFeedbackActor._
-
-  private val conf = ConfigFactory.load().getConfig("experiments-manager")
-
-  private val actSys = conf.getString("akka.uri")
-
-  private val eventInfoSelect = s"${actSys}/user/exp_actors_manager/event_logging_info"
-
-  private val eventInfoAct = context.actorSelection(ActorPath.fromString(eventInfoSelect))
-
-  private val expManager =
-    context.actorSelection(ActorPath.fromString(s"${actSys}/user/exp_actors_manager/experiments_manager"))
-
 
   override def receive: Receive = {
     case WriteFeedback(wid) ⇒
@@ -140,7 +129,7 @@ object WriteFeedbackActor extends LazyLogging with TransfJsonProto {
   val JSON = "JSON"
   val UNKNOWN = "UNKNOWN"
 
-  def props(): Props = Props(classOf[WriteFeedbackActor])
+  def props(eventActoRef: ActorRef): Props = Props(classOf[WriteFeedbackActor], eventActoRef)
 
   case class WriteFeedback(wid: WorkerCompleted)
 

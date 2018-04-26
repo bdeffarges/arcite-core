@@ -1,11 +1,9 @@
 package com.idorsia.research.arcite.core.transforms.cluster
 
-import akka.actor.{ActorSystem, AddressFromURIString, PoisonPill, RootActorPath}
-import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings}
-import akka.japi.Util._
-
-import com.typesafe.config.ConfigFactory
-
+import akka.actor.ActorSystem
+import akka.management.AkkaManagement
+import akka.management.cluster.bootstrap.ClusterBootstrap
+import com.typesafe.config.{Config, ConfigFactory}
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.duration._
@@ -24,28 +22,17 @@ object ManageTransformCluster {
 
   val arcClusterSyst: String = config.getString("arcite.cluster.name")
 
-  val workConf = config.getConfig("transform-worker")
-  logger.info(s"transform worker actor system config: ${workConf.toString}")
+  def startBackend(): Unit = {
+    val system = ActorSystem(arcClusterSyst, configWithRole("back-end"))
+    logger.info(s"starting actor system (cluster backend): ${system.toString}")
 
-  private val workInitialContacts = immutableSeq(workConf.getStringList("contact-points")).map {
-    case AddressFromURIString(addr) ⇒ RootActorPath(addr) / "system" / "receptionist"
-  }.toSet
+    logger.info("starting akka management...")
+    AkkaManagement(system).start()
 
-  logger.info(s"work initial contacts: $workInitialContacts")
+    logger.info("starting cluster bootstrap... ")
+    ClusterBootstrap(system).start()
 
-
-  def startBackend(port: Int) = {
-    val conf = ConfigFactory.parseString(s"akka.cluster.roles=[backend]").
-      withFallback(ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port)).
-      withFallback(config.getConfig("transform-cluster"))
-
-    logger.info(s"starting a new backend with conf: ${conf.toString}")
-    val system = ActorSystem(arcClusterSyst, conf) // we start a new actor system for each backend
-    logger.info(s"actor system: ${system.toString}")
-
-    system.actorOf(ClusterSingletonManager.props(
-      Master.props(workTimeout),
-      PoisonPill,
-      ClusterSingletonManagerSettings(system).withRole("backend")), "master")
+    MasterSingleton.startSingleton(system)
   }
+
 }
