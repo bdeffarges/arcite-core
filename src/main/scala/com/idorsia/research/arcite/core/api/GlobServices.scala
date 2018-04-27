@@ -1,16 +1,14 @@
 package com.idorsia.research.arcite.core.api
 
-import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, Props}
+import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef}
 import akka.util.Timeout
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.{MostRecentLogs, ReadLogs, RecentAllLastUpdates}
 import com.idorsia.research.arcite.core.experiments.ManageExperiments._
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor.{GetFilesFromSource, GetSourceFolders}
 import com.idorsia.research.arcite.core.meta.DesignCategories.GetCategories
-import com.idorsia.research.arcite.core.meta.MetaInfoActors
 import com.idorsia.research.arcite.core.publish.PublishActor.PublishApi
 import com.idorsia.research.arcite.core.rawdata.DefineRawAndMetaData._
 import com.idorsia.research.arcite.core.utils.RemoveFile
-import com.typesafe.config.ConfigFactory
 
 /**
   * arcite-core
@@ -83,7 +81,6 @@ object GlobServices {
 class GlobServices(expManager: ActorRef, timeout: Timeout) extends Actor with ActorLogging {
 
   private val actP = expManager.path
-  private val expManSelect = s"${actP}/experiments_manager"
   private val rawDSelect = s"${actP}/define_raw_data"
   private val eventInfoSelect = s"${actP}/event_logging_info"
   private val fileServiceActPath = s"${actP}/file_service"

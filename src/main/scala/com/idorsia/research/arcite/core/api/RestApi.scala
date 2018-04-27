@@ -59,8 +59,11 @@ class RestApi(system: ActorSystem)
   private val props = ClusterSingletonProxy.props(
     settings = ClusterSingletonProxySettings(system).withRole("helper"),
     singletonManagerPath = "/user/exp_actors_manager")
+  logger.debug(s"expManager props= $props")
 
   private val expManager = system.actorOf(props)
+  logger.debug(s"exp Manager actor path= ${expManager.path}")
+
   private lazy val globServices = system.actorOf(Props(classOf[GlobServices], expManager, timeout), GlobServices.name)
 
   //testing expManager remote actor

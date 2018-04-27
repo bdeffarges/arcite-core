@@ -913,31 +913,36 @@ class ExperimentActorsManager extends Actor with ActorLogging {
   override def receive: Receive = {
 
     case StartExperimentsServiceActors ⇒
+      log.info("starting all experiments service actors... Starting with eventInfoLog...")
       val eventInfoLoggingAct = context.actorOf(Props(classOf[EventInfoLogging]),
         "event_logging_info")
 
+      log.info("starting file service actor. ")
       val fileServiceAct = context.actorOf(FileServiceActor.props(),
         "file_service")
 
+      log.info("starting experiments manager...")
       val manExpActor = context.actorOf(Props(classOf[ManageExperiments], eventInfoLoggingAct, fileServiceAct),
         "experiments_manager")
 
+      log.info("define raw data actor...")
       val defineRawDataAct = context.actorOf(DefineRawAndMetaData.props(manExpActor, eventInfoLoggingAct),
         "define_raw_data")
 
+      log.info("start write feedback actor...")
       val writeFeedbackActor = context.actorOf(WriteFeedbackActor.props(eventInfoLoggingAct),
         "write_feedback")
 
+      log.info("start meta info parent actor...")
       val metaInfoParentActor: ActorRef = context.actorOf(Props(classOf[MetaInfoActors]),
         "meta_info")
 
-
-      log.info(s"event info log: [$eventInfoLoggingAct]")
-      log.info(s"exp manager actor: [$manExpActor]")
-      log.info(s"raw data define: [$defineRawDataAct]")
-      log.info(s"file service actor: [$fileServiceAct]")
-      log.info(s"write feedback actor started: [$writeFeedbackActor]")
-      log.info(s"Meta info parent actor started: [$writeFeedbackActor]")
+      log.info(s"event info log: [${eventInfoLoggingAct.path}]")
+      log.info(s"exp manager actor: [${manExpActor.path}]")
+      log.info(s"raw data define: [${defineRawDataAct.path}]")
+      log.info(s"file service actor: [${fileServiceAct.path}]")
+      log.info(s"write feedback actor started: [${writeFeedbackActor.path}]")
+      log.info(s"Meta info parent actor started: [${writeFeedbackActor.path}]")
 
       import context.dispatcher
 
@@ -973,12 +978,12 @@ object ExperimentActorsManager extends LazyLogging {
     ClusterSingletonManager.props(Props(classOf[ExperimentActorsManager]),
       PoisonPill, ClusterSingletonManagerSettings(actSystem).withRole("helper")),
     "exp_actors_manager")
+  logger.info(s"top exp. actor: ${topActor.path}")
 
   case object StartExperimentsServiceActors
 
   def startExperimentActorSystem(): Unit = topActor ! StartExperimentsServiceActors
 
-  logger.info("experiments actor is starting in akka cluster...")
 }
 
 
