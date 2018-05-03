@@ -58,7 +58,7 @@ class RestApi(system: ActorSystem)
 
   private val props = ClusterSingletonProxy.props(
     settings = ClusterSingletonProxySettings(system).withRole("helper"),
-    singletonManagerPath = "/user/exp_actors_manager")
+    singletonManagerPath = s"/user/exp_actors_manager")
 
   logger.debug(s"expManager props= $props")
 
@@ -69,8 +69,7 @@ class RestApi(system: ActorSystem)
 
   //testing expManager remote actor
   logger.info(s"trying to connect to remote actor [$expManager]")
-  expManager ! "are you there?"
-  //todo should wait here to check the connection...
+  expManager ! AreYouThere(s"trying to connect you from rest api... ")
 
   private implicit val executionContext = system.dispatcher
 
@@ -87,7 +86,6 @@ class RestApi(system: ActorSystem)
   private val expsRoutes = new ExperimentsRoutes(expManager)(executionContext, Timeout(2.seconds)).routes
   private val transfRoutes = new TransfRoutes(system, expManager)(executionContext, Timeout(2.seconds)).routes
   private val tofTransfRoutes = new TofTransfRoutes(system)(executionContext, timeout).routes
-  private val globPubRoutes = new GlobPublishRoutes(system)(executionContext, timeout).routes
   private val swui = new SwUI().route
 
   //no arguments in the method to avoid problems with Swagger
@@ -95,7 +93,7 @@ class RestApi(system: ActorSystem)
     new DirectRoute(globServices).directRoute ~
       pathPrefix("api") {
         pathPrefix(s"v${core.apiVersion}") {
-          expsRoutes ~ expRoutes ~ transfRoutes ~ tofTransfRoutes ~ globPubRoutes ~
+          expsRoutes ~ expRoutes ~ transfRoutes ~ tofTransfRoutes ~
             rawDataRoute ~ metaDataRoute ~ allLastUpdatesRoute ~ pingRoute ~
             allExperimentsRecentLogs ~ metaInfoRoute ~
             dataSourcesRoute ~ appLogsRoute ~ organizationRoute ~

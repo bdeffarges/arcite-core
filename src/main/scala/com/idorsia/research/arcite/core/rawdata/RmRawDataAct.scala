@@ -27,7 +27,7 @@ import com.idorsia.research.arcite.core.experiments.{Experiment, ExperimentFolde
   * Created by Bernard Deffarges on 2017/09/14.
   *
   */
-class RmRawDataAct (actSys: String, requester: ActorRef, expManager: ActorRef,
+class RmRawDataAct (requester: ActorRef, expManager: ActorRef,
                     eventInfoAct: ActorRef) extends Actor with ActorLogging {
 
   import RmRawDataAct._
@@ -92,9 +92,9 @@ class RmRawDataAct (actSys: String, requester: ActorRef, expManager: ActorRef,
 
 object RmRawDataAct {
 
-  def props(actSys: String, requester: ActorRef,
+  def props(requester: ActorRef,
             expManager: ActorRef, eventInfoAct: ActorRef) =
-    Props(classOf[RmRawDataAct], actSys, requester, expManager, eventInfoAct)
+    Props(classOf[RmRawDataAct], requester, expManager, eventInfoAct)
 
   case object StartRemove
 

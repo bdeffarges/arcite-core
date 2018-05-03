@@ -30,3 +30,7 @@ case class SuccessFeedback(shortMessage: String = "Success",
 
 case class ErrorFeedback(shortMessage: String = "Error",
                          detailedMessage: String = "", errorDetailedMessage: String = "") extends ClusterFeedback
+
+sealed trait UnimportantMsg
+case class AreYouThere(msg: String = "actor, are you there??") extends UnimportantMsg
+case class ImThere(msg: String = "I'm listening.") extends UnimportantMsg

@@ -33,7 +33,7 @@ import com.idorsia.research.arcite.core.rawdata.TransferSelectedRawFile.Transfer
   * Created by Bernard Deffarges on 2017/09/14.
   *
   */
-class SetSrcRawDataAct (actSys: String, requester: ActorRef, expManager: ActorRef,
+class SetSrcRawDataAct (requester: ActorRef, expManager: ActorRef,
                         eventInfoAct: ActorRef) extends Actor with ActorLogging {
 
   import DefineRawAndMetaData._
@@ -101,9 +101,9 @@ class SetSrcRawDataAct (actSys: String, requester: ActorRef, expManager: ActorRe
 }
 
 object SetSrcRawDataAct {
-  def props(actSys: String, requester: ActorRef,
+  def props(requester: ActorRef,
             expManager: ActorRef, eventInfoAct: ActorRef) =
-    Props(classOf[SetSrcRawDataAct], actSys, requester, expManager, eventInfoAct)
+    Props(classOf[SetSrcRawDataAct], requester, expManager, eventInfoAct)
 
   case object StartDataTransfer
 

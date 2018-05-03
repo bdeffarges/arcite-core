@@ -5,6 +5,7 @@ import java.nio.file.StandardOpenOption._
 import java.nio.file.{Files, Path}
 
 import akka.actor.{Actor, ActorLogging, ActorPath}
+import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
 import com.idorsia.research.arcite.core.api.ArciteJSONProtocol
 import com.idorsia.research.arcite.core.experiments.ManageExperiments.{AllExperimentLogsPath, AllLastUpdatePath, GetAllExperimentsLastUpdate, GetAllExperimentsMostRecentLogs}
 import com.idorsia.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor}
@@ -42,12 +43,6 @@ class EventInfoLogging extends Actor with ActorLogging with ArciteJSONProtocol {
   private var lastUpdatesLogs = List[ExpLog]()
   private var mostRecentLogs = List[ExpLog]()
 
-  private val conf = ConfigFactory.load().getConfig("experiments-manager")
-  private val actSys = conf.getString("akka.uri")
-
-  private val expManager =
-    context.actorSelection(ActorPath.fromString(s"${actSys}/user/exp_actors_manager/experiments_manager"))
-
   import EventInfoLogging._
 
   override def receive = {
@@ -64,6 +59,7 @@ class EventInfoLogging extends Actor with ActorLogging with ArciteJSONProtocol {
 
 
     case rl: ReadLogs ⇒
+      val expManager = context.actorSelection(context.parent.path/"experiments_manager")
       expManager forward rl
 
 
@@ -74,6 +70,7 @@ class EventInfoLogging extends Actor with ActorLogging with ArciteJSONProtocol {
 
     case BuildRecentLastUpdate ⇒
       log.info("scheduled job: rebuilding recentLogs for all experiments. ")
+      val expManager = context.actorSelection(context.parent.path/"experiments_manager")
       expManager ! GetAllExperimentsLastUpdate
 
 
@@ -96,6 +93,7 @@ class EventInfoLogging extends Actor with ActorLogging with ArciteJSONProtocol {
 
 
     case BuildRecentLogs ⇒
+      val expManager = context.actorSelection(context.parent.path/"experiments_manager")
       expManager ! GetAllExperimentsMostRecentLogs
 
 
@@ -111,23 +109,25 @@ class EventInfoLogging extends Actor with ActorLogging with ArciteJSONProtocol {
 
 object EventInfoLogging extends ArciteJSONProtocol {
 
-  case class AddLog(exp: Experiment, log: ExpLog)
+  sealed trait LogMsg
 
-  case class InfoLogs(logs: List[ExpLog])
+  case class AddLog(exp: Experiment, log: ExpLog) extends LogMsg
 
-  case class InfoLog(log: ExpLog)
+  case class InfoLogs(logs: List[ExpLog]) extends LogMsg
 
-  case class ReadLogs(experiment: String, page: Int = 0, max: Int = 100)
+  case class InfoLog(log: ExpLog) extends LogMsg
 
-  case object RecentAllLastUpdates
+  case class ReadLogs(experiment: String, page: Int = 0, max: Int = 100) extends LogMsg
 
-  case object BuildRecentLastUpdate
+  case object RecentAllLastUpdates extends LogMsg
 
-  case object MostRecentLogs
+  case object BuildRecentLastUpdate extends LogMsg
 
-  case object BuildRecentLogs
+  case object MostRecentLogs extends LogMsg
 
-  case class LatestLog(experiment: Experiment)
+  case object BuildRecentLogs extends LogMsg
+
+  case class LatestLog(experiment: Experiment) extends LogMsg
 
 
   import scala.collection.convert.wrapAsScala._

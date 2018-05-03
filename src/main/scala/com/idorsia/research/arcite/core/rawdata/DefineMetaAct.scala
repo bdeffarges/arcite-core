@@ -32,7 +32,7 @@ import com.idorsia.research.arcite.core.experiments.{Experiment, ExperimentFolde
   * Created by Bernard Deffarges on 2017/09/14.
   *
   */
-class DefineMetaAct(actSys: String, requester: ActorRef, expManager: ActorRef,
+class DefineMetaAct(requester: ActorRef, expManager: ActorRef,
                     eventInfoAct: ActorRef) extends Actor with ActorLogging {
 
   import DefineRawAndMetaData._
@@ -96,9 +96,9 @@ class DefineMetaAct(actSys: String, requester: ActorRef, expManager: ActorRef,
 }
 
 object DefineMetaAct {
-  def props(actSys: String, requester: ActorRef,
+  def props(requester: ActorRef,
             expManager: ActorRef, eventInfoAct: ActorRef) =
-    Props(classOf[DefineMetaAct], actSys, requester, expManager, eventInfoAct)
+    Props(classOf[DefineMetaAct], requester, expManager, eventInfoAct)
 
   val maxSizeForCopying = 100000000L // about 90 MB
   case object AddMetaData

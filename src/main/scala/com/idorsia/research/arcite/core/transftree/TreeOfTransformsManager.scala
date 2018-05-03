@@ -71,13 +71,11 @@ class TreeOfTransformsManager extends Actor with ActorLogging {
 
   private var treeOfTransform: Map[String, ActorRef] = Map()
 
-  private val conf = ConfigFactory.load().getConfig("experiments-manager")
-  private val actSys = conf.getString("akka.uri")
-  private val expManSelect = s"${actSys}/user/exp_actors_manager/experiments_manager"
+  private val expManSelect = s"/user/exp_actors_manager/experiments_manager" // todo cannot work anymore, for deploy tests
   private val expManager = context.actorSelection(ActorPath.fromString(expManSelect))
   log.info(s"****** connect exp Manager [$expManSelect] actor: $expManager")
 
-  private val eventInfoSelect = s"${actSys}/user/exp_actors_manager/event_logging_info"
+  private val eventInfoSelect = s"/user/exp_actors_manager/event_logging_info"
   private val eventInfoAct = context.actorSelection(ActorPath.fromString(eventInfoSelect))
   log.info(s"****** connect event info actor [$eventInfoSelect] actor: $eventInfoAct")
 

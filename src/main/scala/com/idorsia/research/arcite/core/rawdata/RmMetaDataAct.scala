@@ -27,7 +27,7 @@ import com.idorsia.research.arcite.core.experiments.{Experiment, ExperimentFolde
   * Created by Bernard Deffarges on 2017/09/14.
   *
   */
-class RmMetaDataAct (actSys: String, requester: ActorRef, expManager: ActorRef,
+class RmMetaDataAct (requester: ActorRef, expManager: ActorRef,
                      eventInfoAct: ActorRef) extends Actor with ActorLogging {
 
   import DefineRawAndMetaData._
@@ -79,9 +79,9 @@ class RmMetaDataAct (actSys: String, requester: ActorRef, expManager: ActorRef,
 
 object RmMetaDataAct {
 
-  def props(actSys: String, requester: ActorRef,
+  def props(requester: ActorRef,
             expManager: ActorRef, eventInfoAct: ActorRef) =
-    Props(classOf[RmMetaDataAct], actSys, requester, expManager, eventInfoAct)
+    Props(classOf[RmMetaDataAct], requester, expManager, eventInfoAct)
 
   case object StartRemove
 

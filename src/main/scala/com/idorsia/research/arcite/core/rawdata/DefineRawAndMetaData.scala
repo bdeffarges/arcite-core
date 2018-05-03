@@ -14,30 +14,27 @@ import com.typesafe.scalalogging.LazyLogging
 
 class DefineRawAndMetaData(expManagerAct: ActorRef, eventInfo: ActorRef) extends Actor with ActorLogging {
 
-  private val conf = ConfigFactory.load().getConfig("experiments-manager")
-  private val actSys = conf.getString("akka.uri")
-
   import DefineRawAndMetaData._
 
   override def receive: Receive = {
 
     case rds: SetRawData ⇒
-      val srdsa = context.actorOf(SetSrcRawDataAct.props(actSys, sender(), expManagerAct, eventInfo))
+      val srdsa = context.actorOf(SetSrcRawDataAct.props(sender(), expManagerAct, eventInfo))
       srdsa ! rds
 
 
     case rrd: RemoveRaw ⇒
-      val rrda = context.actorOf(RmRawDataAct.props(actSys, sender(), expManagerAct, eventInfo))
+      val rrda = context.actorOf(RmRawDataAct.props(sender(), expManagerAct, eventInfo))
       rrda ! rrd
 
 
     case mds: DefineMetaData ⇒
-      val srdsa = context.actorOf(DefineMetaAct.props(actSys, sender(), expManagerAct, eventInfo))
+      val srdsa = context.actorOf(DefineMetaAct.props(sender(), expManagerAct, eventInfo))
       srdsa ! mds
 
 
     case rmm: RemoveMetaData ⇒
-      val rrda = context.actorOf(RmMetaDataAct.props(actSys, sender(), expManagerAct, eventInfo))
+      val rrda = context.actorOf(RmMetaDataAct.props(sender(), expManagerAct, eventInfo))
       rrda ! rmm
 
 

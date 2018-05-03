@@ -3,11 +3,9 @@ package com.idorsia.research.arcite.core.fileservice
 import java.io.File
 import java.nio.file.Path
 
-import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, Props}
-import com.idorsia.research.arcite.core
+import akka.actor.{Actor, ActorLogging, ActorPath, Props}
 import com.idorsia.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor}
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor.SourceInformation
-import com.idorsia.research.arcite.core.publish.GlobalPublishActor.{GetAllGlobPublishedItems, GlobalPublishedItem, SearchGlobPublishedAsFInfo}
 import com.idorsia.research.arcite.core.utils.{FileInformation, FileVisitor, FilesInformation}
 import com.typesafe.config.ConfigFactory
 
@@ -44,13 +42,7 @@ class FileServiceActor(mounts: Map[String, SourceInformation]) extends Actor wit
 
   import FileServiceActor._
 
-  private var sourceFolders: Map[String, SourceInformation] = mounts + (GlobPublishedSource.name -> GlobPublishedSource)
-
-  private val actSys = ConfigFactory.load().getConfig("experiments-manager").getString("akka.uri")
-
-  private val gloPubSelect = s"${actSys}/user/arcite-services/global_publish" //todo global publish to be removed
-  private val gloPubAct = context.actorSelection(ActorPath.fromString(gloPubSelect))
-  log.info(s"****** connect event info actor [$gloPubSelect] actor: $gloPubAct")
+  private var sourceFolders: Map[String, SourceInformation] = mounts
 
 
   override def receive: Receive = {
@@ -67,15 +59,9 @@ class FileServiceActor(mounts: Map[String, SourceInformation]) extends Actor wit
     case GetFilesFromSource(source, subFolder) ⇒
       val sourceF = sourceFolders.get(source)
       if (sourceF.isDefined) {
-        if (sourceF.get == GlobPublishedSource) {
-          log.debug(s"{{#%} asking glob. publish actor ")
-          gloPubAct forward SearchGlobPublishedAsFInfo(subFolder, 100)
-        } else {
-          val sinf = FilesInformation(FileVisitor
-            .getFilesInformationOneLevel(sourceF.get.path, subFolder: _*).toSeq.sortBy(_.name))
-
-          sender() ! sinf
-        }
+        val sinf = FilesInformation(FileVisitor
+          .getFilesInformationOneLevel(sourceF.get.path, subFolder: _*).toSeq.sortBy(_.name))
+        sender() ! sinf
 
       } else sender() ! FilesInformation()
 
@@ -140,8 +126,9 @@ object FileServiceActor {
 
   def props(): Props = Props(classOf[FileServiceActor], mounts)
 
+  sealed trait FileSerMsg
 
-  sealed trait FilesFromExperiment {
+  sealed trait FilesFromExperiment extends FileSerMsg {
     def experiment: Experiment
   }
 
@@ -154,32 +141,30 @@ object FileServiceActor {
   case class FromAllFolders(experiment: Experiment) extends FilesFromExperiment
 
 
-  case class FromSourceFolder(name: String)
+  case class FromSourceFolder(name: String) extends FileSerMsg
 
-  case class SetSourceFolder(sourceInformation: SourceInformation)
+  case class SetSourceFolder(sourceInformation: SourceInformation) extends FileSerMsg
 
-  case object GetSourceFolders
+  case object GetSourceFolders extends FileSerMsg
 
   //todo maybe should only return those for which the mount is active and working
 
-  case class SourceFoldersAsString(sourceFolders: Map[String, String])
+  case class SourceFoldersAsString(sourceFolders: Map[String, String]) extends FileSerMsg
 
-  case class GetSourceFolder(name: String)
+  case class GetSourceFolder(name: String) extends FileSerMsg
 
-  case class SourceInformation(name: String, description: String, path: Path) {
+  case class SourceInformation(name: String, description: String, path: Path) extends FileSerMsg {
     override def toString: String = s"$name, $description (${path.toString})"
   }
 
-  object GlobPublishedSource extends SourceInformation("arcite published", "published with arcite", core.globalPublishPath)
+  case class GetFilesFromSource(sourceName: String, subFolder: Seq[String] = Seq.empty) extends FileSerMsg
 
-  case class GetFilesFromSource(sourceName: String, subFolder: Seq[String] = Seq.empty)
+  case object NothingFound extends FileSerMsg
 
-  case object NothingFound
-
-  case class GetAllFiles(fromExp: FilesFromExperiment)
+  case class GetAllFiles(fromExp: FilesFromExperiment) extends FileSerMsg
 
   case class AllFilesInformation(rawFiles: Set[FileInformation] = Set.empty,
                                  userRawFiles: Set[FileInformation] = Set.empty,
-                                 metaFiles: Set[FileInformation] = Set.empty)
+                                 metaFiles: Set[FileInformation] = Set.empty) extends FileSerMsg
 
 }

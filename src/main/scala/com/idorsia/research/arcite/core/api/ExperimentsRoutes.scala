@@ -1,15 +1,12 @@
 package com.idorsia.research.arcite.core.api
 
 import javax.ws.rs.Path
-import akka.actor.{ActorPath, ActorRef, ActorSystem}
-import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
+import akka.actor.ActorRef
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.StatusCodes.OK
 import akka.http.scaladsl.server.Directives
 import akka.pattern.ask
 import akka.util.Timeout
-import com.idorsia.research.arcite.core.publish.GlobalPublishActor.GlobalPublishedItemLight
-import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import io.swagger.annotations._
 

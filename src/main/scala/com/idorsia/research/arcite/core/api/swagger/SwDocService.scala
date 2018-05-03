@@ -36,7 +36,7 @@ object SwDocService extends SwaggerHttpService {
   val prt = config.getInt("http.port")
 
   override val apiClasses: Set[Class[_]] = Set(classOf[ExperimentsRoutes], classOf[ExperimentRoutes],
-    classOf[DirectRoute], classOf[GlobPublishRoutes], classOf[TofTransfRoutes], classOf[TransfRoutes])
+    classOf[DirectRoute], classOf[TofTransfRoutes], classOf[TransfRoutes])
 
   override val host = s"$hst:${prt}/api/v1"
   override val info = Info(version = "1.0")

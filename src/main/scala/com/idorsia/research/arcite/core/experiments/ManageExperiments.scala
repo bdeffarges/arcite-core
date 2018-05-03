@@ -8,7 +8,6 @@ import java.util.UUID
 import akka.actor.SupervisorStrategy.{Escalate, Restart}
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, OneForOneStrategy, PoisonPill, Props, SupervisorStrategy}
 import akka.cluster.Cluster
-import akka.cluster.ClusterEvent.{InitialStateAsEvents, MemberEvent, UnreachableMember}
 import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings}
 import akka.management.AkkaManagement
 import akka.management.cluster.bootstrap.ClusterBootstrap
@@ -17,11 +16,10 @@ import com.idorsia.research.arcite.core.api.GlobServices._
 import com.idorsia.research.arcite.core.api.{ExpJsonProto, TofTransfJsonProto, TransfJsonProto}
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging._
 import com.idorsia.research.arcite.core.eventinfo._
-import com.idorsia.research.arcite.core.experiments.ExperimentActorsManager.StartExperimentsServiceActors
 import com.idorsia.research.arcite.core.experiments.LocalExperiments.{LoadExperiment, SaveExperimentFailed, SaveExperimentSuccessful}
-import com.idorsia.research.arcite.core.experiments.ManageExperiments.RebuildExperiments
+import com.idorsia.research.arcite.core.experiments.ManageExperiments.{ExperimentMsg, RebuildExperiments}
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor
-import com.idorsia.research.arcite.core.fileservice.FileServiceActor._
+import com.idorsia.research.arcite.core.fileservice.FileServiceActor.{FileSerMsg, _}
 import com.idorsia.research.arcite.core.meta.MetaInfoActors
 import com.idorsia.research.arcite.core.publish.PublishActor
 import com.idorsia.research.arcite.core.publish.PublishActor._
@@ -565,11 +563,11 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef, fileServiceAct: ActorRef)
       val gs = getSelectableFromTransfResults(exp, transf)
       sender ! gs
 
-    case text: String ⇒
-      log.info(s"nice, I received a text message... ${text}")
-      sender ! s"thanks for your text message [${text}], I don't know what you expect..."
+    case ayt: AreYouThere ⇒
+      log.info(s"nice, I received a text message [${ayt.toString}] from [${sender().toString()}]")
+      sender ! ImThere(s"thanks for your text message [${ayt.msg}], and now??")
 
-    case any: Any ⇒ log.debug(s"don't know what to do with this message $any")
+    case any: Any ⇒ log.debug(s"[öéAwXy] I don't know what to do with this message $any")
   }
 
 
@@ -796,25 +794,25 @@ object ManageExperiments {
 
   case class FailedTransform(transfUID: String) extends TransformOutcome
 
-  case object GetAllExperimentsLastUpdate
+  case object GetAllExperimentsLastUpdate extends ExperimentMsg
 
-  case class AllLastUpdatePath(paths: Set[Path])
+  case class AllLastUpdatePath(paths: Set[Path]) extends ExperimentMsg
 
-  case object GetAllExperimentsMostRecentLogs
+  case object GetAllExperimentsMostRecentLogs extends ExperimentMsg
 
-  case class AllExperimentLogsPath(paths: Set[Path])
+  case class AllExperimentLogsPath(paths: Set[Path]) extends ExperimentMsg
 
-  case class MakeImmutable(experiment: String)
+  case class MakeImmutable(experiment: String) extends ExperimentMsg
 
-  case class GetSelectable(exp: String, transf: String)
+  case class GetSelectable(exp: String, transf: String) extends ExperimentMsg
 
-  case class SelectableItem(name: String, path: String)
+  case class SelectableItem(name: String, path: String) extends ExperimentMsg
 
-  case class Selectable(selectableType: String, items: Set[SelectableItem])
+  case class Selectable(selectableType: String, items: Set[SelectableItem]) extends ExperimentMsg
 
-  case class BunchOfSelectables(selectables: Set[Selectable])
+  case class BunchOfSelectables(selectables: Set[Selectable]) extends ExperimentMsg
 
-  case class SelectedSelectables(selectableType: String, items: Set[String])
+  case class SelectedSelectables(selectableType: String, items: Set[String]) extends ExperimentMsg
 
 
   sealed trait ExperimentsResponse
@@ -890,6 +888,7 @@ object ManageExperiments {
 class ExperimentActorsManager extends Actor with ActorLogging {
 
   import scala.concurrent.duration._
+  import ExperimentActorsManager._
 
   log.info("building up actor hierarchy for experiments management...")
 
@@ -912,57 +911,77 @@ class ExperimentActorsManager extends Actor with ActorLogging {
         Restart
     }
 
-  context.system.scheduler.scheduleOnce(5 seconds) {
-    self ! StartExperimentsServiceActors
+  log.info("starting all experiments service actors... Starting with eventInfoLog...")
+  private val eventInfoLoggingAct = context.actorOf(Props(classOf[EventInfoLogging]),
+    eventLogAct)
+
+  log.info("starting file service actor. ")
+  private val fileServiceAct = context.actorOf(FileServiceActor.props(), fileSerAct)
+
+  log.info("starting experiments manager...")
+  private val manExpActor = context.actorOf(Props(classOf[ManageExperiments], eventInfoLoggingAct, fileServiceAct),
+    expManAct)
+
+  log.info("define raw data actor...")
+  private val defineRawDataAct = context.actorOf(DefineRawAndMetaData.props(manExpActor, eventInfoLoggingAct),
+    defRawAct)
+
+  log.info("start write feedback actor...")
+  private val writeFeedbackActor = context.actorOf(WriteFeedbackActor.props(eventInfoLoggingAct),
+    wFeedBaAct)
+
+  log.info("start meta info parent actor...")
+  private val metaInfoParentActor: ActorRef = context.actorOf(Props(classOf[MetaInfoActors]),
+    metaInfAct)
+
+  log.info(s"event info log: [${eventInfoLoggingAct.path}]")
+  log.info(s"exp manager actor: [${manExpActor.path}]")
+  log.info(s"raw data define: [${defineRawDataAct.path}]")
+  log.info(s"file service actor: [${fileServiceAct.path}]")
+  log.info(s"write feedback actor started: [${writeFeedbackActor.path}]")
+  log.info(s"Meta info parent actor started: [${metaInfoParentActor.path}]")
+
+
+  import scala.concurrent.duration._
+  import context.dispatcher
+
+  context.system.scheduler.schedule(45 seconds, 10 minutes) {
+    eventInfoLoggingAct ! BuildRecentLastUpdate
+    eventInfoLoggingAct ! BuildRecentLogs
+  }
+
+  context.system.scheduler.schedule(10 second, 60 seconds) {
+    manExpActor ! RebuildExperiments
   }
 
   override def receive: Receive = {
+    case m : LogMsg ⇒
+      eventInfoLoggingAct forward m
 
-    case StartExperimentsServiceActors ⇒
-      log.info("starting all experiments service actors... Starting with eventInfoLog...")
-      val eventInfoLoggingAct = context.actorOf(Props(classOf[EventInfoLogging]),
-        "event_logging_info")
+    case fm: FileSerMsg ⇒
+      fileServiceAct forward fm
 
-      log.info("starting file service actor. ")
-      val fileServiceAct = context.actorOf(FileServiceActor.props(),
-        "file_service")
+    case umsg: UnimportantMsg ⇒
+      log.info(s"[àéàéàp] got a message from ${sender().toString()}")
+      manExpActor forward umsg
 
-      log.info("starting experiments manager...")
-      val manExpActor = context.actorOf(Props(classOf[ManageExperiments], eventInfoLoggingAct, fileServiceAct),
-        "experiments_manager")
+    case expMsg : ExperimentMsg ⇒
+    manExpActor forward expMsg
 
-      log.info("define raw data actor...")
-      val defineRawDataAct = context.actorOf(DefineRawAndMetaData.props(manExpActor, eventInfoLoggingAct),
-        "define_raw_data")
-
-      log.info("start write feedback actor...")
-      val writeFeedbackActor = context.actorOf(WriteFeedbackActor.props(eventInfoLoggingAct),
-        "write_feedback")
-
-      log.info("start meta info parent actor...")
-      val metaInfoParentActor: ActorRef = context.actorOf(Props(classOf[MetaInfoActors]),
-        "meta_info")
-
-      log.info(s"event info log: [${eventInfoLoggingAct.path}]")
-      log.info(s"exp manager actor: [${manExpActor.path}]")
-      log.info(s"raw data define: [${defineRawDataAct.path}]")
-      log.info(s"file service actor: [${fileServiceAct.path}]")
-      log.info(s"write feedback actor started: [${writeFeedbackActor.path}]")
-      log.info(s"Meta info parent actor started: [${writeFeedbackActor.path}]")
-
-
-      context.system.scheduler.schedule(45 seconds, 10 minutes) {
-        eventInfoLoggingAct ! BuildRecentLastUpdate
-        eventInfoLoggingAct ! BuildRecentLogs
-      }
-
-      context.system.scheduler.schedule(10 second, 60 seconds) {
-        manExpActor ! RebuildExperiments
-      }
+    case msg: Any ⇒
+      log.error(s"[è%àPi] I don't know what to do with message ${msg.toString}")
   }
 }
 
+
 object ExperimentActorsManager extends LazyLogging {
+
+  val eventLogAct =  "event_logging_info"
+  val fileSerAct = "file_service"
+  val expManAct = "experiments_manager"
+  val defRawAct = "define_raw_data"
+  val wFeedBaAct = "write_feedback"
+  val metaInfAct = "meta_info"
 
   def startExpActorsManager(): Unit = {
     val config = ConfigFactory.load()
@@ -985,11 +1004,7 @@ object ExperimentActorsManager extends LazyLogging {
           PoisonPill, ClusterSingletonManagerSettings(actSystem).withRole("helper")),
         "exp_actors_manager")
     }
-
   }
-
-  case object StartExperimentsServiceActors
-
 }
 
 
