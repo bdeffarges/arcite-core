@@ -4,19 +4,15 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.StandardOpenOption._
 import java.nio.file.{Files, Path}
 
-import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, ActorSystem, Props}
-import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.idorsia.research.arcite.core
-import com.idorsia.research.arcite.core.api.{ArciteJSONProtocol, ExpJsonProto, TransfJsonProto}
+import com.idorsia.research.arcite.core.api.{ExpJsonProto, TransfJsonProto}
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.AddLog
 import com.idorsia.research.arcite.core.eventinfo.{ExpLog, LogCategory, LogType}
-import com.idorsia.research.arcite.core.experiments.ExperimentActorsManager.arcClusterSyst
 import com.idorsia.research.arcite.core.experiments.ManageExperiments.BunchOfSelectables
 import com.idorsia.research.arcite.core.transforms._
 import com.idorsia.research.arcite.core.transforms.cluster.MasterWorkerProtocol.WorkerCompleted
 import com.idorsia.research.arcite.core.transforms.cluster.TransformWorker.{WorkerJobFailed, WorkerJobSuccessFul}
-import com.idorsia.research.arcite.core.transforms.cluster.configWithRole
-import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 
 /**
@@ -42,7 +38,7 @@ import com.typesafe.scalalogging.LazyLogging
   * Created by Bernard Deffarges on 2016/10/10.
   *
   */
-class WriteFeedbackActor(eventInfoAct: ActorRef) extends Actor  with ExpJsonProto with TransfJsonProto  with ActorLogging {
+class WriteFeedbackActor(eventInfoAct: ActorRef) extends Actor with ExpJsonProto with TransfJsonProto with ActorLogging {
 
   import WriteFeedbackActor._
 

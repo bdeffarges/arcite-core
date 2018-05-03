@@ -7,6 +7,8 @@ import java.util.UUID
 
 import akka.actor.SupervisorStrategy.{Escalate, Restart}
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, OneForOneStrategy, PoisonPill, Props, SupervisorStrategy}
+import akka.cluster.Cluster
+import akka.cluster.ClusterEvent.{InitialStateAsEvents, MemberEvent, UnreachableMember}
 import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings}
 import akka.management.AkkaManagement
 import akka.management.cluster.bootstrap.ClusterBootstrap
@@ -910,6 +912,10 @@ class ExperimentActorsManager extends Actor with ActorLogging {
         Restart
     }
 
+  context.system.scheduler.scheduleOnce(5 seconds) {
+    self ! StartExperimentsServiceActors
+  }
+
   override def receive: Receive = {
 
     case StartExperimentsServiceActors ⇒
@@ -944,9 +950,6 @@ class ExperimentActorsManager extends Actor with ActorLogging {
       log.info(s"write feedback actor started: [${writeFeedbackActor.path}]")
       log.info(s"Meta info parent actor started: [${writeFeedbackActor.path}]")
 
-      import context.dispatcher
-
-      import scala.concurrent.duration._
 
       context.system.scheduler.schedule(45 seconds, 10 minutes) {
         eventInfoLoggingAct ! BuildRecentLastUpdate
@@ -957,32 +960,35 @@ class ExperimentActorsManager extends Actor with ActorLogging {
         manExpActor ! RebuildExperiments
       }
   }
-
 }
 
 object ExperimentActorsManager extends LazyLogging {
-  private val config = ConfigFactory.load()
 
-  val arcClusterSyst: String = config.getString("arcite.cluster.name")
+  def startExpActorsManager(): Unit = {
+    val config = ConfigFactory.load()
 
-  private val actSystem = ActorSystem(arcClusterSyst, configWithRole("helper"))
+    val arcClusterSyst: String = config.getString("arcite.cluster.name")
 
-  logger.info("starting akka management...")
-  AkkaManagement(actSystem).start()
+    val actSystem = ActorSystem(arcClusterSyst, configWithRole("helper"))
 
-  logger.info("starting cluster bootstrap... ")
-  ClusterBootstrap(actSystem).start()
+    logger.info("starting akka management...")
+    AkkaManagement(actSystem).start()
 
-  logger.info("starting experiment Actors manager as singleton...")
-  private val topActor = actSystem.actorOf(
-    ClusterSingletonManager.props(Props(classOf[ExperimentActorsManager]),
-      PoisonPill, ClusterSingletonManagerSettings(actSystem).withRole("helper")),
-    "exp_actors_manager")
-  logger.info(s"top exp. actor: ${topActor.path}")
+    logger.info("starting cluster bootstrap... ")
+    ClusterBootstrap(actSystem).start()
+
+    logger.info("starting experiment Actors manager as singleton...")
+
+    Cluster(actSystem) registerOnMemberUp {
+      actSystem.actorOf(
+        ClusterSingletonManager.props(Props(classOf[ExperimentActorsManager]),
+          PoisonPill, ClusterSingletonManagerSettings(actSystem).withRole("helper")),
+        "exp_actors_manager")
+    }
+
+  }
 
   case object StartExperimentsServiceActors
-
-  def startExperimentActorSystem(): Unit = topActor ! StartExperimentsServiceActors
 
 }
 

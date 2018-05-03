@@ -59,6 +59,7 @@ class RestApi(system: ActorSystem)
   private val props = ClusterSingletonProxy.props(
     settings = ClusterSingletonProxySettings(system).withRole("helper"),
     singletonManagerPath = "/user/exp_actors_manager")
+
   logger.debug(s"expManager props= $props")
 
   private val expManager = system.actorOf(props)

@@ -28,6 +28,8 @@ import com.typesafe.scalalogging.LazyLogging
   *
   * Created by Bernard Deffarges on 2018/04/11.
   *
+  * todo remove ALL, FRONTEND
+  *
   */
 object Main extends App with LazyLogging {
 
@@ -50,16 +52,6 @@ object Main extends App with LazyLogging {
 
   import LaunchMode._
 
-  if (launchMode.contains(ALL) || launchMode.contains(EXP_MANAGER)) {
-    logger.info("launching experiment Actor system. ")
-    ExperimentActorsManager.startExperimentActorSystem()
-  }
-
-  if (launchMode.contains(ALL) || launchMode.contains(REST_API)) {
-    logger.info("launching rest API Actor system. ")
-    StartRestApi.main(args)
-  }
-
   if (launchMode.contains(ALL) || launchMode.contains(CLUSTER_BACKEND)
     || launchMode.contains(CLUSTER_FRONTEND)) {
     if (launchMode.contains(CLUSTER_BACKEND)) {
@@ -69,6 +61,16 @@ object Main extends App with LazyLogging {
       logger.info("launching cluster frontend...")
       FrontendProvider.startFrontend()
     }
+  }
+
+  if (launchMode.contains(ALL) || launchMode.contains(EXP_MANAGER)) {
+    logger.info("launching experiment Actor system. ")
+    ExperimentActorsManager.startExpActorsManager()
+  }
+
+  if (launchMode.contains(ALL) || launchMode.contains(REST_API)) {
+    logger.info("launching rest API Actor system. ")
+    StartRestApi.main(args)
   }
 
   if (launchMode.contains(DEMO)) {

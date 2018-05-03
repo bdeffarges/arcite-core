@@ -1,9 +1,11 @@
 package com.idorsia.research.arcite.core.transforms.cluster
 
-import akka.actor.ActorSystem
+import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
+import akka.cluster.Cluster
+import akka.cluster.ClusterEvent._
 import akka.management.AkkaManagement
 import akka.management.cluster.bootstrap.ClusterBootstrap
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.duration._
@@ -33,6 +35,32 @@ object ManageTransformCluster {
     ClusterBootstrap(system).start()
 
     MasterSingleton.startSingleton(system)
-  }
 
+    system.actorOf(Props(classOf[SimpleClusterListener]))
+  }
+}
+
+
+class SimpleClusterListener extends Actor with ActorLogging {
+
+  private val cluster = Cluster(context.system)
+
+  // subscribe to cluster changes, re-subscribe when restart
+  override def preStart(): Unit = {
+    cluster.subscribe(self, initialStateMode = InitialStateAsEvents,
+      classOf[MemberEvent], classOf[UnreachableMember])
+  }
+  override def postStop(): Unit = cluster.unsubscribe(self)
+
+  def receive = {
+    case MemberUp(member) ⇒
+      log.info("--->>> Member is Up: {}", member.address)
+    case UnreachableMember(member) ⇒
+      log.info("--->>> Member detected as unreachable: {}", member)
+    case MemberRemoved(member, previousStatus) ⇒
+      log.info(
+        "--->>> Member is Removed: {} after {}",
+        member.address, previousStatus)
+    case _: MemberEvent ⇒ // ignore
+  }
 }
