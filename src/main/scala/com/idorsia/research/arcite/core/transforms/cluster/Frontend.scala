@@ -33,7 +33,7 @@ class Frontend extends Actor with ActorLogging {
   private val masterProxy = context.actorOf(
     ClusterSingletonProxy.props(
       settings = ClusterSingletonProxySettings(context.system).withRole("backend"),
-      singletonManagerPath = "/user/master"), name = "masterProxy")
+      singletonManagerPath = "/user/master"), name = "master")
 
   log.info(s"master proxy=$masterProxy")
 

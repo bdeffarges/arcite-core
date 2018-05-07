@@ -37,7 +37,7 @@ object Main extends App with LazyLogging {
   logger.debug(s"launch mode information: $lModeProp")
 
   val launchMode =
-    if (lModeProp == null || lModeProp.size < 1) List(LaunchMode.ALL)
+    if (lModeProp == null || lModeProp.size < 1) List(LaunchMode.DEMO)
     else lModeProp.split("\\s").map(_.trim.toUpperCase)
       .map { s ⇒
         try {
@@ -52,23 +52,22 @@ object Main extends App with LazyLogging {
 
   import LaunchMode._
 
-  if (launchMode.contains(ALL) || launchMode.contains(CLUSTER_BACKEND)
-    || launchMode.contains(CLUSTER_FRONTEND)) {
-    if (launchMode.contains(CLUSTER_BACKEND)) {
-      logger.info("launching cluster backend...")
-      ManageTransformCluster.startBackend()
-    } else if (launchMode.contains(CLUSTER_FRONTEND)) {
-      logger.info("launching cluster frontend...")
-      FrontendProvider.startFrontend()
-    }
+  if (launchMode.contains(CLUSTER_BACKEND)) {
+    logger.info("launching cluster backend...")
+    ManageTransformCluster.startBackend()
   }
 
-  if (launchMode.contains(ALL) || launchMode.contains(EXP_MANAGER)) {
+  if (launchMode.contains(CLUSTER_FRONTEND)) {
+    logger.info("launching cluster frontends...")
+    FrontendProvider.startFrontend()
+  }
+
+  if (launchMode.contains(EXP_MANAGER)) {
     logger.info("launching experiment Actor system. ")
     ExperimentActorsManager.startExpActorsManager()
   }
 
-  if (launchMode.contains(ALL) || launchMode.contains(REST_API)) {
+  if (launchMode.contains(REST_API)) {
     logger.info("launching rest API Actor system. ")
     StartRestApi.main(args)
   }
@@ -80,5 +79,5 @@ object Main extends App with LazyLogging {
 
 object LaunchMode extends scala.Enumeration {
   type LaunchMode = Value
-  val ALL, CLUSTER_BACKEND, CLUSTER_FRONTEND, WORKER, REST_API, EXP_MANAGER, DEMO, UNKNOWN = Value
+  val CLUSTER_BACKEND, CLUSTER_FRONTEND, WORKER, REST_API, EXP_MANAGER, DEMO, UNKNOWN = Value
 }

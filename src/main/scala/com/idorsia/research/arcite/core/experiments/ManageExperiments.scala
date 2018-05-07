@@ -27,7 +27,7 @@ import com.idorsia.research.arcite.core.rawdata.DefineRawAndMetaData
 import com.idorsia.research.arcite.core.search.ArciteLuceneRamIndex
 import com.idorsia.research.arcite.core.search.ArciteLuceneRamIndex._
 import com.idorsia.research.arcite.core.transforms.RunTransform.ExperimentTransform
-import com.idorsia.research.arcite.core.transforms.cluster.configWithRole
+import com.idorsia.research.arcite.core.transforms.cluster.{FrontendProvider, configWithRole}
 import com.idorsia.research.arcite.core.transforms.{ExpTransfAndSelection, TransformCompletionFeedback}
 import com.idorsia.research.arcite.core.transftree.{ToTFeedbackDetails, ToTFeedbackDetailsForApi, ToTFeedbackHelper}
 import com.idorsia.research.arcite.core.utils
@@ -1004,6 +1004,8 @@ object ExperimentActorsManager extends LazyLogging {
           PoisonPill, ClusterSingletonManagerSettings(actSystem).withRole("helper")),
         "exp_actors_manager")
     }
+
+    FrontendProvider.startFrontendInSameActorSystem(actSystem)
   }
 }
 

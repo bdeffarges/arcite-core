@@ -25,7 +25,7 @@ object ManageTransformCluster {
   val arcClusterSyst: String = config.getString("arcite.cluster.name")
 
   def startBackend(): Unit = {
-    val system = ActorSystem(arcClusterSyst, configWithRole("back-end"))
+    val system = ActorSystem(arcClusterSyst, configWithRole("backend"))
     logger.info(s"starting actor system (cluster backend): ${system.toString}")
 
     logger.info("starting akka management...")

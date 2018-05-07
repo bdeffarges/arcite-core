@@ -1,11 +1,9 @@
 package com.idorsia.research.arcite.core.transforms.cluster
 
-import java.util.UUID
-
 import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.cluster.Cluster
 import akka.management.AkkaManagement
 import akka.management.cluster.bootstrap.ClusterBootstrap
-import com.idorsia.research.arcite.core.transforms.cluster.ManageTransformCluster.logger
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 
@@ -34,30 +32,22 @@ import com.typesafe.scalalogging.LazyLogging
   */
 object FrontendProvider extends LazyLogging {
 
-  private var frontEnds = Map[String, ActorRef]()
+  private var frontEnds: List[ActorRef] = List.empty
 
-  private var chosenFEIndex = 0
+  def startFrontendInSameActorSystem(actorSystem: ActorSystem, nbOfFrontends: Int = 10) = {
 
-
-  def getNextFrontend(): ActorRef = {
-
-    val sortedPorts = frontEnds.keySet.toList.sorted
-
-    val chosenPort = sortedPorts(chosenFEIndex)
-
-    val chosenFE = frontEnds(chosenPort)
-
-    logger.info(s"pickup $chosenPort => $chosenFE}")
-
-    chosenFEIndex = if (chosenFEIndex >= frontEnds.size) 0 else chosenFEIndex + 1
-
-    chosenFE
+    (0 to nbOfFrontends).foreach { i ⇒
+      Cluster(actorSystem) registerOnMemberUp {
+        frontEnds = frontEnds :+ actorSystem.actorOf(Props[Frontend], s"frontend-$i")
+      }
+    }
   }
 
-  def startFrontend(): Unit = {
+
+  def startFrontend(nbOfFrontends: Int = 10): Unit = {
     logger.info(s"starting new frontend in arcite cluster...")
 
-    val system = ActorSystem(ManageTransformCluster.arcClusterSyst)
+    val system = ActorSystem(ManageTransformCluster.arcClusterSyst, configWithRole("frontend"))
     logger.info(s"actor system: ${system.toString}")
 
     AkkaManagement(system).start()
@@ -65,9 +55,14 @@ object FrontendProvider extends LazyLogging {
     ClusterBootstrap(system).start()
     logger.info("starting cluster bootstrap... ")
 
-    val actR = system.actorOf(Props[Frontend], "frontend")
-
-    frontEnds += UUID.randomUUID().toString -> actR
+    (0 to nbOfFrontends).foreach { i ⇒
+      Cluster(system) registerOnMemberUp {
+        val ar = system.actorOf(Props[Frontend], s"frontend-$i")
+        frontEnds = frontEnds :+ ar
+      }
+    }
   }
+
+  def getNextFrontend(): ActorRef = frontEnds(java.util.concurrent.ThreadLocalRandom.current.nextInt(frontEnds.size))
 
 }

@@ -29,7 +29,7 @@ import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerS
 object MasterSingleton {
 
   private val singletonName = "master"
-  private val singletonRole = "back-end"
+  private val singletonRole = "backend"
 
   // #singleton
   import scala.concurrent.duration._

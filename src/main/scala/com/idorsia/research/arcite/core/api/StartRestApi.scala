@@ -12,7 +12,7 @@ import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import com.idorsia.research.arcite.core.eventinfo.ArciteAppLogs.AddAppLog
 import com.idorsia.research.arcite.core.eventinfo.{ArciteAppLog, LogCategory}
-import com.idorsia.research.arcite.core.transforms.cluster.configWithRole
+import com.idorsia.research.arcite.core.transforms.cluster.{FrontendProvider, configWithRole}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 
@@ -122,4 +122,7 @@ object StartRestApi extends App with LazyLogging {
         s"could not start ARCITE. ${ex}"))
       system.terminate()
   }
+
+  FrontendProvider.startFrontendInSameActorSystem(system)
+
 }
