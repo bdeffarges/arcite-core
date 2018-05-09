@@ -1,0 +1,35 @@
+{
+  "selfNode": "akka.tcp://arcite-cluster-engine@10.64.16.56:3820",
+  "leader": "akka.tcp://arcite-cluster-engine@10.64.16.56:3820",
+  "oldest": "akka.tcp://arcite-cluster-engine@10.64.16.56:3820",
+  "unreachable": [],
+  "members": [
+    {
+      "node": "akka.tcp://arcite-cluster-engine@10.64.16.56:3820",
+      "nodeUid": "758097395",
+      "status": "Up",
+      "roles": [
+        "backend",
+        "dc-default"
+      ]
+    },
+    {
+      "node": "akka.tcp://arcite-cluster-engine@10.64.16.61:16673",
+      "nodeUid": "-1276753263",
+      "status": "Up",
+      "roles": [
+        "rest-api",
+        "dc-default"
+      ]
+    },
+    {
+      "node": "akka.tcp://arcite-cluster-engine@10.64.16.63:27621",
+      "nodeUid": "-1731446908",
+      "status": "Up",
+      "roles": [
+        "helper",
+        "dc-default"
+      ]
+    }
+  ]
+}

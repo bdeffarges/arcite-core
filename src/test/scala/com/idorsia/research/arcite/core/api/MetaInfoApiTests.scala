@@ -49,7 +49,7 @@ class MetaInfoApiTests extends ApiTests {
       //      import scala.concurrent.duration._
       //      val f = r.entity.toStrict(5 seconds).map(_.data.decodeString("UTF-8"))
       //
-      //      f onComplete {
+      //      f EonComplete {
       //        case Success(stg) ⇒
       //          val cats = stg.parseJson.convertTo[AllCategories]
       //          assert(cats.categories.size > 100000000)

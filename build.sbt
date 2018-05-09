@@ -60,7 +60,7 @@ libraryDependencies ++= {
   val akkaVersion = "2.5.12"
   val akkaHttpVersion = "10.1.1"
   val luceneVersion = "6.5.0"
-  val akkaManagementVersion = "0.10.0"
+  val akkaManagementVersion = "0.12.0"
 
   Seq(
     "com.typesafe.akka" %% "akka-actor" % akkaVersion,
