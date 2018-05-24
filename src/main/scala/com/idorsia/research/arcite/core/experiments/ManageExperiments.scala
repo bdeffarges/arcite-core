@@ -485,7 +485,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef, fileServiceAct: ActorRef)
 
 
     case gmf: InfoAboutAllFiles ⇒
-      logger.info("looking for all files list")
+      logger.info("looking for all files list for a given experiment...")
       val exp = experiments.get(gmf.experiment)
       if (exp.isDefined) {
         fileServiceAct forward GetAllFiles(FromAllFolders(exp.get))
@@ -955,28 +955,40 @@ class ExperimentActorsManager extends Actor with ActorLogging {
   }
 
   override def receive: Receive = {
-    case m : LogMsg ⇒
+    case m: LogMsg ⇒
       eventInfoLoggingAct forward m
 
     case fm: FileSerMsg ⇒
       fileServiceAct forward fm
 
     case umsg: UnimportantMsg ⇒
-      log.info(s"[àéàéàp] got a message from ${sender().toString()}")
+      log.info(s"got a message from ${sender().toString()}")
       manExpActor forward umsg
 
-    case expMsg : ExperimentMsg ⇒
-    manExpActor forward expMsg
+    case expMsg: ExperimentMsg ⇒
+      manExpActor forward expMsg
+
+    case infoAboutFs: InfoAboutFiles ⇒
+      log.info(s"got a message from ${sender().toString()} to retrieve infos about files. ")
+      manExpActor forward infoAboutFs
+
+    case publish: PublishApi ⇒
+      log.info(s"got a publish api message, forwarding it. ")
+      manExpActor forward publish
+
+    case uploadF: MoveUploadedFile ⇒
+      log.info(s"got message about uploading files.. ")
+      manExpActor forward uploadF
 
     case msg: Any ⇒
-      log.error(s"[è%àPi] I don't know what to do with message ${msg.toString}")
+      log.error(s"I don't know what to do with message ${msg.toString}")
   }
 }
 
 
 object ExperimentActorsManager extends LazyLogging {
 
-  val eventLogAct =  "event_logging_info"
+  val eventLogAct = "event_logging_info"
   val fileSerAct = "file_service"
   val expManAct = "experiments_manager"
   val defRawAct = "define_raw_data"
