@@ -12,6 +12,7 @@ import akka.http.scaladsl.server.Directives
 import akka.pattern.ask
 import akka.stream.scaladsl.FileIO
 import akka.util.Timeout
+import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.api.GlobServices._
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.{InfoLogs, ReadLogs}
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor.AllFilesInformation
@@ -244,7 +245,7 @@ class ExperimentRoutes(expManager: ActorRef)
         fileUpload("fileupload") {
           case (fileInfo, fileStream) =>
             logger.info(s"uploading $location file: $fileInfo")
-            val tempp = Paths.get("/tmp", UUID.randomUUID().toString)
+            val tempp = core.arciteTmp resolve UUID.randomUUID().toString
             tempp.toFile.mkdirs()
             val fileP = tempp resolve fileInfo.fileName
             val sink = FileIO.toPath(fileP)

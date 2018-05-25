@@ -20,13 +20,21 @@ package object core {
 
   if (!dataPath.toFile.exists) dataPath.toFile.mkdirs()
 
+
   val logsPath: Path = home resolve "logs"
 
   if (!logsPath.toFile.exists) logsPath.toFile.mkdir()
 
+
   val globalPublishPath: Path = home resolve "published"
 
   if (!globalPublishPath.toFile.exists) globalPublishPath.toFile.mkdirs()
+
+
+  val arciteTmp: Path = home resolve "tmp"
+
+  if (!arciteTmp.toFile.exists) arciteTmp.toFile.mkdir
+
 
   logger.debug(s"data Path: $dataPath")
   logger.debug(s"logs path: $logsPath")

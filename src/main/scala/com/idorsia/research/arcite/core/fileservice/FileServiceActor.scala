@@ -4,6 +4,7 @@ import java.io.File
 import java.nio.file.Path
 
 import akka.actor.{Actor, ActorLogging, ActorPath, Props}
+import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor}
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor.SourceInformation
 import com.idorsia.research.arcite.core.utils.{FileInformation, FileVisitor, FilesInformation}
@@ -89,8 +90,17 @@ class FileServiceActor(mounts: Map[String, SourceInformation]) extends Actor wit
           sender() ! metaF
 
         case FromAllFolders(_) ⇒
-          val allFiles = AllFilesInformation(rawFiles = FileVisitor.getFilesInformation(ev.rawFolderPath, false),
-            userRawFiles = FileVisitor.getFilesInformation(ev.userRawFolderPath, false),
+          //          val allFiles = AllFilesInformation(
+          //            rawFiles = FileVisitor.getFilesInformation(ev.rawFolderPath, false),
+          //            userRawFiles = FileVisitor.getFilesInformation(ev.userRawFolderPath, false),
+          //            metaFiles = FileVisitor.getFilesInformation(ev.userMetaFolderPath, false))
+          //todo improve because of huge subfolders...
+
+          val allFiles = AllFilesInformation(
+            rawFiles = ev.rawFolderPath.toFile.listFiles.
+              filterNot(_.getName.contains(core.arciteFilePrefix)).map(f ⇒ FileVisitor(f).fileInformation).toSet,
+            userRawFiles = ev.userRawFolderPath.toFile.listFiles.
+              filterNot(_.getName.contains(core.arciteFilePrefix)).map(f ⇒ FileVisitor(f).fileInformation).toSet,
             metaFiles = FileVisitor.getFilesInformation(ev.userMetaFolderPath, false))
 
           val totFiles = allFiles.metaFiles.size + allFiles.rawFiles.size + allFiles.userRawFiles.size

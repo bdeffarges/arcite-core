@@ -35,7 +35,7 @@ import com.idorsia.research.arcite.core.transforms.cluster.ScatGathTransform.Pre
   * Created by Bernard Deffarges on 2016/09/23.
   *
   */
-class ScatGathTransform(requester: ActorRef, expManager: ActorSelection) extends Actor with ActorLogging {
+class ScatGathTransform(requester: ActorRef, expManager: ActorRef) extends Actor with ActorLogging {
 
   private var expFound: Option[ExperimentFound] = None
 
