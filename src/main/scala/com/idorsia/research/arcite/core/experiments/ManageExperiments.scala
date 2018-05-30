@@ -31,6 +31,7 @@ import com.idorsia.research.arcite.core.transforms.cluster.{FrontendProvider, co
 import com.idorsia.research.arcite.core.transforms.{ExpTransfAndSelection, TransformCompletionFeedback}
 import com.idorsia.research.arcite.core.transftree.{ToTFeedbackDetails, ToTFeedbackDetailsForApi, ToTFeedbackHelper}
 import com.idorsia.research.arcite.core.utils
+import com.idorsia.research.arcite.core.utils.WriteFeedbackActor.WriteFeedback
 import com.idorsia.research.arcite.core.utils._
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
@@ -979,6 +980,10 @@ class ExperimentActorsManager extends Actor with ActorLogging {
     case uploadF: MoveUploadedFile ⇒
       log.info(s"got message about uploading files.. ")
       manExpActor forward uploadF
+
+    case wf: WriteFeedback ⇒
+      log.info("writing feedback about a transform...")
+      writeFeedbackActor forward wf
 
     case msg: Any ⇒
       log.error(s"I don't know what to do with message ${msg.toString}")

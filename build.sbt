@@ -5,7 +5,7 @@ organization := "com.idorsia.research.arcite"
 
 name := "arcite-core"
 
-version := "1.87.9"
+version := "1.87.12"
 
 scalaVersion := "2.11.8"
 
@@ -39,9 +39,9 @@ publishMavenStyle := true
 publishTo := {
   val nexus = "http://nexus.idorsia.com/repository/"
   if (version.value.toString.trim.endsWith("SNAPSHOT"))
-    Some("snapshots" at nexus + "/idorsia-snapshots")
+    Some("snapshots" at nexus + "idorsia-snapshots")
   else
-    Some("releases" at nexus + "/idorsia-releases")
+    Some("releases" at nexus + "idorsia-releases")
 }
 
 resolvers ++= Seq(

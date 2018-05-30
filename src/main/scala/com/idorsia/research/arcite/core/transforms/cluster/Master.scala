@@ -98,7 +98,8 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging {
 
     case wid: MasterWorkerProtocol.WorkerCompleted ⇒
       // write transform feedback report
-      proxyToFeedbackActor ! WriteFeedback(wid)
+      log.info(s"received work completed ${wid.toString}")
+      proxyToExpMgrActor ! WriteFeedback(wid)
 
       // idempotent
       if (workState.isDone(wid.transf.uid)) {
@@ -111,6 +112,7 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging {
         changeWorkerToIdle(wid.workerId, wid.transf)
         workState = workState.updated(WorkState.WorkCompleted(wid.transf))
         // Ack back to original sender
+        log.info(s"sending ACK to ${sender().toString()}")
         sender() ! MasterWorkerProtocol.Ack(wid.transf)
       }
 
@@ -155,7 +157,7 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging {
                 val wc = WorkerCompleted(workerId, t,
                   WorkerJobFailed("time out", "time out, transform process seem to be lost"),
                   utils.getCurrentDateAsString())
-                proxyToFeedbackActor ! WriteFeedback(wc)
+                proxyToExpMgrActor ! WriteFeedback(wc)
             }
           }
           workers -= workerId
@@ -233,14 +235,12 @@ class Master(workTimeout: FiniteDuration) extends Actor with ActorLogging {
     }
 
 
-  private def proxyToFeedbackActor(): ActorRef = {
-
+  private def proxyToExpMgrActor(): ActorRef = {
     val props =
       ClusterSingletonProxy.props(
         settings = ClusterSingletonProxySettings(context.system)
           .withRole("helper"),
-        singletonManagerPath = s"/user/exp_actors_manager/write_feedback")
-
+        singletonManagerPath = s"/user/exp_actors_manager")
     context.system.actorOf(props)
   }
 }

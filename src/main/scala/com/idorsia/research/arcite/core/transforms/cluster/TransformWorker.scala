@@ -123,7 +123,7 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
 
   def working: Receive = {
     case wc: WorkerJobCompletion ⇒
-      log.info(s"Work is completed. feedback: ${wc.feedback}")
+      log.info(s"Work is completed. feedback: [${wc.feedback}]")
       sendToMaster(WorkerCompleted(workerId, transform, wc, utils.getDateAsString(time)))
       context.setReceiveTimeout(10.seconds)
       context.become(waitForWorkIsDoneAck(wc))
@@ -167,6 +167,7 @@ class TransformWorker(clusterClient: ActorRef, transformDefinition: TransformDef
   }
 
   def sendToMaster(msg: Any): Unit = {
+    log.info(s"informing cluster master singleton: [${msg.toString}]")
     clusterClient ! SendToAll("/user/master/singleton", msg)
   }
 }
