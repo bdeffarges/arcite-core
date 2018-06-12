@@ -13,9 +13,9 @@ crossScalaVersions := Seq(scalaVersion.value, "2.12.4")
 
 scmInfo := Some(
   ScmInfo(
-    url("https://chiron.europe.actelion.com/stash/projects/ARC/repos/arcite-core/browse"),
-    "scm:ssh://git@chiron.europe.actelion.com:7999/arc/arcite-core.git",
-    Some("scm:git:git@chiron.europe.actelion.com:7999/arc/arcite-core.git")
+    url("https://chiron.idorsia.com/stash/projects/ARC/repos/arcite-core/browse"),
+    "scm:ssh://git@chiron.idorsia.com:7999/arc/arcite-core.git",
+    Some("scm:git:git@chiron.idorsia.com:7999/arc/arcite-core.git")
   )
 )
 

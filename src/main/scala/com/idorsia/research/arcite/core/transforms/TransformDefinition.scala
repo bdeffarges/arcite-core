@@ -110,7 +110,6 @@ case class TransformHelper(transform: Transform) {
 
 }
 
-
 case class TransformDoneSource(experiment: String, kindOfSource: String, fromTransform: Option[String])
 
 case class TransformCompletionFeedback(transform: String, transformDefinition: FullName, source: TransformDoneSource,

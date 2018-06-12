@@ -45,7 +45,7 @@ package object core {
   lazy val homeFolderAsVariable = "${arcite.home.experiments}" //substituted at the docker deployment level
 
   //to avoid as much as possible file collision, we prefix internal arcite files with a strange prefix
-  val arciteFilePrefix = "##@ArCiTe8@@$__"
+  val arciteFilePrefix = "_arcite__"
   val successFile = ".success"
   val failedFile = ".failed"
   val feedbackfile = "-feedback.json"
