@@ -3,25 +3,18 @@ package com.idorsia.research.arcite.core.transforms.cluster
 import java.util.UUID
 
 import akka.actor.{ActorPath, ActorSystem}
-
 import akka.cluster.client.{ClusterClient, ClusterClientSettings}
-
 import akka.discovery.marathon.MarathonApiSimpleServiceDiscovery
-
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpEntity, HttpRequest, HttpResponse}
-
 import akka.management.cluster.{ClusterMember, ClusterMembers, ClusterUnreachableMember}
-
 import akka.stream.ActorMaterializer
-
 import com.idorsia.research.arcite.core.transforms.TransformDefinition
-
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 /**
   * arcite-core
@@ -61,7 +54,16 @@ class AddWorkerClusterClient(actorSystemName: String, conf: Config) extends Lazy
 
     val discovery = new MarathonApiSimpleServiceDiscovery(system)
 
-    val discoverCluster = discovery.lookup("arcite-cluster-engine", 5 seconds)
+    val clusterName = Option(System.getenv("CLUSTER_NAME"))
+
+    if (clusterName.isEmpty) {
+      logger.error("no arcite cluster name provided, quitting. ")
+      System.exit(1)
+    }
+
+    logger.info(s"trying to join arcite cluster $clusterName...")
+
+    val discoverCluster = discovery.lookup(clusterName.get, 5 seconds)
 
     discoverCluster.onComplete { r ⇒ //returns the host:port of the akka management service
       // now we need to find the receptionists

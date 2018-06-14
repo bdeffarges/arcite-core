@@ -266,3 +266,9 @@
 //rgx.findFirstIn("Undetermined_S0_L0002_R1_001.fastq.gz").fold("undefined.fastq.gz")(_.replaceAll("L(\\d{3,4})", "L_ALL"))
 //rgx.findFirstIn("Undetermined_S0_L00043_R1_001.fastq.gz").fold("undefined.fastq.gz")(_.replaceAll("L(\\d{3,4})", "L_ALL"))
 
+
+//println(System.getProperty())
+
+val a = Option(null)
+println(a)
+println(a.isDefined)
