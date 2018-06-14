@@ -5,7 +5,7 @@ organization := "com.idorsia.research.arcite"
 
 name := "arcite-core"
 
-version := "1.87.19"
+version := "1.88.3"
 
 scalaVersion := "2.11.8"
 
@@ -53,6 +53,7 @@ resolvers ++= Seq(
   Resolver.sonatypeRepo("releases"),
   Resolver.sonatypeRepo("snapshots"),
   MavenRepository("mvn-repository", "https://mvnrepository.com/artifact/"),
+  MavenRepository("mvn-central", "http://repo1.maven.org/maven2"),
   MavenRepository("Artima Maven Repository", "http://repo.artima.com/releases/"))
 
 
@@ -108,6 +109,7 @@ libraryDependencies ++= {
     "org.scalatest" %% "scalatest" % "3.0.1" % "test",
     "com.github.agourlay" %% "cornichon" % "0.11.2" % "test",
     "org.json4s" %% "json4s-jackson" % "3.5.1" % "test",
+    "com.twitter" %% "chill" % "0.9.1",
     "com.lightbend.akka.management" %% "akka-management-cluster-bootstrap" % akkaManagementVersion,
     "com.lightbend.akka.management" %% "akka-management" % akkaManagementVersion,
     "com.lightbend.akka.management" %% "akka-management-cluster-http" % akkaManagementVersion,
