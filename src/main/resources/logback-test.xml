@@ -13,4 +13,8 @@
         <appender-ref ref="STDOUT"/>
     </logger>
 
+    <logger name="com.twitter" level="debug">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+
 </configuration>

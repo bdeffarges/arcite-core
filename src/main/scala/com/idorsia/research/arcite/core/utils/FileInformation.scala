@@ -14,13 +14,18 @@ case class FileInformation(fullPath: String, name: String, fileSize: String, fil
 
 case class FilesInformation(files: Seq[FileInformation] = Seq.empty)
 
+
+
 case class FileVisitor(file: File) {
-  require(file.exists())
   import FileVisitor._
 
   lazy val fileInformation: FileInformation =
-    FileInformation(file.getAbsolutePath, file.getName,
-      sizeToString(file.length()), if (file.isDirectory) "folder" else "file")
+    if (file.exists()) {
+      FileInformation(file.getAbsolutePath, file.getName,
+        sizeToString(file.length()), if (file.isDirectory) "folder" else "file")
+    } else {
+      NoFileInformation
+    }
 }
 
 object FileVisitor extends LazyLogging {
@@ -71,6 +76,8 @@ object FileVisitor extends LazyLogging {
       Set.empty
     }
   }
+
+  val NoFileInformation = FileInformation( "Could_not_find_expected_path","No_File_found","0")
 }
 
 
