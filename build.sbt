@@ -5,7 +5,7 @@ organization := "com.idorsia.research.arcite"
 
 name := "arcite-core"
 
-version := "1.88.5"
+version := "1.88.21"
 
 scalaVersion := "2.11.8"
 
@@ -31,6 +31,7 @@ scalacOptions ++= Seq(
   , "-feature"
   , "-language:postfixOps"
 )
+
 
 credentials += Credentials("Sonatype Nexus Repository Manager", "nexus.idorsia.com", "deployment", "biodeploy")
 

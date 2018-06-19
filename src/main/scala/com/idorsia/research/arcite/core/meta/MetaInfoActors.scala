@@ -1,9 +1,10 @@
 package com.idorsia.research.arcite.core.meta
 
-import akka.actor.Actor.Receive
-import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
+import java.nio.file.FileSystemException
+
+import akka.actor.SupervisorStrategy.Restart
+import akka.actor.{Actor, ActorLogging, OneForOneStrategy}
 import com.idorsia.research.arcite.core.meta.DesignCategories.GetCategories
-import com.typesafe.config.ConfigFactory
 
 /**
   * arcite-core
@@ -31,6 +32,14 @@ import com.typesafe.config.ConfigFactory
 class MetaInfoActors extends Actor with ActorLogging {
 
   private val designCatAct = context.actorOf(DesignCategories.props(), "design_categories")
+
+  import scala.concurrent.duration._
+
+  override val supervisorStrategy =
+    OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 30 seconds) {
+      case _: FileSystemException ⇒ Restart
+    }
+
 
   override def receive: Receive = {
 

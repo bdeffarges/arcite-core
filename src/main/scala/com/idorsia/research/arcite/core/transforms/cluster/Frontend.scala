@@ -73,17 +73,17 @@ class Frontend extends Actor with ActorLogging {
 
 
     case ft: FindTransfDefs ⇒
-      implicit val timeout = Timeout(3.seconds)
+      implicit val timeout = Timeout(5.seconds)
       (masterProxy ? ft) pipeTo sender()
 
 
     case gtd: GetTransfDef ⇒
-      implicit val timeout = Timeout(3.seconds)
+      implicit val timeout = Timeout(5.seconds)
       (masterProxy ? gtd) pipeTo sender()
 
 
     case gtd: GetTransfDefFromName ⇒
-      implicit val timeout = Timeout(3.seconds)
+      implicit val timeout = Timeout(5.seconds)
       (masterProxy ? gtd) pipeTo sender()
 
 

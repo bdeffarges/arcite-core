@@ -1,5 +1,7 @@
 package com.idorsia.research.arcite.core.utils
 
+import java.text.SimpleDateFormat
+
 import com.idorsia.research.arcite.core.utils
 import org.scalatest.{FlatSpec, Matchers}
 
@@ -36,5 +38,11 @@ class UtilsTest extends FlatSpec with Matchers {
     assert(utils.getEnoughButNotTooMuchForUserInfo("hello world, earth, jupiter, Moon, neptune") == """hello world, earth, jupiter, Moon, neptune""")
     assert(utils.getEnoughButNotTooMuchForUserInfo("hello world, earth, jupiter, Moon, neptune", 100) == """hello world, earth, jupiter, Moon, neptune""")
     assert(utils.getEnoughButNotTooMuchForUserInfo("hello world, earth, jupiter, Moon, neptune", 10) == """hello...ptune""")
+  }
+
+  "getAsDate " should "transform any string into a date " in {
+    val d = getAsDate("")
+    println(d)
+    d before new SimpleDateFormat("yyyy/MM/dd-HH:mm:ss").parse("2018/06/19-13:02:30") //todo does not work...
   }
 }

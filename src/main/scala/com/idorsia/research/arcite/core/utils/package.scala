@@ -4,6 +4,10 @@ import java.nio.file.{Files, Path, StandardOpenOption}
 import java.text.SimpleDateFormat
 import java.util.Date
 
+import com.typesafe.scalalogging.LazyLogging
+
+import scala.util.Try
+
 /**
   * arcite-core
   *
@@ -27,30 +31,37 @@ import java.util.Date
   * Created by Bernard Deffarges on 2016/10/11.
   *
   */
-package object utils {
+package object utils extends LazyLogging {
 
   val dateDefaultFormatter = new SimpleDateFormat("yyyy/MM/dd-HH:mm:ss")
   val dateDefaultFormatterMS = new SimpleDateFormat("yyyy/MM/dd-HH:mm:ss:SSS")
 
   val dateForFolderName = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss_S")
 
+  lazy val defaultDate = dateDefaultFormatter.parse("2018/01/01-00:00:00")
 
-  def getCurrentDateAsString() = dateDefaultFormatter.format(new Date())
+  def getCurrentDateAsString(): String = dateDefaultFormatter.format(new Date())
 
+  def getDateAsString(time: Long): String = dateDefaultFormatter.format(new Date(time))
 
-  def getDateAsString(time: Long) = dateDefaultFormatter.format(new Date(time))
+  def getDateAsStringMS(time: Long): String = dateDefaultFormatterMS.format(new Date(time))
 
-  def getDateAsStringMS(time: Long) = dateDefaultFormatterMS.format(new Date(time))
+  def getDateAsStrg(date: Date): String = dateDefaultFormatter.format(date)
 
-  def getDateAsStrg(date: Date) = dateDefaultFormatter.format(date)
-
-  def getAsDate(date: String) = dateDefaultFormatter.parse(date)
-
-  def getAsDateMS(date: String) = dateDefaultFormatterMS.parse(date)
+  def getDateForFolderName(): String = dateForFolderName.format(new Date())
 
 
-  def getDateForFolderName() = dateForFolderName.format(new Date())
+  def getAsDate(date: String): Date = Try(dateDefaultFormatter.parse(date))
+    .getOrElse({
+      logger.warn("$date could not be parsed to a date, returning default date. ")
+      defaultDate
+    })
 
+  def getAsDateMS(date: String): Date = Try(dateDefaultFormatterMS.parse(date))
+    .getOrElse({
+      logger.warn("$date could not be parsed to a date, returning default date. ")
+      defaultDate
+    })
 
   lazy val almostTenYearsAgo = new Date(System.currentTimeMillis() - (10 * 365 * 24 * 3600 * 1000L))
 

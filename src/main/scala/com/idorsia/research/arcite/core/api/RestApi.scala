@@ -82,10 +82,10 @@ class RestApi(system: ActorSystem)
     RawHeader("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS, DELETE"),
     RawHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization"))
 
-  private val expRoutes = new ExperimentRoutes(expManager)(executionContext, Timeout(2.seconds)).routes
-  private val expsRoutes = new ExperimentsRoutes(expManager)(executionContext, Timeout(2.seconds)).routes
-  private val transfRoutes = new TransfRoutes(system, expManager)(executionContext, Timeout(2.seconds)).routes
-  private val tofTransfRoutes = new TofTransfRoutes(system)(executionContext, timeout).routes
+  private val expRoutes = new ExperimentRoutes(expManager)(executionContext, Timeout(6.seconds)).routes
+  private val expsRoutes = new ExperimentsRoutes(expManager)(executionContext, Timeout(6.seconds)).routes
+  private val transfRoutes = new TransfRoutes(system, expManager)(executionContext, Timeout(6.seconds)).routes
+//  private val tofTransfRoutes = new TofTransfRoutes(system)(executionContext, timeout).routes
   private val swui = new SwUI().route
 
   //no arguments in the method to avoid problems with Swagger
@@ -93,7 +93,7 @@ class RestApi(system: ActorSystem)
     new DirectRoute(globServices).directRoute ~
       pathPrefix("api") {
         pathPrefix(s"v${core.apiVersion}") {
-          expsRoutes ~ expRoutes ~ transfRoutes ~ tofTransfRoutes ~
+          expsRoutes ~ expRoutes ~ transfRoutes ~ /* tofTransfRoutes ~*/
             rawDataRoute ~ metaDataRoute ~ allLastUpdatesRoute ~ pingRoute ~
             allExperimentsRecentLogs ~ metaInfoRoute ~
             dataSourcesRoute ~ appLogsRoute ~ organizationRoute ~

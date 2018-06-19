@@ -96,7 +96,7 @@ class GlobServices(expManager: ActorRef, timeout: Timeout) extends Actor with Ac
   log.info(s"****** connect file service actor [$fileServiceActPath] actor: $fileServiceAct")
 
   private[api] val metaActor = context.actorSelection(metaInfoPath)
-  log.info(s"**** meta info actor [${metaActor.toString}] started... ")
+  log.info(s"****** meta info actor [${metaActor.toString}] started... ")
 
   import GlobServices._
 

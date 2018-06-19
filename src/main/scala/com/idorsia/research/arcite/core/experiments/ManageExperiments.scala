@@ -73,7 +73,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef, fileServiceAct: ActorRef)
 
   private val path = Paths.get(filePath)
 
-  private val luceneRAMSearchAct = context.system.actorOf(Props(classOf[ArciteLuceneRamIndex]), "experiments_lucene_index")
+  private val luceneRAMSearchAct = context.actorOf(Props(classOf[ArciteLuceneRamIndex]), "experiments_lucene_index")
 
   private var experiments: Map[String, Experiment] = Map.empty
 
@@ -317,7 +317,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef, fileServiceAct: ActorRef)
           e._1.uid.get, utils.getDateAsStrg(e._2.date), e._1.state, e._1.hidden))
 
       log.debug("found {} experiments. ", allExps.size)
-      log.debug(s"sender = ${sender().toString()}")
+      log.debug(s"informing sender [${sender().toString()}]")
       sender() ! AllExperiments(allExps)
 
 
@@ -353,7 +353,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef, fileServiceAct: ActorRef)
 
 
     case GetExperiments(uids) ⇒
-      log.debug(s"retrieving experiment from uid: ${uids.mkString(" ; ")}")
+      log.debug(s"retrieving experiment from uids: ${uids.mkString(" ; ")}")
 
       val exps = uids.map(uid ⇒ experiments.get(uid))
         .filter(_.isDefined)
@@ -486,7 +486,7 @@ class ManageExperiments(eventInfoLoggingAct: ActorRef, fileServiceAct: ActorRef)
 
 
     case gmf: InfoAboutAllFiles ⇒
-      logger.info("looking for all files list for a given experiment...")
+      logger.info(s"looking for all files list for a given experiment ${gmf.toString}...")
       val exp = experiments.get(gmf.experiment)
       if (exp.isDefined) {
         fileServiceAct forward GetAllFiles(FromAllFolders(exp.get))
@@ -700,9 +700,12 @@ object ManageExperiments {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  private[ManageExperiments] val defExpLog = ExpLog(LogType.UNKNOWN, LogCategory.UNKNOWN, "no latest log. ", utils.almostTenYearsAgo)
+  private[ManageExperiments] val defExpLog =
+    ExpLog(LogType.UNKNOWN, LogCategory.UNKNOWN, "no latest log. ", utils.almostTenYearsAgo)
+
 
   case class State(experiments: Set[Experiment] = Set())
+
 
   trait ExperimentMsg
 
@@ -967,6 +970,7 @@ class ExperimentActorsManager extends Actor with ActorLogging {
       manExpActor forward umsg
 
     case expMsg: ExperimentMsg ⇒
+      log.debug(s"got an experiment query msg= ${expMsg}")
       manExpActor forward expMsg
 
     case infoAboutFs: InfoAboutFiles ⇒
@@ -1004,6 +1008,7 @@ object ExperimentActorsManager extends LazyLogging {
     val config = ConfigFactory.load()
 
     val arcClusterSyst: String = config.getString("arcite.cluster.name")
+    logger.debug(s"experiments actor manager joining arcite cluster ${arcClusterSyst}")
 
     val actSystem = ActorSystem(arcClusterSyst, configWithRole("helper"))
 
@@ -1013,7 +1018,7 @@ object ExperimentActorsManager extends LazyLogging {
     logger.info("starting cluster bootstrap... ")
     ClusterBootstrap(actSystem).start()
 
-    logger.info("starting experiment Actors manager as singleton...")
+    logger.info("starting experiment Actors manager as singleton.in cluster..")
 
     Cluster(actSystem) registerOnMemberUp {
       actSystem.actorOf(
@@ -1022,6 +1027,7 @@ object ExperimentActorsManager extends LazyLogging {
         "exp_actors_manager")
     }
 
+    logger.info("starting cluster frontends...")
     FrontendProvider.startFrontendInSameActorSystem(actSystem)
   }
 }

@@ -12,6 +12,7 @@ import com.typesafe.scalalogging.LazyLogging
 
 object LocalExperiments extends LazyLogging with ExpJsonProto {
 
+  val META_FOLDER = "meta"
   val EXPERIMENT_FILE_NAME = "experiment"
   val EXPERIMENT_UID_FILE_NAME = "uid"
 
@@ -34,12 +35,13 @@ object LocalExperiments extends LazyLogging with ExpJsonProto {
     //todo while going deeper should verify match between structure and name/organization
     // todo when to check digest?
     // todo add exception handling in case structure or files are not castable through json
+    // code needs improvements... to say the least make it tail recursive
 
     var map: Map[String, Experiment] = Map.empty
 
     def deeperUntilMeta(currentFolder: Path) {
       //      logger.debug(s"currentFolder: $currentFolder")
-      if (currentFolder.toFile.getName == "meta") {
+      if (currentFolder.toFile.getName == META_FOLDER) {
         val expFile = currentFolder.resolve(EXPERIMENT_FILE_NAME).toFile
 
         if (expFile.exists()) {
@@ -51,9 +53,9 @@ object LocalExperiments extends LazyLogging with ExpJsonProto {
           if (expCond.isDefined) map += ((uid, expCond.get))
 
         }
-      }
-      if (currentFolder.toFile.isDirectory)
-        currentFolder.toFile.listFiles().toList.foreach(f ⇒ deeperUntilMeta(f.toPath))
+      } else if (currentFolder.toFile.isDirectory)
+        currentFolder.toFile.listFiles().filterNot(_.getName == "raw").filterNot(_.getName == "transforms")
+          .toList.foreach(f ⇒ deeperUntilMeta(f.toPath))
     }
 
     deeperUntilMeta(core.dataPath)
@@ -64,7 +66,7 @@ object LocalExperiments extends LazyLogging with ExpJsonProto {
   def loadExperiment(path: Path): Option[Experiment] = {
     import spray.json._
     import scala.collection.convert.wrapAsScala._
-//    logger.debug(s"loading experiment for ${path}")
+    logger.debug(s"loading experiment for ${path}")
 
     try {
       val exp: Experiment = Files.readAllLines(path).toList.mkString("\n").parseJson.convertTo[Experiment]

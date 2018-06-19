@@ -8,6 +8,7 @@ import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.api.{ArciteJSONProtocol, ExpJsonProto}
 import com.idorsia.research.arcite.core.experiments.Experiment
 import com.idorsia.research.arcite.core.meta.DesignCategories.{AllCategories, GetCategories, RebuildDesignCategories, SimpleCondition}
+import com.typesafe.scalalogging.LazyLogging
 
 /**
   * arcite-core
@@ -74,7 +75,7 @@ class CategoriesRebuilder extends Actor with ExpJsonProto with ActorLogging {
 
 }
 
-object DesignCategories {
+object DesignCategories extends LazyLogging {
 
   case object RebuildDesignCategories
 
@@ -87,7 +88,10 @@ object DesignCategories {
   def props(): Props = Props(classOf[DesignCategories])
 
   def getExpFiles(folder: Path): Set[Path] = {
-    if (folder.toFile.exists()) {
+//    logger.error(s"looking into $folder")
+    val f = folder.toFile
+    // todo that means that the exp. folder cannot be called raw, etc. needs therefore to be improved
+    if (f.exists() && f.getName !="raw" && f.getName !="user_raw" && f.getName !="transforms" ) {
       val listFiles = folder.toFile.listFiles
       val files = listFiles.filter(_.isFile)
         .filter(_.getParent.endsWith("meta"))
