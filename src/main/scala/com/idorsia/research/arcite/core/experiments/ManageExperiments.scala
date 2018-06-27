@@ -12,18 +12,19 @@ import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerS
 import akka.management.AkkaManagement
 import akka.management.cluster.bootstrap.ClusterBootstrap
 import com.idorsia.research.arcite.core
-import com.idorsia.research.arcite.core.api.GlobServices._
 import com.idorsia.research.arcite.core.api.{ExpJsonProto, TofTransfJsonProto, TransfJsonProto}
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging._
 import com.idorsia.research.arcite.core.eventinfo._
 import com.idorsia.research.arcite.core.experiments.LocalExperiments.{LoadExperiment, SaveExperimentFailed, SaveExperimentSuccessful}
-import com.idorsia.research.arcite.core.experiments.ManageExperiments.{ExperimentMsg, RebuildExperiments}
+import com.idorsia.research.arcite.core.experiments.ManageExperiments.{ExperimentMsg, InfoAboutFiles, MoveUploadedFile, RebuildExperiments}
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor.{FileSerMsg, _}
 import com.idorsia.research.arcite.core.meta.MetaInfoActors
+import com.idorsia.research.arcite.core.meta.MetaInfoActors.MetaInfoMsg
 import com.idorsia.research.arcite.core.publish.PublishActor
 import com.idorsia.research.arcite.core.publish.PublishActor._
 import com.idorsia.research.arcite.core.rawdata.DefineRawAndMetaData
+import com.idorsia.research.arcite.core.rawdata.DefineRawAndMetaData.RawAndMetaMsg
 import com.idorsia.research.arcite.core.search.ArciteLuceneRamIndex
 import com.idorsia.research.arcite.core.search.ArciteLuceneRamIndex._
 import com.idorsia.research.arcite.core.transforms.RunTransform.ExperimentTransform
@@ -887,6 +888,29 @@ object ManageExperiments {
 
   case class ExperimentDeleteFailed(error: String) extends DeleteExperimentFeedback
 
+
+  sealed trait MoveUploadedFile {
+    def experiment: String
+
+    def filePath: String
+  }
+
+  case class MoveMetaFile(experiment: String, filePath: String) extends MoveUploadedFile
+
+  case class MoveRawFile(experiment: String, filePath: String) extends MoveUploadedFile
+
+
+  sealed trait InfoAboutFiles {
+    def experiment: String
+  }
+
+  case class InfoAboutRawFiles(experiment: String) extends InfoAboutFiles
+
+  case class InfoAboutUserRawFiles(experiment: String) extends InfoAboutFiles
+
+  case class InfoAboutMetaFiles(experiment: String) extends InfoAboutFiles
+
+  case class InfoAboutAllFiles(experiment: String) extends InfoAboutFiles
 }
 
 class ExperimentActorsManager extends Actor with ActorLogging {
@@ -985,9 +1009,17 @@ class ExperimentActorsManager extends Actor with ActorLogging {
       log.info(s"got message about uploading files.. ")
       manExpActor forward uploadF
 
+    case rmmsg: RawAndMetaMsg ⇒
+      log.debug(s"got a message about raw or meta files...")
+      manExpActor forward rmmsg
+
     case wf: WriteFeedback ⇒
       log.info("writing feedback about a transform...")
       writeFeedbackActor forward wf
+
+    case metaInf: MetaInfoMsg ⇒
+      log.debug(s"got a message for some meta information...")
+      metaInfoParentActor forward metaInf
 
     case msg: Any ⇒
       log.error(s"I don't know what to do with message ${msg.toString}")

@@ -36,14 +36,14 @@ import com.typesafe.config.ConfigFactory
   * Created by Bernard Deffarges on 2017/05/24.
   *
   */
-class DirectRoute(arciteService: ActorRef) extends LazyLogging {
+class DirectRoute(expManager: ActorRef) extends LazyLogging {
   private[api] val config = ConfigFactory.load()
 
   private def getExperiment(uid: String) = {
     logger.debug(s"asking for experiment with digest= $uid")
     import scala.concurrent.duration._
     implicit val requestTimeOut = Timeout(2 seconds)
-    arciteService.ask(GetExperiment(uid)).mapTo[ExperimentFoundFeedback]
+    expManager.ask(GetExperiment(uid)).mapTo[ExperimentFoundFeedback]
   }
 
   def directRoute: server.Route = {

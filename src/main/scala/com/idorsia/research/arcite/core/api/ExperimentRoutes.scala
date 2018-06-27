@@ -1,11 +1,8 @@
 package com.idorsia.research.arcite.core.api
 
-import java.nio.file.Paths
 import java.util.UUID
 
-import javax.ws.rs.Path
-import akka.actor.{ActorPath, ActorRef, ActorSystem}
-import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
+import akka.actor.ActorRef
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.StatusCodes.{OK, _}
 import akka.http.scaladsl.server.Directives
@@ -13,15 +10,16 @@ import akka.pattern.ask
 import akka.stream.scaladsl.FileIO
 import akka.util.Timeout
 import com.idorsia.research.arcite.core
-import com.idorsia.research.arcite.core.api.GlobServices._
+import com.idorsia.research.arcite.core.CommonMsg.{DefaultFailure, DefaultFeedback, DefaultSuccess}
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.{InfoLogs, ReadLogs}
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor.AllFilesInformation
 import com.idorsia.research.arcite.core.publish.PublishActor._
+import com.idorsia.research.arcite.core.rawdata.DefineRawAndMetaData._
 import com.idorsia.research.arcite.core.secure.WithToken
 import com.idorsia.research.arcite.core.utils._
-import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import io.swagger.annotations._
+import javax.ws.rs.Path
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Failure
@@ -68,7 +66,7 @@ class ExperimentRoutes(expManager: ActorRef)
       hidePostRoute ~ unhide ~ getLogsRoute ~ addProps ~ delProps ~
       updateDescription ~ cloneRoute ~ getRoute ~ deleteRoute ~
       fileUploadRoute ~ publishPost ~ postRoute
-  }
+  } ~ rawDataRoute ~ metaDataRoute
 
 
   @Path("/{experiment}/transforms")
@@ -501,6 +499,82 @@ class ExperimentRoutes(expManager: ActorRef)
         }
       }
     }
+  }
+
+  private def rawDataRoute = pathPrefix("raw_data") {
+    path("from_source") {
+      post {
+        logger.debug(s"adding raw data (files from mounted source)...")
+        entity(as[SetRawData]) {
+          drd ⇒
+            val saved: Future[RawDataSetResponse] = expManager.ask(drd).mapTo[RawDataSetResponse]
+            onSuccess(saved) {
+              case RawDataSetAdded ⇒ complete(Created -> SuccessMessage("raw data added. "))
+              case RawDataSetInProgress ⇒ complete(OK -> SuccessMessage("raw data transfer started..."))
+              case RawDataSetFailed(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
+            }
+        }
+      }
+    } ~
+      path("rm") {
+        delete {
+          logger.debug(s"remove data from raw ")
+          entity(as[RemoveRawData]) {
+            rrd ⇒
+              val saved: Future[RmRawDataResponse] = expManager.ask(rrd).mapTo[RmRawDataResponse]
+              onSuccess(saved) {
+                case RmSuccess ⇒ complete(OK -> SuccessMessage("raw data removed. "))
+                case RmFailed ⇒ complete(BadRequest -> ErrorMessage("cannot remove data. "))
+                case RmCannot ⇒ complete(BadRequest -> ErrorMessage("cannot remove raw data, exp. probably already immutable."))
+              }
+          }
+        }
+      } ~
+      path("rm_all") {
+        delete {
+          logger.debug(s"remove all data from raw ")
+          entity(as[RemoveAllRaw]) {
+            rrd ⇒
+              val saved: Future[RmRawDataResponse] = expManager.ask(rrd).mapTo[RmRawDataResponse]
+              onSuccess(saved) {
+                case RmSuccess ⇒ complete(OK -> SuccessMessage("raw data removed. "))
+                case RmFailed ⇒ complete(BadRequest -> ErrorMessage("cannot remove data. "))
+                case RmCannot ⇒ complete(BadRequest -> ErrorMessage("cannot remove raw data, exp. probably already immutable."))
+              }
+          }
+        }
+      }
+  }
+
+  private def metaDataRoute = pathPrefix("meta_data") {
+    path("from_source") {
+      post {
+        logger.debug(s"adding meta data (files from mounted source)...")
+        entity(as[DefineMetaData]) {
+          lmd ⇒
+            val saved: Future[MetaResponse] = expManager.ask(lmd).mapTo[MetaResponse]
+            onSuccess(saved) {
+              case MetaDataSetDefined ⇒ complete(Created -> SuccessMessage(" meta data linked "))
+              case MetaDataInProgress ⇒ complete(OK -> SuccessMessage(" meta data almost linked "))
+              case MetaDataFailed(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
+            }
+        }
+      }
+    } ~
+      path("rm") {
+        delete {
+          logger.debug(s"remove data from meta ")
+          entity(as[RemoveMetaData]) {
+            rrd ⇒
+              val saved: Future[RmMetaDataResponse] = expManager.ask(rrd).mapTo[RmMetaDataResponse]
+              onSuccess(saved) {
+                case RmMetaSuccess ⇒ complete(OK -> SuccessMessage("raw data removed. "))
+                case RmMetaFailed ⇒ complete(BadRequest -> ErrorMessage("cannot remove data. "))
+                case RmMetaCannot ⇒ complete(BadRequest -> ErrorMessage("cannot remove raw data, exp. probably already immutable."))
+              }
+          }
+        }
+      }
   }
 }
 

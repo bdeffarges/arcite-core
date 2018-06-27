@@ -6,8 +6,8 @@ import java.nio.file.Files
 import java.util.UUID
 
 import akka.actor.{Actor, ActorLogging, ActorRef}
-import com.idorsia.research.arcite.core.api.{ArciteJSONProtocol, TransfJsonProto}
-import com.idorsia.research.arcite.core.api.GlobServices.{ArtifactPublished, DefaultSuccess}
+import com.idorsia.research.arcite.core.CommonMsg.DefaultSuccess
+import com.idorsia.research.arcite.core.api.TransfJsonProto
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.AddLog
 import com.idorsia.research.arcite.core.eventinfo.{ExpLog, LogCategory, LogType}
 import com.idorsia.research.arcite.core.experiments.{Experiment, ExperimentFolderVisitor}
@@ -116,6 +116,14 @@ object PublishActor {
                            date: String = utils.getCurrentDateAsString())
 
 
+  sealed trait PublishFeedback
+
+  case class ArtifactPublished(uid: String) extends PublishFeedback
+
+  case class ArtifactPublishedFailed(reason: String) extends PublishFeedback
+
+
+
   sealed trait PublishActorApi {
     def exp: Experiment
   }
@@ -128,3 +136,5 @@ object PublishActor {
                                  date: String = utils.getCurrentDateAsString()) extends PublishActorApi
 
 }
+
+

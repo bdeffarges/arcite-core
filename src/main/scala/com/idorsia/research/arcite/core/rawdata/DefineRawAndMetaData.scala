@@ -1,11 +1,7 @@
 package com.idorsia.research.arcite.core.rawdata
 
-import java.io.File
-import java.nio.file.Files
-
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.idorsia.research.arcite.core.api.ArciteJSONProtocol
-import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 
 /**
@@ -47,6 +43,8 @@ object DefineRawAndMetaData extends ArciteJSONProtocol with LazyLogging {
 
   def props(manageExpAct: ActorRef, eventInfo: ActorRef) = Props(classOf[DefineRawAndMetaData], manageExpAct, eventInfo)
 
+  //an easy way to forward certain messages is inheritance
+  trait RawAndMetaMsg
 
   /**
     * a Source is given (microarray, ngs, ...) which usually is a mount to a drive
@@ -57,15 +55,17 @@ object DefineRawAndMetaData extends ArciteJSONProtocol with LazyLogging {
     * @param files
     * @param symLink : should it be only symbolic links?
     */
-  case class SetRawData(experiment: String, files: Set[String], symLink: Boolean = false)
+  case class SetRawData(experiment: String, files: Set[String], symLink: Boolean = false) extends RawAndMetaMsg
 
-  sealed trait RemoveRaw {
+
+  sealed trait RemoveRaw extends RawAndMetaMsg {
     def experiment: String
   }
 
   case class RemoveRawData(experiment: String, files: Set[String]) extends RemoveRaw
 
   case class RemoveAllRaw(experiment: String) extends RemoveRaw
+
 
   sealed trait RmRawDataResponse
 
@@ -85,8 +85,7 @@ object DefineRawAndMetaData extends ArciteJSONProtocol with LazyLogging {
   case class RawDataSetFailed(error: String) extends RawDataSetResponse
 
 
-
-  case class DefineMetaData(experiment: String, files: Set[String])
+  case class DefineMetaData(experiment: String, files: Set[String]) extends RawAndMetaMsg
 
 
   sealed trait MetaResponse
@@ -98,7 +97,7 @@ object DefineRawAndMetaData extends ArciteJSONProtocol with LazyLogging {
   case class MetaDataFailed(error: String) extends MetaResponse
 
 
-  case class RemoveMetaData(experiment: String, files: Set[String])
+  case class RemoveMetaData(experiment: String, files: Set[String]) extends RawAndMetaMsg
 
 
   sealed trait RmMetaDataResponse

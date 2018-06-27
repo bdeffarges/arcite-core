@@ -14,7 +14,6 @@ import com.idorsia.research.arcite.core.api.swagger.{SwDocService, SwUI}
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.{InfoLogs, MostRecentLogs, RecentAllLastUpdates}
 import com.idorsia.research.arcite.core.fileservice.FileServiceActor._
 import com.idorsia.research.arcite.core.meta.DesignCategories.{AllCategories, GetCategories}
-import com.idorsia.research.arcite.core.rawdata.DefineRawAndMetaData._
 import com.idorsia.research.arcite.core.utils._
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
@@ -60,12 +59,9 @@ class RestApi(system: ActorSystem)
     settings = ClusterSingletonProxySettings(system).withRole("helper"),
     singletonManagerPath = s"/user/exp_actors_manager")
 
-  logger.debug(s"expManager props= $props")
-
   private val expManager = system.actorOf(props)
+  logger.debug(s"expManager props= $props")
   logger.debug(s"exp Manager actor path= ${expManager.path}")
-
-  private lazy val globServices = system.actorOf(Props(classOf[GlobServices], expManager, timeout), GlobServices.name)
 
   //testing expManager remote actor
   logger.info(s"trying to connect to remote actor [$expManager]")
@@ -85,16 +81,16 @@ class RestApi(system: ActorSystem)
   private val expRoutes = new ExperimentRoutes(expManager)(executionContext, Timeout(6.seconds)).routes
   private val expsRoutes = new ExperimentsRoutes(expManager)(executionContext, Timeout(6.seconds)).routes
   private val transfRoutes = new TransfRoutes(system, expManager)(executionContext, Timeout(6.seconds)).routes
-//  private val tofTransfRoutes = new TofTransfRoutes(system)(executionContext, timeout).routes
+  //  private val tofTransfRoutes = new TofTransfRoutes(system)(executionContext, timeout).routes
   private val swui = new SwUI().route
 
-  //no arguments in the method to avoid problems with Swagger
+  //no arguments in the method to avoid problems with Swagger, todo why?
   def routes: Route = respondWithHeaders(corsHeaders) {
-    new DirectRoute(globServices).directRoute ~
+    new DirectRoute(expManager).directRoute ~
       pathPrefix("api") {
         pathPrefix(s"v${core.apiVersion}") {
           expsRoutes ~ expRoutes ~ transfRoutes ~ /* tofTransfRoutes ~*/
-            rawDataRoute ~ metaDataRoute ~ allLastUpdatesRoute ~ pingRoute ~
+            allLastUpdatesRoute ~ pingRoute ~
             allExperimentsRecentLogs ~ metaInfoRoute ~
             dataSourcesRoute ~ appLogsRoute ~ organizationRoute ~
             SwDocService.routes ~ swui
@@ -122,84 +118,8 @@ class RestApi(system: ActorSystem)
     }
   }
 
-  private def rawDataRoute = pathPrefix("raw_data") {
-    path("from_source") {
-      post {
-        logger.debug(s"adding raw data (files from mounted source)...")
-        entity(as[SetRawData]) {
-          drd ⇒
-            val saved: Future[RawDataSetResponse] = globServices.ask(drd).mapTo[RawDataSetResponse]
-            onSuccess(saved) {
-              case RawDataSetAdded ⇒ complete(Created -> SuccessMessage("raw data added. "))
-              case RawDataSetInProgress ⇒ complete(OK -> SuccessMessage("raw data transfer started..."))
-              case RawDataSetFailed(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
-            }
-        }
-      }
-    } ~
-      path("rm") {
-        delete {
-          logger.debug(s"remove data from raw ")
-          entity(as[RemoveRawData]) {
-            rrd ⇒
-              val saved: Future[RmRawDataResponse] = globServices.ask(rrd).mapTo[RmRawDataResponse]
-              onSuccess(saved) {
-                case RmSuccess ⇒ complete(OK -> SuccessMessage("raw data removed. "))
-                case RmFailed ⇒ complete(BadRequest -> ErrorMessage("cannot remove data. "))
-                case RmCannot ⇒ complete(BadRequest -> ErrorMessage("cannot remove raw data, exp. probably already immutable."))
-              }
-          }
-        }
-      } ~
-      path("rm_all") {
-        delete {
-          logger.debug(s"remove all data from raw ")
-          entity(as[RemoveAllRaw]) {
-            rrd ⇒
-              val saved: Future[RmRawDataResponse] = globServices.ask(rrd).mapTo[RmRawDataResponse]
-              onSuccess(saved) {
-                case RmSuccess ⇒ complete(OK -> SuccessMessage("raw data removed. "))
-                case RmFailed ⇒ complete(BadRequest -> ErrorMessage("cannot remove data. "))
-                case RmCannot ⇒ complete(BadRequest -> ErrorMessage("cannot remove raw data, exp. probably already immutable."))
-              }
-          }
-        }
-      }
-  }
-
-  private def metaDataRoute = pathPrefix("meta_data") {
-    path("from_source") {
-      post {
-        logger.debug(s"adding meta data (files from mounted source)...")
-        entity(as[DefineMetaData]) {
-          lmd ⇒
-            val saved: Future[MetaResponse] = globServices.ask(lmd).mapTo[MetaResponse]
-            onSuccess(saved) {
-              case MetaDataSetDefined ⇒ complete(Created -> SuccessMessage(" meta data linked "))
-              case MetaDataInProgress ⇒ complete(OK -> SuccessMessage(" meta data almost linked "))
-              case MetaDataFailed(msg) ⇒ complete(BadRequest -> ErrorMessage(msg))
-            }
-        }
-      }
-    } ~
-      path("rm") {
-        delete {
-          logger.debug(s"remove data from meta ")
-          entity(as[RemoveMetaData]) {
-            rrd ⇒
-              val saved: Future[RmMetaDataResponse] = globServices.ask(rrd).mapTo[RmMetaDataResponse]
-              onSuccess(saved) {
-                case RmMetaSuccess ⇒ complete(OK -> SuccessMessage("raw data removed. "))
-                case RmMetaFailed ⇒ complete(BadRequest -> ErrorMessage("cannot remove data. "))
-                case RmMetaCannot ⇒ complete(BadRequest -> ErrorMessage("cannot remove raw data, exp. probably already immutable."))
-              }
-          }
-        }
-      }
-  }
-
-  private def getRecentLastUpdatesLogs() = {
-    globServices.ask(RecentAllLastUpdates).mapTo[InfoLogs]
+ private def getRecentLastUpdatesLogs() = {
+    expManager.ask(RecentAllLastUpdates).mapTo[InfoLogs]
   }
 
   private def allLastUpdatesRoute = path("all_last_updates") {
@@ -215,7 +135,7 @@ class RestApi(system: ActorSystem)
   private def allExperimentsRecentLogs = path("recent_logs") {
     get {
       logger.debug("returns all most recent logs even though they come from different experiments")
-      onSuccess(globServices.ask(MostRecentLogs).mapTo[InfoLogs]) {
+      onSuccess(expManager.ask(MostRecentLogs).mapTo[InfoLogs]) {
         case ifl: InfoLogs ⇒ complete(OK -> ifl)
         case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning list of recent logs."))
       }
@@ -226,7 +146,7 @@ class RestApi(system: ActorSystem)
     path("categories") {
       get {
         logger.debug("return meta info, categories.")
-        onSuccess(globServices.ask(GetCategories).mapTo[AllCategories]) { cats ⇒
+        onSuccess(expManager.ask(GetCategories).mapTo[AllCategories]) { cats ⇒
           complete(OK -> cats)
         }
       }
@@ -248,7 +168,7 @@ class RestApi(system: ActorSystem)
       pathEnd {
         get {
           logger.debug("returns data source files ")
-          onSuccess(globServices.ask(GetFilesFromSource(dataS)).mapTo[FilesInformation]) {
+          onSuccess(expManager.ask(GetFilesFromSource(dataS)).mapTo[FilesInformation]) {
             case ff: FilesInformation ⇒ complete(OK -> ff)
             case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning files for given source folder."))
           }
@@ -258,7 +178,7 @@ class RestApi(system: ActorSystem)
       pathEnd {
         get {
           logger.debug("returns all data sources ")
-          onSuccess(globServices.ask(GetSourceFolders).mapTo[SourceFoldersAsString]) {
+          onSuccess(expManager.ask(GetSourceFolders).mapTo[SourceFoldersAsString]) {
             case sf: SourceFoldersAsString ⇒ complete(OK -> sf)
             case _ ⇒ complete(BadRequest -> ErrorMessage("Failed returning list of source folders."))
           }
@@ -266,7 +186,7 @@ class RestApi(system: ActorSystem)
           post {
             logger.debug("returns data source files with subfolder ")
             entity(as[GetFilesFromSource]) { gf ⇒
-              val found: Future[FilesInformation] = globServices.ask(gf).mapTo[FilesInformation]
+              val found: Future[FilesInformation] = expManager.ask(gf).mapTo[FilesInformation]
               onSuccess(found) {
                 case ff: FilesInformation ⇒ complete(OK -> ff)
               }

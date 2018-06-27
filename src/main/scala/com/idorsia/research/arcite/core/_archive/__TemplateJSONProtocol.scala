@@ -2,7 +2,7 @@ package com.idorsia.research.arcite.core._archive
 
 import java.util.Date
 
-import com.idorsia.research.arcite.core.api.GlobServices._
+import com.idorsia.research.arcite.core.CommonMsg.GeneralFailure
 import com.idorsia.research.arcite.core.api.{ErrorMessage, SuccessMessage, UniqueID}
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.InfoLogs
 import com.idorsia.research.arcite.core.eventinfo.LogCategory.LogCategory

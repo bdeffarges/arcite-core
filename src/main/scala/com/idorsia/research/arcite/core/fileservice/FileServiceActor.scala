@@ -45,6 +45,7 @@ class FileServiceActor(mounts: Map[String, SourceInformation]) extends Actor wit
 
   private var sourceFolders: Map[String, SourceInformation] = mounts
 
+  log.info(s"files sources: ${sourceFolders.mkString(";")}")
 
   override def receive: Receive = {
 

@@ -50,3 +50,8 @@ class MetaInfoActors extends Actor with ActorLogging {
       log.error(s"don't know what to do with received message: $msg")
   }
 }
+
+object MetaInfoActors {
+
+  trait MetaInfoMsg
+}

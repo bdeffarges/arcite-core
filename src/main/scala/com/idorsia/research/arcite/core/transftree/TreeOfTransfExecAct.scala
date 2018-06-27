@@ -7,7 +7,6 @@ import java.util.UUID
 import akka.actor.{Actor, ActorLogging, ActorSelection, PoisonPill, Props}
 import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.api.{ArciteJSONProtocol, TofTransfJsonProto}
-import com.idorsia.research.arcite.core.api.GlobServices._
 import com.idorsia.research.arcite.core.eventinfo.EventInfoLogging.AddLog
 import com.idorsia.research.arcite.core.eventinfo.LogCategory.LogCategory
 import com.idorsia.research.arcite.core.eventinfo._

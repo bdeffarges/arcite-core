@@ -8,6 +8,7 @@ import com.idorsia.research.arcite.core
 import com.idorsia.research.arcite.core.api.{ArciteJSONProtocol, ExpJsonProto}
 import com.idorsia.research.arcite.core.experiments.Experiment
 import com.idorsia.research.arcite.core.meta.DesignCategories.{AllCategories, GetCategories, RebuildDesignCategories, SimpleCondition}
+import com.idorsia.research.arcite.core.meta.MetaInfoActors.MetaInfoMsg
 import com.typesafe.scalalogging.LazyLogging
 
 /**
@@ -79,7 +80,7 @@ object DesignCategories extends LazyLogging {
 
   case object RebuildDesignCategories
 
-  case object GetCategories
+  case object GetCategories extends MetaInfoMsg
 
   case class SimpleCondition(name: String, description: String)
 
