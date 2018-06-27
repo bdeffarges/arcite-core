@@ -238,6 +238,7 @@ class ExperimentRoutes(expManager: ActorRef)
   }
 
   private def fUpload(experiment: String, location: String) = post {
+    logger.debug(s"...ready to upload $location")
     extractRequestContext {
       ctx => {
         implicit val materializer = ctx.materializer

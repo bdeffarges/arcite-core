@@ -47,8 +47,11 @@ class ApiTests extends AsyncFlatSpec with Matchers
 
   val config = ConfigFactory.load()
 
-  val host = config.getString("http.host")
-  val port = config.getInt("http.port")
+//  val host = config.getString("http.host")
+//  val port = config.getInt("http.port")
+
+  val host = "arcite-api-test.idorsia.com"
+  val port = 80
 
   val urlPrefix = "/api/v1"
 

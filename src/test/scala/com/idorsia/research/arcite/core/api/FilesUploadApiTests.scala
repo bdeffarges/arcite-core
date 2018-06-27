@@ -95,7 +95,8 @@ class FilesUploadApiTests extends ApiTests with ExpJsonProto {
     def createRequest(target: Uri, file: File): HttpRequest = HttpRequest(HttpMethods.POST, uri = target, entity = createEntity(file))
 
     val req = createRequest(s"$urlPrefix/experiment/${exp1Uid.get}/file_upload/meta",
-      new File("./for_testing/for_unit_testing/of_paramount_importance.txt"))
+//      new File("./for_testing/for_unit_testing/of_paramount_importance.txt"))
+      new File("/media/deffabe1/DATA/meta/references/genomes/human/GRCh38/gencode.v27.chr_patch_hapl_scaff.basic.annotation.gtf"))
 
     val res: Future[HttpResponse] = Source.single(req).via(connectionFlow).runWith(Sink.head)
 
