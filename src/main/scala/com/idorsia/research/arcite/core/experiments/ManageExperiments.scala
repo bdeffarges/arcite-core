@@ -1011,7 +1011,7 @@ class ExperimentActorsManager extends Actor with ActorLogging {
 
     case rmmsg: RawAndMetaMsg ⇒
       log.debug(s"got a message about raw or meta files...")
-      manExpActor forward rmmsg
+      defineRawDataAct forward rmmsg
 
     case wf: WriteFeedback ⇒
       log.info("writing feedback about a transform...")

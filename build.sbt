@@ -5,7 +5,7 @@ organization := "com.idorsia.research.arcite"
 
 name := "arcite-core"
 
-version := "1.89.0"
+version := "1.89.1"
 
 scalaVersion := "2.11.8"
 
