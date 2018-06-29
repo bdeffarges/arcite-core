@@ -987,6 +987,7 @@ class ExperimentActorsManager extends Actor with ActorLogging {
       eventInfoLoggingAct forward m
 
     case fm: FileSerMsg ⇒
+      log.debug(s"got a file service message: ${fm.toString}, forwarding to file service. ")
       fileServiceAct forward fm
 
     case umsg: UnimportantMsg ⇒
