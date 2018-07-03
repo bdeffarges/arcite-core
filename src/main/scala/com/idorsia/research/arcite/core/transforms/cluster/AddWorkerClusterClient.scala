@@ -57,11 +57,11 @@ class AddWorkerClusterClient(actorSystemName: String, conf: Config) extends Lazy
     val clusterName = Option(System.getenv("CLUSTER_NAME"))
 
     if (clusterName.isEmpty) {
-      logger.error("no arcite cluster name provided, quitting. ")
+      logger.error("no Arcite cluster name provided, quitting. ")
       System.exit(1)
     }
 
-    logger.info(s"trying to join arcite cluster $clusterName...")
+    logger.info(s"trying to join Arcite cluster $clusterName...")
 
     val discoverCluster = discovery.lookup(clusterName.get, 5 seconds)
 

@@ -5,7 +5,7 @@ organization := "com.idorsia.research.arcite"
 
 name := "arcite-core"
 
-version := "1.89.3"
+version := "1.89.4"
 
 scalaVersion := "2.11.8"
 
@@ -159,6 +159,7 @@ dockerCommands := Seq(
   Cmd("FROM", "openjdk:latest"),
   Cmd("MAINTAINER", "Bernard Deffarges bernard.deffarges@idorsia.com"),
   Cmd("RUN", "echo Europe/Berlin > /etc/timezone && dpkg-reconfigure --frontend noninteractive tzdata"),
+  Cmd("RUN", "apt-get update && apt-get install jq"),
   Cmd("RUN", "addgroup -gid 987654 arcite"),
   Cmd("RUN", "useradd --home-dir /home/arcite --uid 987654 --gid 987654 arcite"),
   Cmd("RUN", "mkdir /home/arcite && chown arcite:arcite /home/arcite"),
