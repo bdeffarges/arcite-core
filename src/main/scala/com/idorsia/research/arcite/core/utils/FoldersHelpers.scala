@@ -60,6 +60,10 @@ object FoldersHelpers {
     LinkingSuccess
   }
 
+  /**
+    * use carefully, that can be dangerous!
+    * @param path
+    */
   def deleteRecursively(path: Path): Unit = {
     deleteRecursively(path.toFile)
   }
