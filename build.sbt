@@ -5,7 +5,7 @@ organization := "com.idorsia.research.arcite"
 
 name := "arcite-core"
 
-version := "1.89.6"
+version := "1.91.0"
 
 scalaVersion := "2.11.8"
 
@@ -55,7 +55,8 @@ resolvers ++= Seq(
   Resolver.sonatypeRepo("snapshots"),
   MavenRepository("mvn-repository", "https://mvnrepository.com/artifact/"),
   MavenRepository("mvn-central", "http://repo1.maven.org/maven2"),
-  MavenRepository("Artima Maven Repository", "http://repo.artima.com/releases/"))
+  MavenRepository("Artima Maven Repository", "http://repo.artima.com/releases/"),
+  Resolver.bintrayRepo("tanukkii007", "maven"))
 
 
 libraryDependencies ++= {
@@ -112,6 +113,7 @@ libraryDependencies ++= {
     "org.json4s" %% "json4s-jackson" % "3.5.1" % "test",
     "com.twitter" %% "chill" % "0.9.2" % "runtime",
     "com.twitter" %% "chill-akka" % "0.9.2" % "runtime",
+    "com.github.TanUkkii007" %% "akka-cluster-custom-downing" % "0.0.12" % "runtime", // split brain problem implementation
     "com.lightbend.akka.management" %% "akka-management-cluster-bootstrap" % akkaManagementVersion,
     "com.lightbend.akka.management" %% "akka-management" % akkaManagementVersion,
     "com.lightbend.akka.management" %% "akka-management-cluster-http" % akkaManagementVersion,
