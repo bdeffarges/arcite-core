@@ -5,7 +5,7 @@ organization := "com.idorsia.research.arcite"
 
 name := "arcite-core"
 
-version := "1.91.2"
+version := "1.91.5"
 
 scalaVersion := "2.11.8"
 
@@ -176,9 +176,12 @@ dockerRepository := Some("nexus-docker.idorsia.com")
 
 dockerAlias := DockerAlias(dockerRepository.value, Some("arcite"), packageName.value, Some(version.value))
 
-
 licenses := Seq(("CC0", url("http://creativecommons.org/publicdomain/zero/1.0")))
 
 bashScriptExtraDefines += """addJava "-Dconfig.resource=$ARCITE_CONF""""
 bashScriptExtraDefines += """addJava "-Dlaunch=$LAUNCH""""
+bashScriptExtraDefines += """addJava "-Dhost=$HOST""""
 bashScriptExtraDefines += """addJava "-Dport=$PORT""""
+bashScriptExtraDefines += """addJava "-Dport0=$PORT0""""
+bashScriptExtraDefines += """addJava "-Dport1=$PORT1""""
+bashScriptExtraDefines += """addJava "-Dport2=$PORT2""""

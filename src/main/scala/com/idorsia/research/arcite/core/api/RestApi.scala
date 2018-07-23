@@ -48,12 +48,13 @@ class RestApi(system: ActorSystem)
 
   private val config = ConfigFactory.load()
 
-  private val host = config.getString("http.host")
+  private val host = Option(System.getProperty("host")) getOrElse "arcite-api.idorsia.com"
 
-  private val port = config.getInt("http.port")
+  private val port = Option(System.getProperty("port2")) getOrElse "80"
 
-  val apiPath = s"http://${host}:${port}/api/v${core.apiVersion}/swagger.json"
-  logger.info(s"api path: $apiPath")
+  val swgApiPath = s"http://${host}:${port}/api/v${core.apiVersion}/api-docs/swagger.json"
+
+  logger.info(s"Swagger api path: $swgApiPath")
 
   private val props = ClusterSingletonProxy.props(
     settings = ClusterSingletonProxySettings(system).withRole("helper"),
@@ -81,8 +82,8 @@ class RestApi(system: ActorSystem)
   private val expRoutes = new ExperimentRoutes(expManager)(executionContext, Timeout(6.seconds)).routes
   private val expsRoutes = new ExperimentsRoutes(expManager)(executionContext, Timeout(6.seconds)).routes
   private val transfRoutes = new TransfRoutes(system, expManager)(executionContext, Timeout(6.seconds)).routes
-  //  private val tofTransfRoutes = new TofTransfRoutes(system)(executionContext, timeout).routes
-  private val swui = new SwUI().route
+
+  private val swui = new SwUI(swgApiPath).route
 
   //no arguments in the method to avoid problems with Swagger, todo why?
   def routes: Route = respondWithHeaders(corsHeaders) {

@@ -40,7 +40,7 @@
       }
     ],
     "docker": {
-      "image": "nexus-docker.idorsia.com/arcite/arcite-core:1.89.3",
+      "image": "nexus-docker.idorsia.com/arcite/arcite-core:1.89.4",
       "forcePullImage": true,
       "privileged": false,
       "parameters": []
@@ -69,11 +69,11 @@
       "delaySeconds": 15,
       "protocol": "COMMAND",
       "command": {
-        "value": "curl ${HOST}:${PORT2}/api/v1/experiments"
+        "value": "curl ${HOST}:${PORT2}/api/v1/experiments | jq '.[] | length > 10'"
       }
     }
   ],
-  "instances": 0,
+  "instances": 1,
   "labels": {
     "ACTOR_SYSTEM_NAME": "arcite-cluster-engine-test",
     "HAPROXY_2_VHOST": "arcite-api-test.idorsia.com",
