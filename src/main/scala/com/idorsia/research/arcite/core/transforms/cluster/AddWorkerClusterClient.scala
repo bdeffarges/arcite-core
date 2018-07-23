@@ -65,14 +65,18 @@ class AddWorkerClusterClient(actorSystemName: String, conf: Config) extends Lazy
 
     val discoverCluster = discovery.lookup(clusterName.get, 5 seconds)
 
-    discoverCluster.onComplete { r ⇒ //returns the host:port of the akka management service
+    discoverCluster.onComplete { r ⇒
+      //returns the host:port of the akka management service
       // now we need to find the receptionists
+
       logger.debug(s"discovery= ${r.get}")
       val clusterMgmt = r.get.addresses.find(_.port.isDefined)
 
       if (clusterMgmt.isDefined) {
         val uri = s"http://${clusterMgmt.get.host}:${clusterMgmt.get.port.get}/cluster/members"
+
         logger.debug(s"cluster management uri: ${clusterMgmt.get}")
+
         val responseFuture: Future[HttpResponse] = Http().singleRequest(HttpRequest(uri = uri))
         responseFuture.onComplete {
           case Success(res) => {
@@ -88,7 +92,7 @@ class AddWorkerClusterClient(actorSystemName: String, conf: Config) extends Lazy
             logger.debug(s"cluster members: ${asClusterMembers}")
 
             //for now we take the first one
-            val contactPoints = Set(ActorPath.fromString(s"${asClusterMembers.leader.get}/system/receptionist"))
+            val contactPoints = asClusterMembers.members.map(cm ⇒ cm.node).map(n ⇒ ActorPath.fromString(s"$n/system/receptionist"))
 
             logger.debug(s"contact point actors: ${contactPoints.mkString(" ; ")}")
 
@@ -98,7 +102,7 @@ class AddWorkerClusterClient(actorSystemName: String, conf: Config) extends Lazy
           }
 
           case Failure(_) =>
-            sys.error("something went wrong")
+            sys.error("something went wrong trying to get cluster information through cluster management uri")
             System.exit(1)
         }
       }
