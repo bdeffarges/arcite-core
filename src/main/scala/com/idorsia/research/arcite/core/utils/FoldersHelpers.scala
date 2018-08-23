@@ -1,9 +1,8 @@
 package com.idorsia.research.arcite.core.utils
 
 import java.io.File
-import java.nio.file.{FileSystemException, Files, Path, Paths}
+import java.nio.file.{Files, Path, Paths}
 
-import com.idorsia.research.arcite.core.rawdata.TransferSelectedRawData.logger
 import org.slf4j.LoggerFactory
 
 import scala.util.matching.Regex
@@ -62,6 +61,7 @@ object FoldersHelpers {
 
   /**
     * use carefully, that can be dangerous!
+    *
     * @param path
     */
   def deleteRecursively(path: Path): Unit = {
@@ -90,6 +90,7 @@ object FoldersHelpers {
           nextN
         }
       }
+
       nFilName(1)
     } else {
       fileName
@@ -163,6 +164,28 @@ object FoldersHelpers {
     } else {
       s"f-${currF.getName}-s${currF.length}"
     }
+  }
+
+  /**
+    * goes into the file structure and returns all Files of files called name.
+    * Once it finds one, it will not go deeper in the branch where it found it.
+    *
+    * @param folder
+    * @param name
+    * @return
+    */
+  def getFilesByNameAndExcludedSubFolders(folder: File, name: String): List[File] = {
+    require(folder.isDirectory)
+
+    def findInFolder(folder: File): Option[File] = folder.listFiles.filter(_.isFile).find(f ⇒ name == f.getName)
+
+    def goThrough(folders: List[File], accu: List[File]): List[File] = folders match {
+      case Nil ⇒ accu
+      case x :: cs ⇒
+        findInFolder(x).fold(goThrough(cs ++ x.listFiles.filter(_.isDirectory), accu))(f ⇒ goThrough(cs, f :: accu))
+    }
+
+    goThrough(folder.listFiles.filter(_.isDirectory).toList, List.empty)
   }
 
 

@@ -15,7 +15,6 @@ case class FileInformation(fullPath: String, name: String, fileSize: String, fil
 case class FilesInformation(files: Seq[FileInformation] = Seq.empty)
 
 
-
 case class FileVisitor(file: File) {
   import FileVisitor._
 

@@ -92,4 +92,17 @@ class FoldersHelersTest extends FlatSpec with Matchers with LazyLogging {
     FoldersHelpers.deleteRecursively(tf)
     FoldersHelpers.deleteRecursively(of)
   }
+
+  "get files by name with exclusion " should
+    " return the files called meta but not if they are in a subfolder of a folder where a meta has already been found " in {
+
+    val folder = new File("./for_testing/find_files_with_exclusion/")
+
+    val files = FoldersHelpers.getFilesByNameAndExcludedSubFolders(folder, "meta")
+
+    println(files)
+
+    files.size should equal (5)
+  }
+
 }

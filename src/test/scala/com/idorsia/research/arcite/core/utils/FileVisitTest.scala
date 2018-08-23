@@ -1,9 +1,7 @@
-package com.idorsia.research.arcite.core._trials
+package com.idorsia.research.arcite.core.utils
 
 import java.io.File
 
-import com.idorsia.research.arcite.core._
-import com.idorsia.research.arcite.core.utils.FileVisitor
 import org.scalatest.{FlatSpec, Matchers}
 
 /**
@@ -29,7 +27,7 @@ import org.scalatest.{FlatSpec, Matchers}
   * Created by Bernard Deffarges on 2016/10/25.
   *
   */
-class TestCore extends FlatSpec with Matchers {
+class FileVisitTest extends FlatSpec with Matchers {
 
   val folder1 = new File("./for_testing/find_files/")
 
@@ -41,4 +39,6 @@ class TestCore extends FlatSpec with Matchers {
     
     files.size should equal (6)
   }
+
+
 }
