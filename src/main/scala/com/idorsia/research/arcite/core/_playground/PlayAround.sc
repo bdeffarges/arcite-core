@@ -1,3 +1,7 @@
+import java.io.File
+import java.nio.file.{CopyOption, Files, Path}
+
+//import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 //val s = "Undetermined_S0_L001_R1_001.fastq.gz"
 //val rgx = ".{3,50}\\_L\\d{1,5}\\_.{2,40}\\.fastq\\.gz".r
 //rgx.findFirstIn(s)
@@ -281,6 +285,41 @@
 //
 ////val zz = xs withFilter {case Seq(x,y,z) ⇒ true ; case _ ⇒ false} map {case Seq(x,y,z) ⇒ x+y+z }
 //val zz = xs withFilter {case Seq(x,y,z) ⇒ true ; case _ ⇒ false}
+//
+//val s = Option(System.getProperty("HOST")) getOrElse "hello"
+//println(s)
 
-val s = Option(System.getProperty("HOST")) getOrElse "hello"
-println(s)
+//case class Person(name: String)
+//
+//object Person {
+//  def getPerson(firstName: String, lastName: String): Person = new Person(firstName + " " + lastName)
+//
+//  def apply(name: String): Person = new Person(name)
+//
+//  def unapply(arg: Person): Option[String] = Some(arg.name)
+//}
+//
+//class Tojson extends DefaultJsonProtocol {
+//  implicit val pjson: RootJsonFormat[Person] = jsonFormat1(Person.apply)
+//}
+
+def cTest() = {
+
+  def copyRecursively(source: Path, destination: Path): Unit = {
+    val srcF = source.toFile
+    val destF = destination.toFile
+    if (srcF.isFile) {
+      Files.copy(source, destination)
+    } else {
+      if (!destF.exists()) destF.mkdirs()
+      source.toFile.listFiles
+        .foreach(s ⇒ copyRecursively(s.toPath, destination resolve s.getName))
+    }
+  }
+
+  copyRecursively(new File("/home/deffabe1/development/computbio/arc/arcite-core/for_testing/find_files").toPath,
+    new File ("/home/deffabe1/development/computbio/arc/arcite-core/for_testing/find_files1").toPath)
+}
+
+//cTest()
+

@@ -1051,7 +1051,7 @@ object ExperimentActorsManager extends LazyLogging {
     logger.info("starting cluster bootstrap... ")
     ClusterBootstrap(actSystem).start()
 
-    logger.info("starting experiment Actors manager as singleton.in cluster..")
+    logger.info("starting experiment Actors manager as singleton in cluster..")
 
     Cluster(actSystem) registerOnMemberUp {
       actSystem.actorOf(
