@@ -1,5 +1,37 @@
-import java.io.File
-import java.nio.file.{CopyOption, Files, Path}
+//import scala.sys.process.ProcessLogger
+//import java.io.File
+//import java.nio.file.{CopyOption, Files, Path}
+//import scala.sys.process.Process
+//import scala.sys.process._
+
+sealed trait HW
+
+case class HelloWorld(hw: String) extends HW
+
+case object HelloMars extends HW
+
+val set: Set[HW] = Set(HelloWorld("hhla"), HelloWorld("dfsaf"), HelloMars)
+
+set.count { case _: HelloWorld ⇒ true
+case _ ⇒ false
+}
+
+//set.count(_ == HelloMars)
+
+//val p1 = Process("find /home/deffabe1/development/computbio/arc/arcite-core/src -name *.scala -exec grep null {} ;") #| Process("xargs test -z") #&& Process("echo null-free") #|| Process("echo null detected")
+//val p1 = Process("for tp in /tmp -name *.tmp") #&& Process("do echo $tp") #&& Process("done")
+//val p1 = "find /var/log  -name *.log" #| "xargs grep 'CPU'"
+//var a = List()
+//Process("find /var/log -name *.log")  #| Process("xargs more")!!
+//Process("""find /var/log -name *.log -exec more {} ;""") !!
+
+//Process("find /home/deffabe1/development/computbio/arc/arcite-core/src -name *.scala -exec more {} ;") !!
+//"find /var/log -name \\*.log" #| "xargs grep 'CPU'" ! ProcessLogger(st => println(st), st => println(st))
+
+//Process(Seq("find","/var/log","-name", "\\*\\.log")) !!
+//p1 ! ProcessLogger(st => println(st), st => println(st))
+//println(a)
+
 
 //import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 //val s = "Undetermined_S0_L001_R1_001.fastq.gz"
@@ -302,24 +334,24 @@ import java.nio.file.{CopyOption, Files, Path}
 //class Tojson extends DefaultJsonProtocol {
 //  implicit val pjson: RootJsonFormat[Person] = jsonFormat1(Person.apply)
 //}
-
-def cTest() = {
-
-  def copyRecursively(source: Path, destination: Path): Unit = {
-    val srcF = source.toFile
-    val destF = destination.toFile
-    if (srcF.isFile) {
-      Files.copy(source, destination)
-    } else {
-      if (!destF.exists()) destF.mkdirs()
-      source.toFile.listFiles
-        .foreach(s ⇒ copyRecursively(s.toPath, destination resolve s.getName))
-    }
-  }
-
-  copyRecursively(new File("/home/deffabe1/development/computbio/arc/arcite-core/for_testing/find_files").toPath,
-    new File ("/home/deffabe1/development/computbio/arc/arcite-core/for_testing/find_files1").toPath)
-}
+//
+//def cTest() = {
+//
+//  def copyRecursively(source: Path, destination: Path): Unit = {
+//    val srcF = source.toFile
+//    val destF = destination.toFile
+//    if (srcF.isFile) {
+//      Files.copy(source, destination)
+//    } else {
+//      if (!destF.exists()) destF.mkdirs()
+//      source.toFile.listFiles
+//        .foreach(s ⇒ copyRecursively(s.toPath, destination resolve s.getName))
+//    }
+//  }
+//
+//  copyRecursively(new File("/home/deffabe1/development/computbio/arc/arcite-core/for_testing/find_files").toPath,
+//    new File ("/home/deffabe1/development/computbio/arc/arcite-core/for_testing/find_files1").toPath)
+//}
 
 //cTest()
 

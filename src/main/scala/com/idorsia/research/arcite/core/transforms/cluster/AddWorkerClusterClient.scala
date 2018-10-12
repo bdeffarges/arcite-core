@@ -92,7 +92,8 @@ class AddWorkerClusterClient(actorSystemName: String, conf: Config) extends Lazy
             logger.debug(s"cluster members: ${asClusterMembers}")
 
             //for now we take the first one
-            val contactPoints = asClusterMembers.members.map(cm ⇒ cm.node).map(n ⇒ ActorPath.fromString(s"$n/system/receptionist"))
+            val contactPoints = asClusterMembers.members
+              .map(cm ⇒ cm.node).map(n ⇒ ActorPath.fromString(s"$n/system/receptionist"))
 
             logger.debug(s"contact point actors: ${contactPoints.mkString(" ; ")}")
 
