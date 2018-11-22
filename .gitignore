@@ -38,6 +38,8 @@ hs_err_pid*
 *.ipr
 *.iwsg
 
+# testing
 /for_testing/gobetween/
 /for_testing/some_raw_data/
 /log/
+_playground/
