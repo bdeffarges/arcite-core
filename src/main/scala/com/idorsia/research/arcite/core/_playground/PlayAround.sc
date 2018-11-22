@@ -1,22 +1,33 @@
+import java.nio.charset.StandardCharsets
 //import scala.sys.process.ProcessLogger
 //import java.io.File
 //import java.nio.file.{CopyOption, Files, Path}
 //import scala.sys.process.Process
 //import scala.sys.process._
 
-sealed trait HW
 
-case class HelloWorld(hw: String) extends HW
+//"hello world. hello mars ".trim.replaceAll("\\s", "_").replaceAll("\\.", "_")
 
-case object HelloMars extends HW
 
-val set: Set[HW] = Set(HelloWorld("hhla"), HelloWorld("dfsaf"), HelloMars)
-
-set.count { case _: HelloWorld ⇒ true
-case _ ⇒ false
-}
-
+//sealed trait HW
+//
+//case class HelloWorld(hw: String) extends HW
+//
+//case object HelloMars extends HW
+//
+//val set: Set[HW] = Set(HelloWorld("hhla"), HelloWorld("dfsaf"), HelloMars)
+//
+//set.count { case _: HelloWorld ⇒ true
+//case _ ⇒ false
+//}
 //set.count(_ == HelloMars)
+
+//val set = Set("sadf", "32424", "8435ll", "wwwwwww", "qeroiqwre", "llllll")
+//
+//set.withFilter(_.contains("ll"))
+
+
+
 
 //val p1 = Process("find /home/deffabe1/development/computbio/arc/arcite-core/src -name *.scala -exec grep null {} ;") #| Process("xargs test -z") #&& Process("echo null-free") #|| Process("echo null detected")
 //val p1 = Process("for tp in /tmp -name *.tmp") #&& Process("do echo $tp") #&& Process("done")

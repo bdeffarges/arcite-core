@@ -3,6 +3,8 @@ package com.idorsia.research.arcite.core.api
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.stream.scaladsl.{Flow, Sink, Source}
+import com.idorsia.research.arcite.core.meta.DesignCategories.AllCategories
+import org.scalatest.Failed
 
 import scala.concurrent.Future
 import spray.json._
@@ -46,20 +48,20 @@ class MetaInfoApiTests extends ApiTests {
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
 
-      //      import scala.concurrent.duration._
-      //      val f = r.entity.toStrict(5 seconds).map(_.data.decodeString("UTF-8"))
-      //
-      //      f EonComplete {
-      //        case Success(stg) ⇒
-      //          val cats = stg.parseJson.convertTo[AllCategories]
-      //          assert(cats.categories.size > 100000000)
-      //          assert(cats.categories.contains("Cell_adLine"))
-      //          assert(cats.categories.contains("wash"))
-      //        //
-      //        case _ ⇒ Failed
-      //      }
-      //
-      //      assert(true)
+            import scala.concurrent.duration._
+            val f = r.entity.toStrict(5 seconds).map(_.data.decodeString("UTF-8"))
+
+            f onComplete {
+              case Success(stg) ⇒
+                val cats = stg.parseJson.convertTo[AllCategories]
+                assert(cats.categories.size > 100000000)
+                assert(cats.categories.contains("Cell_adLine"))
+                assert(cats.categories.contains("wash"))
+              //
+              case _ ⇒ Failed
+            }
+
+            assert(true)
     }
   }
 }

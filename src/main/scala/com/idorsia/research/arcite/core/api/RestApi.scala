@@ -1,6 +1,6 @@
 package com.idorsia.research.arcite.core.api
 
-import akka.actor.{ActorSystem, Props}
+import akka.actor.ActorSystem
 import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.StatusCodes._
@@ -119,7 +119,7 @@ class RestApi(system: ActorSystem)
     }
   }
 
- private def getRecentLastUpdatesLogs() = {
+  private def getRecentLastUpdatesLogs() = {
     expManager.ask(RecentAllLastUpdates).mapTo[InfoLogs]
   }
 
@@ -195,7 +195,6 @@ class RestApi(system: ActorSystem)
           }
       }
   }
-
 }
 
 sealed trait GeneralFeedbackMessage
