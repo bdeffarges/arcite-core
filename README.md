@@ -50,11 +50,13 @@ To build Arcite you need sbt and an easy way to get it is to install sdkman (htt
 Arcite needs a home mapped in the docker container. 
 There are some examples of DCOS Json config files.
 
-To be able to run as a cluster, three instances of Arcite have to be started :
+To be able to run as a cluster, three instances of Arcite have to be started at least:
 
-- for the rest-api (example in cluster-rest.json): it will enable to serve Rest requests
-- for the backend management :manages the cluster worker nodes
-- for the helper functions : manages the experiments, their dependencies, etc.
+- the rest-api (example in cluster-rest.json): it will enable to serve Rest requests
+- the backend management :manages the cluster worker nodes
+- the helper functions : manages the experiments, their dependencies, etc.
+
+There example of configuration files for each one for DCOS in /dcos
 
 The rest end point has to be configured in the Arcite web application 
 
