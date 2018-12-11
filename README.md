@@ -22,11 +22,11 @@ A transform is performed by a worker that is running on a node of the cluster. W
 a few different transforms, usually in the same domain (e.g. preprocessing of NGS data). A worker can contain any dependencies 
 that the transforms need (version of an OS, python, java, R, scala, spark, Bioconductor libraries, etc.).
 
-The Arcite core modules take care of scheduling the workers on the cluster. If a transform breaks down (e.g. in case 
-of an exception in some Python code) it should have no real effect on the whole Arcite cluster which will continue to run 
-without trouble. If nothing comes back from the worker, the core will assume an exception and consider 
+The Arcite core modules take care of scheduling the workers on the cluster. If a transform fails and is not able to recover itself
+(e.g. because of an exception in some Python code) it should have no real effect on the whole Arcite cluster which will continue to run 
+without trouble. If nothing comes back from the worker, the core will assume an exception has happened and will consider 
 the worker to be dead (after a defined time out). It will eventually try to restart an instance if none for this worker
-type would be available.      
+type would be available anymore.      
 
 In Arcite, everything is final and therefore immutable. 
 A transform produces something that is immutable and there is no way back. That is one of the guarantee for reproducibility. 
