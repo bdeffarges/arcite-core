@@ -56,26 +56,5 @@ class TransferSelectedRawDataTest extends FlatSpec with Matchers with LazyLoggin
     assert(map2.size == 4)
   }
 
-  "transfer folder from AMS0100 " should " prepare map for copy files to the gobetween folder in the same file structure " in {
-
-    val source = Paths.get("/media/deffabe1/DATA/microarrays", "raw_data")
-
-    assert(source.toFile.exists())
-
-    val targetParent = Paths.get("./for_testing", "gobetween")
-
-    assert(targetParent.toFile.exists())
-
-    val target = targetParent resolve "mock_project"
-
-    target.toFile.mkdir()
-
-    val fileList = List("AMS0100")
-
-    val map1 = FoldersHelpers.buildTransferFromSourceFileMap(source, fileList,
-      "\\S+(257236312158|257236312159)\\S+txt".r, target)
-
-    assert(map1.size == 32)
-  }
 }
 

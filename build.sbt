@@ -11,13 +11,6 @@ scalaVersion := "2.11.8"
 
 crossScalaVersions := Seq(scalaVersion.value, "2.12.4")
 
-scmInfo := Some(
-  ScmInfo(
-    url("https://chiron.idorsia.com/stash/projects/ARC/repos/arcite-core/browse"),
-    "scm:ssh://git@chiron.idorsia.com:7999/arc/arcite-core.git",
-    Some("scm:git:git@chiron.idorsia.com:7999/arc/arcite-core.git")
-  )
-)
 
 // These options will be used for *all* versions.
 scalacOptions ++= Seq(
@@ -32,18 +25,6 @@ scalacOptions ++= Seq(
   , "-language:postfixOps"
 )
 
-
-credentials += Credentials("Sonatype Nexus Repository Manager", "nexus.idorsia.com", "deployment", "biodeploy")
-
-publishMavenStyle := true
-
-publishTo := {
-  val nexus = "http://nexus.idorsia.com/repository/"
-  if (version.value.toString.trim.endsWith("SNAPSHOT"))
-    Some("snapshots" at nexus + "idorsia-snapshots")
-  else
-    Some("releases" at nexus + "idorsia-releases")
-}
 
 resolvers ++= Seq(
   Resolver.mavenLocal,
@@ -172,7 +153,7 @@ dockerCommands := Seq(
   Cmd("USER", "arcite"),
   Cmd("ENTRYPOINT", "bin/arcite-core"))
 
-dockerRepository := Some("nexus-docker.idorsia.com")
+dockerRepository := Some("internal-docker-server")
 
 dockerAlias := DockerAlias(dockerRepository.value, Some("arcite"), packageName.value, Some(version.value))
 

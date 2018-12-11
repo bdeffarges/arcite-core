@@ -9,8 +9,8 @@ import akka.stream.scaladsl._
 import akka.util.ByteString
 import com.idorsia.research.arcite.core.TestHelpers
 import com.idorsia.research.arcite.core.experiments.{Experiment, ExperimentUID}
-import com.idorsia.research.arcite.core.experiments.ManageExperiments.{AddExpProps, AddExperiment, CloneExperimentNewProps}
-import com.idorsia.research.arcite.core.utils.{FileInformation, FilesInformation, RmFile}
+import com.idorsia.research.arcite.core.experiments.ManageExperiments.{AddExperiment, CloneExperimentNewProps}
+import com.idorsia.research.arcite.core.utils.{FileInformation, RmFile}
 import spray.json._
 
 import scala.concurrent.Future
@@ -43,7 +43,7 @@ class FilesUploadApiTests extends ApiTests with ExpJsonProto {
 
   val exp1 = TestHelpers.cloneForFakeExperiment(TestHelpers.experiment1)
 
-  var exp1Uid:Option[String] = None // because the uid is created on the server.
+  var exp1Uid: Option[String] = None // because the uid is created on the server.
   var clonedExp: Option[String] = None
 
 
@@ -59,7 +59,7 @@ class FilesUploadApiTests extends ApiTests with ExpJsonProto {
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri =s"$urlPrefix/experiment",
+      uri = s"$urlPrefix/experiment",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -95,8 +95,8 @@ class FilesUploadApiTests extends ApiTests with ExpJsonProto {
     def createRequest(target: Uri, file: File): HttpRequest = HttpRequest(HttpMethods.POST, uri = target, entity = createEntity(file))
 
     val req = createRequest(s"$urlPrefix/experiment/${exp1Uid.get}/file_upload/meta",
-//      new File("./for_testing/for_unit_testing/of_paramount_importance.txt"))
-      new File("/media/deffabe1/DATA/meta/references/genomes/human/GRCh38/gencode.v27.chr_patch_hapl_scaff.basic.annotation.gtf"))
+
+      new File("./for_testing/hello-world.txt"))
 
     val res: Future[HttpResponse] = Source.single(req).via(connectionFlow).runWith(Sink.head)
 
@@ -150,7 +150,7 @@ class FilesUploadApiTests extends ApiTests with ExpJsonProto {
 
     val postRequest = HttpRequest(
       HttpMethods.POST,
-      uri =s"$urlPrefix/experiment/${exp1Uid.get}/clone",
+      uri = s"$urlPrefix/experiment/${exp1Uid.get}/clone",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -175,7 +175,7 @@ class FilesUploadApiTests extends ApiTests with ExpJsonProto {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri =s"$urlPrefix/experiment/${exp1Uid.get}/files/meta")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri = s"$urlPrefix/experiment/${exp1Uid.get}/files/meta")).via(connectionFlow).runWith(Sink.head)
 
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
@@ -196,7 +196,7 @@ class FilesUploadApiTests extends ApiTests with ExpJsonProto {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri =s"$urlPrefix/experiment/${clonedExp.get}/files/meta")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri = s"$urlPrefix/experiment/${clonedExp.get}/files/meta")).via(connectionFlow).runWith(Sink.head)
 
 
     responseFuture.map { r ⇒
@@ -222,7 +222,7 @@ class FilesUploadApiTests extends ApiTests with ExpJsonProto {
 
     val postRequest = HttpRequest(
       HttpMethods.DELETE,
-      uri =s"$urlPrefix/experiment/${exp1Uid.get}/file_upload/meta",
+      uri = s"$urlPrefix/experiment/${exp1Uid.get}/file_upload/meta",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -246,7 +246,7 @@ class FilesUploadApiTests extends ApiTests with ExpJsonProto {
 
     val postRequest = HttpRequest(
       HttpMethods.DELETE,
-      uri =s"$urlPrefix/experiment/${clonedExp.get}/file_upload/meta",
+      uri = s"$urlPrefix/experiment/${clonedExp.get}/file_upload/meta",
       entity = HttpEntity(MediaTypes.`application/json`, jsonRequest))
 
     val responseFuture: Future[HttpResponse] =
@@ -266,7 +266,7 @@ class FilesUploadApiTests extends ApiTests with ExpJsonProto {
       Http().outgoingConnection(host, port)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri =s"$urlPrefix/experiment/${exp1Uid.get}")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri = s"$urlPrefix/experiment/${exp1Uid.get}")).via(connectionFlow).runWith(Sink.head)
 
 
     responseFuture.map { r ⇒
@@ -292,7 +292,7 @@ class FilesUploadApiTests extends ApiTests with ExpJsonProto {
     println(clonedExp)
 
     val responseFuture: Future[HttpResponse] =
-      Source.single(HttpRequest(uri =s"$urlPrefix/experiment/${clonedExp.get}")).via(connectionFlow).runWith(Sink.head)
+      Source.single(HttpRequest(uri = s"$urlPrefix/experiment/${clonedExp.get}")).via(connectionFlow).runWith(Sink.head)
 
     responseFuture.map { r ⇒
       assert(r.status == StatusCodes.OK)
@@ -314,7 +314,7 @@ class FilesUploadApiTests extends ApiTests with ExpJsonProto {
 
     val postRequest = HttpRequest(
       HttpMethods.DELETE,
-      uri =s"$urlPrefix/experiment/${exp1Uid.get}",
+      uri = s"$urlPrefix/experiment/${exp1Uid.get}",
       entity = HttpEntity(MediaTypes.`application/json`, ""))
 
     val responseFuture: Future[HttpResponse] =
@@ -336,7 +336,7 @@ class FilesUploadApiTests extends ApiTests with ExpJsonProto {
 
     val postRequest = HttpRequest(
       HttpMethods.DELETE,
-      uri =s"$urlPrefix/experiment/${clonedExp.get}",
+      uri = s"$urlPrefix/experiment/${clonedExp.get}",
       entity = HttpEntity(MediaTypes.`application/json`, ""))
 
     val responseFuture: Future[HttpResponse] =
