@@ -41,7 +41,7 @@ the experiment definition might totally change the results.
 Arcite is written in Scala using the akka library. 
 It should be deployed to a cluster of machines running docker. 
 It's initial deployment target is DCOS but adapting it to another system like Kubernetes 
-should not be a problem.  
+should not be difficult.  
 
 ### Building Arcite
 To build Arcite you need sbt and an easy way to get it is to install sdkman (http://sdkman.io/)
