@@ -5,7 +5,7 @@ import java.nio.charset.StandardCharsets
 //import scala.sys.process.Process
 //import scala.sys.process._
 
-
+List("hello", "blab", ".arcite").filterNot(_.startsWith("."))
 //"hello world. hello mars ".trim.replaceAll("\\s", "_").replaceAll("\\.", "_")
 
 
