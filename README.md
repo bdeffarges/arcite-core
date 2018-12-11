@@ -52,9 +52,9 @@ There are some examples of DCOS Json config files.
 
 To be able to run as a cluster, three instances of Arcite have to be started :
 
--for the rest-api (example in cluster-rest.json): it will enable to serve Rest requests
--for the backend management :manages the cluster worker nodes
--for the helper functions : manages the experiments, their dependencies, etc.
+- for the rest-api (example in cluster-rest.json): it will enable to serve Rest requests
+- for the backend management :manages the cluster worker nodes
+- for the helper functions : manages the experiments, their dependencies, etc.
 
 The rest end point has to be configured in the Arcite web application 
 
