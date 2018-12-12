@@ -47,8 +47,10 @@ should not be a problem.
 To build Arcite you need sbt and an easy way to get it is to install sdkman (http://sdkman.io/)
 
 ### Deployment
-Arcite needs a home mapped in the docker container. 
-There are some examples of DCOS Json config files.
+Arcite needs a home mapped in each docker container, it can either be achieved using a NFS mount that can be reached
+from every node or through solutions like CEPH.
+ 
+There are some examples of DCOS Json config files in /deploy.
 
 To be able to run as a cluster, three instances of Arcite have to be started :
 
